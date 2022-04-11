@@ -1,7 +1,14 @@
-name = "Data"
+name = "DataToolkitBase"
 uuid = "e209d0c3-e863-446f-9b45-de6ca9730756"
 authors = ["TEC <tec@tecosaur.com> and contributors"]
 version = "0.1.0"
+
+[deps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
 julia = "1"
