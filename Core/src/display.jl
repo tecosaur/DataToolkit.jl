@@ -33,6 +33,21 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     print(io, ')')
 end
 
+function Base.show(io::IO, dta::DataTransducerAmalgamation)
+    get(io, :omittype, false) || print(io, "DataTransducerAmalgamation(")
+    for plugin in dta.plugins_wanted
+        if plugin in dta.plugins_used
+            print(io, plugin, ' ')
+            printstyled(io, '✔', color = :green)
+        else
+            printstyled(io, plugin, ' ', color = :light_black)
+            printstyled(io, '✘', color = :red)
+        end
+        plugin === last(dta.plugins_wanted) || print(io, ", ")
+    end
+    get(io, :omittype, false) || print(io, ")")
+end
+
 function Base.show(io::IO, dataset::DataSet)
     if get(io, :compact, false)
         printstyled(io, dataset.name, color=:blue)
@@ -79,16 +94,8 @@ function Base.show(io::IO, datacollection::DataCollection)
     end
     if !isempty(datacollection.plugins)
         print(io, "\n  Plugins: ")
-        for plugin in datacollection.plugins
-            if haskey(PLUGINS, plugin)
-                print(io, plugin, ' ')
-                printstyled(io, '✔', color=:green)
-            else
-                printstyled(io, plugin, ' ', color=:light_black)
-                printstyled(io, '✘', color=:red)
-            end
-            plugin === last(datacollection.plugins) || print(io, ", ")
-        end
+        show(IOContext(io, :compact => true, :omittype => true),
+             datacollection.transduce)
     end
     print(io, "\n  Stores: ", join(getfield.(datacollection.stores, :name), ", "))
     print(io, "\n  Data sets:")

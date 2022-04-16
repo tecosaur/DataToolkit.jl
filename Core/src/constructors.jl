@@ -38,7 +38,7 @@ end
 function (ADT::Type{<:AbstractDataTransformer})(
    @nospecialize(dataset::Union{DataSet, DataCollection}), spec::Dict{String, Any})
     driver = if ADT isa DataType
-        first(dl.parameters)
+        first(ADT.parameters)
     else
         Symbol(get(spec, "driver", "unspecified"))
     end
@@ -59,33 +59,55 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
 DataTransducer(f::Function) =
     DataTransducer(DEFAULT_DATATRANSDUCER_PRIORITY, f)
 
+DataTransducerAmalgamation(plugins::Vector{String}) =
+    DataTransducerAmalgamation(identity, DataTransducer[], plugins, String[])
+
+DataTransducerAmalgamation(collection::DataCollection) =
+    DataTransducerAmalgamation(collection.plugins)
+
+DataTransducerAmalgamation(dta::DataTransducerAmalgamation) = # for re-building
+    DataTransducerAmalgamation(dta.plugins_wanted)
+
 function DataStore(collection::DataCollection, spec::Dict{String, Any})
     DataStore(get(spec, "name", "global"),
               DataStorage(collection, delete!(copy(spec), "name")))
 end
 
-Base.read(f::AbstractString, ::Type{DataCollection}; writer::Union{Function, Nothing} = self -> write(f, self)) =
-    read(open(f, "r"), DataCollection; writer)
+function DataCollection(spec::Dict{String, Any}; writer::Union{Function, Nothing}=nothing)
+    plugins = get(get(spec, "data", Dict("data" => Dict())), "plugins", String[])
+    DataTransducerAmalgamation(plugins)(fromtoml, DataCollection, spec; writer)
+end
 
-Base.read(io::IO, ::Type{DataCollection}; writer::Union{Function, Nothing}=nothing) =
-    DataCollection(TOML.parse(io); writer)
-
-function DataCollection(spec::Dict{String, Any}; writer::Union{Function, Nothing}=nothing )
+function fromtoml(::Type{DataCollection}, spec::Dict{String, Any}; writer::Union{Function, Nothing}=nothing)
     version = get(spec, "data_config_version", LATEST_DATA_CONFIG_VERSION)
     name = get(spec, "name", nothing)
     uuid = UUID(get(spec, "uuid", uuid4()))
     parameters = get(spec, "data", Dict{String, Any}())
+    plugins = get(parameters, "plugins", String[])
     defaults = merge(DATASET_DEFAULTS,
                      get(parameters, "defaults", Dict{String, Any}()))
-    plugins = get(parameters, "plugins", String[])
-    collection = DataCollection(version, name, uuid, plugins, defaults, DataStore[], DataSet[], writer)
-    for store in get(parameters, "store", Dict{String, Any}())
+    stores = get(parameters, "store", Dict{String, Any}())
+    for reserved in ("plugins", "defaults", "store")
+        delete!(parameters, reserved)
+    end
+    unavailible_plugins = setdiff(plugins, getproperty.(PLUGINS, :name))
+    if length(unavailible_plugins) > 0
+        @warn string("The ", join(unavailible_plugins, ", ", ", and "),
+                     " plugin", if length(unavailible_plugins) == 1
+                         " is" else "s are" end,
+                     " not availible at the time of loading '$name'.",
+                     "\n It is highly recommended that all plugins are loaded",
+                     " prior to DataCollections.")
+    end
+    collection = DataCollection(version, name, uuid, plugins, defaults,
+                                DataStore[], parameters, DataSet[], writer,
+                                DataTransducerAmalgamation(plugins))
+    for store in stores
         push!(collection.stores, DataStore(collection, store))
     end
     # Construct the data sets
     datasets = copy(spec)
-    for reservedname in ("data_config_version",
-                         "name", "uuid", "data")
+    for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:collection]
         delete!(datasets, reservedname)
     end
     for (name, dspecs) in datasets
@@ -93,15 +115,18 @@ function DataCollection(spec::Dict{String, Any}; writer::Union{Function, Nothing
             push!(collection.datasets, DataSet(collection, name, dspec))
         end
     end
-    collection
+    collection.transduce(identity, collection)
 end
 
 function DataSet(collection::DataCollection, name::String, spec::Dict{String, Any})
+    collection.transduce(fromtoml, DataSet, collection, name, spec)
+end
+
+function fromtoml(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
     uuid = UUID(get(spec, "uuid", uuid4()))
     store = get(spec, "store", collection.defaults["store"])
     parameters = copy(spec)
-    for reservedname in ("uuid", "store", "storage",
-                         "loader", "writer")
+    for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
         delete!(parameters, reservedname)
     end
     dataset = DataSet(collection, name, uuid, store, parameters, DataStorage[], DataLoader[], DataWriter[])
@@ -113,5 +138,5 @@ function DataSet(collection::DataCollection, name::String, spec::Dict{String, An
         end
         sort!(getfield(dataset, afield), by=a->a.priority)
     end
-    dataset
+    collection.transduce(identity, dataset)
 end
