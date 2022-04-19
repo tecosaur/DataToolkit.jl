@@ -59,16 +59,28 @@ end
 
 """
     DataTransducer{context, func} <: Function
-DataTransducers allow for composible, highly flexible modifications of data.
-They are inspired by elisp's advice system, namely the most versitile form —
-`:around` advice, and Clojure's transducers.
+DataTransducers allow for composible, highly flexible modifications of data by
+encapsulating a function call. They are inspired by elisp's advice system,
+namely the most versitile form — `:around` advice, and Clojure's transducers.
+
+```
+        ╭ transducer #1 ╌╌╌─╮
+        ┆ ╭ transducer #2 ╌╌┼╌╮
+        ┆ ┆                 ┆ ┆
+input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
+        ┆ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╯
+        ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+```
 
 A `DataTransducer` is esentially a function wrapper, with a `priority::Int`
 attribute. The wrapped functions should be functions of the form:
-```
+```julia
 (post::Function, action::Function, args...; kargs...) ->
   (post::Function, action::Function, args, kargs)
 ```
+
+A three-tuple result with `kargs` ommited is also accepted, in which case the an
+empty kargs value will be automatically substituted as the fourth value.
 
 To specify which transforms a DataTransducer should be applied to, ensure you
 add the relevant type parameters to your transducing function. In cases where
@@ -80,7 +92,7 @@ kargs...) |> post` is called to produce the final result.
 
 # Constructors
 
-```
+```julia
 DataTransducer(priority::Int, f::Function)
 DataTransducer(f::Function) # priority is set to 1
 ```
@@ -89,23 +101,23 @@ DataTransducer(f::Function) # priority is set to 1
 
 Should you want to log every time a DataSet is loaded, one could
 write the following DataTransducer:
-```
-# TODO update
+```julia
 loggingtransducer = DataTransducer(
-    function(loader::DataLoader, loadfn, (datain, outtype), kwargs)
+    function(post::Function, f::typeof(load), loader::DataLoader, input, outtype)
         @info "Loading \$(loader.data.name)"
-        (loadfn, loader, (datain, outtype), kwargs)
+        (post, f, (loader, input, outtype))
     end)
 ```
 
 Should you wish to automatically commit each write:
-```
-# TODO update
+```julia
 writecommittransducer = DataTransducer(
-    function(writer::DataWriter{:filesystem}, writefn::typeof(write), (output, info)::Tuple{Any, Any}, kwargs)
-        writecommit(writer, output::Any, info) =
-          (writefn(writer, output, info); run(`git commit \$output`))
-        (writer, writefn, (output, info), kwargs)
+    function(post::Function, f::typeof(write), writer::DataWriter{:filesystem}, output, info)
+        function writecommit(result)
+            run(`git commit \$output`)
+            result
+        end
+        (writecommit ∘ post, writefn, (output, info))
     end)
 ```
 """
