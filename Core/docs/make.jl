@@ -31,5 +31,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/tecosaur/DataToolkitBase.jl"
+    repo="github.com/tecosaur/DataToolkitBase.jl",
+    devbranch = "main"
 )
