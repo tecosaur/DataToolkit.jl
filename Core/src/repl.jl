@@ -1,5 +1,38 @@
 using REPL, REPL.LineEdit
 
+const REPL_KEY = '}'
+const REPL_NAME = :DataRepl
+const REPL_PROMPTSTYLE = Base.text_colors[:magenta]
+
+"""
+A command that can be used in the `data>` REPL (accessible through '$REPL_KEY').
+
+A `ReplCmd` must have a:
+- `name`, a symbol designating the command keyword.
+- `description`, a string giving a short overview of the functionality.
+- `execute`, a function which will perform the command's action. The function
+  must take a single argument, the rest of the command as an `AbstractString`
+  (for example, 'cmd arg1 arg2' will call the execute function with "arg1 arg2").
+
+A `ReplCmd` may also (optionally) have a `shorthand` which triggers the command.
+
+# Constructors
+
+```julia
+ReplCmd{name::Symbol}(shorthand::Union{String, Nothing}, description::String, execute::Function)
+ReplCmd{name::Symbol}(description::String, execute::Function)
+ReplCmd(name::Union{Symbol, String}, shorthand::Union{String, Nothing}, description::String, execute::Function)
+ReplCmd(name::Union{Symbol, String}, description::String, execute::Function)
+```
+
+# Methods
+
+```julia
+help(::ReplCmd) # -> print detailed help
+allcompletions(::ReplCmd, sofar::AbstractString) # -> list all candidates
+completions(::ReplCmd, sofar::AbstractString) # -> list relevant candidates
+```
+"""
 struct ReplCmd{name}
     shorthand::Union{String, Nothing}
     description::String
@@ -13,11 +46,10 @@ ReplCmd(name::Union{Symbol, String}, args...) =
     ReplCmd{Symbol(name)}(args...)
 
 help(r::ReplCmd) = println(stderr, r.description)
-completions(::ReplCmd, ::AbstractString) = String[]
+completions(r::ReplCmd, sofar::AbstractString) =
+    filter(s -> startswith(sofar, s), allcompletions(r, sofar))
+allcompletions(::ReplCmd, ::AbstractString) = String[]
 
-const REPL_KEY = '}'
-const REPL_NAME = :DataRepl
-const REPL_PROMPTSTYLE = Base.text_colors[:magenta]
 const REPL_CMDS = ReplCmd[]
 
 function find_repl_cmd(cmd::AbstractString)
@@ -35,6 +67,10 @@ function execute_repl_cmd(line::AbstractString)
         cmd_parts[1], ""
     else
         cmd_parts
+    end
+    if startswith(cmd, "?") # help is special
+        rest = cmd[2:end] * rest
+        cmd = "help"
     end
     repl_cmd = find_repl_cmd(cmd)
     if isnothing(repl_cmd)
@@ -194,9 +230,8 @@ push!(REPL_CMDS,
               "Display help information on the availible data commands.",
               help_show))
 
-completions(::ReplCmd{:help}, rest::AbstractString) =
-    filter(name -> startswith(name, rest),
-           map(c -> String(first(typeof(c).parameters)), REPL_CMDS))
+allcompletions(::ReplCmd{:help}, rest::AbstractString) =
+    map(c -> String(first(typeof(c).parameters)), REPL_CMDS)
 
 # list
 
@@ -221,9 +256,8 @@ push!(REPL_CMDS,
               "List the datasets in a certain collection.",
               list_datasets))
 
-completions(::ReplCmd{:list}, rest::AbstractString) =
-    filter(cn -> !isnothing(cn) && startswith(cn, rest),
-           map(c -> c.name, STACK))
+allcompletions(::ReplCmd{:list}, rest::AbstractString) =
+    filter(cn -> !isnothing(cn), map(c -> c.name, STACK))
 
 help(r::ReplCmd{:list}) = println(stderr,
     r.description, "\n",

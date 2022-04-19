@@ -13,7 +13,7 @@ export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
 
 # For plugin packages
 export PLUGINS, Plugin, fromspec, DataTransducer, DataTransducerAmalgamation
-export ReplCmd, REPL_CMDS, help, completions
+export ReplCmd, REPL_CMDS, help, completions, allcompletions
 
 include("types.jl")
 include("globals.jl")

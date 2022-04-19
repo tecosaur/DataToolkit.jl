@@ -16,10 +16,6 @@ const STACK = DataCollection[]
 
 # For use in construction
 
-const DATASET_DEFAULTS = Dict{String, Any}(
-    "recency" => -1,
-    "store" => "global")
-
 const GLOBAL_STORE = nothing
 
 """
