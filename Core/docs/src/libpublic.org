@@ -1,0 +1,17 @@
+#+title: Public API
+
+* Read/Write Information
+
+#+begin_src @docs
+read
+#+end_src
+
+#+begin_src @docs
+write
+#+end_src
+
+* Open storage handle
+
+#+begin_src @docs
+open
+#+end_src
