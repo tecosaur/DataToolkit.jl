@@ -18,6 +18,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/tecosaur/DataToolkit.jl",
-    push_preview=true
+    repo="github.com/tecosaur/DataToolkitBase.jl"
 )
