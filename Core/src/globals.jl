@@ -7,12 +7,12 @@ const LATEST_DATA_CONFIG_VERSION = 1
 """
 The set of plugins currently availible.
 """
-const PLUGINS = Vector{Plugin}()
+const PLUGINS = Plugin[]
 
 """
 The set of data collections currently availible.
 """
-const COLLECTION_STACK = Dict{Union{String, Nothing}, DataCollection}()
+const STACK = DataCollection[]
 
 # For use in construction
 
@@ -31,6 +31,12 @@ const DEFAULT_DATATRANSFORMER_PRIORITY = 1
 The default `priority` field value for `DataTransducer`s.
 """
 const DEFAULT_DATATRANSDUCER_PRIORITY = 1
+
+const DATASET_REFERENCE_WRAPPER = ("💾DATASET<<<", ">>>")
+const DATASET_REFERENCE_REGEX =
+    Regex(string("^", DATASET_REFERENCE_WRAPPER[1],
+                 "(.+)", DATASET_REFERENCE_WRAPPER[2],
+                 "\$"))
 
 # For use in interpretation
 
@@ -61,6 +67,6 @@ this Dict under the following keys:
 - `:transformer` for `AbstractDataTransformer`
 """
 const DATA_CONFIG_RESERVED_ATTRIBUTES =
-    Dict(:collection => ["data_config_version", "name", "uuid", "data"],
+    Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "data"],
          :dataset => ["uuid", "store", "storage", "loader", "writer"],
          :transformer => ["driver", "supports", "priority"])

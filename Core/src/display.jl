@@ -1,7 +1,22 @@
-function Base.show(io::IO, dsi::Identifier)
-    if !isnothing(dsi.layer)
-        printstyled(io, dsi.layer, ':', color=:magenta)
+function displaytable(rows::Vector{<:Vector}; spacing::Integer=2)
+    column_widths =
+        maximum.(textwidth.(string.(getindex.(rows, i)))
+                 for i in 1:length(rows[1]))
+    map(rows) do row
+        join([rpad(col, width) for (col, width) in zip(row, column_widths)],
+             ' '^spacing)
     end
+end
+
+function displaytable(headers::Vector, rows::Vector{<:Vector};
+                      spacing::Integer=2)
+    rows = displaytable(vcat([headers], rows); spacing)
+    rule = '─'^length(rows[1])
+    vcat("\e[1m" * rows[1] * "\e[0m", rule, rows[2:end])
+end
+
+function Base.show(io::IO, dsi::Identifier)
+    printstyled(io, something(dsi.collection, "■"), ':', color=:magenta)
     print(io, dsi.dataset)
     # if !isnothing(dsi.version)
     #     printstyled(io, '@', color=:cyan)
@@ -14,23 +29,37 @@ function Base.show(io::IO, dsi::Identifier)
     #     printstyled(io, '#', string(dsi.hash, base=16), color=:light_black)
     # end
     if !isnothing(dsi.type)
-        printstyled(io, "::", dsi.type, color=:yellow)
+        printstyled(io, "::", string(dsi.type), color=:yellow)
     end
 end
 
 function Base.show(io::IO, adt::AbstractDataTransformer)
     adtt = typeof(adt)
+    get(io, :omittype, false) || print(io, nameof(adtt), '{')
     printstyled(io, first(adtt.parameters), color=:green)
-    get(io, :omittype, false) || print(io, ' ', nameof(adtt))
     if adt isa DataStorage
         return
     end
-    print(io, " (")
+    get(io, :omittype, false) || print(io, '}')
+    print(io, "(")
     for qtype in adt.supports
         printstyled(io, qtype.name, color=:yellow)
         qtype === last(adt.supports) || print(io, ", ")
     end
-    print(io, ')')
+    print(io, ")")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", ::DataTransducer{C, F}) where {C, F}
+    print(io, "DataTransducer{$C, $F}")
+end
+
+function Base.show(io::IO, p::Plugin)
+    print(io, "Plugin(")
+    show(io, p.name)
+    print(io, ", [")
+    context(::DataTransducer{C, F}) where {C, F} = (C, F)
+    print(io, join(string.(context.(p.transducers)), ", "))
+    print(io, "])")
 end
 
 function Base.show(io::IO, dta::DataTransducerAmalgamation)
@@ -89,7 +118,7 @@ function Base.show(io::IO, datacollection::DataCollection)
     if !isnothing(datacollection.name)
         printstyled(io, ' ', datacollection.name, color=:magenta)
     end
-    if !isnothing(datacollection.writer)
+    if !isnothing(datacollection.path)
         printstyled(io, " (writable)", color=:light_black)
     end
     if !isempty(datacollection.plugins)
