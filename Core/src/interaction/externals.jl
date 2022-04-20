@@ -83,7 +83,7 @@ function Base.read(dataset::DataSet, as::Type)
                 for storage_type in validstoragetypes
                     datahandle = open(dataset, storage_type; write = false)
                     if !isnothing(datahandle)
-                        return dataset.collection.transduce(
+                        return dataset.collection.advise(
                             load, loader, datahandle, as)
                     end
                 end
@@ -162,7 +162,7 @@ function Base.open(data::DataSet, as::Type; write::Bool=false)
     qtype = QualifiedType(as)
     for storage_provider in data.storage
         if qtype in storage_provider.supports
-            return data.collection.transduce(
+            return data.collection.advise(
                 storage, storage_provider, as; write)
         end
     end
@@ -207,7 +207,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
                 for storage_type in validstoragetypes
                     datahandle = open(dataset, storage_type; write = true)
                     if !isnothing(datahandle)
-                        return dataset.collection.transduce(
+                        return dataset.collection.advise(
                             writeinfo, writer, datahandle, info)
                     end
                 end

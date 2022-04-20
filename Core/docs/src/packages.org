@@ -1,0 +1,50 @@
+#+title: Using Packages
+
+It is entirely likely that in the course of writing a package providing a custom
+data transformer, one would come across packages that /may/ be needed.
+
+Every possibly desired package could be shoved into the list of dependences, but
+this is a somewhat crude approach. A more granular approach is enabled with two
+macros, ~@addpkg~ and ~@use~.
+
+* Letting DataToolkitBase know about extra packages
+
+#+begin_src @docs
+@addpkg
+#+end_src
+
+* Using extra packages
+
+#+begin_src @docs
+@use
+#+end_src
+
+* Example
+
+#+begin_src julia
+module DataToolkitExample
+
+using DataToolkitBase
+using DataFrame
+
+function __init__()
+    @addpkg CSV "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+    @addpkg DelimitedFiles "8bb1440f-4735-579b-a4ab-409b98df4dab"
+end
+
+function load(::DataLoader{:csv}, from::IOStream, ::Type{DataFrame})
+    @use CSV
+    result = CSV.read(from, DataFrame)
+    close(from)
+    result
+end
+
+function load(::DataLoader{:delimcsv}, from::IOStream, ::Type{DataFrame})
+    @use DelimitedFiles
+    result = DelimitedFiles.readdlm(from, ',', DataFrame)
+    close(from)
+    result
+end
+
+end
+#+end_src

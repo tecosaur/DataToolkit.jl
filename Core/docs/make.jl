@@ -10,6 +10,7 @@ for orgfile in orgfiles
     read(orgfile, String) |>
         c -> Org.parse(OrgDoc, c) |>
         o -> sprint(markdown, o) |>
+        s -> replace(s, r"\.org]" => ".md]") |>
         m -> write(mdfile, m)
 end
 
@@ -19,9 +20,10 @@ makedocs(;
     pages=[
         "Introduction" => "index.md",
         "REPL" => "repl.md",
+        "Packages" => "packages.md",
         "Library" => Any[
             "Public" => "libpublic.md",
-            "Data Transduction" => "transducing.md",
+            "Data Advice" => "advising.md",
             "Internals" => "libinternal.md",
         ],
     ],

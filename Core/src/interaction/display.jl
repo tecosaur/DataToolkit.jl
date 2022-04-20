@@ -49,21 +49,21 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     print(io, ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", ::DataTransducer{C, F}) where {C, F}
-    print(io, "DataTransducer{$C, $F}")
+function Base.show(io::IO, ::MIME"text/plain", ::DataAdvice{C, F}) where {C, F}
+    print(io, "DataAdvice{$C, $F}")
 end
 
 function Base.show(io::IO, p::Plugin)
     print(io, "Plugin(")
     show(io, p.name)
     print(io, ", [")
-    context(::DataTransducer{C, F}) where {C, F} = (C, F)
-    print(io, join(string.(context.(p.transducers)), ", "))
+    context(::DataAdvice{C, F}) where {C, F} = (C, F)
+    print(io, join(string.(context.(p.advisers)), ", "))
     print(io, "])")
 end
 
-function Base.show(io::IO, dta::DataTransducerAmalgamation)
-    get(io, :omittype, false) || print(io, "DataTransducerAmalgamation(")
+function Base.show(io::IO, dta::DataAdviceAmalgamation)
+    get(io, :omittype, false) || print(io, "DataAdviceAmalgamation(")
     for plugin in dta.plugins_wanted
         if plugin in dta.plugins_used
             print(io, plugin, ' ')
@@ -124,7 +124,7 @@ function Base.show(io::IO, datacollection::DataCollection)
     if !isempty(datacollection.plugins)
         print(io, "\n  Plugins: ")
         show(IOContext(io, :compact => true, :omittype => true),
-             datacollection.transduce)
+             datacollection.advise)
     end
     print(io, "\n  Stores: ", join(getfield.(datacollection.stores, :name), ", "))
     print(io, "\n  Data sets:")

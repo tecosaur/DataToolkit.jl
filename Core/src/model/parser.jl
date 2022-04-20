@@ -1,5 +1,9 @@
-function QualifiedType(t::AbstractString)
-    components = split(t, '.')
+# ---------------
+# QualifiedType
+# ---------------
+
+function Base.parse(::Type{QualifiedType}, spec::AbstractString)
+    components = split(spec, '.')
     parentmodule, name = if length(components) == 1
         n = Symbol(components[1])
         Symbol(Base.binding_module(Main, n)), n
@@ -11,28 +15,31 @@ function QualifiedType(t::AbstractString)
     QualifiedType(parentmodule, name)
 end
 
-QualifiedType(::Type{T}) where {T} =
-    QualifiedType(Symbol(parentmodule(T)), nameof(T))
+# ---------------
+# Identifier
+# ---------------
 
-QualifiedType(qt::QualifiedType) = qt
+function Base.parse(::Type{Identifier}, spec::AbstractString; advised::Bool=false)
+    collection, rest::SubString{String} = match(r"^(?:([^:]+):)?([^:].*)?$", spec).captures
+    collection_isuuid = !isnothing(collection) && !isnothing(match(r"^[0-9a-f]{8}-[0-9a-f]{4}$", collection))
+    if !isnothing(collection) && !advised
+        return getlayer(collection).advise(parse, Identifier, spec, advised=true)
+    end
+    dataset, rest = match(r"^([^:@#]+)(.*)$", rest).captures
+    dtype = match(r"^(?:::([A-Za-z0-9\.]+))?$", rest).captures[1]
+    dataset_isuuid = !isnothing(match(r"^[0-9a-f]{8}-[0-9a-f]{4}$", dataset))
+    Identifier(if collection_isuuid; UUID(collection) else collection end,
+               if dataset_isuuid UUID(dataset) else dataset end,
+               if !isnothing(dtype) parse(QualifiedType, dtype) end,
+               Dict{String,Any}())
+end
 
-Identifier(ident::Identifier, params::Dict{String, Any}; replace::Bool=false) =
-    Identifier(ident.collection,
-               ident.dataset,
-               ident.type,
-               if replace; params else merge(ident.parameters, params) end)
-
-Identifier(spec::AbstractString) = parse(Identifier, spec)
-
-Identifier(spec::AbstractString, params::Dict{String, Any}) =
-    Identifier(Identifier(spec), params)
-
-# function (ADT::Type{<:AbstractDataTransformer})(collection::DataCollection, spec::Dict{String, Any})
-#     collection.transduce(fromspec, ADT, collection, spec)
-# end
+# ---------------
+# DataTransformers
+# ---------------
 
 function (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any})
-    dataset.collection.transduce(fromspec, ADT, dataset, spec)
+    dataset.collection.advise(fromspec, ADT, dataset, spec)
 end
 
 function fromspec(ADT::Type{<:AbstractDataTransformer},
@@ -48,37 +55,35 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     delete!(parameters, "driver")
     delete!(parameters, "supports")
     delete!(parameters, "priority")
-    dataset.collection.transduce(
+    dataset.collection.advise(
         identity,
         ADT{driver}(dataset, supports, priority,
                     dataset_parameters(dataset, Val(:extract), parameters)))
 end
+
+# function (ADT::Type{<:AbstractDataTransformer})(collection::DataCollection, spec::Dict{String, Any})
+#     collection.advise(fromspec, ADT, collection, spec)
+# end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
                     supports::Vector{QualifiedType}, priority::Int,
                     parameters::Dict{String, Any}) where {driver} =
     DataStorage{driver, typeof(dataset)}(dataset, supports, priority, parameters)
 
-DataTransducer(f::Function) =
-    DataTransducer(DEFAULT_DATATRANSDUCER_PRIORITY, f)
+# -- Data Store
 
-DataTransducerAmalgamation(plugins::Vector{String}) =
-    DataTransducerAmalgamation(identity, DataTransducer[], plugins, String[])
+# function DataStore(collection::DataCollection, spec::Dict{String, Any})
+#     DataStore(get(spec, "name", "global"),
+#               DataStorage(collection, delete!(copy(spec), "name")))
+# end
 
-DataTransducerAmalgamation(collection::DataCollection) =
-    DataTransducerAmalgamation(collection.plugins)
-
-DataTransducerAmalgamation(dta::DataTransducerAmalgamation) = # for re-building
-    DataTransducerAmalgamation(dta.plugins_wanted)
-
-function DataStore(collection::DataCollection, spec::Dict{String, Any})
-    DataStore(get(spec, "name", "global"),
-              DataStorage(collection, delete!(copy(spec), "name")))
-end
+# ---------------
+# DataCollection
+# ---------------
 
 function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing)
     plugins = get(get(spec, "data", Dict("data" => Dict())), "plugins", String[])
-    DataTransducerAmalgamation(plugins)(fromspec, DataCollection, spec; path)
+    DataAdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path)
 end
 
 function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{String, Nothing}=nothing)
@@ -102,7 +107,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{S
     end
     collection = DataCollection(version, name, uuid, plugins,
                                 DataStore[], parameters, DataSet[], path,
-                                DataTransducerAmalgamation(plugins))
+                                DataAdviceAmalgamation(plugins))
     for store in stores
         push!(collection.stores, DataStore(collection, store))
     end
@@ -116,16 +121,20 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{S
             push!(collection.datasets, DataSet(collection, name, dspec))
         end
     end
-    collection.transduce(identity, collection)
+    collection.advise(identity, collection)
 end
 
+# ---------------
+# DataSet
+# ---------------
+
 function DataSet(collection::DataCollection, name::String, spec::Dict{String, Any})
-    collection.transduce(fromspec, DataSet, collection, name, spec)
+    collection.advise(fromspec, DataSet, collection, name, spec)
 end
 
 function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
     uuid = UUID(get(spec, "uuid", uuid4()))
-    store = get(spec, "store", collection.defaults["store"])
+    store = get(spec, "store", "DEFAULTSTORE")
     parameters = copy(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
         delete!(parameters, reservedname)
@@ -141,5 +150,5 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
         end
         sort!(getfield(dataset, afield), by=a->a.priority)
     end
-    collection.transduce(identity, dataset)
+    collection.advise(identity, dataset)
 end

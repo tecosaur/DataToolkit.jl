@@ -5,14 +5,19 @@ when reading any Data.toml files which do not set `data_config_version`.
 const LATEST_DATA_CONFIG_VERSION = 1
 
 """
+The set of data collections currently availible.
+"""
+const STACK = DataCollection[]
+
+"""
 The set of plugins currently availible.
 """
 const PLUGINS = Plugin[]
 
 """
-The set of data collections currently availible.
+TODO document
 """
-const STACK = DataCollection[]
+const EXTRA_PACKAGES = Dict{Module, Dict{Symbol, Base.PkgId}}()
 
 # For use in construction
 
@@ -24,9 +29,9 @@ The default `priority` field value for instances of `AbstractDataTransformer`.
 const DEFAULT_DATATRANSFORMER_PRIORITY = 1
 
 """
-The default `priority` field value for `DataTransducer`s.
+The default `priority` field value for `DataAdvice`s.
 """
-const DEFAULT_DATATRANSDUCER_PRIORITY = 1
+const DEFAULT_DATA_ADVISOR_PRIORITY = 1
 
 const DATASET_REFERENCE_WRAPPER = ("💾DATASET<<<", ">>>")
 const DATASET_REFERENCE_REGEX =

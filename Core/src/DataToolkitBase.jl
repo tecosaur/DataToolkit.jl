@@ -10,22 +10,28 @@ export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataStore, DataCollection, QualifiedType, Identifier
 export load, storage, getstorage, putstorage, writeinfo
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
+export @use, @addpkg
 
 # For plugin packages
-export PLUGINS, Plugin, fromspec, DataTransducer, DataTransducerAmalgamation
+export PLUGINS, Plugin, fromspec, DataAdvice, DataAdviceAmalgamation
 export ReplCmd, REPL_CMDS, help, completions, allcompletions
 
-include("types.jl")
-include("globals.jl")
-include("constructors.jl")
+include("model/types.jl")
+include("model/globals.jl")
 
-include("display.jl")
+include("model/qualifiedtype.jl")
+include("model/identification.jl")
+include("model/advice.jl")
+include("model/parameters.jl")
+include("model/stack.jl")
+include("model/parser.jl")
+include("model/writer.jl")
+include("model/usepkg.jl")
+include("model/datatree.jl")
 
-include("internals.jl")
-include("externals.jl")
-include("writer.jl")
-
-include("repl.jl")
+include("interaction/externals.jl")
+include("interaction/display.jl")
+include("interaction/repl.jl")
 
 function __init__()
     isinteractive() && init_repl()

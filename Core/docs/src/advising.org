@@ -1,21 +1,21 @@
-#+title: Data Transduction
+#+title: Data Advising
 
-* Transduction
+* Advice
 
 #+begin_src @docs
-DataTransducer
+DataAdvice
 #+end_src
 
-* Transduction points
+* Advisement points
 
 ** Construction of data sets and collections
 
-~DataCollection~​s, ~DataStore~​s, and ~AbstractDataTransformer~​s are transduced at two
+~DataCollection~​s, ~DataStore~​s, and ~AbstractDataTransformer~​s are advised at two
 stages during construction:
 1. When calling ~fromspec~ on the ~Dict~ representation, at the start of construction
 2. At the end of construction, calling ~identity~ on the object
 
-The signatures of the transduced function calls are as follows:
+The signatures of the advised function calls are as follows:
 #+begin_src julia
 fromspec(DataCollection, spec::Dict{String, Any}; path::Union{String, Nothing})
 identity(DataCollection)
@@ -33,15 +33,15 @@ identity(ADT::AbstractDataTransformer)
 
 ** Processing identifiers
 
-Both the parsing of an ~Identifier~ from a string, and the serialisation of an ~Identifier~ to a string are transduced. Specifically, the following function calls:
+Both the parsing of an ~Identifier~ from a string, and the serialisation of an ~Identifier~ to a string are advised. Specifically, the following function calls:
 #+begin_src julia
-parse(Identifier, spec::AbstractString, transduced=true)
+parse(Identifier, spec::AbstractString, advised=true)
 string(ident::Identifier)
 #+end_src
 
 ** The data flow arrows
 
-The reading, writing, and storage of data may all be transduced. Specifically,
+The reading, writing, and storage of data may all be advised. Specifically,
 the following function calls:
 #+begin_src julia
 load(loader::DataLoader, datahandle, as::Type)
