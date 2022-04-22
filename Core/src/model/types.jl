@@ -291,5 +291,5 @@ struct DataCollection
     parameters::Dict{String, Any}
     datasets::Vector{DataSet}
     path::Union{String, Nothing}
-    transduce::DataAdviceAmalgamation
+    advise::DataAdviceAmalgamation
 end

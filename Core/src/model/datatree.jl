@@ -3,6 +3,9 @@ using AbstractTrees
 function AbstractTrees.children(dataset::DataSet)
     dataset_references = Identifier[]
     add_datasets!(dataset_references, dataset.parameters)
+    for paramsource in vcat(dataset.storage, dataset.loaders, dataset.writers)
+        add_datasets!(dataset_references, paramsource.parameters)
+    end
     resolve.(Ref(dataset.collection), dataset_references,
              resolvetype=false)
 end

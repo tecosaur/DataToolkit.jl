@@ -19,13 +19,15 @@ makedocs(;
     format=Documenter.HTML(),
     pages=[
         "Introduction" => "index.md",
+        "Usage" => "usage.md",
+        "Data.toml" => "datatoml.md",
         "REPL" => "repl.md",
-        "Packages" => "packages.md",
-        "Library" => Any[
-            "Public" => "libpublic.md",
+        "Extensions" => Any[
+            "Transformer backends" => "newtransformer.md",
+            "Packages" => "packages.md",
             "Data Advice" => "advising.md",
-            "Internals" => "libinternal.md",
         ],
+        "Internals" => "libinternal.md",
     ],
     repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
     sitename="DataSets.jl",

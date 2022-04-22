@@ -1,16 +1,20 @@
-#+title: Public API
+#+title: Usage
 
-* Read/Write Information
+* Identifying a dataset
+
+* Reading datasets
 
 #+begin_src @docs
 read
 #+end_src
 
+* Writing datasets
+
 #+begin_src @docs
 write
 #+end_src
 
-* Open storage handle
+* Accessing the raw data
 
 #+begin_src @docs
 open

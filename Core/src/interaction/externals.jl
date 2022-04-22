@@ -18,6 +18,24 @@ function loadcollection!(source::Any)
     nothing
 end
 
+function dataset(ident_str::AbstractString, parameters::Dict{String, Any})
+    ident = Identifier(ident_str, parameters)
+    resolve(ident)
+end
+
+dataset(ident_str::AbstractString; kwparams...) =
+    dataset(ident_str, Dict{String, Any}(String(k) => v for (k, v) in kwparams))
+
+function dataset(collection::DataCollection, ident_str::AbstractString, parameters::Dict{String, Any})
+    ident = Identifier(ident_str, parameters)
+    resolve(collection, ident)
+end
+
+dataset(collection::DataCollection, ident_str::AbstractString; kwparams...) =
+    dataset(collection, ident_str,
+            Dict{String, Any}(String(k) => v for (k, v) in kwparams))
+
+
 """
     read(filename::AbstractString, DataCollection; writer::Union{Function, Nothing})
 Read the entire contents of a file as a `DataCollection`.
@@ -70,7 +88,8 @@ TODO explain further
 function Base.read(dataset::DataSet, as::Type)
     all_load_functions = methods(load, Tuple{DataLoader, Any, Any})
     qtype = QualifiedType(as)
-    potential_loaders = filter(loader -> qtype in loader.supports, dataset.loaders)
+    potential_loaders =
+        filter(loader -> any(st -> st ⊆ qtype, loader.supports), dataset.loaders)
     for loader in potential_loaders
         load_functions =
             filter(l -> loader isa Base.unwrap_unionall(l.sig).types[2],
@@ -78,9 +97,12 @@ function Base.read(dataset::DataSet, as::Type)
         for storage in dataset.storage
             for load_func in load_functions
                 load_func_sig = Base.unwrap_unionall(load_func.sig)
-                validstoragetypes = filter(stype -> stype <: load_func_sig.types[3],
-                                           convert.(Type, storage.supports))
-                for storage_type in validstoragetypes
+                supported_storage_types = Vector{Type}(
+                    filter(!isnothing, convert.(Type, storage.supports)))
+                valid_storage_types =
+                    filter(stype -> stype <: load_func_sig.types[3],
+                           supported_storage_types)
+                for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
                     if !isnothing(datahandle)
                         return dataset.collection.advise(
@@ -110,23 +132,6 @@ function Base.read(ident::Identifier)
     read(ident, convert(Type, ident.type))
 end
 
-function dataset(ident_str::AbstractString, parameters::Dict{String, Any})
-    ident = Identifier(ident_str, parameters)
-    resolve(ident)
-end
-
-dataset(ident_str::AbstractString; kwparams...) =
-    dataset(ident_str, Dict{String, Any}(String(k) => v for (k, v) in kwparams))
-
-function dataset(collection::DataCollection, ident_str::AbstractString, parameters::Dict{String, Any})
-    ident = Identifier(ident_str, parameters)
-    resolve(collection, ident)
-end
-
-dataset(collection::DataCollection, ident_str::AbstractString; kwparams...) =
-    dataset(collection, ident_str,
-            Dict{String, Any}(String(k) => v for (k, v) in kwparams))
-
 """
     load(loader::DataLoader{driver}, source::Any, as::Type)
 Using a certain `loader`, obtain information in the form of
@@ -147,9 +152,12 @@ load((loader, source, as)::Tuple{DataLoader, Any, Type}) =
     load(loader, source, as)
 
 """
-    open(dataset::DataSet, as::Type)
+    open(dataset::DataSet, as::Type; write::Bool=false)
 Obtain the data of `dataset` in the form of `as`, with the appropriate storage
 provider automatically selected.
+
+A `write` flag is also provided, to help the driver pick a more appropriate form
+of `as`.
 
 This executes this component of the overall data flow:
 ```
@@ -159,9 +167,8 @@ Storage ◀────▶ Data          Information
 ```
 """
 function Base.open(data::DataSet, as::Type; write::Bool=false)
-    qtype = QualifiedType(as)
     for storage_provider in data.storage
-        if qtype in storage_provider.supports
+        if any(t -> as ⊆ t, storage_provider.supports)
             return data.collection.advise(
                 storage, storage_provider, as; write)
         end
@@ -179,11 +186,11 @@ function storage(storer::DataStorage, as::Type; write::Bool=false)
 end
 
 function getstorage(::DataStorage{driver}, ::T) where {driver, T}
-    throw(error("No $driver storage reader is defined for $T"))
+    throw(error("No '$driver' storage reader is defined for $T"))
 end
 
 function putstorage(::DataStorage{driver}, ::T) where {driver, T}
-    throw(error("No $driver storage writer is defined for $T"))
+    throw(error("No '$driver' storage writer is defined for $T"))
 end
 
 """
@@ -191,7 +198,7 @@ end
 TODO write docstring
 """
 function Base.write(dataset::DataSet, info::T) where {T}
-    all_write_functions = methods(writeinfo, Tuple{DataWriter, Any, Any})
+    all_write_functions = methods(save, Tuple{DataWriter, Any, Any})
     qtype = QualifiedType(T)
     potential_writers =
         filter(writer -> any(st -> qtype ⊆ st, writer.supports), dataset.writers)
@@ -202,13 +209,16 @@ function Base.write(dataset::DataSet, info::T) where {T}
         for storage in dataset.storage
             for write_func in write_functions
                 write_func_sig = Base.unwrap_unionall(write_func.sig)
-                validstoragetypes = filter(stype -> stype <: write_func_sig.types[3],
-                                           convert.(Type, storage.supports))
-                for storage_type in validstoragetypes
+                supported_storage_types = Vector{Type}(
+                    filter(!isnothing, convert.(Type, storage.supports)))
+                valid_storage_types =
+                    filter(stype -> stype <: write_func_sig.types[3],
+                           supported_storage_types)
+                for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = true)
                     if !isnothing(datahandle)
                         return dataset.collection.advise(
-                            writeinfo, writer, datahandle, info)
+                            save, writer, datahandle, info)
                     end
                 end
             end
@@ -221,8 +231,19 @@ function Base.write(dataset::DataSet, info::T) where {T}
     end
 end
 
-function writeinfo(::DataWriter{driver}, ::D, ::T) where {driver, D, T}
+"""
+    save(writer::Datasaveer{driver}, destination::Any, information::Any)
+Using a certain `writer`, save the `information` to the `destination`.
+
+This fufills this component of the overall data flow:
+```
+Data          Information
+  ▲               ╷
+  ╰────writer─────╯
+```
+"""
+function save(::DataWriter{driver}, ::D, ::T) where {driver, D, T}
     error("No $driver to write a $T to a $D is defined")
 end
-writeinfo((writer, dest, info)::Tuple{DataWriter, Any, Any}) =
-    writeinfo(writer, dest, info)
+save((writer, dest, info)::Tuple{DataWriter, Any, Any}) =
+    save(writer, dest, info)

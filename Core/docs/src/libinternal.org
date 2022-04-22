@@ -1,26 +1,40 @@
 #+title: Private API
 
-* Read/Write Information
+* Abstract Data Transformer
 
 #+begin_src @docs
-load
+AbstractDataTransformer
+#+end_src
+
+* Advice Amalgamation
+
+#+begin_src @docs
+DataAdviceAmalgamation
+#+end_src
+
+* Qualified Types
+
+#+begin_src @docs
+QualifiedType
+#+end_src
+* Global variables
+
+#+begin_src @docs
+STACK
 #+end_src
 
 #+begin_src @docs
-writeinfo
-#+end_src
-
-* Open storage handle
-
-#+begin_src @docs
-storage
+PLUGINS
 #+end_src
 
 #+begin_src @docs
-getstorage
+@__MODULE__.EXTRA_PACKAGES
 #+end_src
 
 #+begin_src @docs
-putstorage
+DATA_CONFIG_RESERVED_ATTRIBUTES
 #+end_src
 
+#+begin_src @eval
+DATA_CONFIG_RESERVED_ATTRIBUTES
+#+end_src

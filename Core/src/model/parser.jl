@@ -109,7 +109,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{S
                                 DataStore[], parameters, DataSet[], path,
                                 DataAdviceAmalgamation(plugins))
     for store in stores
-        push!(collection.stores, DataStore(collection, store))
+        # push!(collection.stores, DataStore(collection, store))
     end
     # Construct the data sets
     datasets = copy(spec)

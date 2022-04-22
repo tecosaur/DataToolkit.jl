@@ -46,5 +46,5 @@ the following function calls:
 #+begin_src julia
 load(loader::DataLoader, datahandle, as::Type)
 storage(provider::DataStorage, as::Type; write::Bool)
-writeinfo(writer::DataWriter, datahandle, info)
+save(writer::DataWriter, datahandle, info)
 #+end_src

@@ -37,9 +37,6 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     adtt = typeof(adt)
     get(io, :omittype, false) || print(io, nameof(adtt), '{')
     printstyled(io, first(adtt.parameters), color=:green)
-    if adt isa DataStorage
-        return
-    end
     get(io, :omittype, false) || print(io, '}')
     print(io, "(")
     for qtype in adt.supports
@@ -89,9 +86,14 @@ function Base.show(io::IO, dataset::DataSet)
         print(io, ')')
         return
     end
-    print(io, "DataSet: ")
+    print(io, "DataSet ")
     if !isnothing(dataset.collection.name)
-        printstyled(io, dataset.collection.name, color=:magenta)
+        color = if length(STACK) > 0 && dataset.collection === first(STACK)
+            :light_black
+        else
+            :magenta
+        end
+        printstyled(io, dataset.collection.name; color)
         printstyled(io, ':', color=:light_black)
     end
     printstyled(io, dataset.name, bold=true, color=:blue)

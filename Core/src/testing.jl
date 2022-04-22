@@ -14,7 +14,7 @@
 #     function (loader::DataLoader{:dump}, func::typeof(load), args, kwargs)
 #         (loader, reverse ∘ func, args, kwargs)
 #     end,
-#     function (writer::DataLoader{:dump}, func::typeof(writeinfo), args, kwargs)
+#     function (writer::DataLoader{:dump}, func::typeof(save), args, kwargs)
 #         reverse_info(w, t, i) = (w, t, reverse(i))
 #         (writer, func ∘ reverse_info, args, kwargs)
 #     end,
@@ -30,7 +30,7 @@ push!(PLUGINS, Plugin("rot13", [
          func,
          (loader, from, as))
     end,
-    function (post::Function, func::typeof(writeinfo), writer::DataWriter{:dump}, target, info::AbstractString)
+    function (post::Function, func::typeof(save), writer::DataWriter{:dump}, target, info::AbstractString)
         if get(writer.dataset.parameters, "rot13", false)
             (post, func, (writer, target, rot13(info)))
         else
@@ -39,10 +39,10 @@ push!(PLUGINS, Plugin("rot13", [
     end,
 ]))
 
-function storage(storage::DataStorage{:filesystem}, ::Type{IOStream}; write::Bool=false)
-    file = storage.parameters["path"]
-    open(file; write)
-end
+# function storage(storage::DataStorage{:filesystem}, ::Type{IOStream}; write::Bool=false)
+#     file = storage.parameters["path"]
+#     open(file; write)
+# end
 
 function load(::DataLoader{:dump}, from::IOStream, ::Type{String})
     result = read(from, String)
@@ -50,11 +50,11 @@ function load(::DataLoader{:dump}, from::IOStream, ::Type{String})
     result
 end
 
-function writeinfo(::DataWriter{:dump}, to::IOStream, info::AbstractString)
+function save(::DataWriter{:dump}, to::IOStream, info::AbstractString)
     write(to, info)
     close(to)
 end
 
-function load(::DataLoader{:passthrough}, from::Any, ::Type{Any})
-    from
-end
+# function load(::DataLoader{:passthrough}, from::Any, ::Type{Any})
+#     from
+# end
