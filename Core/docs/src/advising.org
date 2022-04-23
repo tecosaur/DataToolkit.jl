@@ -10,7 +10,7 @@ DataAdvice
 
 ** Construction of data sets and collections
 
-~DataCollection~​s, ~DataStore~​s, and ~AbstractDataTransformer~​s are advised at two
+~DataCollection~​s, ~DataSet~​s, and ~AbstractDataTransformer~​s are advised at two
 stages during construction:
 1. When calling ~fromspec~ on the ~Dict~ representation, at the start of construction
 2. At the end of construction, calling ~identity~ on the object

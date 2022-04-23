@@ -128,7 +128,6 @@ function Base.show(io::IO, datacollection::DataCollection)
         show(IOContext(io, :compact => true, :omittype => true),
              datacollection.advise)
     end
-    print(io, "\n  Stores: ", join(getfield.(datacollection.stores, :name), ", "))
     print(io, "\n  Data sets:")
     for dataset in datacollection.datasets
         print(io, "\n     ")

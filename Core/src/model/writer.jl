@@ -22,20 +22,12 @@ function Base.convert(::Type{Dict}, ds::DataSet)
           dataset_parameters(ds, Val(:encode), ds.parameters))
 end
 
-function Base.convert(::Type{Dict}, s::DataStore)
-    merge(Dict("name" => s.name),
-          convert(Dict, s.storage))
-end
-
 function Base.convert(::Type{Dict}, dc::DataCollection)
     merge(Dict("data_config_version" => dc.version,
                "name" => dc.name,
                "uuid" => string(dc.uuid),
                "plugins" => dc.plugins,
-               "data" => merge(
-                   Dict("store" => convert.(Dict, dc.stores)),
-                   dataset_parameters(dc, Val(:encode), dc.parameters))) |>
-                       d -> filter((k, v)::Pair -> !isnothing(v), d),
+               "data" => dataset_parameters(dc, Val(:encode), dc.parameters)),
           Dict(ds.name => convert(Dict, ds) for ds in dc.datasets))
 end
 

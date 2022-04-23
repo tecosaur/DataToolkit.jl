@@ -28,13 +28,9 @@ PLUGINS
 #+end_src
 
 #+begin_src @docs
-@__MODULE__.EXTRA_PACKAGES
+DataToolkitBase.EXTRA_PACKAGES
 #+end_src
 
 #+begin_src @docs
-DATA_CONFIG_RESERVED_ATTRIBUTES
-#+end_src
-
-#+begin_src @eval
 DATA_CONFIG_RESERVED_ATTRIBUTES
 #+end_src

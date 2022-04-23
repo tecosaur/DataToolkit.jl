@@ -241,16 +241,10 @@ struct Plugin
         new(name, DataAdvice.(advisors))
 end
 
-struct DataStore
-    name::AbstractString
-    storage::DataStorage
-end
-
 struct DataSet
     collection
     name::String
     uuid::UUID
-    store::String
     parameters::Dict{String, Any}
     storage::Vector{DataStorage}
     loaders::Vector{DataLoader}
@@ -287,7 +281,6 @@ struct DataCollection
     name::Union{String, Nothing}
     uuid::UUID
     plugins::Vector{String}
-    stores::Vector{DataStore} # could this be a plugin?
     parameters::Dict{String, Any}
     datasets::Vector{DataSet}
     path::Union{String, Nothing}

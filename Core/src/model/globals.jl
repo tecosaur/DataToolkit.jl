@@ -21,8 +21,6 @@ const EXTRA_PACKAGES = Dict{Module, Dict{Symbol, Base.PkgId}}()
 
 # For use in construction
 
-const GLOBAL_STORE = nothing
-
 """
 The default `priority` field value for instances of `AbstractDataTransformer`.
 """
@@ -38,14 +36,6 @@ const DATASET_REFERENCE_REGEX =
     Regex(string("^", DATASET_REFERENCE_WRAPPER[1],
                  "(.+)", DATASET_REFERENCE_WRAPPER[2],
                  "\$"))
-
-# For use in interpretation
-
-"""
-The file path to the global store, which may be used by `DataStore` and
-`DataStorage` drivers to substitute `@__GLOBALSTORE__`.
-"""
-GLOBAL_STORE_PATH = joinpath(first(DEPOT_PATH), "datastore")
 
 # For plugins / general information
 

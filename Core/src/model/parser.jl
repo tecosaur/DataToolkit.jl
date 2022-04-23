@@ -70,13 +70,6 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
                     parameters::Dict{String, Any}) where {driver} =
     DataStorage{driver, typeof(dataset)}(dataset, supports, priority, parameters)
 
-# -- Data Store
-
-# function DataStore(collection::DataCollection, spec::Dict{String, Any})
-#     DataStore(get(spec, "name", "global"),
-#               DataStorage(collection, delete!(copy(spec), "name")))
-# end
-
 # ---------------
 # DataCollection
 # ---------------
@@ -106,11 +99,8 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{S
                      " prior to DataCollections.")
     end
     collection = DataCollection(version, name, uuid, plugins,
-                                DataStore[], parameters, DataSet[], path,
+                                parameters, DataSet[], path,
                                 DataAdviceAmalgamation(plugins))
-    for store in stores
-        # push!(collection.stores, DataStore(collection, store))
-    end
     # Construct the data sets
     datasets = copy(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:collection]
@@ -139,7 +129,7 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
         delete!(parameters, reservedname)
     end
-    dataset = DataSet(collection, name, uuid, store,
+    dataset = DataSet(collection, name, uuid,
                       dataset_parameters(collection, Val(:extract), parameters),
                       DataStorage[], DataLoader[], DataWriter[])
     for (attr, afield, atype) in [("storage", :storage, DataStorage),

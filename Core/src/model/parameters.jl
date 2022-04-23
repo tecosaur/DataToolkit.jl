@@ -12,10 +12,10 @@ dataset_parameters(::DataCollection, ::Val, value::Any) = value
 dataset_parameters(dataset::DataSet, action::Val, params::Any) =
     dataset_parameters(dataset.collection, action, params)
 
-function dataset_parameters(::DataCollection, ::Val{:extract}, param::String)
+function dataset_parameters(collection::DataCollection, ::Val{:extract}, param::String)
     dsid_match = match(DATASET_REFERENCE_REGEX, param)
     if !isnothing(dsid_match)
-        Identifier(dsid_match.captures[1])
+        collection.advise(parse, Identifier, dsid_match.captures[1])
     else
         param
     end
