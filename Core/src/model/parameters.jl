@@ -12,6 +12,9 @@ dataset_parameters(::DataCollection, ::Val, value::Any) = value
 dataset_parameters(dataset::DataSet, action::Val, params::Any) =
     dataset_parameters(dataset.collection, action, params)
 
+dataset_parameters(adt::AbstractDataTransformer, action::Val, params::Any) =
+    dataset_parameters(adt.dataset.collection, action, params)
+
 function dataset_parameters(collection::DataCollection, ::Val{:extract}, param::String)
     dsid_match = match(DATASET_REFERENCE_REGEX, param)
     if !isnothing(dsid_match)
@@ -31,7 +34,7 @@ function dataset_parameters(collection::DataCollection, ::Val{:encode}, param::I
            DATASET_REFERENCE_WRAPPER[2])
 end
 
-function Base.get(dataobj::Union{DataSet, DataCollection},
+function Base.get(dataobj::Union{DataSet, DataCollection, <:AbstractDataTransformer},
                   property::AbstractString, default=nothing)
     if haskey(dataobj.parameters, property)
         dataset_parameters(dataobj, Val(:resolve), dataobj.parameters[property])
@@ -40,5 +43,6 @@ function Base.get(dataobj::Union{DataSet, DataCollection},
     end
 end
 
-Base.get(dataobj::Union{DataSet, DataCollection}, ::typeof(:)) =
+Base.get(dataobj::Union{DataSet, DataCollection, <:AbstractDataTransformer},
+         ::typeof(:)) =
     dataset_parameters(dataobj, Val(:resolve), dataobj.parameters)
