@@ -13,7 +13,7 @@ export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
 export @use, @addpkg
 
 # For plugin packages
-export PLUGINS, Plugin, fromspec, DataAdvice, DataAdviceAmalgamation
+export PLUGINS, Plugin, fromspec, tospec, DataAdvice, DataAdviceAmalgamation
 export ReplCmd, REPL_CMDS, help, completions, allcompletions
 
 include("model/types.jl")

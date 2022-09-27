@@ -7,12 +7,20 @@ function Base.string(q::QualifiedType)
 end
 
 function Base.convert(::Type{Dict}, adt::AbstractDataTransformer)
+    adt.dataset.collection.advise(tospec, adt)
+end
+
+function tospec(adt::AbstractDataTransformer)
     merge(Dict("supports" => string.(adt.supports),
                "priority" => adt.priority),
         dataset_parameters(adt.dataset, Val(:encode), adt.parameters))
 end
 
 function Base.convert(::Type{Dict}, ds::DataSet)
+    ds.collection.advise(tospec, ds)
+end
+
+function tospec(ds::DataSet)
     merge(Dict("uuid" => string(ds.uuid),
                "store" => ds.store,
                "storage" => convert.(Dict, ds.storage),
@@ -23,6 +31,10 @@ function Base.convert(::Type{Dict}, ds::DataSet)
 end
 
 function Base.convert(::Type{Dict}, dc::DataCollection)
+    dc.advise(tospec, dc)
+end
+
+function tospec(dc::DataCollection)
     merge(Dict("data_config_version" => dc.version,
                "name" => dc.name,
                "uuid" => string(dc.uuid),

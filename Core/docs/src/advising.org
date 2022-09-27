@@ -8,27 +8,33 @@ DataAdvice
 
 * Advisement points
 
-** Construction of data sets and collections
+** Parsing and serialisation of data sets and collections
 
 ~DataCollection~​s, ~DataSet~​s, and ~AbstractDataTransformer~​s are advised at two
-stages during construction:
-1. When calling ~fromspec~ on the ~Dict~ representation, at the start of construction
-2. At the end of construction, calling ~identity~ on the object
+stages during parsing:
+1. When calling ~fromspec~ on the ~Dict~ representation, at the start of parsing
+2. At the end of the ~fromspec~ function, calling ~identity~ on the object
+
+Serialisation is performed through the ~tospec~ call, which is also advised.
 
 The signatures of the advised function calls are as follows:
+
 #+begin_src julia
-fromspec(DataCollection, spec::Dict{String, Any}; path::Union{String, Nothing})
-identity(DataCollection)
+fromspec(DataCollection, spec::Dict{String, Any}; path::Union{String, Nothing})::DataCollection
+identity(collection::DataCollection)::DataCollection
+tospec(collection::DataCollection)::Dict
 #+end_src
 
 #+begin_src julia
-fromspec(DataSet, collection::DataCollection, name::String, spec::Dict{String, Any})
-identity(DataSet)
+fromspec(DataSet, collection::DataCollection, name::String, spec::Dict{String, Any})::DataSet
+identity(dataset::DataSet)::DataSet
+tospec(dataset::DataSet)::Dict
 #+end_src
 
 #+begin_src julia
-fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
-identity(ADT::AbstractDataTransformer)
+fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})::ADT
+identity(adt::AbstractDataTransformer)::AbstractDataTransformer
+tospec(adt::AbstractDataTransformer)::Dict
 #+end_src
 
 ** Processing identifiers
