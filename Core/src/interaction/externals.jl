@@ -169,8 +169,11 @@ Storage ◀────▶ Data          Information
 function Base.open(data::DataSet, as::Type; write::Bool=false)
     for storage_provider in data.storage
         if any(t -> as ⊆ t, storage_provider.supports)
-            return data.collection.advise(
+            result = data.collection.advise(
                 storage, storage_provider, as; write)
+            if !isnothing(result)
+                return result
+            end
         end
     end
 end
