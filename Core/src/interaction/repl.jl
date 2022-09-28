@@ -192,7 +192,7 @@ function init_repl()
     data_mode
 end
 
-# _------------------
+# ------------------
 # REPL Commands
 # ------------------
 
@@ -275,7 +275,7 @@ function stack_table(::String)
         ["#", "Name", "Datasets", "Plugins"],
         map(enumerate(STACK)) do (i, collection)
             [string(i), something(collection.name, ""),
-             length(collection.datasets), join(collection.plugins, ", ")]
+            length(collection.datasets), join(collection.plugins, ", ")]
         end)
     for row in table_rows
         print(stderr, ' ', row, '\n')
