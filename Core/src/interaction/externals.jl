@@ -203,13 +203,9 @@ function storage(storer::DataStorage, as::Type; write::Bool=false)
     end
 end
 
-function getstorage(::DataStorage{driver}, ::T) where {driver, T}
-    throw(error("No '$driver' storage reader is defined for $T"))
-end
+getstorage(::DataStorage, ::Any) = nothing
 
-function putstorage(::DataStorage{driver}, ::T) where {driver, T}
-    throw(error("No '$driver' storage writer is defined for $T"))
-end
+putstorage(::DataStorage, ::Any) = nothing
 
 """
     write(dataset::DataSet, info::Any)
