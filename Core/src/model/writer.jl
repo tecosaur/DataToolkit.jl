@@ -11,7 +11,8 @@ function Base.convert(::Type{Dict}, adt::AbstractDataTransformer)
 end
 
 function tospec(adt::AbstractDataTransformer)
-    merge(Dict("supports" => string.(adt.supports),
+    merge(Dict("driver" => string(first(typeof(adt).parameters)),
+               "supports" => string.(adt.supports),
                "priority" => adt.priority),
         dataset_parameters(adt.dataset, Val(:encode), adt.parameters))
 end
