@@ -231,8 +231,12 @@ function Base.write(dataset::DataSet, info::T) where {T}
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = true)
                     if !isnothing(datahandle)
-                        return dataset.collection.advise(
+                        res = dataset.collection.advise(
                             save, writer, datahandle, info)
+                        if res isa IO && isopen(res)
+                            close(res)
+                        end
+                        return nothing
                     end
                 end
             end
