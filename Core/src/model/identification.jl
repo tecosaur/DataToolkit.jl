@@ -19,6 +19,13 @@ function Base.string(ident::Identifier)
            else "" end)
 end
 
+"""
+    resolve(collection::DataCollection, ident::Identifier; resolvetype::Bool=true)
+Attempt to resolve an identifier (`ident`) to a particular data set.
+Matching data sets will searched for from `collection`.
+If `resolvetype` is set and `ident` specifies a datatype, then the identified
+data set will be read to that type.
+"""
 function resolve(collection::DataCollection, ident::Identifier; resolvetype::Bool=true)
     collection_mismatch = !isnothing(ident.collection) &&
         if ident.collection isa UUID
@@ -64,6 +71,11 @@ function resolve(collection::DataCollection, ident::Identifier; resolvetype::Boo
     end
 end
 
+"""
+    resolve(ident::Identifier; resolvetype::Bool=true, defaultlayer=Some(nothing))
+Attempt to resolve `ident` using the specified data layer, if present, and
+`defaultlayer` otherwise.
+"""
 resolve(ident::Identifier; resolvetype::Bool=true, defaultlayer=Some(nothing)) =
     resolve(getlayer(something(ident.collection, defaultlayer)),
             ident; resolvetype)
