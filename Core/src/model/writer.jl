@@ -40,7 +40,16 @@ function tospec(dc::DataCollection)
                "uuid" => string(dc.uuid),
                "plugins" => dc.plugins,
                "config" => dataset_parameters(dc, Val(:encode), dc.parameters)),
-          Dict(ds.name => convert(Dict, ds) for ds in dc.datasets))
+          let datasets = Dict{String, Any}()
+              for ds in dc.datasets
+                  if haskey(datasets, ds.name)
+                      push!(datasets[ds.name], convert(Dict, ds))
+                  else
+                      datasets[ds.name] = [convert(Dict, ds)]
+                  end
+              end
+              datasets
+          end)
 end
 
 Base.write(io::IO, dc::DataCollection) =
