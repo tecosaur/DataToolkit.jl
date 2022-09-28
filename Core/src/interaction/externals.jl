@@ -6,7 +6,8 @@ end
 
 """
     loadcollection!(source::Any)
-TODO write docstring
+Load a data collection from `source` and add it to the data stack.
+`source` must be any type accepted by `read(source, DataCollection)`.
 """
 function loadcollection!(source::Any)
     collection = read(source, DataCollection)
@@ -14,8 +15,22 @@ function loadcollection!(source::Any)
     if !isnothing(existingpos)
         deleteat!(STACK, existingpos)
     end
+    nameconflicts = filter(c -> c.name == collection.name, STACK)
+    if !isempty(nameconflicts)
+        printstyled(stderr, "!", color=:yellow, bold=true)
+        print(stderr, " the data collection ")
+        printstyled(stderr, collection.name, color=:green)
+        print(stderr, " (UUID: ")
+        printstyled(stderr, collection.uuid, color=:yellow)
+        print(stderr, ")\n  conflicts with datasets already loaded with the exact same name:\n")
+        for conflict in nameconflicts
+            print(stderr, "  • ")
+            printstyled(stderr, conflict.uuid, '\n', color=:yellow)
+        end
+        println(stderr, "  You must now refer to these datasets by their UUID to be unambiguous.")
+    end
     pushfirst!(STACK, collection)
-    nothing
+    collection
 end
 
 function dataset(ident_str::AbstractString, parameters::Dict{String, Any})
