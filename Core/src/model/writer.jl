@@ -49,7 +49,7 @@ function Base.write(dc::DataCollection)
     if isnothing(dc.path)
         throw(ArgumentError("No collection writer is provided, so an IO argument must be given."))
     end
-    write(dc, dc.path)
+    write(dc.path, dc)
 end
 
 Base.write(ds::DataSet) = write(ds.collection)
