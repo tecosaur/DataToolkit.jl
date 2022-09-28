@@ -236,18 +236,22 @@ allcompletions(::ReplCmd{:help}, rest::AbstractString) =
 # list
 
 function list_datasets(collection_str::AbstractString)
-    collection = if isempty(collection_str)
-        getlayer(nothing)
+    if isempty(STACK)
+        println(stderr, "The data collection stack is empty.")
     else
-        getlayer(collection_str)
-    end
-    table_rows = displaytable(
-        ["Dataset", "Description"],
-        map(collection.datasets) do dataset
-            [dataset.name, get(dataset.parameters, "description", "")]
-        end)
-    for row in table_rows
-        print(stderr, ' ', row, '\n')
+        collection = if isempty(collection_str)
+            getlayer(nothing)
+        else
+            getlayer(collection_str)
+        end
+        table_rows = displaytable(
+            ["Dataset", "Description"],
+            map(collection.datasets) do dataset
+                [dataset.name, get(dataset.parameters, "description", "")]
+            end)
+        for row in table_rows
+            print(stderr, ' ', row, '\n')
+        end
     end
 end
 
