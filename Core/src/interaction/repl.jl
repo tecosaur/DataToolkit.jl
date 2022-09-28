@@ -290,9 +290,13 @@ push!(REPL_CMDS,
 # show
 
 push!(REPL_CMDS,
-      ReplCmd(:show,
-              "List the dataset refered to by an identifier.",
-              ds -> dataset(ds)))
+    ReplCmd(:show,
+        "List the dataset refered to by an identifier.",
+        ds -> if isempty(ds)
+            println(stderr, "Provide a dataset to be shown.")
+        else
+            dataset(ds)
+        end))
 
 # get
 
