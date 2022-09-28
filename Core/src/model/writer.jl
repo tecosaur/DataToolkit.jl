@@ -24,8 +24,8 @@ end
 function tospec(ds::DataSet)
     merge(Dict("uuid" => string(ds.uuid),
                "storage" => convert.(Dict, ds.storage),
-               "loaders" => convert.(Dict, ds.loaders),
-               "writers" => convert.(Dict, ds.writers)) |>
+               "loader" => convert.(Dict, ds.loaders),
+               "writer" => convert.(Dict, ds.writers)) |>
                    d -> filter(((k, v)::Pair) -> !isempty(v), d),
           dataset_parameters(ds, Val(:encode), ds.parameters))
 end
