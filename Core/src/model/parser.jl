@@ -75,7 +75,7 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
 # ---------------
 
 function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing)
-    plugins = get(get(spec, "data", Dict("data" => Dict())), "plugins", String[])
+    plugins::Vector{String} = get(get(spec, "data", Dict("data" => Dict())), "plugins", String[])
     DataAdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path)
 end
 
@@ -83,7 +83,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{S
     version = get(spec, "data_config_version", LATEST_DATA_CONFIG_VERSION)
     name = get(spec, "name", nothing)
     uuid = UUID(get(spec, "uuid", uuid4()))
-    plugins = get(spec, "plugins", String[])
+    plugins::Vector{String} = get(spec, "plugins", String[])
     parameters = get(spec, "data", Dict{String, Any}())
     stores = get(parameters, "store", Dict{String, Any}())
     for reserved in ("store")
