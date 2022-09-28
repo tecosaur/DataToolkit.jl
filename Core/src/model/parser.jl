@@ -89,7 +89,10 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{S
         error("Version mismatch")
     end
     name = get(spec, "name", nothing)
-    uuid = UUID(get(spec, "uuid", uuid4()))
+    uuid = UUID(@something get(spec, "uuid", nothing) begin
+                    @warn "Data collection '$(something(name, "<unnamed>"))' had no UUID, one has been generated."
+                    uuid4()
+                end)
     plugins::Vector{String} = get(spec, "plugins", String[])
     parameters = get(spec, "config", Dict{String, Any}())
     stores = get(parameters, "store", Dict{String, Any}())
@@ -130,7 +133,10 @@ function DataSet(collection::DataCollection, name::String, spec::Dict{String, An
 end
 
 function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
-    uuid = UUID(get(spec, "uuid", uuid4()))
+    uuid = UUID(@something get(spec, "uuid", nothing) begin
+                    @warn "Data set '$name' had no UUID, one has been generated."
+                    uuid4()
+                end)
     store = get(spec, "store", "DEFAULTSTORE")
     parameters = copy(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
