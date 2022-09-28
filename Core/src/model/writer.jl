@@ -43,7 +43,8 @@ function tospec(dc::DataCollection)
 end
 
 Base.write(io::IO, dc::DataCollection) =
-    TOML.print(io, convert(Dict, dc))
+    TOML.print(io, filter(((_, value),) -> !isempty(value),
+                          convert(Dict, dc)))
 
 function Base.write(dc::DataCollection)
     if isnothing(dc.path)
