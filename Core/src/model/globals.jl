@@ -15,7 +15,11 @@ The set of plugins currently availible.
 const PLUGINS = Plugin[]
 
 """
-TODO document
+The set of packages loaded by each module via `@addpkg`, for use with `@use`.
+
+More specifically, when a module M invokes `@addpkg pkg id` then
+`EXTRA_PACKAGES[M][pkg] = id` is set, and then this information is used
+with `@use` to obtain the package from the root module.
 """
 const EXTRA_PACKAGES = Dict{Module, Dict{Symbol, Base.PkgId}}()
 
@@ -31,7 +35,17 @@ The default `priority` field value for `DataAdvice`s.
 """
 const DEFAULT_DATA_ADVISOR_PRIORITY = 1
 
+"""
+A tuple of delimitors defining a dataset reference.
+For example, if set to `("{", "}")` then `{abc}` would
+be recognised as a dataset reference for `abc`.
+"""
 const DATASET_REFERENCE_WRAPPER = ("💾DATASET<<<", ">>>")
+
+"""
+A regex which matches dataset references.
+This is constructed from `DATASET_REFERENCE_WRAPPER`.
+"""
 const DATASET_REFERENCE_REGEX =
     Regex(string("^", DATASET_REFERENCE_WRAPPER[1],
                  "(.+)", DATASET_REFERENCE_WRAPPER[2],
