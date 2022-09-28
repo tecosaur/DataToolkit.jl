@@ -256,7 +256,7 @@ function list_datasets(collection_str::AbstractString)
 end
 
 push!(REPL_CMDS,
-      ReplCmd(:list,
+      ReplCmd(:list, "l",
               "List the datasets in a certain collection.",
               list_datasets))
 
