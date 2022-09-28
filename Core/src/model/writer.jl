@@ -22,7 +22,6 @@ end
 
 function tospec(ds::DataSet)
     merge(Dict("uuid" => string(ds.uuid),
-               "store" => ds.store,
                "storage" => convert.(Dict, ds.storage),
                "loaders" => convert.(Dict, ds.loaders),
                "writers" => convert.(Dict, ds.writers)) |>
