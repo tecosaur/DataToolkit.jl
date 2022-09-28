@@ -2,7 +2,7 @@
 The `DataCollection.version` set on all created `DataCollection`s, and assumed
 when reading any Data.toml files which do not set `data_config_version`.
 """
-const LATEST_DATA_CONFIG_VERSION = 1
+const LATEST_DATA_CONFIG_VERSION = 0 # while in alpha
 
 """
 The set of data collections currently availible.

@@ -6,7 +6,7 @@ of which is described here.
 * Overall structure
 
 #+begin_src toml
-data_config_version=1
+data_config_version=0
 
 name="data collection name"
 uuid="a UUIDv4"
@@ -37,7 +37,8 @@ priority=1 # (optional)
 
 There are four top-level non-[[https://toml.io/en/v1.0.0#table][table]] properties currently recognised.
 
-+ =data_config_version= :: The (integer) version of the format. Currently =1=.
++ =data_config_version= :: The (integer) version of the format. Currently =0= as
+  this project is still in the alpha phase of development, moving towards beta.
 + =name= :: an identifying string. Cannot contain =:=, and characters outside of
   =[A-Za-z0-9_]= are recommended against.
 + uuid :: a UUIDv4 used to uniquely refer to the data collection, should it be
