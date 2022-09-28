@@ -64,5 +64,6 @@ function resolve(collection::DataCollection, ident::Identifier; resolvetype::Boo
     end
 end
 
-resolve(ident::Identifier; resolvetype::Bool=true) =
-    resolve(getlayer(ident.collection), ident; resolvetype)
+resolve(ident::Identifier; resolvetype::Bool=true, defaultlayer=Some(nothing)) =
+    resolve(getlayer(something(ident.collection, defaultlayer)),
+            ident; resolvetype)
