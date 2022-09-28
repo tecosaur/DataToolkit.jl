@@ -38,7 +38,7 @@ function tospec(dc::DataCollection)
                "name" => dc.name,
                "uuid" => string(dc.uuid),
                "plugins" => dc.plugins,
-               "data" => dataset_parameters(dc, Val(:encode), dc.parameters)),
+               "config" => dataset_parameters(dc, Val(:encode), dc.parameters)),
           Dict(ds.name => convert(Dict, ds) for ds in dc.datasets))
 end
 

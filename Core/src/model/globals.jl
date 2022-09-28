@@ -58,6 +58,6 @@ this Dict under the following keys:
 - `:transformer` for `AbstractDataTransformer`
 """
 const DATA_CONFIG_RESERVED_ATTRIBUTES =
-    Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "data"],
+    Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "config"],
          :dataset => ["uuid", "store", "storage", "loader", "writer"],
          :transformer => ["driver", "supports", "priority"])

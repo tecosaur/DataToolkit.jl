@@ -12,7 +12,7 @@ name="data collection name"
 uuid="a UUIDv4"
 plugins=["plugin1", "plugin2", ...]
 
-[data]
+[config]
 # [Properties of the data collection itself]
 
 [[mydataset]]
@@ -44,21 +44,21 @@ There are four top-level non-[[https://toml.io/en/v1.0.0#table][table]] properti
   renamed etc.
 + plugins :: a list of plugins which should be used when working with this data collection
 
-In addition to these four, a special table of the name =data= is recognised. This
+In addition to these four, a special table of the name =config= is recognised. This
 holds custom attributes of the data collection, e.g.
 
 #+begin_src toml
-[data]
+[config]
 mykey="value"
 
-[data.defaults]
+[config.defaults]
 description="Ooops, somebody forgot to describe this."
 
-[data.defaults.storage.filesystem]
+[config.defaults.storage.filesystem]
 priority=2
 #+end_src
 
-Note that as a consequence of this special table, no data set may be named "data".
+Note that as a consequence of this special table, no data set may be named "config".
 
 * Structure of a data set
 
