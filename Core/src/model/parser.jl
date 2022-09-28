@@ -81,6 +81,13 @@ end
 
 function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{String, Nothing}=nothing)
     version = get(spec, "data_config_version", LATEST_DATA_CONFIG_VERSION)
+    if version != LATEST_DATA_CONFIG_VERSION
+        @error "The data collection specificaton uses the v$version format \
+                when the v$LATEST_DATA_CONFIG_VERSION format is expected.\n\
+                In the future conversion facilities may be implemented, but for now \
+                you'll need to manually upgrade the format."
+        error("Version mismatch")
+    end
     name = get(spec, "name", nothing)
     uuid = UUID(get(spec, "uuid", uuid4()))
     plugins::Vector{String} = get(spec, "plugins", String[])
