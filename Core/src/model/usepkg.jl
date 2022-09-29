@@ -35,14 +35,14 @@ All @addpkg statements should lie within a module's `__init__` function.
 ```
 """
 macro addpkg(name::Symbol, uuid::String)
-    quote
-        if !haskey($(@__MODULE__).EXTRA_PACKAGES, @__MODULE__)
-            $(@__MODULE__).EXTRA_PACKAGES[@__MODULE__] =
-                Dict{Symbol, Vector{Base.PkgId}}()
-        end
-        $(@__MODULE__).EXTRA_PACKAGES[@__MODULE__][Symbol($(String(name)))] =
-              Base.PkgId(UUID($(esc(uuid))), $(esc(String(name))))
+    :(addpkg(@__MODULE__, Symbol($(String(name))), $uuid))
+end
+
+function addpkg(mod::Module, name::Symbol, uuid::Union{UUID, String})
+    if !haskey(EXTRA_PACKAGES, mod)
+        EXTRA_PACKAGES[mod] = Dict{Symbol, Vector{Base.PkgId}}()
     end
+    EXTRA_PACKAGES[mod][name]= Base.PkgId(UUID(uuid), String(name))
 end
 
 """
