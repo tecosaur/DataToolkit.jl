@@ -3,10 +3,17 @@ DataAdvice(f::Function) =
 
 Base.methods(dt::DataAdvice) = methods(dt.f)
 
+# Abstract-y `typeof`.
+atypeof(val) = if val isa Type
+    Type{val}
+else
+    typeof(val)
+end
+
 function (dt::DataAdvice{C, F})(
     (post, func, args, kwargs)::Tuple{Function, Function, Tuple, pairs(NamedTuple)}) where {C, F}
     # @info "Testing $dt"
-    if hasmethod(dt.f, Tuple{typeof(post), typeof(func), typeof.(args)...}, keys(kwargs))
+    if hasmethod(dt.f, Tuple{typeof(post), typeof(func), atypeof.(args)...}, keys(kwargs))
         # @info "Applying $dt"
         result = dt.f(post, func, args...; kwargs...)
         if result isa Tuple{Function, Function, Tuple}
