@@ -101,21 +101,25 @@ TODO explain further
 ```
 """
 function Base.read(dataset::DataSet, as::Type)
-    all_load_functions = methods(load, Tuple{DataLoader, Any, Any})
+    all_load_fn_sigs = map(fn -> Base.unwrap_unionall(fn.sig),
+                             methods(load, Tuple{DataLoader, Any, Any}))
     qtype = QualifiedType(as)
+    # Filter to loaders which are declared in `dataset` as supporting `as`.
+    # These will have already been orderd by priority during parsing.
     potential_loaders =
         filter(loader -> any(st -> st ⊆ qtype, loader.supports), dataset.loaders)
     for loader in potential_loaders
-        load_functions =
-            filter(l -> loader isa Base.unwrap_unionall(l.sig).types[2],
-                   all_load_functions)
+        load_fn_sigs = filter(fnsig -> loader isa fnsig.types[2], all_load_fn_sigs)
+        # Find the highest priority load function that can be satisfied,
+        # by going through each of the storage backends one at a time:
+        # looking for the first that is (a) compatable with a load function,
+        # and (b) availible (checked via `!isnothing`).
         for storage in dataset.storage
-            for load_func in load_functions
-                load_func_sig = Base.unwrap_unionall(load_func.sig)
+            for load_fn_sig in load_fn_sigs
                 supported_storage_types = Vector{Type}(
                     filter(!isnothing, convert.(Type, storage.supports)))
                 valid_storage_types =
-                    filter(stype -> stype <: load_func_sig.types[3],
+                    filter(stype -> stype <: load_fn_sig.types[3],
                            supported_storage_types)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
@@ -221,21 +225,25 @@ putstorage(::DataStorage, ::Any) = nothing
 TODO write docstring
 """
 function Base.write(dataset::DataSet, info::T) where {T}
-    all_write_functions = methods(save, Tuple{DataWriter, Any, Any})
+    all_write_fn_sigs = map(fn -> Base.unwrap_unionall(fn.sig),
+                            methods(save, Tuple{DataWriter, Any, Any}))
     qtype = QualifiedType(T)
+    # Filter to loaders which are declared in `dataset` as supporting `as`.
+    # These will have already been orderd by priority during parsing.
     potential_writers =
         filter(writer -> any(st -> qtype ⊆ st, writer.supports), dataset.writers)
     for writer in potential_writers
-        write_functions =
-            filter(l -> writer isa Base.unwrap_unionall(l.sig).types[2],
-                   all_write_functions)
+        write_fn_sigs = filter(fnsig -> writer isa fnsig.types[2], all_write_fn_sigs)
+        # Find the highest priority load function that can be satisfied,
+        # by going through each of the storage backends one at a time:
+        # looking for the first that is (a) compatable with a load function,
+        # and (b) availible (checked via `!isnothing`).
         for storage in dataset.storage
-            for write_func in write_functions
-                write_func_sig = Base.unwrap_unionall(write_func.sig)
+            for write_fn_sig in write_fn_sigs
                 supported_storage_types = Vector{Type}(
                     filter(!isnothing, convert.(Type, storage.supports)))
                 valid_storage_types =
-                    filter(stype -> stype <: write_func_sig.types[3],
+                    filter(stype -> stype <: write_fn_sig.types[3],
                            supported_storage_types)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = true)
