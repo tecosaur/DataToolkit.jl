@@ -126,6 +126,15 @@ function Base.read(dataset::DataSet, as::Type)
                 end
             end
         end
+        # Check for a "null storage" option. This is to enable loaders
+        # like DataToolkitCommon's `:julia` which can construct information
+        # without an explicit storage backend.
+        for load_fn_sig in load_fn_sigs
+            if load_fn_sig.types[3] == Nothing
+                return dataset.collection.advise(
+                    load, loader, nothing, as)
+            end
+        end
     end
     # TODO non-generic error type
     if length(potential_loaders) == 0
