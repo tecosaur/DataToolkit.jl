@@ -1,3 +1,5 @@
+struct PkgRequiredRerunNeeded <: Exception end
+
 function get_package(pkg::Base.PkgId)
     if !Base.root_module_exists(pkg)
         @warn string("The package $pkg is required to load your dataset. ",
@@ -7,6 +9,7 @@ function get_package(pkg::Base.PkgId)
                      "To silence this message, add `using $(pkg.name)` ",
                      "at the top of your code somewhere.")
         Base.require(pkg)
+        throw(PkgRequiredRerunNeeded())
     end
     Base.root_module(pkg)
 end
