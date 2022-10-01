@@ -107,7 +107,7 @@ function Base.read(dataset::DataSet, as::Type)
     # Filter to loaders which are declared in `dataset` as supporting `as`.
     # These will have already been orderd by priority during parsing.
     potential_loaders =
-        filter(loader -> any(st -> st ⊆ qtype, loader.supports), dataset.loaders)
+        filter(loader -> any(st -> st ⊆ qtype, loader.support), dataset.loaders)
     for loader in potential_loaders
         load_fn_sigs = filter(fnsig -> loader isa fnsig.types[2], all_load_fn_sigs)
         # Find the highest priority load function that can be satisfied,
@@ -117,7 +117,7 @@ function Base.read(dataset::DataSet, as::Type)
         for storage in dataset.storage
             for load_fn_sig in load_fn_sigs
                 supported_storage_types = Vector{Type}(
-                    filter(!isnothing, convert.(Type, storage.supports)))
+                    filter(!isnothing, convert.(Type, storage.support)))
                 valid_storage_types =
                     filter(stype -> stype <: load_fn_sig.types[3],
                            supported_storage_types)
@@ -221,7 +221,7 @@ Storage ◀────▶ Data          Information
 """
 function Base.open(data::DataSet, as::Type; write::Bool=false)
     for storage_provider in data.storage
-        if any(t -> as ⊆ t, storage_provider.supports)
+        if any(t -> as ⊆ t, storage_provider.support)
             result = data.collection.advise(
                 storage, storage_provider, as; write)
             if !isnothing(result)
@@ -256,7 +256,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
     # Filter to loaders which are declared in `dataset` as supporting `as`.
     # These will have already been orderd by priority during parsing.
     potential_writers =
-        filter(writer -> any(st -> qtype ⊆ st, writer.supports), dataset.writers)
+        filter(writer -> any(st -> qtype ⊆ st, writer.support), dataset.writers)
     for writer in potential_writers
         write_fn_sigs = filter(fnsig -> writer isa fnsig.types[2], all_write_fn_sigs)
         # Find the highest priority load function that can be satisfied,
@@ -266,7 +266,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
         for storage in dataset.storage
             for write_fn_sig in write_fn_sigs
                 supported_storage_types = Vector{Type}(
-                    filter(!isnothing, convert.(Type, storage.supports)))
+                    filter(!isnothing, convert.(Type, storage.support)))
                 valid_storage_types =
                     filter(stype -> stype <: write_fn_sig.types[3],
                            supported_storage_types)

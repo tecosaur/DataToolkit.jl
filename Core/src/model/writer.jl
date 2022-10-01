@@ -12,7 +12,7 @@ end
 
 function tospec(adt::AbstractDataTransformer)
     merge(Dict("driver" => string(first(typeof(adt).parameters)),
-               "supports" => string.(adt.supports),
+               "support" => string.(adt.support),
                "priority" => adt.priority),
         dataset_parameters(adt.dataset, Val(:encode), adt.parameters))
 end

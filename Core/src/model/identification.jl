@@ -46,7 +46,7 @@ function resolve(collection::DataCollection, ident::Identifier; resolvetype::Boo
         if isnothing(ident.type)
             datasets
         else
-            filter(d -> any(l -> any(t -> t ⊆ ident.type, l.supports),
+            filter(d -> any(l -> any(t -> t ⊆ ident.type, l.support),
                                   d.loaders), datasets)
         end
     filter_parameters(datasets) =

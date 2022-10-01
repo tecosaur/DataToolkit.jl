@@ -21,7 +21,7 @@ uuid="a UUIDv4"
 
 [[mydataset.TRANSFORMER]]
 driver="transformer driver"
-supports=["a QualifiedType", ...]
+support=["a QualifiedType", ...]
 priority=1 # (optional)
 # other properties...
 
@@ -70,8 +70,8 @@ uuid="a UUIDv4"
 
 [[mydataset.TRANSFORMER]]
 driver="transformer driver"
-supports=["a QualifiedType", ...] # probably optional
-supports="a QualifiedType" # single-value alternative form
+support=["a QualifiedType", ...] # probably optional
+support="a QualifiedType" # single-value alternative form
 priority=1 # (optional)
 # other properties...
 #+end_src
@@ -99,7 +99,7 @@ There are three data transformers types, with the following names:
 
 All transformers recognise three properties:
 + =driver=, the transformer driver name, as a string
-+ =supports=, a single ~QualifiedType~ string, or an array of them
++ =support=, a single ~QualifiedType~ string, or an array of them
 + =priority=, an integer which sets the order in which multiple transformers
   should be considered
 

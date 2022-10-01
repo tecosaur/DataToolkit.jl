@@ -51,16 +51,16 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     else
         Symbol(spec["driver"])
     end
-    supports = get(spec, "supports", String[]) |>
+    support = get(spec, "support", String[]) |>
         s -> if s isa Vector s else [s] end .|> QualifiedType
     priority = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
     parameters = copy(spec)
     delete!(parameters, "driver")
-    delete!(parameters, "supports")
+    delete!(parameters, "support")
     delete!(parameters, "priority")
     dataset.collection.advise(
         identity,
-        ADT{driver}(dataset, supports, priority,
+        ADT{driver}(dataset, support, priority,
                     dataset_parameters(dataset, Val(:extract), parameters)))
 end
 
@@ -69,9 +69,9 @@ end
 # end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
-                    supports::Vector{QualifiedType}, priority::Int,
+                    support::Vector{QualifiedType}, priority::Int,
                     parameters::Dict{String, Any}) where {driver} =
-    DataStorage{driver, typeof(dataset)}(dataset, supports, priority, parameters)
+    DataStorage{driver, typeof(dataset)}(dataset, support, priority, parameters)
 
 # ---------------
 # DataCollection
