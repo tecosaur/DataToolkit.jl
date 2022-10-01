@@ -38,9 +38,11 @@ end
 # DataTransformers
 # ---------------
 
-function (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any})
+(ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
     dataset.collection.advise(fromspec, ADT, dataset, spec)
-end
+
+(ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::String) =
+    ADT(dataset, Dict{String, Any}("driver" => spec))
 
 function fromspec(ADT::Type{<:AbstractDataTransformer},
                   dataset::DataSet, spec::Dict{String, Any})
@@ -49,7 +51,8 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     else
         Symbol(spec["driver"])
     end
-    supports = get(spec, "supports", String[]) .|> QualifiedType
+    supports = get(spec, "supports", String[]) |>
+        s -> if s isa Vector s else [s] end .|> QualifiedType
     priority = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
     parameters = copy(spec)
     delete!(parameters, "driver")
@@ -148,7 +151,9 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
     for (attr, afield, atype) in [("storage", :storage, DataStorage),
                                   ("loader", :loaders, DataLoader),
                                   ("writer", :writers, DataWriter)]
-        for aspec in get(spec, attr, Dict{String, Any}[])
+        specs = get(spec, attr, Dict{String, Any}[]) |>
+            s -> if s isa Vector s else [s] end
+        for aspec::Union{String, Dict{String, Any}} in specs
             push!(getfield(dataset, afield), atype(dataset, aspec))
         end
         sort!(getfield(dataset, afield), by=a->a.priority)
