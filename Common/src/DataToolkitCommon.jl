@@ -5,6 +5,7 @@ import DataToolkitBase: load, save, storage,
     getstorage, putstorage, supportedtypes
 
 using Dates
+using Tables
 
 include("storage/raw.jl")
 include("storage/web.jl")
