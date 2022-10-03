@@ -20,6 +20,7 @@ include("saveload/delim.jl")
 include("saveload/csv.jl")
 include("saveload/julia.jl")
 include("saveload/compression.jl")
+include("saveload/nested.jl")
 
 include("plugins/defaults.jl")
 
