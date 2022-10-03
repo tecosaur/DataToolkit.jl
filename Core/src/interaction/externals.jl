@@ -197,10 +197,8 @@ This fufills this component of the overall data flow:
 Data          Information
 ```
 """
-function load(::DataLoader{driver}, ::S, as::Type) where {driver, S, T}
-    # TODO use non-generic error
-    throw(error("No $driver loader which can produce $as from $S is defined"))
-end
+function load end
+
 load((loader, source, as)::Tuple{DataLoader, Any, Type}) =
     load(loader, source, as)
 
@@ -302,8 +300,7 @@ Data          Information
   ╰────writer─────╯
 ```
 """
-function save(::DataWriter{driver}, ::D, ::T) where {driver, D, T}
-    error("No $driver to write a $T to a $D is defined")
-end
+function save end
+
 save((writer, dest, info)::Tuple{DataWriter, Any, Any}) =
     save(writer, dest, info)
