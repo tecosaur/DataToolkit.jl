@@ -7,20 +7,20 @@ import DataToolkitBase: load, save, storage,
 using Dates
 using Tables
 
+include("storage/filesystem.jl")
+include("storage/null.jl")
+include("storage/passthrough.jl")
 include("storage/raw.jl")
 include("storage/web.jl")
-include("storage/filesystem.jl")
-include("storage/passthrough.jl")
-include("storage/null.jl")
 
 include("storage/store/hash.jl")
 
-include("saveload/passthrough.jl")
-include("saveload/delim.jl")
-include("saveload/csv.jl")
-include("saveload/julia.jl")
 include("saveload/compression.jl")
+include("saveload/csv.jl")
+include("saveload/delim.jl")
+include("saveload/julia.jl")
 include("saveload/nested.jl")
+include("saveload/passthrough.jl")
 
 include("plugins/defaults.jl")
 
