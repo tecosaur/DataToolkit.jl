@@ -8,7 +8,7 @@ function Base.hash(dataset::DataSet, h::UInt)
 end
 
 function Base.hash(adt::AbstractDataTransformer, h::UInt)
-    suphash = xor(hash.(adt.supports)...)
+    suphash = xor(hash.(adt.support)...)
     driver = first(typeof(adt).parameters)
     h = hash(suphash, h)
     h = hash(adt.priority, h)
@@ -42,7 +42,7 @@ function chash(collection::DataCollection, adtl::Vector{AbstractDataTransformer}
 end
 
 function chash(collection::DataCollection, adt::AbstractDataTransformer, h::UInt)
-    suphash = xor(hash.(adt.supports)...)
+    suphash = xor(hash.(adt.support)...)
     driver = first(typeof(adt).parameters)
     h = hash(suphash, h)
     h = hash(adt.priority, h)
