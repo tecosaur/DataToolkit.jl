@@ -3,7 +3,14 @@
 # ---------------
 
 function Base.parse(::Type{QualifiedType}, spec::AbstractString)
-    components = split(spec, '.')
+    components, parameters = let cbsplit = split(spec, '{', limit=2)
+        if length(cbsplit) == 1
+            split(cbsplit[1], '.'), Tuple{}()
+        else
+            split(cbsplit[1], '.'),
+            eval(Meta.parse(string('(', cbsplit[2][begin:end-1], ",)")))
+        end
+    end
     parentmodule, name = if length(components) == 1
         n = Symbol(components[1])
         Symbol(Base.binding_module(Main, n)), n
@@ -12,7 +19,7 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
     else
         Symbol.(components[end-1:end])
     end
-    QualifiedType(parentmodule, name)
+    QualifiedType(parentmodule, name, parameters)
 end
 
 # ---------------
@@ -69,7 +76,7 @@ end
 # end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
-                    support::Vector{QualifiedType}, priority::Int,
+                    support::Vector{<:QualifiedType}, priority::Int,
                     parameters::Dict{String, Any}) where {driver} =
     DataStorage{driver, typeof(dataset)}(dataset, support, priority, parameters)
 

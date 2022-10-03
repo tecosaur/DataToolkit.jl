@@ -40,7 +40,16 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     get(io, :omittype, false) || print(io, '}')
     print(io, "(")
     for qtype in adt.support
-        printstyled(io, qtype.name, color=:yellow)
+        type = convert(Type, qtype)
+        if !isnothing(type)
+            printstyled(io, type, color=:yellow)
+        else
+            printstyled(io, qtype.name, color=:yellow)
+            if !isempty(qtype.parameters)
+                printstyled(io, '{', join(string.(qtype.parameters), ','), '}',
+                            color=:yellow)
+            end
+        end
         qtype === last(adt.support) || print(io, ", ")
     end
     print(io, ")")

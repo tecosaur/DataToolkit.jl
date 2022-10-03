@@ -1,13 +1,19 @@
 QualifiedType(t::AbstractString) = parse(QualifiedType, t)
 
+QualifiedType(m::Symbol, name::Symbol) = QualifiedType(m, name, ())
+
 QualifiedType(::Type{T}) where {T} =
-    QualifiedType(Symbol(parentmodule(T)), nameof(T))
+    QualifiedType(Symbol(parentmodule(T)), nameof(T),
+                  if isconcretetype(T) Tuple(T.parameters) else () end)
 
 QualifiedType(qt::QualifiedType) = qt
 
 function Base.convert(::Type{Type}, qt::QualifiedType)
     try
-        getfield(getfield(Main, qt.parentmodule), qt.name)
+        T = getfield(getfield(Main, qt.parentmodule), qt.name)
+        if isempty(qt.parameters) T else
+            T{qt.parameters...}
+        end
     catch e
         if !(e isa UndefVarError)
             rethrow(e)

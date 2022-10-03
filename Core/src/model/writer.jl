@@ -1,8 +1,13 @@
 function Base.string(q::QualifiedType)
-    if q.parentmodule in (:Base, :Core)
+    qname = if q.parentmodule in (:Base, :Core)
         string(q.name)
     else
         string(q.parentmodule, '.', q.name)
+    end
+    if isempty(q.parameters)
+        qname
+    else
+        string(qname, '{', join(string.(q.parameters), ','), '}')
     end
 end
 

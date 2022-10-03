@@ -37,9 +37,10 @@ A QualifiedType can be expressed as a string as `"\$parentmodule.\$typename"`.
 This can be easily `parse`d as a QualifiedType, e.g. `parse(QualifiedType,
 "Core.IO")`.
 """
-struct QualifiedType
+struct QualifiedType{T <: Tuple}
     parentmodule::Symbol
     name::Symbol
+    parameters::T
 end
 
 """
@@ -74,7 +75,7 @@ function, i.e. `parse(Identifier, "mycollection:dataset")`.
 struct Identifier
     collection::Union{AbstractString, UUID, Nothing}
     dataset::Union{AbstractString, UUID}
-    type::Union{QualifiedType, Nothing}
+    type::Union{<:QualifiedType, Nothing}
     parameters::Dict{String, Any}
 end
 
@@ -97,7 +98,7 @@ Each subtype takes a `Symbol` type parameter designating
 the driver which should be used to perform the data operation.
 In addition, each subtype has the following fields:
 - `dataset::DataSet`, the data set the method operates on
-- `support::Vector{QualifiedType}`, the Julia types the method supports
+- `support::Vector{<:QualifiedType}`, the Julia types the method supports
 - `priority::Int`, the priority with which this method should be used,
   compared to alternatives. Lower values have higher priority.
 - `parameters::Dict{String, Any}`, any parameters applied to the method.
@@ -106,21 +107,21 @@ abstract type AbstractDataTransformer end
 
 struct DataStorage{driver, T} <: AbstractDataTransformer
     dataset::T
-    support::Vector{QualifiedType}
+    support::Vector{<:QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end
 
 struct DataLoader{driver} <: AbstractDataTransformer
     dataset
-    support::Vector{QualifiedType}
+    support::Vector{<:QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end
 
 struct DataWriter{driver} <: AbstractDataTransformer
     dataset
-    support::Vector{QualifiedType}
+    support::Vector{<:QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end
