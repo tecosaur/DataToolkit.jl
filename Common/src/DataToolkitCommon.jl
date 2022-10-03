@@ -10,6 +10,7 @@ using Tables
 include("storage/raw.jl")
 include("storage/web.jl")
 include("storage/filesystem.jl")
+include("storage/passthrough.jl")
 include("storage/null.jl")
 
 include("storage/store/hash.jl")
