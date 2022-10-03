@@ -103,5 +103,7 @@ All transformers recognise three properties:
 + =priority=, an integer which sets the order in which multiple transformers
   should be considered
 
-The =driver= and =supports= properties are mandatory. =priority= can be omitted, in
-which case it will adopt the default value (~1~).
+The =driver= property is mandatory. =support= and =priority= can be omitted, in which
+case they will adopt the default values. The default =support= value is either
+determined dynamically from the available methods, or set for that particular
+transformer.

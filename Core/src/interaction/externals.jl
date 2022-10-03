@@ -304,3 +304,40 @@ function save end
 
 save((writer, dest, info)::Tuple{DataWriter, Any, Any}) =
     save(writer, dest, info)
+
+# For use during parsing, see `fromspec` in `model/parser.jl`.
+
+splitunions(T::Type) = if T isa Union Base.uniontypes(T) else (T,) end
+
+extracttypes(T::Type) =
+    if T == Type || T == Any
+        (Any,)
+    elseif T isa Union
+        first.(getproperty.(Base.uniontypes(T), :parameters))
+    else
+        first(T.parameters) |> splitunions
+    end
+
+genericstore = first(methods(storage, Tuple{DataStorage{Any}, Any}))
+genericstoreget = first(methods(getstorage, Tuple{DataStorage{Any}, Any}))
+genericstoreput = first(methods(putstorage, Tuple{DataStorage{Any}, Any}))
+
+supportedtypes(L::Type{<:DataLoader}, T::Type=Any) =
+    map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[4]),
+        methods(load, Tuple{L, T, Any})) |>
+            Iterators.flatten .|> QualifiedType
+
+supportedtypes(W::Type{<:DataWriter}, T::Type=Any) =
+    map(fn -> QualifiedType(Base.unwrap_unionall(fn.sig).types[3]),
+        methods(save, Tuple{W, T, Any}))
+
+supportedtypes(S::Type{<:DataStorage}) =
+    map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[3]),
+        let ms = filter(m -> m != genericstore, methods(storage, Tuple{S, Any}))
+            if isempty(ms)
+                vcat(filter(m -> m != genericstoreget,
+                            methods(getstorage, Tuple{S, Any})),
+                     filter(m -> m != genericstoreput,
+                        methods(putstorage, Tuple{S, Any})))
+            else ms end
+        end) |> Iterators.flatten .|> QualifiedType

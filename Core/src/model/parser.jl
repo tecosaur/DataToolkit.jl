@@ -45,6 +45,18 @@ end
 # DataTransformers
 # ---------------
 
+"""
+    supportedtypes(ADT::Type{<:AbstractDataTransformer})::Vector{QualifiedType}
+Return a list of types supported by the data transformer `ADT`.
+
+This is used as the default value for the `support` key in the Data TOML.
+The list of types is dynamically generated based on the availible methods for
+the data transformer.
+
+In some cases, it makes sense for this to be explicitly defined for a particular
+transformer. """
+function supportedtypes end # See `interaction/externals.jl` for method definitions.
+
 (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
     dataset.collection.advise(fromspec, ADT, dataset, spec)
 
@@ -58,8 +70,17 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     else
         Symbol(spec["driver"])
     end
-    support = get(spec, "support", String[]) |>
-        s -> if s isa Vector s else [s] end .|> QualifiedType
+    support = let spec_support = get(spec, "support", nothing)
+        if isnothing(spec_support)
+            supportedtypes(if ADT isa DataType ADT else ADT{driver} end)
+        elseif spec_support isa Vector
+            QualifiedType.(spec_support)
+        elseif spec_support isa String
+            [QualifiedType(spec_support)]
+        else
+            error("Parse error: invalid ADT support") # TODO use custom exception type
+        end
+    end
     priority = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
     parameters = copy(spec)
     delete!(parameters, "driver")
