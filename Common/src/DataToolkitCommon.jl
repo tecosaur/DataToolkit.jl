@@ -16,6 +16,7 @@ include("storage/store/hash.jl")
 include("saveload/passthrough.jl")
 include("saveload/delim.jl")
 include("saveload/csv.jl")
+include("saveload/julia.jl")
 include("saveload/compression.jl")
 
 include("plugins/defaults.jl")
