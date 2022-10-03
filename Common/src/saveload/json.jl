@@ -1,4 +1,4 @@
-function load(loader::DataLoader{:json}, from::IO, as::Type)
+function load(::DataLoader{:json}, from::IO, as::Type)
     @use JSON3
     JSON3.read(from)
 end
