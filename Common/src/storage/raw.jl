@@ -12,4 +12,6 @@ end
 # NOTE This is hacky, but it's a special case
 function save(::DataWriter{:passthrough}, dest::DataStorage{:raw}, info::Any)
     dest.parameters["value"] = info
+    write(dest)
+    true
 end
