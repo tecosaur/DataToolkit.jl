@@ -36,12 +36,16 @@ end
 
 function getstorage(storage::DataStorage{:url}, ::Type{IO})
     @use Downloads
-    io = IOBuffer()
-    Downloads.download(
-        get(storage, "url"), io;
-        headers = get(storage, "headers", Dict{String, String}()),
-        timeout = get(storage, "timeout", Inf),
-        progress = download_progress(storage.dataset.name))
-    seekstart(io)
-    io
+    try
+        io = IOBuffer()
+        Downloads.download(
+            get(storage, "url"), io;
+            headers = get(storage, "headers", Dict{String, String}()),
+            timeout = get(storage, "timeout", Inf),
+            progress = download_progress(storage.dataset.name))
+        seekstart(io)
+        io
+    catch _
+    end
 end
+
