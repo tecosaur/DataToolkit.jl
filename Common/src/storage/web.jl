@@ -49,3 +49,8 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
     end
 end
 
+getstorage(storage::DataStorage{:url}, ::Type{Vector{UInt8}}) =
+    read(getstorage(storage, IO))
+
+getstorage(storage::DataStorage{:url}, ::Type{String}) =
+    read(getstorage(storage, IO), String)
