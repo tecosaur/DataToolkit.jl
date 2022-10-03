@@ -13,8 +13,14 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     if haskey(kwargs, :stringtype)
         kwargs[:stringtype] = convert.(Type, QualifiedType.(kwargs[:stringtype]))
     end
-    CSV.File(from; NamedTuple(kwargs)...) |> if sink != Any
-        sink else identity end
+    CSV.File(from; NamedTuple(kwargs)...) |>
+        if sink == Any || sink == CSV.File
+            identity
+        elseif sink == Matrix
+            Tables.matrix
+        else
+            sink
+        end
 end
 
 supportedtypes(::Type{DataLoader{:csv}}) =
