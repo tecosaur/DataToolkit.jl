@@ -1,7 +1,8 @@
 module DataToolkitCommon
 
 using DataToolkitBase
-import DataToolkitBase: load, save, storage, getstorage, putstorage
+import DataToolkitBase: load, save, storage,
+    getstorage, putstorage, supportedtypes
 
 using Dates
 

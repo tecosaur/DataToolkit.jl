@@ -17,6 +17,11 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
         sink else identity end
 end
 
+supportedtypes(::Type{DataLoader{:csv}}) =
+    [QualifiedType(:DataFrames, :DataFrame),
+     QualifiedType(:Base, :Matrix),
+     QualifiedType(:CSV, :File)]
+
 function save(writer::DataWriter{:csv}, dest::IO, info)
     @use CSV
     kwargs = Dict(Symbol(k) => v for (k, v) in

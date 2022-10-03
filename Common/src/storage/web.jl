@@ -54,3 +54,6 @@ getstorage(storage::DataStorage{:url}, ::Type{Vector{UInt8}}) =
 
 getstorage(storage::DataStorage{:url}, ::Type{String}) =
     read(getstorage(storage, IO), String)
+
+supportedtypes(::Type{DataStorage{:url}}) =
+    QualifiedType.([IO, Vector{UInt8}, String])
