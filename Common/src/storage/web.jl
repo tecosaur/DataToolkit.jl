@@ -51,6 +51,8 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
     end
 end
 
+const WEB_DEFAULT_CACHEFOLDER = "downloads"
+
 function get_dlcache_file(storage::DataStorage{:url})
     @use Downloads
     path = if get(storage, "cache") != false
@@ -69,7 +71,7 @@ function get_dlcache_file(storage::DataStorage{:url})
             else
                 pwd()
             end,
-            get(storage, "cachefolder", ""),
+            get(storage, "cachefolder", WEB_DEFAULT_CACHEFOLDER),
             path)
         if !isfile(fullpath)
             if !isdir(dirname(fullpath))
