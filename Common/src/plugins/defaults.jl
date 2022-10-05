@@ -22,13 +22,14 @@ function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}, dri
     adt_type = Dict(:DataStorage => "storage",
                     :DataLoader => "loader",
                     :DataWriter => "writer")[nameof(ADT)]
+    concrete_adt = if isconcretetype(ADT) ADT else ADT{driver} end
     # get config.TRANSFORMER.DRIVER values
     transformer_defaults =
         get(get(dataset.collection,
                 "defaults", DEFAULT_DEFAULTS),
             adt_type, Dict{String,Any}())
     merge(Dict{String,Any}("priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY,
-                           "support" => string.(supportedtypes(ADT{driver}))),
+                           "support" => string.(supportedtypes(concrete_adt))),
           get(transformer_defaults, DEFAULTS_ALL, Dict{String,Any}()),
           get(transformer_defaults, String(driver), Dict{String,Any}()))
 end
