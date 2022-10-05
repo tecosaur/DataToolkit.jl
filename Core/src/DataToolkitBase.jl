@@ -37,6 +37,4 @@ function __init__()
     isinteractive() && init_repl()
 end
 
-include("testing.jl")
-
 end
