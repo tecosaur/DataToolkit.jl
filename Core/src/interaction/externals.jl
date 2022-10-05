@@ -50,7 +50,6 @@ dataset(collection::DataCollection, ident_str::AbstractString; kwparams...) =
     dataset(collection, ident_str,
             Dict{String, Any}(String(k) => v for (k, v) in kwparams))
 
-
 """
     read(filename::AbstractString, DataCollection; writer::Union{Function, Nothing})
 Read the entire contents of a file as a `DataCollection`.
@@ -312,10 +311,13 @@ splitunions(T::Type) = if T isa Union Base.uniontypes(T) else (T,) end
 extracttypes(T::Type) =
     if T == Type || T == Any
         (Any,)
+    elseif T isa UnionAll
+        first(Base.unwrap_unionall(T).parameters).ub |> splitunions
     elseif T isa Union
         first.(getproperty.(Base.uniontypes(T), :parameters))
     else
-        first(T.parameters) |> splitunions
+        T1 = first(T.parameters)
+        if T1 isa TypeVar T1.ub else T1 end |> splitunions
     end
 
 genericstore = first(methods(storage, Tuple{DataStorage{Any}, Any}))
