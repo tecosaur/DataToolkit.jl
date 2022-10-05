@@ -47,7 +47,7 @@ ReplCmd(name::Union{Symbol, String}, args...) =
 
 help(r::ReplCmd) = println(stderr, r.description)
 completions(r::ReplCmd, sofar::AbstractString) =
-    filter(s -> startswith(sofar, s), allcompletions(r, sofar))
+    filter(s -> startswith(s, sofar), allcompletions(r, sofar))
 allcompletions(::ReplCmd, ::AbstractString) = String[]
 
 const REPL_CMDS = ReplCmd[]
