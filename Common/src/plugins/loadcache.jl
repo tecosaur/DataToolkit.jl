@@ -1,3 +1,5 @@
+const LOADCACHE_DEFAULT_FOLDER = "loadcache"
+
 function loadcache_file(loader::DataLoader, source::Any, as::Type)
     # Obtain a consistant hash based on this loader and the
     # defined storage backends.
@@ -16,7 +18,7 @@ function loadcache_file(loader::DataLoader, source::Any, as::Type)
          # Cache folder
          get(get(loader.dataset.collection,
                  "loadcache", Dict()),
-             "loadcache", "loadcache"),
+             "loadcache", LOADCACHE_DEFAULT_FOLDER),
          # Dataset
          string(loader.dataset.uuid),
          # Loader
