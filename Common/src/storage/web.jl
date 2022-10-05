@@ -3,7 +3,7 @@ function download_progress(filename::AbstractString)
     last_print = 0
     itercount = 0
     aprint(io::IO, val) = print(io, ' ', "\e[90m", val, "\e[m")
-    partialbars = ['╺', '▏','▎','▍','▌','▋','▊','▉']
+    partialbars = ["\e[90m╺", "╸\e[90m"]
     spinners = ['◐', '◓', '◑', '◒']
     function (total::Integer, now::Integer)
         if time() - start_time > 2 && time() - last_print > 0.1
@@ -22,7 +22,7 @@ function download_progress(filename::AbstractString)
                 eta_short = replace(string(eta_period), r" ([a-z])[a-z]+,?" => s"\1")
                 complete = 30 * now/total
                 aprint(out, string(
-                    spinner, ' ', '█'^floor(Int, complete),
+                    spinner, " \e[34m", '━'^floor(Int, complete),
                     partialbars[round(Int, 1+(length(partialbars)-1)*(complete%1))],
                     '━'^floor(Int, 30 - complete),
                     "  $now/$total bytes ($(round(100*now/total, digits=1))%) of $filename downloaded",
@@ -43,6 +43,7 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
             headers = get(storage, "headers", Dict{String, String}()),
             timeout = get(storage, "timeout", Inf),
             progress = download_progress(storage.dataset.name))
+        print(stderr, "\e[G\e[2K")
         seekstart(io)
         io
     catch _
