@@ -28,6 +28,30 @@ end
 Base.hash((collection, obj)::Tuple{DataCollection, <:Any}, h::UInt) =
     chash(collection, obj, h)
 
+"""
+    chash(collection::DataCollection, obj, h::UInt)
+    chash(obj::DataSet, h::UInt=0)                 # Convenience form
+    chash(obj::AbstractDataTransformer, h::UInt=0) # Convenience form
+Generate a hash of `obj` with respect to its `collection` context, which should
+be *consistent* across sessions and cosmetic changes (chash = consistent hash).
+
+This function has a catch-all method that falls back to calling `hash`, with
+special implementations for the following `obj` types:
+- `DataSet`
+- `AbstractDataTransformer`
+- `Identifier`
+- `Dict`
+- `Pair`
+- `Vector`
+"""
+function chash end
+
+chash(ds::DataSet, h::UInt=UInt(0)) =
+    chash(ds.collection, ds, h)
+
+chash(adt::AbstractDataTransformer, h::UInt=UInt(0)) =
+    chash(adt.dataset.collection, adt, h)
+
 function chash(collection::DataCollection, ds::DataSet, h::UInt)
     h = hash(ds.uuid, h)
     for field in (:parameters, :storage, :loaders, :writers)
@@ -37,8 +61,7 @@ function chash(collection::DataCollection, ds::DataSet, h::UInt)
 end
 
 function chash(collection::DataCollection, adtl::Vector{AbstractDataTransformer}, h::UInt)
-    chash.(Ref(collection), adtl, zero(UInt)) |>
-        hs -> xor(h, hs...)
+    reduce(xor, chash.(Ref(collection), adtl, zero(UInt)))
 end
 
 function chash(collection::DataCollection, adt::AbstractDataTransformer, h::UInt)
@@ -56,8 +79,8 @@ function chash(collection::DataCollection, ident::Identifier, h::UInt)
 end
 
 function chash(collection::DataCollection, dict::Dict, h::UInt)
-    [chash(collection, kv, zero(UInt)) for kv in dict] |>
-        hs -> xor(h, hs...)
+    reduce(xor, [chash(collection, kv, zero(UInt)) for kv in dict],
+           init=h)
 end
 
 function chash(collection::DataCollection, pair::Pair, h::UInt)
