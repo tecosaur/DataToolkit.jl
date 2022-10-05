@@ -131,7 +131,8 @@ function get_dlcache_file(storage::DataStorage{:url})
             chmod(fullpath, 0o100444 & filemode(fullpath)) # Make read-only
         end
         if !isnothing(get(storage, "checksum"))
-            checksumfile = fullpath * ".checksum"
+            checksumfile = joinpath(dirname(fullpath),
+                                    '.' * basename(fullpath) * ".checksum")
             if !isfile(checksumfile) || mtime(checksumfile) < mtime(fullpath)
                 rm(checksumfile, force=true)
                 checksum = open(f -> crc32c(f), fullpath, "r")
