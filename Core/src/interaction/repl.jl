@@ -300,6 +300,26 @@ push!(REPL_CMDS,
             dataset(ds)
         end))
 
+function allcompletions(::ReplCmd{:show}, sofar::AbstractString)
+    try # In case `resolve` or `getlayer` fail.
+        if !isnothing(match(r"^.+::", sofar))
+                identifier = Identifier(first(split(sofar, "::")))
+                types = map(l -> l.support, resolve(identifier).loaders) |>
+                    Iterators.flatten .|> string |> unique
+                string.(string(identifier), "::", types)
+        elseif !isnothing(match(r"^[^:]+:", sofar))
+            layer, _ = split(sofar, ':', limit=2)
+            string.(layer, ':',
+                    getproperty.(getlayer(layer).datasets, :name) |> unique)
+        else
+            vcat(getproperty.(STACK, :name) .* ':',
+                getproperty.(getlayer(nothing).datasets, :name) |> unique)
+        end
+    catch _
+        String[]
+    end
+end
+
 # get
 
 push!(REPL_CMDS,
