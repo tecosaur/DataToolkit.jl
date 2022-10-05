@@ -36,7 +36,7 @@ end
 
 function getstorage(storage::DataStorage{:url}, ::Type{IO})
     @use Downloads
-    try
+    @something get_dlcache_file(storage) try
         io = IOBuffer()
         Downloads.download(
             get(storage, "url"), io;
@@ -47,6 +47,42 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
         seekstart(io)
         io
     catch _
+        Some(nothing)
+    end
+end
+
+function get_dlcache_file(storage::DataStorage{:url})
+    @use Downloads
+    path = if get(storage, "cache") != false
+        something(get(storage, "cachefile"),
+                  if get(storage, "cache") == true
+                      # Restrict characters to the POSIX portable filename character set.
+                      replace(storage.dataset.name, r"[^A-Za-z0-9_-]" => '_') *
+                          ".cache"
+                  end,
+                  Some(nothing))
+    end
+    if !isnothing(path)
+        fullpath = joinpath(
+            if !isnothing(storage.dataset.collection.path)
+                dirname(storage.dataset.collection.path)
+            else
+                pwd()
+            end,
+            get(storage, "cachefolder", ""),
+            path)
+        if !isfile(fullpath)
+            if !isdir(dirname(fullpath))
+                mkpath(dirname(fullpath))
+            end
+            Downloads.download(
+                get(storage, "url"), fullpath;
+                headers = get(storage, "headers", Dict{String, String}()),
+                timeout = get(storage, "timeout", Inf),
+                progress = download_progress(storage.dataset.name))
+            print(stderr, "\e[G\e[2K")
+        end
+        open(fullpath, "r")
     end
 end
 
