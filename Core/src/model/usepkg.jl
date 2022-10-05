@@ -49,18 +49,87 @@ function addpkg(mod::Module, name::Symbol, uuid::Union{UUID, String})
 end
 
 """
-    @use pkg1 pkg2...
-Fetch previously registered modules.
+    @use pkg1, pkg2...
+    @use pkg1 as name1, pkg2 as name2...
+    @use pkg: foo, bar...
+    @use pkg: foo as bar, bar as baz...
+Fetch modules previously registered with `@addpkg`, and import them into the
+current namespace. This macro tries to largely mirror the syntax of `using`.
 
-`@use pkg1` loads the module `pkg1` into the current scope as `pkg1`.
-Multiple packages may be loaded all at once by seperating each package
-name with a space.
+# Example
+
+```julia
+@use pkg
+pkg.dothing(...)
+# Alternative form
+@use pkg: dothing
+dothing(...)
+```
 """
-macro use(pkgnames::Symbol...)
+macro use(terms::Union{Expr, Symbol}...)
+    pkgs = Tuple{Symbol, Symbol}[]
+    imports = Tuple{Symbol, Symbol, Symbol}[]
+    function flattento!(stack, terms)
+        for term in terms
+            if term isa Symbol
+                push!(stack, term)
+            elseif term isa Expr && term.head == :tuple
+                append!(stack, term.args)
+            end
+        end
+    end
+    if length(terms) == 1 && terms[1] isa Symbol
+        # Case: @use pkg
+        push!(pkgs, (terms[1], terms[1]))
+    elseif terms[1] isa Expr &&
+        ((terms[1].head == :call && terms[1].args[1] == :(:)) ||
+        (terms[1].head == :tuple && terms[1].args[1] isa Expr &&
+        terms[1].args[1].head == :call && terms[1].args[1].args[1] == :(:)))
+        # Case: @use pkg: a, b as c, d, e, f as g, h, ...
+        stack = Symbol[]
+        pkg = if terms[1].head == :call
+            append!(stack, terms[1].args[3:end])
+            terms[1].args[2]
+        else
+            push!(stack, terms[1].args[1].args[3])
+            append!(stack, terms[1].args[2:end])
+            terms[1].args[1].args[2]
+        end
+        push!(pkgs, (pkg, pkg))
+        flattento!(stack, terms[2:end])
+        while !isempty(stack)
+            if length(stack) > 2 && stack[2] == :as
+                push!(imports, (pkg, stack[1], stack[3]))
+                deleteat!(stack, 1:3)
+            else
+                push!(imports, (pkg, stack[1], stack[1]))
+                deleteat!(stack, 1)
+            end
+        end
+    elseif length(terms) == 1 && terms[1] isa Expr && terms[1].head == :tuple
+        # Case: @use pkg1, pkg2, pkg3, ...
+        append!(pkgs, zip(terms[1].args, terms[1].args) |> collect)
+    else
+        # Case: @use pkg1 as pkg2, pkg3, ...
+        stack = Symbol[]
+        flattento!(stack, terms)
+        while !isempty(stack)
+            if length(stack) > 2 && stack[2] == :as
+                push!(pkgs, (stack[1], stack[3]))
+                deleteat!(stack, 1:3)
+            else
+                push!(pkgs, (stack[1], stack[1]))
+                deleteat!(stack, 1)
+            end
+        end
+    end
     Expr(:block,
-         map(pkgnames) do pkg
-             Expr(:(=), esc(pkg),
+         map(pkgs) do (pkg, as)
+             Expr(:(=), esc(as),
                   :($(@__MODULE__).get_package(
-                      @__MODULE__, Symbol($(esc(String(pkg)))))))
+                      @__MODULE__, $(QuoteNode(pkg)))))
+         end...,
+         map(imports) do (pkg, load, as)
+             Expr(:(=), esc(as), :($(esc(pkg)).$load))
          end...)
 end
