@@ -28,5 +28,5 @@ function storage(storage::DataStorage{:filesystem}, ::Type{String}; write::Bool=
     read(file, String)
 end
 
-supportedtypes(::Type{DataStorage{:filesystem}}) =
+supportedtypes(::Type{<:DataStorage{:filesystem, <:Any}}) =
     QualifiedType.([IO, Vector{UInt8}, String])
