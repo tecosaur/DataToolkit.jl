@@ -1,6 +1,6 @@
 const DEFAULT_DEFAULTS = Dict{String, Any}()
 
-const DEFAULTS_ALL = "*"
+const DEFAULTS_ALL = "_"
 
 """
     getdefaults(collection::DataCollection)
@@ -27,12 +27,10 @@ function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}, dri
         get(get(dataset.collection,
                 "defaults", DEFAULT_DEFAULTS),
             adt_type, Dict{String,Any}())
-    defaults_all =
-        merge(Dict{String,Any}("priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY),
-              filter((k, v)::Pair -> k == DEFAULTS_ALL,
-                     transformer_defaults)...)
-    merge(defaults_all,
-        filter((k, v)::Pair -> k == driver, transformer_defaults)...)
+    merge(Dict{String,Any}("priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY,
+                           "support" => string.(supportedtypes(ADT{driver}))),
+          get(transformer_defaults, DEFAULTS_ALL, Dict{String,Any}()),
+          get(transformer_defaults, String(driver), Dict{String,Any}()))
 end
 
 """
@@ -60,7 +58,7 @@ This works with both DataSets and AbstractDataTransformers.
 ### Default DataSet property
 
 ```toml
-[[config.defaults]]
+[config.defaults]
 description="Oh no, nobody bothered to describe this dataset."
 ```
 
@@ -71,10 +69,10 @@ also affect all drivers with the special "all drivers" key `$(DEFAULTS_ALL)`.
 Specific-driver defaults always override all-driver defaults.
 
 ```toml
-[[config.defaults.storage.$(DEFAULTS_ALL)]]
+[config.defaults.storage.$(DEFAULTS_ALL)]
 priority=0
 
-[[config.defaults.storage.filesystem]]
+[config.defaults.storage.filesystem]
 priority=2
 ```
 """
