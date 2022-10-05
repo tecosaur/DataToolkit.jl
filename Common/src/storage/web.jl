@@ -128,14 +128,23 @@ function get_dlcache_file(storage::DataStorage{:url})
                 timeout = get(storage, "timeout", Inf),
                 progress = download_progress(storage.dataset.name))
             print(stderr, "\e[G\e[2K")
-            if !isnothing(get(storage, "checksum"))
-                try
-                    open(f -> checkchecksum(storage, f), fullpath, "r")
-                    chmod(fullpath, 0o100444 & filemode(fullpath)) # Make read-only
-                catch e
-                    rm(fullpath)
-                    rethrow(e)
-                end
+            chmod(fullpath, 0o100444 & filemode(fullpath)) # Make read-only
+        end
+        if !isnothing(get(storage, "checksum"))
+            checksumfile = fullpath * ".checksum"
+            if !isfile(checksumfile) || mtime(checksumfile) < mtime(fullpath)
+                rm(checksumfile, force=true)
+                checksum = open(f -> crc32c(f), fullpath, "r")
+                write(checksumfile, string(checksum))
+                chmod(checksumfile, 0o100444 & filemode(fullpath)) # Make read-only
+            end
+            checksum = parse(Int, read(checksumfile, String))
+            try
+                checkchecksum(storage, checksum)
+            catch e
+                rm(fullpath)
+                rm(checksumfile)
+                rethrow(e)
             end
         end
         open(fullpath, "r")
