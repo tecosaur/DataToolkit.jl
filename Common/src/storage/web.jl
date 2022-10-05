@@ -34,6 +34,24 @@ function download_progress(filename::AbstractString)
     end
 end
 
+function checkchecksum(storage::DataStorage{:url}, data::IO)
+    checksum = get(storage, "checksum")
+    if checksum == "auto"
+        storage.parameters["checksum"] = crc32c(data)
+        @info "Writing checksum for $(storage.dataset.name)'s url storage."
+        write(storage)
+        true
+    elseif checksum isa Integer
+        newchecksum = crc32c(data)
+        if newchecksum != checksum
+            error("Checksum mismatch with $(storage.dataset.name)'s url storage! \
+                   Expected $checksum, got $newchecksum.")
+        end
+        @info "Checksums match"
+        true
+    end
+end
+
 function getstorage(storage::DataStorage{:url}, ::Type{IO})
     @use Downloads
     @something get_dlcache_file(storage) try
@@ -45,6 +63,7 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
             progress = download_progress(storage.dataset.name))
         print(stderr, "\e[G\e[2K")
         seekstart(io)
+        checkchecksum(storage, io) && seekstart(io)
         io
     catch _
         Some(nothing)
@@ -83,6 +102,15 @@ function get_dlcache_file(storage::DataStorage{:url})
                 timeout = get(storage, "timeout", Inf),
                 progress = download_progress(storage.dataset.name))
             print(stderr, "\e[G\e[2K")
+            if !isnothing(get(storage, "checksum"))
+                try
+                    open(f -> checkchecksum(storage, f), fullpath, "r")
+                    chmod(fullpath, 0o100444 & filemode(fullpath)) # Make read-only
+                catch e
+                    rm(fullpath)
+                    rethrow(e)
+                end
+            end
         end
         open(fullpath, "r")
     end
