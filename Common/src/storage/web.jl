@@ -36,19 +36,45 @@ end
 
 function checkchecksum(storage::DataStorage{:url}, data::IO)
     checksum = get(storage, "checksum")
+    if checksum == "auto" || checksum isa Integer
+        checkchecksum(storage, crc32c(data))
+        true
+    elseif !isnothing(checksum)
+        @warn "Invalid url storage checksum: $checksum, ignoring."
+        false
+    else
+        false
+    end
+end
+
+function checkchecksum(storage::DataStorage{:url}, actual_checksum::Integer)
+    checksum = get(storage, "checksum")
     if checksum == "auto"
-        storage.parameters["checksum"] = crc32c(data)
+        storage.parameters["checksum"] = actual_checksum
         @info "Writing checksum for $(storage.dataset.name)'s url storage."
         write(storage)
-        true
     elseif checksum isa Integer
-        newchecksum = crc32c(data)
-        if newchecksum != checksum
-            error("Checksum mismatch with $(storage.dataset.name)'s url storage! \
-                   Expected $checksum, got $newchecksum.")
+        if actual_checksum != checksum
+            if isinteractive()
+                printstyled(stderr, "!", color=:yellow, bold=true)
+                print(" Checksum mismatch with $(storage.dataset.name)'s url storage.\n  \
+                        Expected the CRC32c checksum to be $checksum, got $actual_checksum.\n  \
+                        How would you like to proceed?\n\n")
+                options = ["(o) Overwrite checksum to $actual_checksum", "(a) Abort and throw an error"]
+                choice = request(RadioMenu(options, keybindings=['o', 'a']))
+                print('\n')
+                if choice == 1 # Overwrite
+                    storage.parameters["checksum"] = actual_checksum
+                    write(storage)
+                else
+                    error("Checksum mismatch with $(storage.dataset.name)'s url storage! \
+                        Expected $checksum, got $actual_checksum.")
+                end
+            else
+                error("Checksum mismatch with $(storage.dataset.name)'s url storage! \
+                       Expected $checksum, got $actual_checksum.")
+            end
         end
-        @info "Checksums match"
-        true
     end
 end
 

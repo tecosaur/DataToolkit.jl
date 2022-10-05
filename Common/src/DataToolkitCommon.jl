@@ -7,6 +7,7 @@ import DataToolkitBase: load, save, storage,
 using Dates
 using Tables
 using CRC32c: crc32c
+using REPL.TerminalMenus
 
 include("storage/filesystem.jl")
 include("storage/null.jl")
