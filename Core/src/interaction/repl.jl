@@ -82,9 +82,11 @@ function execute_repl_cmd(line::AbstractString)
 end
 
 function complete_repl_cmd(line::AbstractString)
-    complete = if isempty(line)
-        Vector{String}(
-            map(c -> String(first(typeof(c).parameters)), REPL_CMDS))
+    if isempty(line)
+        (sort(Vector{String}(
+            map(c -> String(first(typeof(c).parameters)), REPL_CMDS))),
+         "",
+         true)
     else
         cmd_parts = split(line, limit = 2)
         cmd_name, rest = if length(cmd_parts) == 1
@@ -93,7 +95,7 @@ function complete_repl_cmd(line::AbstractString)
             cmd_parts
         end
         repl_cmd = find_repl_cmd(cmd_name)
-        if !isnothing(repl_cmd)
+        complete = if !isnothing(repl_cmd)
             completions(repl_cmd, rest)
         else
             nameandshortcut = vcat(
@@ -102,15 +104,15 @@ function complete_repl_cmd(line::AbstractString)
             Vector{String}(
                 filter(ns -> startswith(ns, cmd_name), sort(nameandshortcut)))
         end
-    end
-    if complete isa Tuple{Vector{String}, String, Bool}
-        complete
-    elseif complete isa Vector{String}
-        (sort(complete),
-         String(first(split(line, limit=2, keepempty=true))),
-         !isempty(complete))
-    else
-        throw(error("REPL completions for $cmd_name returned strange result, $(typeof(complete))"))
+        if complete isa Tuple{Vector{String}, String, Bool}
+            complete
+        elseif complete isa Vector{String}
+            (sort(complete),
+                String(rest),
+                !isempty(complete))
+        else
+            throw(error("REPL completions for $cmd_name returned strange result, $(typeof(complete))"))
+        end
     end
 end
 
