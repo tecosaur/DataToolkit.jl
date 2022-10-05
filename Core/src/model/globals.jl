@@ -75,3 +75,26 @@ const DATA_CONFIG_RESERVED_ATTRIBUTES =
     Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "config"],
          :dataset => ["uuid", "store", "storage", "loader", "writer"],
          :transformer => ["driver", "support", "priority"])
+
+"""
+When writing data configuration TOML file, the keys are (recursively) sorted.
+Some keys are particularly important though, and so to ensure they are placed
+higher a mappings from such keys to a higher sort priority string can be
+registered here.
+
+For example, `"config" => "\0x01"` ensures that the special configuration
+section is placed before all of the data sets.
+
+This can cause odd behaviour if somebody gives a dataset the same name as a
+special key, but frankly that would be a bit silly (given the key names, e.g.
+"uuid") and so this is of minimal concern.
+"""
+const DATA_CONFIG_KEY_SORT_MAPPING =
+    Dict("config" => "\0x01",
+         "data_config_version" => "\0x01",
+         "uuid" => "\0x02",
+         "name" => "\0x03",
+         "description" => "\0x04",
+         "storage" => "\0x05",
+         "loader" => "\0x06",
+         "writer" => "\0x07")

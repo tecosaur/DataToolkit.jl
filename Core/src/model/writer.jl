@@ -59,7 +59,8 @@ end
 
 Base.write(io::IO, dc::DataCollection) =
     TOML.print(io, filter(((_, value),) -> !isempty(value),
-                          convert(Dict, dc)))
+                          convert(Dict, dc));
+               sorted = true, by = k -> get(DATA_CONFIG_KEY_SORT_MAPPING, k, k))
 
 function Base.write(dc::DataCollection)
     if isnothing(dc.path)
