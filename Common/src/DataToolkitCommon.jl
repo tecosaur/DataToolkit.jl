@@ -48,8 +48,8 @@ function __init__()
     # Plugins
     @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 
-    push!(PLUGINS, defaults_plugin)
-    push!(PLUGINS, loadcache_plugin)
+    push!(PLUGINS, DEFAULTS_PLUGIN)
+    push!(PLUGINS, LOADCACHE_PLUGIN)
 end
 
 end

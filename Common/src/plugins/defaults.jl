@@ -76,7 +76,7 @@ priority=0
 priority=2
 ```
 """
-const defaults_plugin = Plugin("defaults", [
+const DEFAULTS_PLUGIN = Plugin("defaults", [
     function (post::Function, f::typeof(fromspec), D::Type{DataSet},
               collection::DataCollection, name::String, spec::Dict{String, Any})
         (post, f, (D, collection, name, merge(getdefaults(collection), spec))) end,

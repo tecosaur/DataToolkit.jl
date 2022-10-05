@@ -67,7 +67,7 @@ cache = true
 folder = "loadcache" # the default
 ```
 """
-const loadcache_plugin = Plugin("loadcache", [
+const LOADCACHE_PLUGIN = Plugin("loadcache", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if loadcache_isstorable(as) && get(loader, "cache", false) == true
             @use JLD2
