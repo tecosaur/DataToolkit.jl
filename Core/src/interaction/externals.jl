@@ -123,8 +123,15 @@ function Base.read(dataset::DataSet, as::Type)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
                     if !isnothing(datahandle)
-                        return applytransformer(
+                        result = applytransformer(
                             dataset, load, loader, datahandle, as)
+                        if !isnothing(result)
+                            # Use `something` so `Some(nothing)` can be
+                            # used to return nothing while getting past
+                            # `!isnothing`.  I'm not sure when this will
+                            # come up in practice, but it seems prudent.
+                            return something(result)
+                        end
                     end
                 end
             end
