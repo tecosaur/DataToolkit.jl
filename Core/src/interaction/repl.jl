@@ -296,10 +296,19 @@ push!(REPL_CMDS,
 push!(REPL_CMDS,
     ReplCmd(:show,
         "List the dataset refered to by an identifier.",
-        ds -> if isempty(ds)
-            println(stderr, "Provide a dataset to be shown.")
+        ident -> if isempty(ident)
+            println("Provide a dataset to be shown.")
         else
-            dataset(ds)
+            ds = resolve(parse(Identifier, ident))
+            display(ds)
+            if ds isa DataSet
+                print("  UUID:    ")
+                printstyled(ds.uuid, '\n', color=:light_magenta)
+                if !isnothing(get(ds, "description"))
+                println("\n  “\e[3m", strip(get(ds, "description")), "\e[m”")
+                end
+            end
+            nothing
         end))
 
 function allcompletions(::ReplCmd{:show}, sofar::AbstractString)
