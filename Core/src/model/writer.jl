@@ -58,9 +58,9 @@ function tospec(dc::DataCollection)
 end
 
 Base.write(io::IO, dc::DataCollection) =
-    TOML.print(io, filter(((_, value),) -> !isempty(value),
+    TOML.print(io, filter(((_, value),) -> !isnothing(value) && !isempty(value),
                           convert(Dict, dc));
-               sorted = true, by = k -> get(DATA_CONFIG_KEY_SORT_MAPPING, k, k))
+               sorted = true, by = k -> get(DATA_CONFIG_KEY_SORT_MAPPING, k, lowercase(k)))
 
 function Base.write(dc::DataCollection)
     if isnothing(dc.path)
