@@ -20,11 +20,26 @@ function getactfn(transformer::AbstractDataTransformer)
 end
 
 function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
-    loadfn = getactfn(loader)
-    arguments = Dict{Symbol,Any}(
-        Symbol(arg) => val
-        for (arg, val) in get(loader, "arguments")::Dict)
-    Base.invokelatest(loadfn; arguments...)::R
+    if isempty(get(loader, "input", ""))
+        loadfn = getactfn(loader)
+        arguments = Dict{Symbol,Any}(
+            Symbol(arg) => val
+            for (arg, val) in get(loader, "arguments", Dict())::Dict)
+        Base.invokelatest(loadfn; arguments...)::R
+    end
+end
+
+function load(loader::DataLoader{:julia}, from::Any, R::Type)
+    if !isempty(get(loader, "input", ""))
+        desired_type = convert(Type, QualifiedType(get(loader, "input", "")))
+        if from isa desired_type
+            loadfn = getactfn(loader)
+            arguments = Dict{Symbol,Any}(
+                Symbol(arg) => val
+                for (arg, val) in get(loader, "arguments", Dict())::Dict)
+            Base.invokelatest(loadfn, from; arguments...)::R
+        end
+    end
 end
 
 function save(writer::DataWriter{:julia}, dest, info)
