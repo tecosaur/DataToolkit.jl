@@ -28,15 +28,6 @@ include("plugins/defaults.jl")
 include("plugins/loadcache.jl")
 
 function __init__()
-    project_dir = first(Base.load_path())
-    if !isdir(project_dir)
-        project_dir = dirname(project_dir)
-    end
-    project_data = joinpath(project_dir, "Data.toml")
-    if isfile(project_data)
-        loadcollection!(project_data)
-    end
-
     # Storage
     @addpkg Downloads      "f43a241f-c20a-4ad4-852c-f6b1247861c6"
     @addpkg DelimitedFiles "8bb1440f-4735-579b-a4ab-409b98df4dab"
