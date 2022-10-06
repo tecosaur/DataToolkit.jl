@@ -108,9 +108,7 @@ function get_dlcache_file(storage::DataStorage{:url})
     path = if get(storage, "cache") != false
         something(get(storage, "cachefile"),
                   if get(storage, "cache") == true
-                      # Restrict characters to the POSIX portable filename character set.
-                      replace(storage.dataset.name, r"[^A-Za-z0-9_-]" => '_') *
-                          ".cache"
+                      string(storage.dataset.uuid, ".cache")
                   end,
                   Some(nothing))
     end
