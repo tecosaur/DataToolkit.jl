@@ -28,11 +28,27 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
     toploader = last(subloaders)
     supporttypes = filter(!isnothing, convert.(Type, toploader.support))
     if length(subloaders) > 1
-        potentialmethods =
-            [methods(load, Tuple{typeof(toploader), Any, Type{suptype}}).ms
-             for suptype in supporttypes
-                 if suptype <: targettype] |> Iterators.flatten |> unique
-        midtypes = [m.sig.types[3] for m in potentialmethods]
+        midtypes = if toploader isa DataLoader{:julia}
+            # Julia loaders are a bit special, as they have parameter
+            # (`input`) which if set indicates the type expected in the
+            # argument to the Julia function. If not set, then this is
+            # a keyword-argument only Julia loader, and so it expects
+            # Nothing. Really though, only the input variety of loaders
+            # makes sense in a nested loader. We may as well be
+            # exhaustive though.
+            if isempty(get(toploader, "input", ""))
+                [Nothing]
+            else
+                itype = convert(Type, QualifiedType(get(toploader, "input")))
+                if !isnothing(itype); [itype] else Type[] end
+            end
+        else
+            potentialmethods =
+                [methods(load, Tuple{typeof(toploader), Any, Type{suptype}}).ms
+                for suptype in supporttypes
+                    if suptype <: targettype] |> Iterators.flatten |> unique
+            [m.sig.types[3] for m in potentialmethods]
+        end
         subpaths = filter(!isnothing,
                           [loadtypepath(subloaders[1:end-1], fromtype, midtype)
                            for midtype in midtypes])
