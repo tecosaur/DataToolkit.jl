@@ -94,6 +94,7 @@ const DATA_CONFIG_KEY_SORT_MAPPING =
          "data_config_version" => "\0x01",
          "uuid" => "\0x02",
          "name" => "\0x03",
+         "driver" => "\0x03",
          "description" => "\0x04",
          "storage" => "\0x05",
          "loader" => "\0x06",
