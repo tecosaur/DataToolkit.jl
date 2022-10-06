@@ -249,7 +249,9 @@ function list_datasets(collection_str::AbstractString)
         table_rows = displaytable(
             ["Dataset", "Description"],
             map(collection.datasets) do dataset
-                [dataset.name, get(dataset, "description", "")]
+                [dataset.name,
+                 first(split(get(dataset, "description", " "),
+                             '\n', keepempty=false))]
             end)
         for row in table_rows
             print(stderr, ' ', row, '\n')
