@@ -29,9 +29,9 @@ makedocs(;
         ],
         "Internals" => "libinternal.md",
     ],
-    repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
+    repo="https://github.com/tecosaur/DataToolkitBase.jl/blob/{commit}{path}#L{line}",
     sitename="DataSets.jl",
-    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors"
+    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitBase.jl/graphs/contributors"
 )
 
 deploydocs(;
