@@ -45,5 +45,8 @@ end
 
 function save(writer::DataWriter{:julia}, dest, info)
     writefn = getactfn(writer)
-    Base.invokelatest(writefn, dest, info)
+    arguments = Dict{Symbol,Any}(
+        Symbol(arg) => val
+        for (arg, val) in get(loader, "arguments", Dict())::Dict)
+    Base.invokelatest(writefn, dest, info; arguments...)
 end
