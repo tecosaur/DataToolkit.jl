@@ -1,0 +1,5 @@
+#+title: Memorise
+
+#+begin_src @docs
+MEMORISE_PLUGIN
+#+end_src
