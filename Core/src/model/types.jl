@@ -238,9 +238,13 @@ end
 struct Plugin
     name::String
     advisors::Vector{DataAdvice}
-    Plugin(name::String, advisors::Vector{<:Function}) =
-        new(name, DataAdvice.(advisors))
 end
+
+Plugin(name::String, advisors::Vector{<:Function}) =
+    Plugin(name, DataAdvice.(advisors))
+
+Plugin(name::String, advisors::Vector{<:DataAdvice}) =
+    Plugin(name, Vector{DataAdvice}(advisors))
 
 struct DataSet
     collection
