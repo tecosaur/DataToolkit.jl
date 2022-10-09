@@ -109,7 +109,7 @@ function get_dlcache_file(storage::DataStorage{:url})
         string(storage.dataset.uuid, ".cache")
     elseif get(storage, "cache") isa String
         get(storage, "cache")
-    elseif get(storage, "cache") == false
+    elseif get(storage, "cache", false) == false
     else
         @warn "Invalid cache parameter: $(get(storage, "cache")), ignoring."
     end
