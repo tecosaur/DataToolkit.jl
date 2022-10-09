@@ -1,0 +1,81 @@
+#+title: Julia
+
+* Description
+
+The =julia= driver enables the *parsing* and *serialisation* of arbitrary data to
+arbitrary information formats and vice versa via custom Julia functions.
+
+* Input/output
+
+The =julia= driver either accepts /no/ direct input, or accepts input from storage
+backends of the type specified by the =input= keyword. Thus, the provided
+functions must take one of the following forms:
+
+#+begin_src julia
+function (input; kwargs...)
+    # Direct input form.
+end
+#+end_src
+
+#+begin_src julia
+function (kwargs...)
+    # No direct input form.
+end
+#+end_src
+
+In both cases, additional information can be provided via the =arguments= keyword,
+which supplies additional keyword arguments to the Julia function invoked. It is
+worth remembering the special treatment of DataSet strings which are dynamically
+resolved (see the examples).
+
+Writer functions take two arguments, the destination (a handle to the storage
+backend, usually =IO=) and the information to be serialised.
+
+#+begin_src julia
+function (destination, info)
+    # Write `info` to `destination`, and return
+    # not-nothing if the operation succeeds.
+end
+#+end_src
+
+* Required packages
+
+None
+
+* Parameters
+
++ input :: (loading only) The data type required for direct input.
++ path :: A local file path, relative to =pathroot= if provided or the directory of
+  the data TOML file.
++ pathroot :: The root path to expand =path= against, relative to the directory of
+  the data TOML file.
++ function :: The function as a string, inline in the data TOML file.
++ arguments :: Arguments to be provided to the called function.
+
+* Usage examples
+
+#+begin_src julia
+[[addone.loader]]
+driver = "julia"
+input = "Number"
+function = "n -> n+1"
+#+end_src
+
+#+begin_src julia
+[[combined.loader]]
+driver = "julia"
+path = "scripts/mergedata.jl"
+
+[combined.loader.arguments]
+foo = "💾DATASET<<<foo::DataFrames.DataFrame>>>"
+bar = "💾DATASET<<<bar::DataFrames.DataFrame>>>"
+baz = "💾DATASET<<<baz::DataFrames.DataFrame>>>"
+#+end_src
+
+#+begin_src julia
+[[repeated.loader]]
+driver = "julia"
+input = "Integer"
+function = "(n::Integer; data::DataFrame) -> repeat(data, n)"
+arguments = { data = "💾DATASET<<<iris::DataFrames.DataFrame>>>" }
+#+end_src

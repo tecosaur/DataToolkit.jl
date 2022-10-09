@@ -1,0 +1,41 @@
+#+title: Nested
+
+* Description
+
+The =nested= loader enables the chaining of multiple loading transformers.
+
+* Input/output
+
+The =nested= loader can accept any form of input, and produce any form of output.
+Writing is not currently supported.
+
+* Required packages
+
+None
+
+* Usage examples
+
+#+begin_src toml
+[[iris.loader]]
+driver = "nested"
+loader = ["gzip", "csv"]
+support = "DataFrames.DataFrame"
+#+end_src
+
+#+begin_src toml
+[[chained.loader]]
+driver = "nested"
+support = "DataFrames.DataFrame"
+
+[[chained.loader.loaders]]
+driver = "gzip"
+
+[[chained.loader.loaders]]
+driver = "csv"
+
+[[chained.loader.loaders]]
+driver = "julia"
+input = "DataFrames.DataFrame"
+path = "scirpts/custom_postprocessing.jl"
+support = "DataFrames.DataFrame"
+#+end_src

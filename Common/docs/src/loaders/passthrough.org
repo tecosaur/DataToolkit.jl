@@ -1,0 +1,24 @@
+#+title: Passthrough
+
+* Description
+
+The =passthrough= driver simply passes on data to/from the storage backend.
+
+* Input/output
+
+Identical to that of the storage.
+
+* Required packages
+
+None
+
+* Parameters
+
+None
+
+* Usage examples
+
+#+begin_src toml
+[[magicvalue.loader]]
+driver = "passthrough"
+#+end_src

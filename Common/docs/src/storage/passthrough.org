@@ -1,0 +1,20 @@
+#+title: Passthrough
+
+* Description
+
+The =passthrough= storage driver enables dataset redirection by offering the
+loaded result of another data set as a /read-only/ storage transformer.
+
+Write capability may be added in future.
+
+* Required packages
+
+None
+
+* Parameters
+
+- ident :: The identifier of the dataset to be loaded.
+
+* Usage examples
+
+TODO

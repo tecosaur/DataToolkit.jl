@@ -1,0 +1,30 @@
+#+title: Passthrough
+
+* Description
+
+The =raw= storage driver enables the *reading* and *writing* of values encoded
+directly in the data TOML file.
+
+The =passthrough= loader is often useful when using this storage driver.
+
+* Required packages
+
+None
+
+* Parameters
+
+- value :: The value in question
+
+* Usage examples
+
+#+begin_src toml
+[[lifemeaning.storage]]
+driver = "raw"
+value = 42
+#+end_src
+
+#+begin_src toml
+[[parameters.storage]]
+driver = "raw"
+value = { a = 3, b = "*", c = false }
+#+end_src

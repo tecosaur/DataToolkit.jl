@@ -1,0 +1,5 @@
+#+title: Loadcache
+
+#+begin_src @docs
+LOADCACHE_PLUGIN
+#+end_src
