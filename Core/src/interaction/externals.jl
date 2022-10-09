@@ -100,6 +100,15 @@ TODO explain further
 ```
 """
 function Base.read(dataset::DataSet, as::Type)
+    dataset.collection.advise(_read, dataset, as)
+end
+
+"""
+    _read(dataset::DataSet, as::Type)
+The advisible implementation of `read(dataset::DataSet, as::Type)`
+This is essentially an excersise in useful indirection.
+"""
+function _read(dataset::DataSet, as::Type)
     all_load_fn_sigs = map(fn -> Base.unwrap_unionall(fn.sig),
                              methods(load, Tuple{DataLoader, Any, Any}))
     qtype = QualifiedType(as)
