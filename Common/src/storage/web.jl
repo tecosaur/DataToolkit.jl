@@ -105,12 +105,13 @@ const WEB_DEFAULT_CACHEFOLDER = "downloads"
 
 function get_dlcache_file(storage::DataStorage{:url})
     @use Downloads
-    path = if get(storage, "cache") != false
-        something(get(storage, "cachefile"),
-                  if get(storage, "cache") == true
-                      string(storage.dataset.uuid, ".cache")
-                  end,
-                  Some(nothing))
+    path = if get(storage, "cache") == true
+        string(storage.dataset.uuid, ".cache")
+    elseif get(storage, "cache") isa String
+        get(storage, "cache")
+    elseif get(storage, "cache") == false
+    else
+        @warn "Invalid cache parameter: $(get(storage, "cache")), ignoring."
     end
     if !isnothing(path)
         fullpath = joinpath(
