@@ -11,7 +11,8 @@ function getactfn(transformer::AbstractDataTransformer)
     fnstr = get(transformer, "function", nothing)
     loadfn = if !isnothing(path)
         Base.include(Main, abspath(dirname(transformer.dataset.collection.path),
-                                   path))
+                                   expanduser(get(transformer, "pathroot", "")),
+                                   expanduser(path)))
     elseif !isnothing(fnstr)
         Base.eval(Main, Meta.parse(strip(fnstr)))
     else
