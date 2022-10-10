@@ -25,8 +25,8 @@ include("saveload/nested.jl")
 include("saveload/passthrough.jl")
 
 include("plugins/defaults.jl")
+include("plugins/log.jl") # Must be early so `should_log_event` is availible.
 include("plugins/loadcache.jl")
-include("plugins/log.jl")
 include("plugins/memorise.jl")
 
 function __init__()

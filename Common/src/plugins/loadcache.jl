@@ -76,10 +76,16 @@ const LOADCACHE_PLUGIN = Plugin("loadcache", [
                 mkpath(dirname(path))
             end
             if isfile(path)
+                if should_log_event("loadcache", loader)
+                    @info "Loading '$(loader.dataset.name)' from .jld2 cache file"
+                end
                 cache = JLD2.load(path, "data")
                 (post, identity, (cache,))
             else
                 docache = function (data)
+                    if should_log_event("loadcache", loader)
+                        @info "Saving '$(loader.dataset.name)' to .jld2 cache file"
+                    end
                     JLD2.jldsave(path; data,
                                  dataset = loader.dataset.uuid,
                                  hash = lhash)

@@ -32,6 +32,9 @@ const MEMORISE_PLUGIN = Plugin("memorise", [
             end
             if should_memorise
                 if haskey(MEMORISE_CACHE, (dataset, as))
+                    if should_log_event("memorise", dataset)
+                        @info "Loading '$(dataset.name)' (as $as) from memory copy"
+                    end
                     cache = MEMORISE_CACHE[(dataset, as)]
                     (post, identity, (cache,))
                 else
