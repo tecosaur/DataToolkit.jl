@@ -5,15 +5,22 @@ struct DriverUnimplementedException <: Exception
 end
 
 """
-    loadcollection!(source::Any)
+    loadcollection!(source::Any; soft::Bool=false)
 Load a data collection from `source` and add it to the data stack.
 `source` must be any type accepted by `read(source, DataCollection)`.
+
+When `soft` is set, should an data collection already exist with the same UUID,
+nothing will be done and `nothing` will be returned.
 """
-function loadcollection!(source::Any)
+function loadcollection!(source::Any; soft::Bool=false)
     collection = read(source, DataCollection)
     existingpos = findfirst(c -> c.uuid == collection.uuid, STACK)
     if !isnothing(existingpos)
-        deleteat!(STACK, existingpos)
+        if soft
+            return nothing
+        else
+            deleteat!(STACK, existingpos)
+        end
     end
     nameconflicts = filter(c -> c.name == collection.name, STACK)
     if !isempty(nameconflicts)
