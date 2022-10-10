@@ -62,9 +62,16 @@ cache = true
 
 ### Configuring the cache directory
 
+The cache directory can be set globally, or per-loader.
+
 ```toml
 [config.loadcache]
-folder = "loadcache" # the default
+folder = "$(LOADCACHE_DEFAULT_FOLDER)" # the default
+```
+
+```
+[somedata.loader]
+loadcache = "some_folder"
 ```
 """
 const LOADCACHE_PLUGIN = Plugin("loadcache", [
