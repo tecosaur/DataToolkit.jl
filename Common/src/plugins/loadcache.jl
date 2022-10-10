@@ -16,9 +16,9 @@ function loadcache_file(loader::DataLoader, source::Any, as::Type)
              pwd()
          end,
          # Cache folder
-         get(get(loader.dataset.collection,
-                 "loadcache", Dict()),
-             "loadcache", LOADCACHE_DEFAULT_FOLDER),
+         @something(get(loader, "loadcache"),
+                    get(get(loader.dataset.collection, "loadcache", Dict()),
+                        "folder", LOADCACHE_DEFAULT_FOLDER)),
          # Dataset
          string(loader.dataset.uuid),
          # Loader
