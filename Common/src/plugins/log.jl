@@ -10,6 +10,11 @@ log_events(dataset::DataSet) = log_events(dataset.collection)
 
 log_events(adt::AbstractDataTransformer) = log_events(adt.dataset)
 
+function should_log_event(event::String, obj::Union{AbstractDataTransformer, DataSet, DataCollection})
+    events = log_events(obj)
+    events == true || (events isa Vector && event in events)
+end
+
 """
     Plugin("log", [...])
 Log major data set events.
@@ -20,6 +25,9 @@ Log major data set events.
 config.log.events = ["load", "save", "storage"] # the default
 ```
 
+To log all event types unconditionally, simply set `config.log.events` to
+`true`.
+
 ### Loggable events
 - `load`, when a loader is run
 - `save`, when a writer is run
@@ -29,19 +37,19 @@ Other transformers or plugins may extend the list of recognised events.
 """
 const LOG_PLUGIN = Plugin("log", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
-        if "load" in log_events(loader)
+        if should_log_event("load", loader)
             @info "Loading $(loader.dataset.name) as $as from $(typeof(source))"
         end
         (post, f, (loader, source, as))
     end,
     function (post::Function, f::typeof(save), writer::DataWriter, target::Any, info::Any)
-        if "save" in log_events(writer)
+        if should_log_event("save", writer)
             @info "Writing $(typeof(info)) to $(writer.dataset.name) as $(typeof(target))"
         end
         (post, f, (writer, target, info))
     end,
     function (post::Function, f::typeof(storage), storer::DataStorage, as::Type; write::Bool=false)
-        if "storage" in log_events(storer)
+        if should_log_event("storage", storer)
             @info "Opening $(storer.dataset.name) as $(as) from $(first(typeof(storer).parameters)) in $(ifelse(write, "write", "read")) mode"
         end
         (post, f, (storer, as), pairs((; write)))
