@@ -26,7 +26,11 @@ function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
         arguments = Dict{Symbol,Any}(
             Symbol(arg) => val
             for (arg, val) in get(loader, "arguments", Dict())::Dict)
-        Base.invokelatest(loadfn; arguments...)::R
+        dir = if isnothing(loader.dataset.collection.path) pwd()
+            else dirname(loader.dataset.collection.path) end
+        cd(dir) do
+            Base.invokelatest(loadfn; arguments...)::R
+        end
     end
 end
 
@@ -38,7 +42,11 @@ function load(loader::DataLoader{:julia}, from::Any, R::Type)
             arguments = Dict{Symbol,Any}(
                 Symbol(arg) => val
                 for (arg, val) in get(loader, "arguments", Dict())::Dict)
-            Base.invokelatest(loadfn, from; arguments...)::R
+            dir = if isnothing(loader.dataset.collection.path) pwd()
+            else dirname(loader.dataset.collection.path) end
+            cd(dir) do
+                Base.invokelatest(loadfn, from; arguments...)::R
+            end
         end
     end
 end
@@ -48,5 +56,9 @@ function save(writer::DataWriter{:julia}, dest, info)
     arguments = Dict{Symbol,Any}(
         Symbol(arg) => val
         for (arg, val) in get(loader, "arguments", Dict())::Dict)
-    Base.invokelatest(writefn, dest, info; arguments...)
+    dir = if isnothing(writer.dataset.collection.path) pwd()
+    else dirname(writer.dataset.collection.path) end
+    cd(dir) do
+        Base.invokelatest(writefn, dest, info; arguments...)
+    end
 end
