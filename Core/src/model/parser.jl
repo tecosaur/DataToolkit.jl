@@ -8,7 +8,10 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
             split(cbsplit[1], '.'), Tuple{}()
         else
             split(cbsplit[1], '.'),
-            eval(Meta.parse(string('(', cbsplit[2][begin:end-1], ",)")))
+            # REVIEW should this support commas within type parameters?
+            # e.g. A{B,C{D,E}}. This feels like probably a bit much.
+            Tuple(map(qt -> parse(QualifiedType, qt),
+                      split(cbsplit[2][begin:end-1], r", ?")))
         end
     end
     parentmodule, name = if length(components) == 1

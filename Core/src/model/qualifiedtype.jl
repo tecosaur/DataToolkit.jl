@@ -12,7 +12,7 @@ function Base.convert(::Type{Type}, qt::QualifiedType)
     try
         T = getfield(getfield(Main, qt.parentmodule), qt.name)
         if isempty(qt.parameters) T else
-            T{qt.parameters...}
+            T{convert.(Type, qt.parameters)...}
         end
     catch e
         if !(e isa UndefVarError)
