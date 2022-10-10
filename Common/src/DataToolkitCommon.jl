@@ -26,6 +26,7 @@ include("saveload/passthrough.jl")
 
 include("plugins/defaults.jl")
 include("plugins/loadcache.jl")
+include("plugins/log.jl")
 include("plugins/memorise.jl")
 
 function __init__()
@@ -44,6 +45,7 @@ function __init__()
 
     push!(PLUGINS, DEFAULTS_PLUGIN)
     push!(PLUGINS, LOADCACHE_PLUGIN)
+    push!(PLUGINS, LOG_PLUGIN)
     push!(PLUGINS, MEMORISE_PLUGIN)
 end
 
