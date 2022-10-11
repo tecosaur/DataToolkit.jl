@@ -5,6 +5,8 @@ using DataToolkitCommon
 
 export loadcollection!, dataset, DataSet
 
+include("addpkgs.jl")
+
 """
     init(force::Bool=false)
 Load the project-local `Data.toml` if it exists.
