@@ -107,12 +107,13 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
 # DataCollection
 # ---------------
 
-function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing)
+function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
     plugins::Vector{String} = get(get(spec, "config", Dict("config" => Dict())), "plugins", String[])
-    DataAdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path)
+    DataAdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path, mod)
 end
 
-function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{String, Nothing}=nothing)
+function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
+                  path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
     version = get(spec, "data_config_version", LATEST_DATA_CONFIG_VERSION)
     if version != LATEST_DATA_CONFIG_VERSION
         @error "The data collection specificaton uses the v$version format \
@@ -143,7 +144,8 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any}; path::Union{S
     end
     collection = DataCollection(version, name, uuid, plugins,
                                 parameters, DataSet[], path,
-                                DataAdviceAmalgamation(plugins))
+                                DataAdviceAmalgamation(plugins),
+                                mod)
     # Construct the data sets
     datasets = copy(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:collection]

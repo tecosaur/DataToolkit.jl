@@ -290,4 +290,5 @@ struct DataCollection
     datasets::Vector{DataSet}
     path::Union{String, Nothing}
     advise::DataAdviceAmalgamation
+    mod::Module
 end

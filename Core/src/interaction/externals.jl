@@ -5,15 +5,23 @@ struct DriverUnimplementedException <: Exception
 end
 
 """
-    loadcollection!(source::Any; soft::Bool=false)
+    loadcollection!(source::Any, mod::Module=Base.Main; soft::Bool=false)
 Load a data collection from `source` and add it to the data stack.
 `source` must be any type accepted by `read(source, DataCollection)`.
+
+`mod` should be set to the Module within which `loadcollection!` is being
+invoked. This is important when code is run by the collection. As such,
+it is usually appropriate to call:
+
+```julia
+loadcollection!(source, @__MODULE__; soft)
+```
 
 When `soft` is set, should an data collection already exist with the same UUID,
 nothing will be done and `nothing` will be returned.
 """
-function loadcollection!(source::Any; soft::Bool=false)
-    collection = read(source, DataCollection)
+function loadcollection!(source::Any, mod::Module=Base.Main; soft::Bool=false)
+    collection = read(source, DataCollection; mod)
     existingpos = findfirst(c -> c.uuid == collection.uuid, STACK)
     if !isnothing(existingpos)
         if soft
@@ -63,16 +71,17 @@ Read the entire contents of a file as a `DataCollection`.
 
 The default value of writer is `self -> write(filename, self)`.
 """
-Base.read(f::AbstractString, ::Type{DataCollection}) =
-    read(open(f, "r"), DataCollection; path=abspath(f))
+Base.read(f::AbstractString, ::Type{DataCollection}; mod::Module=Base.Main) =
+    read(open(f, "r"), DataCollection; path=abspath(f), mod)
 
 """
-    read(io::IO, DataCollection; writer::Union{Function, Nothing}=nothing)
+    read(io::IO, DataCollection; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
 
 Read the entirity of `io`, as a `DataCollection`.
 """
-Base.read(io::IO, ::Type{DataCollection}; path::Union{String, Nothing}=nothing) =
-    DataCollection(TOML.parse(io); path)
+Base.read(io::IO, ::Type{DataCollection};
+          path::Union{String, Nothing}=nothing, mod::Module=Base.Main) =
+    DataCollection(TOML.parse(io); path, mod)
 
 """
     read(dataset::DataSet, as::Type)
