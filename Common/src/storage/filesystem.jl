@@ -11,6 +11,9 @@ function storage(storage::DataStorage{:filesystem}, ::Type{IO};
     end
 end
 
+storage(storage::DataStorage{:filesystem}, ::Type{FilePath}; write::Bool) =
+    FilePath(getpath(storage))
+
 function storage(storage::DataStorage{:filesystem}, ::Type{Vector{UInt8}}; write::Bool=false)
     write && error("Cannot represent file as a writable string.")
     read(getpath(storage))
@@ -22,4 +25,4 @@ function storage(storage::DataStorage{:filesystem}, ::Type{String}; write::Bool=
 end
 
 supportedtypes(::Type{<:DataStorage{:filesystem, <:Any}}) =
-    QualifiedType.([IO, Vector{UInt8}, String])
+    QualifiedType.([IO, Vector{UInt8}, String, FilePath])

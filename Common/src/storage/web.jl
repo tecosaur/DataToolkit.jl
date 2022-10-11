@@ -111,6 +111,16 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
         end)
 end
 
+function getstorage(storage::DataStorage{:url}, ::Type{FilePath})
+    if get(storage, "cache", false) != false
+        FilePath(get_dlcache_file(storage))
+    else
+        tmpfile = tempname()
+        download_to(storage, tmpfile)
+        FilePath(tmpfile)
+    end
+end
+
 const WEB_DEFAULT_CACHEFOLDER = "downloads"
 
 function get_dlcache_file(storage::DataStorage{:url})
@@ -167,4 +177,4 @@ getstorage(storage::DataStorage{:url}, ::Type{String}) =
     read(getstorage(storage, IO), String)
 
 supportedtypes(::Type{<:DataStorage{:url, <:Any}}) =
-    QualifiedType.([IO, Vector{UInt8}, String])
+    QualifiedType.([IO, Vector{UInt8}, String, FilePath])
