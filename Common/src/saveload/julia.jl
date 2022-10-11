@@ -22,6 +22,22 @@ function getactfn(transformer::AbstractDataTransformer)
     end
 end
 
+"""
+    juliatransformer_invoke(fn::Function, args...; kwargs...)
+Call `fn(args...; kwargs...)`, re-running if `PkgRequiredRerunNeeded` is raised.
+"""
+function juliatransformer_invoke(fn::Function, args...; kwargs...)
+    try
+        Base.invokelatest(fn, args...; kwargs...)
+    catch e
+        if e isa DataToolkitBase.PkgRequiredRerunNeeded
+            juliatransformer_invoke(fn, args...; kwargs...)
+        else
+            rethrow(e)
+        end
+    end
+end
+
 function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
     if isempty(get(loader, "input", ""))
         loadfn = getactfn(loader)
@@ -31,7 +47,7 @@ function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
         dir = if isnothing(loader.dataset.collection.path) pwd()
             else dirname(loader.dataset.collection.path) end
         cd(dir) do
-            Base.invokelatest(loadfn; arguments...)::R
+            juliatransformer_invoke(loadfn; arguments...)::R
         end
     end
 end
@@ -47,7 +63,7 @@ function load(loader::DataLoader{:julia}, from::Any, R::Type)
             dir = if isnothing(loader.dataset.collection.path) pwd()
             else dirname(loader.dataset.collection.path) end
             cd(dir) do
-                Base.invokelatest(loadfn, from; arguments...)::R
+                juliatransformer_invoke(loadfn, from; arguments...)::R
             end
         end
     end
@@ -61,6 +77,6 @@ function save(writer::DataWriter{:julia}, dest, info)
     dir = if isnothing(writer.dataset.collection.path) pwd()
     else dirname(writer.dataset.collection.path) end
     cd(dir) do
-        Base.invokelatest(writefn, dest, info; arguments...)
+        juliatransformer_invoke(writefn, dest, info; arguments...)
     end
 end
