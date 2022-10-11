@@ -11,17 +11,30 @@ else
 end
 
 function (dt::DataAdvice{C, F})(
-    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, pairs(NamedTuple)}) where {C, F}
+    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, pairs(NamedTuple)};
+    invokelatest::Bool=false) where {C, F}
     # @info "Testing $dt"
     if hasmethod(dt.f, Tuple{typeof(post), typeof(func), atypeof.(args)...}, keys(kwargs))
         # @info "Applying $dt"
-        result = dt.f(post, func, args...; kwargs...)
-        if result isa Tuple{Function, Function, Tuple}
-            k0 = Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}(NamedTuple(),())
-            post, func, args = result
-            (post, func, args, k0)
-        else
-            result
+        try
+            result = if invokelatest
+                Base.invokelatest(df.f, post, func, args...; kwargs...)
+            else
+                dt.f(post, func, args...; kwargs...)
+            end
+            if result isa Tuple{Function, Function, Tuple}
+                k0 = Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}(NamedTuple(),())
+                post, func, args = result
+                (post, func, args, k0)
+            else
+                result
+            end
+        catch e
+            if e isa PkgRequiredRerunNeeded
+                dt((post, func, args, kwargs); invokelatest=true)
+            else
+                rethrow(e)
+            end
         end
     else
         (post, func, args, kwargs) # act as the identity fuction
