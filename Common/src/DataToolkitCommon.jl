@@ -23,6 +23,7 @@ include("saveload/delim.jl")
 include("saveload/julia.jl")
 include("saveload/nested.jl")
 include("saveload/passthrough.jl")
+include("saveload/sqlite.jl")
 
 include("plugins/defaults.jl")
 include("plugins/log.jl") # Must be early so `should_log_event` is availible.
@@ -36,10 +37,12 @@ function __init__()
     @addpkg CSV            "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
     @addpkg JSON3          "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
     # Loaders
-    @addpkg CodecZlib      "944b1d66-785c-5afd-91f1-9de20f533193"
     @addpkg CodecBzip2     "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
     @addpkg CodecXz        "ba30903b-d9e8-5048-a5ec-d1f5b0d4b47b"
+    @addpkg CodecZlib      "944b1d66-785c-5afd-91f1-9de20f533193"
     @addpkg CodecZstd      "6b39b394-51ab-5f42-8807-6242bab2b4c2"
+    @addpkg DBInterface    "a10d1c49-ce27-4219-8d33-6db1a4562965"
+    @addpkg SQLite         "0aa819cd-b072-5ff4-a722-6bc24af294d9"
     # Plugins
     @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 
