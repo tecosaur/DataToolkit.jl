@@ -10,11 +10,13 @@ function getactfn(transformer::AbstractDataTransformer)
     path = get(transformer, "path", nothing)
     fnstr = get(transformer, "function", nothing)
     loadfn = if !isnothing(path)
-        Base.include(Main, abspath(dirname(transformer.dataset.collection.path),
-                                   expanduser(get(transformer, "pathroot", "")),
-                                   expanduser(path)))
+        Base.include(transformer.dataset.collection.mod,
+                     abspath(dirname(transformer.dataset.collection.path),
+                             expanduser(get(transformer, "pathroot", "")),
+                             expanduser(path)))
     elseif !isnothing(fnstr)
-        Base.eval(Main, Meta.parse(strip(fnstr)))
+        Base.eval(transformer.dataset.collection.mod,
+                  Meta.parse(strip(fnstr)))
     else
         error("Neither path nor function is provided.")
     end
