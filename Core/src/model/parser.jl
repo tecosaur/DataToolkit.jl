@@ -10,7 +10,12 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
             split(cbsplit[1], '.'),
             # REVIEW should this support commas within type parameters?
             # e.g. A{B,C{D,E}}. This feels like probably a bit much.
-            Tuple(map(qt -> parse(QualifiedType, qt),
+            Tuple(map(p -> @something(tryparse(Int, p),
+                                      tryparse(Float64, p),
+                                      if first(p) == ':'
+                                          Symbol(p[2:end])
+                                      end,
+                                      parse(QualifiedType, p)),
                       split(cbsplit[2][begin:end-1], r", ?")))
         end
     end

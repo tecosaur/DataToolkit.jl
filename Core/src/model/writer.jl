@@ -7,7 +7,12 @@ function Base.string(q::QualifiedType)
     if isempty(q.parameters)
         qname
     else
-        string(qname, '{', join(string.(q.parameters), ','), '}')
+        parstr = map(q.parameters) do p
+            if p isa Symbol
+                string(':', p)
+            else string(p) end
+        end
+        string(qname, '{', join(parstr, ','), '}')
     end
 end
 
