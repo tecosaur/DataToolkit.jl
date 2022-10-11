@@ -3,6 +3,9 @@
 # ---------------
 
 function Base.parse(::Type{QualifiedType}, spec::AbstractString)
+    if haskey(QUALIFIED_TYPE_SHORTHANDS.forward, spec)
+        return QUALIFIED_TYPE_SHORTHANDS.forward[spec]
+    end
     components, parameters = let cbsplit = split(spec, '{', limit=2)
         if length(cbsplit) == 1
             split(cbsplit[1], '.'), Tuple{}()

@@ -37,3 +37,13 @@ end
 
 Base.issubset(a::QualifiedType, b::Type) = issubset(a, QualifiedType(b))
 Base.issubset(a::Type, b::QualifiedType) = issubset(QualifiedType(a), b)
+
+# For the sake of convenience when parsing(foward)/writing(reverse).
+const QUALIFIED_TYPE_SHORTHANDS = let forward =
+    Dict{String, QualifiedType}(
+        "IO" => QualifiedType(IO),
+        "String" => QualifiedType(String),
+        "FilePath" => QualifiedType(FilePath),
+        "DataFrame" => QualifiedType(:DataFrames, :DataFrame))
+    (; forward, reverse = Dict(val => key for (key, val) in forward))
+end

@@ -1,4 +1,7 @@
 function Base.string(q::QualifiedType)
+    if haskey(QUALIFIED_TYPE_SHORTHANDS.reverse, q)
+        return QUALIFIED_TYPE_SHORTHANDS.reverse[q]
+    end
     qname = if q.parentmodule in (:Base, :Core)
         string(q.name)
     else
