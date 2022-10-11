@@ -5,9 +5,9 @@ struct DriverUnimplementedException <: Exception
 end
 
 """
-    loadcollection!(source::Any, mod::Module=Base.Main; soft::Bool=false)
+    loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main; soft::Bool=false)
 Load a data collection from `source` and add it to the data stack.
-`source` must be any type accepted by `read(source, DataCollection)`.
+`source` must be accepted by `read(source, DataCollection)`.
 
 `mod` should be set to the Module within which `loadcollection!` is being
 invoked. This is important when code is run by the collection. As such,
@@ -20,16 +20,25 @@ loadcollection!(source, @__MODULE__; soft)
 When `soft` is set, should an data collection already exist with the same UUID,
 nothing will be done and `nothing` will be returned.
 """
-function loadcollection!(source::Any, mod::Module=Base.Main; soft::Bool=false)
-    collection = read(source, DataCollection; mod)
-    existingpos = findfirst(c -> c.uuid == collection.uuid, STACK)
+function loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main; soft::Bool=false)
+    uuid = UUID(get(if source isa AbstractString
+                        open(source, "r") do io TOML.parse(io) end
+                    else
+                        mark(source)
+                        t = TOML.parse(source)
+                        reset(source)
+                        t
+                    end, "uuid", uuid4()))
+    existingpos = findfirst(c -> c.uuid == uuid, STACK)
     if !isnothing(existingpos)
         if soft
             return nothing
         else
+            @warn "Data collection already existed on stack, replacing."
             deleteat!(STACK, existingpos)
         end
     end
+    collection = read(source, DataCollection; mod)
     nameconflicts = filter(c -> c.name == collection.name, STACK)
     if !isempty(nameconflicts)
         printstyled(stderr, "!", color=:yellow, bold=true)
