@@ -38,19 +38,19 @@ Other transformers or plugins may extend the list of recognised events.
 const LOG_PLUGIN = Plugin("log", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if should_log_event("load", loader)
-            @info "Loading $(loader.dataset.name) as $as from $(typeof(source))"
+            @info "Loading '$(loader.dataset.name)' as $as from $(typeof(source))"
         end
         (post, f, (loader, source, as))
     end,
     function (post::Function, f::typeof(save), writer::DataWriter, target::Any, info::Any)
         if should_log_event("save", writer)
-            @info "Writing $(typeof(info)) to $(writer.dataset.name) as $(typeof(target))"
+            @info "Writing $(typeof(info)) to '$(writer.dataset.name)' as $(typeof(target))"
         end
         (post, f, (writer, target, info))
     end,
     function (post::Function, f::typeof(storage), storer::DataStorage, as::Type; write::Bool=false)
         if should_log_event("storage", storer)
-            @info "Opening $(storer.dataset.name) as $(as) from $(first(typeof(storer).parameters)) in $(ifelse(write, "write", "read")) mode"
+            @info "Opening '$(storer.dataset.name)' as $(as) from $(first(typeof(storer).parameters)) in $(ifelse(write, "write", "read")) mode"
         end
         (post, f, (storer, as), pairs((; write)))
     end
