@@ -81,7 +81,7 @@ Read the entire contents of a file as a `DataCollection`.
 The default value of writer is `self -> write(filename, self)`.
 """
 Base.read(f::AbstractString, ::Type{DataCollection}; mod::Module=Base.Main) =
-    read(open(f, "r"), DataCollection; path=abspath(f), mod)
+    open(f, "r") do io read(io, DataCollection; path=abspath(f), mod) end
 
 """
     read(io::IO, DataCollection; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
