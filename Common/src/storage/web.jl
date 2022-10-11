@@ -39,6 +39,17 @@ function download_progress(filename::AbstractString)
     end
 end
 
+function download_to(storage::DataStorage{:url}, target::Union{IO, String})
+    @use Downloads
+    Downloads.download(
+        get(storage, "url"), target;
+        headers = get(storage, "headers", Dict{String, String}()),
+        timeout = get(storage, "timeout", Inf),
+        progress = download_progress(storage.dataset.name))
+    print(stderr, "\e[G\e[2K\e[A\e[2K")
+    target isa IO && seekstart(target)
+end
+
 function checkchecksum(storage::DataStorage{:url}, data::IO)
     checksum = get(storage, "checksum")
     if checksum == "auto" || checksum isa Integer
@@ -84,27 +95,25 @@ function checkchecksum(storage::DataStorage{:url}, actual_checksum::Integer)
 end
 
 function getstorage(storage::DataStorage{:url}, ::Type{IO})
-    @use Downloads
-    @something get_dlcache_file(storage) try
-        io = IOBuffer()
-        Downloads.download(
-            get(storage, "url"), io;
-            headers = get(storage, "headers", Dict{String, String}()),
-            timeout = get(storage, "timeout", Inf),
-            progress = download_progress(storage.dataset.name))
-        print(stderr, "\e[G\e[2K\e[A\e[2K")
-        seekstart(io)
-        checkchecksum(storage, io) && seekstart(io)
-        io
-    catch _
-        Some(nothing)
-    end
+    @something(
+        let dlcf = get_dlcache_file(storage)
+            if !isnothing(dlcf)
+                open(dlcf, "r")
+            end
+        end,
+        try
+            io = IOBuffer()
+            download_to(storage, io)
+            checkchecksum(storage, io) && seekstart(io)
+            io
+        catch _
+            Some(nothing)
+        end)
 end
 
 const WEB_DEFAULT_CACHEFOLDER = "downloads"
 
 function get_dlcache_file(storage::DataStorage{:url})
-    @use Downloads
     path = if get(storage, "cache") == true
         string(storage.dataset.uuid, ".cache")
     elseif get(storage, "cache") isa String
@@ -126,12 +135,7 @@ function get_dlcache_file(storage::DataStorage{:url})
             if !isdir(dirname(fullpath))
                 mkpath(dirname(fullpath))
             end
-            Downloads.download(
-                get(storage, "url"), fullpath;
-                headers = get(storage, "headers", Dict{String, String}()),
-                timeout = get(storage, "timeout", Inf),
-                progress = download_progress(storage.dataset.name))
-            print(stderr, "\e[G\e[2K\e[A\e[2K")
+            download_to(storage, fullpath)
             chmod(fullpath, 0o100444 & filemode(fullpath)) # Make read-only
         end
         if !isnothing(get(storage, "checksum"))
@@ -152,7 +156,7 @@ function get_dlcache_file(storage::DataStorage{:url})
                 rethrow(e)
             end
         end
-        open(fullpath, "r")
+        fullpath
     end
 end
 
