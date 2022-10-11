@@ -65,7 +65,7 @@ function chash(collection::DataCollection, adtl::Vector{AbstractDataTransformer}
 end
 
 function chash(collection::DataCollection, adt::AbstractDataTransformer, h::UInt)
-    suphash = xor(hash.(adt.support)...)
+    suphash = xor(chash.(adt.support)...)
     driver = first(typeof(adt).parameters)
     h = hash(suphash, h)
     h = hash(adt.priority, h)
@@ -76,6 +76,12 @@ end
 function chash(collection::DataCollection, ident::Identifier, h::UInt)
     hash(chash(collection, resolve(collection, ident, resolvetype=false), zero(UInt)),
          hash(ident, h))
+end
+
+function chash(qt::QualifiedType)
+    hash(qt.parentmodule,
+         hash(qt.name,
+              hash(chash.(qt.parameters))))
 end
 
 function chash(collection::DataCollection, dict::Dict, h::UInt)
@@ -95,3 +101,4 @@ function chash(collection::DataCollection, vec::Vector, h::UInt)
 end
 
 chash(::DataCollection, obj::Any, h::UInt) = hash(obj, h)
+chash(obj::Any, h::UInt=UInt(0)) = hash(obj, h)
