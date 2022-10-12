@@ -28,8 +28,7 @@ function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}, dri
         get(get(dataset.collection,
                 "defaults", DEFAULT_DEFAULTS),
             adt_type, Dict{String,Any}())
-    merge(Dict{String,Any}("priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY,
-                           "support" => string.(supportedtypes(concrete_adt))),
+    merge(Dict{String,Any}("priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY),
           get(transformer_defaults, DEFAULTS_ALL, Dict{String,Any}()),
           get(transformer_defaults, String(driver), Dict{String,Any}()))
 end
