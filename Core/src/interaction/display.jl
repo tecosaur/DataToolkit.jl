@@ -1,16 +1,28 @@
-function displaytable(rows::Vector{<:Vector}; spacing::Integer=2)
+function displaytable(rows::Vector{<:Vector};
+                      spacing::Integer=2, maxwidth::Int=80)
     column_widths =
         maximum.(textwidth.(string.(getindex.(rows, i)))
                  for i in 1:length(rows[1]))
+    table_width = sum(column_widths) + spacing * length(column_widths)
+    if sum(column_widths) > maxwidth
+        column_widths = max.(1, floor.(Int, column_widths .* maxwidth/table_width))
+    end
+    makelen(content::String, len::Int) =
+        if length(content) <= len
+            rpad(content, len)
+        else
+            string(content[1:len-1], '…')
+        end
+    makelen(content::Any, len::Int) = makelen(string(content), len)
     map(rows) do row
-        join([rpad(col, width) for (col, width) in zip(row, column_widths)],
+        join([makelen(col, width) for (col, width) in zip(row, column_widths)],
              ' '^spacing)
     end
 end
 
 function displaytable(headers::Vector, rows::Vector{<:Vector};
-                      spacing::Integer=2)
-    rows = displaytable(vcat([headers], rows); spacing)
+                      spacing::Integer=2, maxwidth::Int=80)
+    rows = displaytable(vcat([headers], rows); spacing, maxwidth)
     rule = '─'^length(rows[1])
     vcat("\e[1m" * rows[1] * "\e[0m", rule, rows[2:end])
 end

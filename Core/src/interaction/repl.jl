@@ -200,14 +200,14 @@ end
 
 # help
 
-function help_cmd_table()
+function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2])
     help_headings = ["Command", "Shorthand", "Action"]
     help_lines = map(REPL_CMDS) do replcmd
         [String(first(typeof(replcmd).parameters)),
          something(replcmd.shorthand, ""),
          replcmd.description]
     end
-    map(displaytable(help_headings, help_lines)) do row
+    map(displaytable(help_headings, help_lines; maxwidth)) do row
         print(stderr, ' ', row, '\n')
     end
 end
@@ -237,7 +237,7 @@ allcompletions(::ReplCmd{:help}, rest::AbstractString) =
 
 # list
 
-function list_datasets(collection_str::AbstractString)
+function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize(stdout)[2])
     if isempty(STACK)
         println(stderr, "The data collection stack is empty.")
     else
@@ -252,7 +252,7 @@ function list_datasets(collection_str::AbstractString)
                 [dataset.name,
                  first(split(get(dataset, "description", " "),
                              '\n', keepempty=false))]
-            end)
+            end; maxwidth)
         for row in table_rows
             print(stderr, ' ', row, '\n')
         end
@@ -274,13 +274,13 @@ help(r::ReplCmd{:list}) = println(stderr,
 
 # stack
 
-function stack_table(::String)
+function stack_table(::String; maxwidth::Int=displaysize(stdout)[2])
     table_rows = displaytable(
         ["#", "Name", "Datasets", "Plugins"],
         map(enumerate(STACK)) do (i, collection)
             [string(i), something(collection.name, ""),
             length(collection.datasets), join(collection.plugins, ", ")]
-        end)
+        end; maxwidth)
     for row in table_rows
         print(stderr, ' ', row, '\n')
     end
