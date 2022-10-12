@@ -106,7 +106,9 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
             download_to(storage, io)
             checkchecksum(storage, io) && seekstart(io)
             io
-        catch _
+        catch err
+            url = get(storage, "url")
+            @error "Download failed" url err
             Some(nothing)
         end)
 end
