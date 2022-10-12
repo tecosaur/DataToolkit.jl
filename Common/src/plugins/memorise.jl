@@ -1,4 +1,4 @@
-const MEMORISE_CACHE = Dict{Tuple{DataSet, Type}, Any}()
+const MEMORISE_CACHE = Dict{Tuple{UUID, UUID, UInt, Type}, Any}()
 
 """
     Plugin("memorise", [...])
@@ -31,15 +31,16 @@ const MEMORISE_PLUGIN = Plugin("memorise", [
                 false
             end
             if should_memorise
-                if haskey(MEMORISE_CACHE, (dataset, as))
+                dskey = (dataset.collection.uuid, dataset.uuid, chash(dataset), as)
+                if haskey(MEMORISE_CACHE, dskey)
                     if should_log_event("memorise", dataset)
                         @info "Loading '$(dataset.name)' (as $as) from memory copy"
                     end
-                    cache = MEMORISE_CACHE[(dataset, as)]
+                    cache = MEMORISE_CACHE[dskey]
                     (post, identity, (cache,))
                 else
                     docache = function (info)
-                        MEMORISE_CACHE[(dataset, as)] = info
+                        MEMORISE_CACHE[dskey] = info
                         info
                     end
                     (post ∘ docache, f, (dataset, as))
