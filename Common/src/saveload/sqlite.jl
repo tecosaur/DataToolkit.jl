@@ -17,6 +17,11 @@ function load(loader::DataLoader{:sqlite}, from::FilePath, as::Type)
     end
 end
 
+supportedtypes(::Type{DataLoader{:sqlite}}) =
+    [QualifiedType(:SQLite, :DB),
+     QualifiedType(:DataFrames, :DataFrame),
+     QualifiedType(:Core, :Any)]
+
 function save(writer::DataWriter{:sqlite}, dest::FilePath, info::Any)
     @use SQLite
     SQLite.load!(info, SQLite.DB(string(dest)), get(writer, "table", "data");
