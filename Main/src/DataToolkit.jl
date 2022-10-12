@@ -5,6 +5,14 @@ using DataToolkitCommon
 
 export loadcollection!, dataset, DataSet
 
+const var"@use" = DataToolkitBase.var"@use"
+const var"@addpkg" = DataToolkitBase.var"@addpkg"
+
+map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
+     :Identifier, :Plugin, :getlayer, :PLUGINS, :EXTRA_PACKAGES)) do var
+         @eval const $var = DataToolkitBase.$var
+end
+
 include("addpkgs.jl")
 
 """
