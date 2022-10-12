@@ -22,6 +22,24 @@ function load(loader::DataLoader{:nested}, from::Any, ::Type{T}) where {T}
            zip(subloaders, types), init=from)::T
 end
 
+supportedtypes(::Type{DataLoader{:nested}}, spec::Dict{String, Any}) =
+    let lastloader = last(get(spec, "loaders", [nothing]))
+        if lastloader isa Dict # { driver="X", ... } form
+            explicit_support = get(lastloader, "support", nothing)
+            if explicit_support isa String
+                [parse(QualifiedType, explicit_support)]
+            elseif explicit_support isa Vector
+                parse.(QualifiedType, explicit_support)
+            else
+                supportedtypes(DataLoader{Symbol(lastloader["driver"])}, lastloader)
+            end
+        elseif lastloader isa String # "X" shorthand form
+            supportedtypes(DataLoader{Symbol(lastloader)})
+        else
+            QualifiedType[]
+        end
+    end
+
 """
     loadtypepath(subloaders::Vector{DataLoader}, targettype::Type)
 Return the sequence of types that the `subloaders` must be asked for to finally
