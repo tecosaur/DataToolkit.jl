@@ -10,6 +10,6 @@ function addpkgs(mod::Module, pkgs::Vector{Symbol})
         pkgs = Symbol.(keys(project_deps))
     end
     for pkg in pkgs
-        addpkg(mod, pkg, project_deps[String(pkg)])
+        DataToolkitBase.addpkg(mod, pkg, project_deps[String(pkg)])
     end
 end
