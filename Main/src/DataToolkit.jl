@@ -3,7 +3,7 @@ module DataToolkit
 using DataToolkitBase
 using DataToolkitCommon
 
-export loadcollection!, dataset, DataSet
+export loadcollection!, dataset, DataSet, @d_str
 
 const var"@use" = DataToolkitBase.var"@use"
 const var"@addpkg" = DataToolkitBase.var"@addpkg"
@@ -14,6 +14,15 @@ map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
 end
 
 include("addpkgs.jl")
+
+"""
+    @d_str -> loaded data
+Shorthand for loading a dataset in the default format,
+`d"iris"` is equivalent to `read(dataset("iris"))`.
+"""
+macro d_str(ident::String)
+    :(read(dataset($ident)))
+end
 
 """
     init(force::Bool=false)
