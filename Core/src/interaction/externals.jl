@@ -94,6 +94,7 @@ Base.read(io::IO, ::Type{DataCollection};
 
 """
     read(dataset::DataSet, as::Type)
+    read(dataset::DataSet) # as default type
 Obtain information from `dataset` in the form of `as`, with the appropriate
 loader and storage provider automatically determined.
 
@@ -125,6 +126,15 @@ TODO explain further
 ```
 """
 function Base.read(dataset::DataSet, as::Type)
+    dataset.collection.advise(_read, dataset, as)
+end
+function Base.read(dataset::DataSet)
+    as = nothing
+    for qtype in getproperty.(dataset.loaders, :support) |> Iterators.flatten
+        as = convert(Type, qtype)
+        isnothing(as) || break
+    end
+    isnothing(as) && error("Data set '$(dataset.name)' could not be loaded in any form.")
     dataset.collection.advise(_read, dataset, as)
 end
 
