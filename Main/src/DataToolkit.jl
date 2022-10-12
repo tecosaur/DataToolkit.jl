@@ -24,7 +24,9 @@ function init(mod::Module=Base.Main; force::Bool=false)
 end
 
 function __init__()
-    init()
+    if lowercase(get(ENV, "DATA_TOOLKIT_AUTO_INIT", "yes")) ∉ ("0", "false", "no")
+        init()
+    end
 end
 
 end
