@@ -305,7 +305,10 @@ push!(REPL_CMDS,
                 print("  UUID:    ")
                 printstyled(ds.uuid, '\n', color=:light_magenta)
                 if !isnothing(get(ds, "description"))
-                println("\n  “\e[3m", strip(get(ds, "description")), "\e[m”")
+                    indented_desclines =
+                        join(split(strip(get(ds, "description")),
+                                   '\n'), "\n   ")
+                    println("\n  “\e[3m", indented_desclines, "\e[m”")
                 end
             end
             nothing
