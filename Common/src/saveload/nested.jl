@@ -14,6 +14,10 @@ function load(loader::DataLoader{:nested}, from::Any, ::Type{T}) where {T}
     subloaders = map(spec -> DataLoader(loader.dataset, spec),
                   get(loader, "loaders", Dict{String, Any}[]))
     types = loadtypepath(subloaders, typeof(from), T)
+    if isnothing(types)
+        error("No way to produce '$(loader.dataset.name)' as $T from $(typeof(from)) via \
+               the specified chain of loaders:\n  $subloaders")
+    end
     reduce((value, (subloader, as)) -> load(subloader, value, as),
            zip(subloaders, types), init=from)::T
 end
