@@ -1,4 +1,5 @@
 const LOADCACHE_DEFAULT_FOLDER = "loadcache"
+const LOADCACHE_ASYNC_TASKS = Task[]
 
 function loadcache_file(loader::DataLoader, source::Any, as::Type)
     # Obtain a consistant hash based on this loader and the
@@ -93,9 +94,20 @@ const LOADCACHE_PLUGIN = Plugin("loadcache", [
                     if should_log_event("loadcache", loader)
                         @info "Saving '$(loader.dataset.name)' to .jld2 cache file"
                     end
-                    JLD2.jldsave(path; data,
-                                 dataset = loader.dataset.uuid,
-                                 hash = lhash)
+                    if get(get(loader.dataset.collection, "loadcache", Dict{String, Any}()),
+                           "async", false)
+                        push!(LOADCACHE_ASYNC_TASKS,
+                              @async JLD2.jldsave(
+                                  path; data,
+                                  specfile = loader.dataset.collection.path,
+                                  dataset = loader.dataset.uuid,
+                                  hash = lhash))
+                    else
+                        JLD2.jldsave(path; data,
+                                     specfile = loader.dataset.collection.path,
+                                     dataset = loader.dataset.uuid,
+                                     hash = lhash)
+                    end
                     data
                 end
                 (post ∘ docache, f, (loader, source, as))
