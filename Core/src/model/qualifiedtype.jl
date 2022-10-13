@@ -9,8 +9,21 @@ QualifiedType(::Type{T}) where {T} =
 QualifiedType(qt::QualifiedType) = qt
 
 function Base.convert(::Type{Type}, qt::QualifiedType)
-    try
-        T = getfield(getfield(Main, qt.parentmodule), qt.name)
+    mod = if isdefined(Main, qt.parentmodule)
+        getfield(Main, qt.parentmodule)
+    else
+        hmod = Some(nothing)
+        for (pkgid, pmod) in Base.loaded_modules
+            if pkgid.name == String(qt.parentmodule)
+                hmod = pmod
+                break
+            end
+        end
+        hmod
+    end
+    # For the sake of the `catch` statement:
+    if !isnothing(mod) && isdefined(mod, qt.name)
+        T = getfield(mod, qt.name)
         if isempty(qt.parameters) T else
             tparams = map(qt.parameters) do p
                 if p isa QualifiedType
@@ -18,10 +31,6 @@ function Base.convert(::Type{Type}, qt::QualifiedType)
                 else p end
             end
             T{tparams...}
-        end
-    catch e
-        if !(e isa UndefVarError)
-            rethrow(e)
         end
     end
 end
