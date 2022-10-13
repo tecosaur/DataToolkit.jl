@@ -26,6 +26,7 @@ include("saveload/julia.jl")
 include("saveload/nested.jl")
 include("saveload/passthrough.jl")
 include("saveload/sqlite.jl")
+include("saveload/zip.jl")
 
 include("plugins/defaults.jl")
 include("plugins/log.jl") # Must be early so `should_log_event` is availible.
@@ -45,6 +46,7 @@ function __init__()
     @addpkg CodecZstd      "6b39b394-51ab-5f42-8807-6242bab2b4c2"
     @addpkg DBInterface    "a10d1c49-ce27-4219-8d33-6db1a4562965"
     @addpkg SQLite         "0aa819cd-b072-5ff4-a722-6bc24af294d9"
+    @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
     # Plugins
     @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 
