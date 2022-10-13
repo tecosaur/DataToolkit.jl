@@ -378,11 +378,11 @@ genericstoreput = first(methods(putstorage, Tuple{DataStorage{Any}, Any}))
 supportedtypes(L::Type{<:DataLoader}, T::Type=Any) =
     map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[4]),
         methods(load, Tuple{L, T, Any})) |>
-            Iterators.flatten .|> QualifiedType
+            Iterators.flatten .|> QualifiedType |> unique |> reverse
 
 supportedtypes(W::Type{<:DataWriter}, T::Type=Any) =
     map(fn -> QualifiedType(Base.unwrap_unionall(fn.sig).types[3]),
-        methods(save, Tuple{W, T, Any}))
+        methods(save, Tuple{W, T, Any})) |> unique |> reverse
 
 supportedtypes(S::Type{<:DataStorage}) =
     map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[3]),
@@ -393,4 +393,4 @@ supportedtypes(S::Type{<:DataStorage}) =
                      filter(m -> m != genericstoreput,
                         methods(putstorage, Tuple{S, Any})))
             else ms end
-        end) |> Iterators.flatten .|> QualifiedType
+        end) |> Iterators.flatten .|> QualifiedType |> unique |> reverse
