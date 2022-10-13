@@ -61,7 +61,28 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
             if isempty(get(toploader, "input", ""))
                 [Nothing]
             else
-                itype = convert(Type, QualifiedType(get(toploader, "input")))
+                iqtype = QualifiedType(get(toploader, "input"))
+                itype = try
+                    @something convert(Type, iqtype) begin
+                        # It may be the case that the loader requires a lazy loaded
+                        # package, in this case it may be a good idea to just /try/
+                        # requiring it and seeing what happens.
+                        DataToolkitBase.get_package(
+                            toploader.dataset.collection.mod,
+                            iqtype.parentmodule)
+                        # If neither a `PkgRequiredRerunNeeded` or `ArgumentError`
+                        # are raised, then then the package is already loaded
+                        # and the unresolvable type will still be unresolvable,
+                        # so return nothing.
+                        Some(nothing)
+                    end
+                catch e
+                    if e isa DataToolkitBase.PkgRequiredRerunNeeded
+                        convert(Type, iqtype)
+                    elseif !(e isa ArgumentError) # ArgumentError => pkg not registered
+                        rethrow(e)
+                    end
+                end
                 if !isnothing(itype); [itype] else Type[] end
             end
         else
