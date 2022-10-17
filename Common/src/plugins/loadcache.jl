@@ -27,13 +27,13 @@ function loadcache_file(loader::DataLoader, source::Any, as::Type)
          string(typeof(source), "-to-", as, ".jld2")))
 end
 
-loadcache_isstorable(T::Type) =
-    if T <: IOStream ||
-        QualifiedType(Base.typename(T).wrapper) == QualifiedType(:TranscodingStreams, :TranscodingStream)
-        false
-    else
-        true
-    end
+function loadcache_isstorable(T::Type)
+    unstorable = T <: IOStream ||
+        T <: Function ||
+        QualifiedType(Base.typename(T).wrapper) ==
+        QualifiedType(:TranscodingStreams, :TranscodingStream)
+    !unstorable
+end
 
 """
     Plugin("loadcache", [...])
