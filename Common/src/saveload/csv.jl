@@ -16,6 +16,12 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     CSV.File(from; NamedTuple(kwargs)...) |>
         if sink == Any || sink == CSV.File
             identity
+        elseif QualifiedType(sink) == QualifiedType(:DataFrames, :DataFrame)
+            # Replace `SentinelArray.ChainedVector` columns with standard vectors.
+            csv -> let df = sink(csv)
+                setfield!(df, :columns, Vector{AbstractVector}(getfield(df, :columns) .|> Array))
+                df
+            end
         elseif sink == Matrix
             Tables.matrix
         else
