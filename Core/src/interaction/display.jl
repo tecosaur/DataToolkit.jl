@@ -159,7 +159,7 @@ function Base.show(io::IO, datacollection::DataCollection)
              datacollection.advise)
     end
     print(io, "\n  Data sets:")
-    for dataset in datacollection.datasets
+    for dataset in sort(datacollection.datasets, by = d -> d.name)
         print(io, "\n     ")
         show(IOContext(io, :compact => true), dataset)
     end

@@ -47,7 +47,7 @@ ReplCmd(name::Union{Symbol, String}, args...) =
 
 help(r::ReplCmd) = println(stderr, r.description)
 completions(r::ReplCmd, sofar::AbstractString) =
-    filter(s -> startswith(s, sofar), allcompletions(r, sofar))
+    sort(filter(s -> startswith(s, sofar), allcompletions(r, sofar)))
 allcompletions(::ReplCmd, ::AbstractString) = String[]
 
 const REPL_CMDS = ReplCmd[]
@@ -248,7 +248,7 @@ function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize
         end
         table_rows = displaytable(
             ["Dataset", "Description"],
-            map(collection.datasets) do dataset
+            map(sort(collection.datasets, by = d -> d.name)) do dataset
                 [dataset.name,
                  first(split(get(dataset, "description", " "),
                              '\n', keepempty=false))]
