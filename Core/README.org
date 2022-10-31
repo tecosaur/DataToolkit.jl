@@ -1,0 +1,4 @@
+#+title: DataToolkitBase
+#+author: tecosaur
+
+Prototype foundation for a data management framework.
