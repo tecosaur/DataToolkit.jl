@@ -5,7 +5,12 @@ macro addpkgs(pkgs::Symbol...)
 end
 
 function addpkgs(mod::Module, pkgs::Vector{Symbol})
-    project_deps = Pkg.project().dependencies
+    project_deps = if isnothing(pathof(mod)) # Main, etc.
+        Pkg.project().dependencies
+    else # Not a public API, but the best option availible.
+        Pkg.Types.read_package(
+            abspath(pathof(mod), "..", "..", "Project.toml")).deps
+    end
     if length(pkgs) == 1 && first(pkgs) == :(*)
         pkgs = Symbol.(keys(project_deps))
     end
