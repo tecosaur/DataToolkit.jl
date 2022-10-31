@@ -9,9 +9,12 @@ const var"@use" = DataToolkitBase.var"@use"
 const var"@addpkg" = DataToolkitBase.var"@addpkg"
 
 map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
-     :Identifier, :Plugin, :getlayer, :PLUGINS, :EXTRA_PACKAGES)) do var
+     :Identifier, :Plugin, :getlayer)) do var
          @eval const $var = DataToolkitBase.$var
 end
+
+const PLUGINS = Ref(DataToolkitBase.PLUGINS)
+const EXTRA_PACKAGES = Ref(DataToolkitBase.EXTRA_PACKAGES)
 
 include("addpkgs.jl")
 
