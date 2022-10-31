@@ -16,6 +16,12 @@ end
 const PLUGINS = Ref(DataToolkitBase.PLUGINS)
 const EXTRA_PACKAGES = Ref(DataToolkitBase.EXTRA_PACKAGES)
 
+"""
+    plugins()
+List the currently availible plugins, by name.
+"""
+plugins() = getfield.(DataToolkitBase.PLUGINS, :name)
+
 include("addpkgs.jl")
 
 """
