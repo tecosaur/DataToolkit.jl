@@ -25,16 +25,20 @@ macro d_str(ident::String)
 end
 
 """
-    init(force::Bool=false)
-Load the project-local `Data.toml` if it exists.
+    init(mod::Module=Main; force::Bool=false)
+Load the `mod`-local `Data.toml` if it exists.
 Unless `force` is set, the data collection is soft-loaded.
 """
 function init(mod::Module=Base.Main; force::Bool=false)
-    project_dir = first(Base.load_path())
-    if !isdir(project_dir)
-        project_dir = dirname(project_dir)
+    project_path = if isnothing(pathof(mod))
+        first(Base.load_path())
+    else
+        abspath(pathof(mod), "..", "..")
     end
-    project_data = joinpath(project_dir, "Data.toml")
+    if !isdir(project_path)
+        project_path = dirname(project_path)
+    end
+    project_data = joinpath(project_path, "Data.toml")
     if isfile(project_data)
         loadcollection!(project_data, mod, soft=!force)
     end
