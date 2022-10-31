@@ -1,0 +1,13 @@
+#+title: DataToolkit
+#+author: tecosaur
+
+This is the user-facing entry-point for the skeletal [[https://github.com/tecosaur/DataToolkitBase.jl][DataToolkitBase]] package and
+the set of useful transformers and plugins provided by [[https://github.com/tecosaur/DataToolkitCommon.jl][DataToolkitCommon]], along
+with a few trivial niceties.
+
+This aims to provide a foundation for robust data management.
+
+For now, this set of packages around the alpha stage of development. No major
+changes to the core functionality or structure are anticipated, but an expansion
+in the data-CLI functionality and set of transformers and plugins provided by
+/DataToolkitCommon/ is wanted prior to the formal initial release.
