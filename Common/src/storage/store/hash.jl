@@ -46,10 +46,10 @@ special implementations for the following `obj` types:
 """
 function chash end
 
-chash(ds::DataSet, h::UInt=UInt(0)) =
+chash(ds::DataSet, h::UInt=zero(UInt)) =
     chash(ds.collection, ds, h)
 
-chash(adt::AbstractDataTransformer, h::UInt=UInt(0)) =
+chash(adt::AbstractDataTransformer, h::UInt=zero(UInt)) =
     chash(adt.dataset.collection, adt, h)
 
 function chash(collection::DataCollection, ds::DataSet, h::UInt)
@@ -65,7 +65,7 @@ function chash(collection::DataCollection, adtl::Vector{AbstractDataTransformer}
 end
 
 function chash(collection::DataCollection, adt::AbstractDataTransformer, h::UInt)
-    suphash = xor(chash.(adt.support)...)
+    suphash = reduce(xor, chash.(adt.support))
     driver = first(typeof(adt).parameters)
     h = hash(suphash, h)
     h = hash(adt.priority, h)
@@ -101,4 +101,4 @@ function chash(collection::DataCollection, vec::Vector, h::UInt)
 end
 
 chash(::DataCollection, obj::Any, h::UInt) = hash(obj, h)
-chash(obj::Any, h::UInt=UInt(0)) = hash(obj, h)
+chash(obj::Any, h::UInt=zero(UInt)) = hash(obj, h)
