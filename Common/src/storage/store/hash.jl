@@ -74,15 +74,20 @@ function chash(collection::DataCollection, adt::AbstractDataTransformer, h::UInt
 end
 
 function chash(collection::DataCollection, ident::Identifier, h::UInt)
-    hash(chash(collection, resolve(collection, ident, resolvetype=false), zero(UInt)),
-         hash(ident, h))
+    h = hash(ident.collection, h)
+    h = chash(collection, resolve(collection, ident, resolvetype=false), h)
+    h = chash(ident.type, h)
+    h = chash(collection, ident.parameters, h)
 end
 
-function chash(qt::QualifiedType)
+function chash(qt::QualifiedType, h::UInt=zero(UInt))
     hash(qt.parentmodule,
          hash(qt.name,
-              hash(chash.(qt.parameters))))
+              hash(chash.(qt.parameters), h)))
 end
+
+chash(dt::Type, h::UInt=zero(UInt)) =
+    chash(QualifiedType(dt), h)
 
 function chash(collection::DataCollection, dict::Dict, h::UInt)
     reduce(xor, [chash(collection, kv, zero(UInt)) for kv in dict],
