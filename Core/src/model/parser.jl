@@ -67,6 +67,9 @@ In some cases, it makes sense for this to be explicitly defined for a particular
 transformer. """
 function supportedtypes end # See `interaction/externals.jl` for method definitions.
 
+supportedtypes(ADT::Type{<:AbstractDataTransformer}, spec::Dict{String, Any}, _::DataSet) =
+    supportedtypes(ADT, spec)
+
 supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
     supportedtypes(ADT)
 
@@ -85,7 +88,7 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     end
     support = let spec_support = get(spec, "support", nothing)
         if isnothing(spec_support)
-            supportedtypes(if ADT isa DataType ADT else ADT{driver} end, spec)
+            supportedtypes(if ADT isa DataType ADT else ADT{driver} end, spec, dataset)
         elseif spec_support isa Vector
             QualifiedType.(spec_support)
         elseif spec_support isa String
