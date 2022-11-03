@@ -103,23 +103,23 @@ In addition, each subtype has the following fields:
   compared to alternatives. Lower values have higher priority.
 - `parameters::Dict{String, Any}`, any parameters applied to the method.
 """
-abstract type AbstractDataTransformer end
+abstract type AbstractDataTransformer{driver} end
 
-struct DataStorage{driver, T} <: AbstractDataTransformer
+struct DataStorage{driver, T} <: AbstractDataTransformer{driver}
     dataset::T
     support::Vector{<:QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end
 
-struct DataLoader{driver} <: AbstractDataTransformer
+struct DataLoader{driver} <: AbstractDataTransformer{driver}
     dataset
     support::Vector{<:QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end
 
-struct DataWriter{driver} <: AbstractDataTransformer
+struct DataWriter{driver} <: AbstractDataTransformer{driver}
     dataset
     support::Vector{<:QualifiedType}
     priority::Int
