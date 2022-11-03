@@ -81,7 +81,7 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     driver = if ADT isa DataType
         first(ADT.parameters)
     else
-        Symbol(spec["driver"])
+        Symbol(lowercase(spec["driver"]))
     end
     support = let spec_support = get(spec, "support", nothing)
         if isnothing(spec_support)
