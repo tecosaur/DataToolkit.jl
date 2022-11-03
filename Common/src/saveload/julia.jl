@@ -2,7 +2,7 @@
 #---
 # [data.loader]
 # driver = "julia"
-# support = ["Int"]
+# type = ["Int"]
 # function = "(; inp) -> length(inp)"
 # arguments = { inp = "💾DATASET<<<somelist::Vector>>>" }
 

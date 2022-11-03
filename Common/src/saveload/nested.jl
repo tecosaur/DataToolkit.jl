@@ -2,10 +2,10 @@
 #---
 # [data.loader]
 # driver = "nested"
-# support = ["DataFrames.DataFrame"] # final supported data
+# type = ["DataFrames.DataFrame"] # final supported data
 # loaders = [
-#   { driver = "gzip", support = "IO" },
-#   { driver = "csv", support = "DataFrames.DataFrame"}
+#   { driver = "gzip", type = "IO" },
+#   { driver = "csv", type = "DataFrames.DataFrame"}
 # ]
 # # alternative
 # loaders = [ "gzip", "csv" ]
@@ -23,11 +23,11 @@ end
 supportedtypes(::Type{DataLoader{:nested}}, spec::Dict{String, Any}) =
     let lastloader = last(get(spec, "loaders", [nothing]))
         if lastloader isa Dict # { driver="X", ... } form
-            explicit_support = get(lastloader, "support", nothing)
-            if explicit_support isa String
-                [parse(QualifiedType, explicit_support)]
-            elseif explicit_support isa Vector
-                parse.(QualifiedType, explicit_support)
+            explicit_type = get(lastloader, "type", nothing)
+            if explicit_type isa String
+                [parse(QualifiedType, explicit_type)]
+            elseif explicit_type isa Vector
+                parse.(QualifiedType, explicit_type)
             else
                 supportedtypes(DataLoader{Symbol(lastloader["driver"])}, lastloader)
             end
@@ -46,7 +46,7 @@ produce `targettype` from an initial `fromtype`. If this is not possible,
 """
 function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype::Type)
     toploader = last(subloaders)
-    supporttypes = filter(!isnothing, convert.(Type, toploader.support))
+    loadertypes = filter(!isnothing, convert.(Type, toploader.type))
     if length(subloaders) > 1
         midtypes = if toploader isa DataLoader{:julia}
             # Julia loaders are a bit special, as they have parameter
@@ -86,7 +86,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
         else
             potentialmethods =
                 [methods(load, Tuple{typeof(toploader), Any, Type{suptype}}).ms
-                for suptype in supporttypes
+                for suptype in loadertypes
                     if suptype <: targettype] |> Iterators.flatten |> unique
             [m.sig.types[3] for m in potentialmethods]
         end

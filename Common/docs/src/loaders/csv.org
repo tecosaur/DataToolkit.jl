@@ -16,7 +16,7 @@ By default this driver announces support for parsing to three data types:
 
 Other =Tables= compatible types are of course supported, and can be used directly
 (i.e. without having to use the ~CSV.File~ result) by specifying the type with the
-=support= transformer keyword.
+=type= transformer keyword.
 
 When writing, any type compatible with ~CSV.write~ can be used directly, to any
 storage backend supporting ~IO~.

@@ -35,5 +35,5 @@ driver = "nested"
     driver = "julia"
     input = "DataFrame"
     path = "scripts/custom_postprocessing.jl"
-    support = "DataFrame"
+    type = "DataFrame"
 #+end_src

@@ -11,4 +11,4 @@ function save(::DataWriter{:passthrough}, dest::IO, info::Any)
 end
 
 supportedtypes(::Type{DataLoader{:passthrough}}, _::Dict{String, Any}, dataset::DataSet) =
-    reduce(vcat, getproperty.(dataset.storage, :support)) |> unique
+    reduce(vcat, getproperty.(dataset.storage, :type)) |> unique
