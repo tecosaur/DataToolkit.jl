@@ -52,7 +52,7 @@ function resolve(collection::DataCollection, ident::Identifier;
         if isnothing(ident.type)
             datasets
         else
-            filter(d -> any(l -> any(t -> t ⊆ ident.type, l.support),
+            filter(d -> any(l -> any(t -> t ⊆ ident.type, l.type),
                                   d.loaders), datasets)
         end
     filter_parameters(datasets) =

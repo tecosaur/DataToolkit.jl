@@ -51,7 +51,7 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     printstyled(io, first(adtt.parameters), color=:green)
     get(io, :omittype, false) || print(io, '}')
     print(io, "(")
-    for qtype in adt.support
+    for qtype in adt.type
         type = convert(Type, qtype)
         if !isnothing(type)
             printstyled(io, type, color=:yellow)
@@ -62,7 +62,7 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
                             color=:yellow)
             end
         end
-        qtype === last(adt.support) || print(io, ", ")
+        qtype === last(adt.type) || print(io, ", ")
     end
     print(io, ")")
 end
@@ -99,7 +99,7 @@ function Base.show(io::IO, dataset::DataSet)
     if get(io, :compact, false)
         printstyled(io, dataset.name, color=:blue)
         print(io, " (")
-        qtypes = vcat(getfield.(dataset.loaders, :support)...) |> unique
+        qtypes = vcat(getfield.(dataset.loaders, :type)...) |> unique
         for qtype in qtypes
             type = convert(Type, qtype)
             if !isnothing(type)

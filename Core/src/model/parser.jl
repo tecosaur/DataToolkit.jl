@@ -59,7 +59,7 @@ end
     supportedtypes(ADT::Type{<:AbstractDataTransformer})::Vector{QualifiedType}
 Return a list of types supported by the data transformer `ADT`.
 
-This is used as the default value for the `support` key in the Data TOML.
+This is used as the default value for the `type` key in the Data TOML.
 The list of types is dynamically generated based on the availible methods for
 the data transformer.
 
@@ -86,25 +86,25 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     else
         Symbol(lowercase(spec["driver"]))
     end
-    support = let spec_support = get(spec, "support", nothing)
-        if isnothing(spec_support)
+    ttype = let spec_type = get(spec, "type", nothing)
+        if isnothing(spec_type)
             supportedtypes(if ADT isa DataType ADT else ADT{driver} end, spec, dataset)
-        elseif spec_support isa Vector
-            QualifiedType.(spec_support)
-        elseif spec_support isa String
-            [QualifiedType(spec_support)]
+        elseif spec_type isa Vector
+            QualifiedType.(spec_type)
+        elseif spec_type isa String
+            [QualifiedType(spec_type)]
         else
-            error("Parse error: invalid ADT support") # TODO use custom exception type
+            error("Parse error: invalid ADT type") # TODO use custom exception type
         end
     end
     priority = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
     parameters = copy(spec)
     delete!(parameters, "driver")
-    delete!(parameters, "support")
+    delete!(parameters, "type")
     delete!(parameters, "priority")
     dataset.collection.advise(
         identity,
-        ADT{driver}(dataset, support, priority,
+        ADT{driver}(dataset, ttype, priority,
                     dataset_parameters(dataset, Val(:extract), parameters)))
 end
 
@@ -113,9 +113,9 @@ end
 # end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
-                    support::Vector{<:QualifiedType}, priority::Int,
+                    type::Vector{<:QualifiedType}, priority::Int,
                     parameters::Dict{String, Any}) where {driver} =
-                        DataStorage{driver, typeof(dataset)}(dataset, support, priority, parameters)
+                        DataStorage{driver, typeof(dataset)}(dataset, type, priority, parameters)
 
 # ---------------
 # DataCollection

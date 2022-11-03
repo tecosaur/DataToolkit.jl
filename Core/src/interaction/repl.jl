@@ -318,7 +318,7 @@ function allcompletions(::ReplCmd{:show}, sofar::AbstractString)
     try # In case `resolve` or `getlayer` fail.
         if !isnothing(match(r"^.+::", sofar))
                 identifier = Identifier(first(split(sofar, "::")))
-                types = map(l -> l.support, resolve(identifier).loaders) |>
+                types = map(l -> l.type, resolve(identifier).loaders) |>
                     Iterators.flatten .|> string |> unique
                 string.(string(identifier), "::", types)
         elseif !isnothing(match(r"^[^:]+:", sofar))

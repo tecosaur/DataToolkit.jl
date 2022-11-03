@@ -74,7 +74,7 @@ this Dict under the following keys:
 const DATA_CONFIG_RESERVED_ATTRIBUTES =
     Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "config"],
          :dataset => ["uuid", "store", "storage", "loader", "writer"],
-         :transformer => ["driver", "support", "priority"])
+         :transformer => ["driver", "type", "priority"])
 
 """
 When writing data configuration TOML file, the keys are (recursively) sorted.
