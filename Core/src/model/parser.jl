@@ -133,7 +133,16 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                 you'll need to manually upgrade the format."
         error("Version mismatch")
     end
-    name = get(spec, "name", nothing)
+    name = @something(get(spec, "name", nothing),
+                      if !isnothing(path)
+                          toml_name = path |> basename |> splitext |> first
+                          if toml_name != "Data"
+                              toml_name
+                          else
+                              basename(dirname(path))
+                          end
+                      end,
+                      string(gensym("unnamed"))[3:end])
     uuid = UUID(@something get(spec, "uuid", nothing) begin
                     @warn "Data collection '$(something(name, "<unnamed>"))' had no UUID, one has been generated."
                     uuid4()
