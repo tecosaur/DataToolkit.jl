@@ -42,7 +42,7 @@ makedocs(;
         ],
     ],
     repo="https://github.com/tecosaur/DataToolkitCommon.jl/blob/{commit}{path}#L{line}",
-    sitename="DataSets.jl",
+    sitename="DataToolkitCommon.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitCommon.jl/graphs/contributors"
 )
 
