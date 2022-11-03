@@ -162,7 +162,13 @@ function _read(dataset::DataSet, as::Type)
                 supported_storage_types = Vector{Type}(
                     filter(!isnothing, convert.(Type, storage.support)))
                 valid_storage_types =
-                    filter(stype -> stype <: load_fn_sig.types[3],
+                    filter(stype -> let accept = load_fn_sig.types[3]
+                               if accept isa TypeVar
+                                   accept.lb <: stype <: accept.ub
+                               else # must be a Type
+                                   stype <: accept
+                               end
+                           end,
                            supported_storage_types)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
