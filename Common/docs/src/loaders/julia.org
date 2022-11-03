@@ -3,7 +3,8 @@
 * Description
 
 The =julia= driver enables the *parsing* and *serialisation* of arbitrary data to
-arbitrary information formats and vice versa via custom Julia functions.
+arbitrary information formats and vice versa via custom Julia functions run
+within the scope of the parent module.
 
 * Input/output
 
@@ -67,9 +68,9 @@ driver = "julia"
 path = "scripts/mergedata.jl"
 
 [combined.loader.arguments]
-foo = "💾DATASET<<<foo::DataFrames.DataFrame>>>"
-bar = "💾DATASET<<<bar::DataFrames.DataFrame>>>"
-baz = "💾DATASET<<<baz::DataFrames.DataFrame>>>"
+foo = "💾DATASET<<<foo::DataFrame>>>"
+bar = "💾DATASET<<<bar::DataFrame>>>"
+baz = "💾DATASET<<<baz::DataFrame>>>"
 #+end_src
 
 #+begin_src julia
@@ -77,5 +78,5 @@ baz = "💾DATASET<<<baz::DataFrames.DataFrame>>>"
 driver = "julia"
 input = "Integer"
 function = "(n::Integer; data::DataFrame) -> repeat(data, n)"
-arguments = { data = "💾DATASET<<<iris::DataFrames.DataFrame>>>" }
+arguments = { data = "💾DATASET<<<iris::DataFrame>>>" }
 #+end_src

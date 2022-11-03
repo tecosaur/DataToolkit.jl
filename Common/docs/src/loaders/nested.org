@@ -19,23 +19,21 @@ None
 [[iris.loader]]
 driver = "nested"
 loader = ["gzip", "csv"]
-support = "DataFrames.DataFrame"
 #+end_src
 
 #+begin_src toml
 [[chained.loader]]
 driver = "nested"
-support = "DataFrames.DataFrame"
 
-[[chained.loader.loaders]]
-driver = "gzip"
+    [[chained.loader.loaders]]
+    driver = "gzip"
 
-[[chained.loader.loaders]]
-driver = "csv"
+    [[chained.loader.loaders]]
+    driver = "csv"
 
-[[chained.loader.loaders]]
-driver = "julia"
-input = "DataFrames.DataFrame"
-path = "scirpts/custom_postprocessing.jl"
-support = "DataFrames.DataFrame"
+    [[chained.loader.loaders]]
+    driver = "julia"
+    input = "DataFrame"
+    path = "scripts/custom_postprocessing.jl"
+    support = "DataFrame"
 #+end_src

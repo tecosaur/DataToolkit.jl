@@ -6,10 +6,10 @@ The =delim= driver enables the *parsing* and *serialisation* of delimited files.
 
 * Input/output
 
-The =delim= driver expects data to be provided via =IO=.
+The =delim= driver expects data to be provided via ~IO~.
 
-It presents the parsed information as a =Matrix=, and can write =Matrix= and =Vector=
-types to an =IO=-supporting storage backend.
+It presents the parsed information as a ~Matrix~, and can write ~Matrix~ and ~Vector~
+types to an ~IO~-supporting storage backend.
 
 * Required packages
 

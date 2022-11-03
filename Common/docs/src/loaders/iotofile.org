@@ -1,0 +1,14 @@
+#+title: IO to File
+
+* Description
+
+The =io->file= loader serves as a bridge between and backends that produce IO but
+not a file path, and any subsequent transformers that require a file.
+
+* Input/output
+
+The =io->file= driver accepts ~IO~ and produces a ~FilePath~.
+
+* Parameters
+
++ path :: A path to save the file to. If not set, a tempfile will be used.

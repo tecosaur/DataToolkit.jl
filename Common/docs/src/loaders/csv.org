@@ -7,19 +7,19 @@ tabular data formats.
 
 * Input/output
 
-The =csv= driver expects data to be provided via =IO=.
+The =csv= driver expects data to be provided via ~IO~.
 
 By default this driver announces support for parsing to three data types:
-+ =DataFrame=
-+ =Matrix=
-+ =CSV.File=
++ ~DataFrame~
++ ~Matrix~
++ ~CSV.File~
 
 Other =Tables= compatible types are of course supported, and can be used directly
-(i.e. without having to use the =CSV.File= result) by specifying the type with the
+(i.e. without having to use the ~CSV.File~ result) by specifying the type with the
 =support= transformer keyword.
 
-When writing, any type compatible with =CSV.write= can be used directly, to any
-storage backend supporting =IO=.
+When writing, any type compatible with ~CSV.write~ can be used directly, to any
+storage backend supporting ~IO~.
 
 * Required packages
 
@@ -27,7 +27,7 @@ storage backend supporting =IO=.
 
 * Parameters
 
-+ args :: keyword arguments to be provided to =CSV.File=
++ args :: keyword arguments to be provided to ~CSV.File~
 
 * Usage examples
 

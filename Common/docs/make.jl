@@ -2,7 +2,6 @@ using Documenter
 using DataToolkitCommon
 using Org
 
-
 for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
     orgfiles = joinpath.(root, filter(f -> endswith(f, ".org"), files))
     for orgfile in orgfiles
@@ -31,14 +30,20 @@ makedocs(;
             "loaders/compression.md",
             "loaders/csv.md",
             "loaders/delim.md",
+            "loaders/iotofile.md",
             "loaders/json.md",
             "loaders/julia.md",
             "loaders/nested.md",
             "loaders/passthrough.md",
+            "loaders/sqlite.md",
+            "loaders/xlsx.md",
+            "loaders/zip.md",
         ],
         "Plugins" => Any[
             "plugins/defaults.md",
             "plugins/loadcache.md",
+            "plugins/log.md",
+            "plugins/memorise.md",
         ],
     ],
     repo="https://github.com/tecosaur/DataToolkitCommon.jl/blob/{commit}{path}#L{line}",

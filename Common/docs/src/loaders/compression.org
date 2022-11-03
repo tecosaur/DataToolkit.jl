@@ -16,8 +16,8 @@ decompression of data, specifically the following eponymous drivers:
 It is assumed that during reading decompression is the desired operation,
 compression desired when writing.
 
-In both cases, =IO= \to =IO= is the recommended pair of input/output formats, but
-=IO= or =String= to =Vector{UInt8}= or =String= are also supported.
+In both cases, ~IO~ \to ~IO~ is the recommended pair of input/output formats, but
+~IO~ or ~String~ to ~Vector{UInt8}~ or ~String~ are also supported.
 
 * Required packages
 
