@@ -20,13 +20,19 @@ function Base.string(ident::Identifier)
 end
 
 """
-    resolve(collection::DataCollection, ident::Identifier; resolvetype::Bool=true)
+    resolve(collection::DataCollection, ident::Identifier;
+            resolvetype::Bool=true, requirematch::Bool=true)
 Attempt to resolve an identifier (`ident`) to a particular data set.
 Matching data sets will searched for from `collection`.
-If `resolvetype` is set and `ident` specifies a datatype, then the identified
-data set will be read to that type.
+
+When `resolvetype` is set and `ident` specifies a datatype, the identified data
+set will be read to that type.
+
+When `requirematch` is set an error is raised should no dataset match `ident`.
+Otherwise, `nothing` is returned.
 """
-function resolve(collection::DataCollection, ident::Identifier; resolvetype::Bool=true)
+function resolve(collection::DataCollection, ident::Identifier;
+                 resolvetype::Bool=true, requirematch::Bool=true)
     collection_mismatch = !isnothing(ident.collection) &&
         if ident.collection isa UUID
             collection.uuid != ident.collection
@@ -57,25 +63,34 @@ function resolve(collection::DataCollection, ident::Identifier; resolvetype::Boo
     matchingdatasets = collection.datasets |>
         filter_nameid |> filter_type |> filter_parameters
     # TODO non-generic errors
-    if length(matchingdatasets) == 0
-        throw(error("No datasets from '$(collection.name)' matched the identifier $ident"))
-    elseif length(matchingdatasets) > 1
-        throw(error("Multiple datasets from '$(collection.name)' matched the identifier $ident"))
-    else
+    if length(matchingdatasets) == 1
         dataset = first(matchingdatasets)
         if !isnothing(ident.type) && resolvetype
             read(dataset, convert(Type, ident.type))
         else
             dataset
         end
+    elseif length(matchingdatasets) == 0 && requirematch
+        throw(error("No datasets from '$(collection.name)' matched the identifier $ident"))
+    elseif length(matchingdatasets) > 1
+        throw(error("Multiple datasets from '$(collection.name)' matched the identifier $ident"))
     end
 end
 
 """
-    resolve(ident::Identifier; resolvetype::Bool=true, defaultlayer=Some(nothing))
-Attempt to resolve `ident` using the specified data layer, if present, and
-`defaultlayer` otherwise.
+    resolve(ident::Identifier; resolvetype::Bool=true, stack=STACK)
+Attempt to resolve `ident` using the specified data layer, if present, trying
+every layer of the data stack in turn otherwise.
 """
-resolve(ident::Identifier; resolvetype::Bool=true, defaultlayer=Some(nothing)) =
-    resolve(getlayer(something(ident.collection, defaultlayer)),
-            ident; resolvetype)
+resolve(ident::Identifier; resolvetype::Bool=true, stack::Vector{DataCollection}=STACK) =
+    if !isnothing(ident.collection)
+        resolve(getlayer(ident.collection), ident; resolvetype)
+    else
+        for collection in stack
+            result = resolve(collection, ident; resolvetype, requirematch=false)
+            if !isnothing(result)
+                return result
+            end
+        end
+        throw(error("No datasets in $(join(''' .* getproperty.(stack, :name) .* ''', ", ", ", or ")) matched the identifier $ident"))
+    end
