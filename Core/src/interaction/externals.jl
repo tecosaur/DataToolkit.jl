@@ -176,11 +176,7 @@ function _read(dataset::DataSet, as::Type)
                         result = applytransformer(
                             dataset, load, loader, datahandle, as)
                         if !isnothing(result)
-                            # Use `something` so `Some(nothing)` can be
-                            # used to return nothing while getting past
-                            # `!isnothing`.  I'm not sure when this will
-                            # come up in practice, but it seems prudent.
-                            return something(result)
+                            return result
                         end
                     end
                 end
@@ -252,6 +248,11 @@ This fufills this component of the overall data flow:
   ╵               ▼
 Data          Information
 ```
+
+When the loader produces `nothing` this is taken to indicate that it was unable
+to load the data for some reason, and that another loader should be tried if
+possible. This can be considered a soft failiure. Any other value is considered
+valid information.
 """
 function load end
 
