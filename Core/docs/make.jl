@@ -30,7 +30,7 @@ makedocs(;
         "Internals" => "libinternal.md",
     ],
     repo="https://github.com/tecosaur/DataToolkitBase.jl/blob/{commit}{path}#L{line}",
-    sitename="DataSets.jl",
+    sitename="DataToolkitBase.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitBase.jl/graphs/contributors"
 )
 
