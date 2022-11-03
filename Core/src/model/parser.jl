@@ -172,7 +172,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
         delete!(datasets, reservedname)
     end
     for (name, dspecs) in datasets
-        for dspec in dspecs
+        for dspec in if dspecs isa Vector dspecs else [dspecs] end
             push!(collection.datasets, DataSet(collection, name, dspec))
         end
     end
