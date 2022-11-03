@@ -2,16 +2,17 @@ using Documenter
 using DataToolkitCommon
 using Org
 
-orgfiles = filter(f -> endswith(f, ".org"),
-                  readdir(joinpath(@__DIR__, "src"), join=true))
 
-for orgfile in orgfiles
-    mdfile = replace(orgfile, r"\.org$" => ".md")
-    read(orgfile, String) |>
-        c -> Org.parse(OrgDoc, c) |>
-        o -> sprint(markdown, o) |>
-        s -> replace(s, r"\.org]" => ".md]") |>
-        m -> write(mdfile, m)
+for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
+    orgfiles = joinpath.(root, filter(f -> endswith(f, ".org"), files))
+    for orgfile in orgfiles
+        mdfile = replace(orgfile, r"\.org$" => ".md")
+        read(orgfile, String) |>
+            c -> Org.parse(OrgDoc, c) |>
+            o -> sprint(markdown, o) |>
+            s -> replace(s, r"\.org]" => ".md]") |>
+            m -> write(mdfile, m)
+    end
 end
 
 makedocs(;
