@@ -9,6 +9,9 @@ function putstorage(storage::DataStorage{:raw}, ::Type{<:TOMLValue})
     storage
 end
 
+supportedtypes(::Type{DataStorage{:raw}}, spec::Dict{String, Any}) =
+    [QualifiedType(typeof(get(spec, "value", nothing)))]
+
 # NOTE This is hacky, but it's a special case
 function save(::DataWriter{:passthrough}, dest::DataStorage{:raw}, info::Any)
     dest.parameters["value"] = info
