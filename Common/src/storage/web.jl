@@ -73,9 +73,9 @@ function checkchecksum(storage::DataStorage{:url}, actual_checksum::Integer)
         if actual_checksum != checksum
             if isinteractive()
                 printstyled(stderr, "!", color=:yellow, bold=true)
-                print(" Checksum mismatch with $(storage.dataset.name)'s url storage.\n  \
-                        Expected the CRC32c checksum to be $checksum, got $actual_checksum.\n  \
-                        How would you like to proceed?\n\n")
+                print(" Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
+                      "  Expected the CRC32c checksum to be $checksum, got $actual_checksum.\n",
+                      "  How would you like to proceed?\n\n")
                 options = ["(o) Overwrite checksum to $actual_checksum", "(a) Abort and throw an error"]
                 choice = request(RadioMenu(options, keybindings=['o', 'a']))
                 print('\n')
@@ -83,12 +83,12 @@ function checkchecksum(storage::DataStorage{:url}, actual_checksum::Integer)
                     storage.parameters["checksum"] = actual_checksum
                     write(storage)
                 else
-                    error("Checksum mismatch with $(storage.dataset.name)'s url storage! \
-                        Expected $checksum, got $actual_checksum.")
+                    error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
+                                 " Expected $checksum, got $actual_checksum."))
                 end
             else
-                error("Checksum mismatch with $(storage.dataset.name)'s url storage! \
-                       Expected $checksum, got $actual_checksum.")
+                error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
+                             " Expected $checksum, got $actual_checksum."))
             end
         end
     end

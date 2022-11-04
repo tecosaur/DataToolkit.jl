@@ -4,6 +4,8 @@ using DataToolkitBase
 import DataToolkitBase: load, save, storage,
     getstorage, putstorage, supportedtypes
 
+using Compat
+
 using Dates
 using Tables
 using CRC32c: crc32c

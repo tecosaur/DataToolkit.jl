@@ -25,6 +25,13 @@ end
 
 # With context
 
+if VERSION < v"1.7"
+    @warn string("Contextual hashes made with Julia <1.7 will not be consistent ",
+                 "with hashes constructed in Julia 1.7+.\n",
+                 "This is due to a change in the definition of hash(Symbol, UInt).\n",
+                 "Expect unnecessary cache invalidations if moving between Julia <1.7 and 1.7+.")
+end
+
 Base.hash((collection, obj)::Tuple{DataCollection, <:Any}, h::UInt) =
     chash(collection, obj, h)
 
