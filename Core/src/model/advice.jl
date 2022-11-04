@@ -10,11 +10,26 @@ else
     typeof(val)
 end
 
+# NOTE trying to express the type of keyword arguments and the
+# zero-value form is surprisingly annoying once you want to support
+# more than one Julia version. It's fine in v1.7+, but v1.6 is a bit
+# fiddlier.
+const _KWARGS_TYPE, _KWARGS_0 = if VERSION >= v"1.7"
+    pairs(NamedTuple),
+    Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}(NamedTuple(),())
+else
+    let kw0 = ((; k...) -> k)()
+        kwN = Base.Iterators.Pairs{Symbol, V, Tuple{Vararg{Symbol, N}}, NamedTuple{names, T}} where {V, N, names, T<:Tuple{Vararg{Any, N}}}
+        Union{typeof(kw0), <:kwN}, kw0
+    end
+end
+
 function (dt::DataAdvice{C, F})(
-    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, pairs(NamedTuple)};
+    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, _KWARGS_TYPE};
     invokelatest::Bool=false) where {C, F}
     # @info "Testing $dt"
-    if hasmethod(dt.f, Tuple{typeof(post), typeof(func), atypeof.(args)...}, keys(kwargs))
+    kwkeys = getfield(kwargs, :itr) # `keys(kwargs)` works in 1.7+
+    if hasmethod(dt.f, Tuple{typeof(post), typeof(func), atypeof.(args)...}, kwkeys)
         # @info "Applying $dt"
         try
             result = if invokelatest
@@ -23,9 +38,8 @@ function (dt::DataAdvice{C, F})(
                 dt.f(post, func, args...; kwargs...)
             end
             if result isa Tuple{Function, Function, Tuple}
-                k0 = Base.Pairs{Symbol, Union{}, Tuple{}, NamedTuple{(), Tuple{}}}(NamedTuple(),())
                 post, func, args = result
-                (post, func, args, k0)
+                (post, func, args, _KWARGS_0)
             else
                 result
             end
@@ -67,13 +81,13 @@ DataAdviceAmalgamation(dta::DataAdviceAmalgamation) = # for re-building
     DataAdviceAmalgamation(dta.plugins_wanted)
 
 function (dta::DataAdviceAmalgamation)(
-    annotated_func_call::Tuple{Function, Function, Tuple, pairs(NamedTuple)})
+    annotated_func_call::Tuple{Function, Function, Tuple, _KWARGS_TYPE})
     dta.adviseall(annotated_func_call)
 end
 
 function (dta::DataAdviceAmalgamation)(func::Function, args...; kwargs...)
     # @info "Calling $func($(join(string.(args), ", ")))"
-    post::Function, func2::Function, args2::Tuple, kwargs2::pairs(NamedTuple) =
+    post::Function, func2::Function, args2::Tuple, kwargs2::_KWARGS_TYPE =
         dta((identity, func, args, kwargs))
     # @info "Applying $(length(dta.advisers)) advisors to '$func($args, $kwargs)'"
     func2(args2...; kwargs2...) |> post

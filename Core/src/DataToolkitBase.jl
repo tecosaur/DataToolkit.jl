@@ -2,6 +2,8 @@ module DataToolkitBase
 
 using UUIDs, TOML, Dates
 
+using Compat
+
 # For general usage
 export loadcollection!, dataset
 

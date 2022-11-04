@@ -130,10 +130,12 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                   path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
     version = get(spec, "data_config_version", LATEST_DATA_CONFIG_VERSION)
     if version != LATEST_DATA_CONFIG_VERSION
-        @error "The data collection specificaton uses the v$version format \
-                when the v$LATEST_DATA_CONFIG_VERSION format is expected.\n\
-                In the future conversion facilities may be implemented, but for now \
-                you'll need to manually upgrade the format."
+        # NOTE this cannot be a multi-line string with trailing \ lines, as
+        # that is not supported in Julia 1.6.
+        @error string("The data collection specificaton uses the v$version format ",
+                      "when the v$LATEST_DATA_CONFIG_VERSION format is expected.\n",
+                      "In the future conversion facilities may be implemented,\n",
+                      "but for now you'll need to manually upgrade the format.")
         error("Version mismatch")
     end
     name = @something(get(spec, "name", nothing),
