@@ -9,19 +9,18 @@ A command that can be used in the `data>` REPL (accessible through '$REPL_KEY').
 
 A `ReplCmd` must have a:
 - `name`, a symbol designating the command keyword.
+- `trigger`, a string used as the command trigger (defaults to `String(name)`).
 - `description`, a string giving a short overview of the functionality.
 - `execute`, a function which will perform the command's action. The function
   must take a single argument, the rest of the command as an `AbstractString`
   (for example, 'cmd arg1 arg2' will call the execute function with "arg1 arg2").
 
-A `ReplCmd` may also (optionally) have a `shorthand` which triggers the command.
-
 # Constructors
 
 ```julia
-ReplCmd{name::Symbol}(shorthand::Union{String, Nothing}, description::String, execute::Function)
+ReplCmd{name::Symbol}(trigger::String, description::String, execute::Function)
 ReplCmd{name::Symbol}(description::String, execute::Function)
-ReplCmd(name::Union{Symbol, String}, shorthand::Union{String, Nothing}, description::String, execute::Function)
+ReplCmd(name::Union{Symbol, String}, trigger::String, description::String, execute::Function)
 ReplCmd(name::Union{Symbol, String}, description::String, execute::Function)
 ```
 
@@ -34,13 +33,13 @@ completions(::ReplCmd, sofar::AbstractString) # -> list relevant candidates
 ```
 """
 struct ReplCmd{name}
-    shorthand::Union{String, Nothing}
+    trigger::String
     description::String
     execute::Function
 end
 
 ReplCmd{name}(description::String, execute::Function) where {name} =
-    ReplCmd{name}(nothing, description, execute)
+    ReplCmd{name}(String(name), description, execute)
 
 ReplCmd(name::Union{Symbol, String}, args...) =
     ReplCmd{Symbol(name)}(args...)
@@ -52,12 +51,15 @@ allcompletions(::ReplCmd, ::AbstractString) = String[]
 
 const REPL_CMDS = ReplCmd[]
 
-function find_repl_cmd(cmd::AbstractString)
-    replcmds =
-        filter(c -> String(first(typeof(c).parameters)) == cmd || c.shorthand == cmd,
-               REPL_CMDS)
-    if length(replcmds) > 0
+function find_repl_cmd(cmd::AbstractString; warn::Bool=false)
+    replcmds = filter(c -> startswith(c.trigger, cmd), REPL_CMDS)
+    if length(replcmds) == 1
         first(replcmds)
+    elseif warn && length(replcmds) > 1
+        @error string("Multiple matching REPL commands: ",
+                      join(getproperty.(replcmds, :trigger), ", "))
+    elseif warn # no matching commands
+        @error "The Data REPL command '$cmd' is not defined."
     end
 end
 
@@ -72,9 +74,8 @@ function execute_repl_cmd(line::AbstractString)
         rest = cmd[2:end] * rest
         cmd = "help"
     end
-    repl_cmd = find_repl_cmd(cmd)
+    repl_cmd = find_repl_cmd(cmd, warn=true)
     if isnothing(repl_cmd)
-        @error "The Data REPL command '$cmd' is not defined."
         Expr(:block, :nothing)
     else
         repl_cmd.execute(rest)
@@ -98,11 +99,9 @@ function complete_repl_cmd(line::AbstractString)
         complete = if !isnothing(repl_cmd)
             completions(repl_cmd, rest)
         else
-            nameandshortcut = vcat(
-                map(c -> String(first(typeof(c).parameters)), REPL_CMDS),
-                filter(!isnothing, map(c -> c.shorthand, REPL_CMDS)))
             Vector{String}(
-                filter(ns -> startswith(ns, cmd_name), sort(nameandshortcut)))
+                filter(ns -> startswith(ns, cmd_name),
+                       sort(getproperty(REPL_CMDS, :trigger))))
         end
         if complete isa Tuple{Vector{String}, String, Bool}
             complete
@@ -201,10 +200,9 @@ end
 # help
 
 function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2])
-    help_headings = ["Command", "Shorthand", "Action"]
+    help_headings = ["Command", "Action"]
     help_lines = map(REPL_CMDS) do replcmd
         [String(first(typeof(replcmd).parameters)),
-         something(replcmd.shorthand, ""),
          replcmd.description]
     end
     map(displaytable(help_headings, help_lines; maxwidth)) do row
@@ -228,7 +226,7 @@ function help_show(cmd::AbstractString)
 end
 
 push!(REPL_CMDS,
-      ReplCmd(:help, "?",
+      ReplCmd(:help,
               "Display help information on the availible data commands.",
               help_show))
 
@@ -260,7 +258,7 @@ function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize
 end
 
 push!(REPL_CMDS,
-      ReplCmd(:list, "l",
+      ReplCmd(:list,
               "List the datasets in a certain collection.",
               list_datasets))
 
