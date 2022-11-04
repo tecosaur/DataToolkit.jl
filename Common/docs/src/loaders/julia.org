@@ -68,9 +68,9 @@ driver = "julia"
 path = "scripts/mergedata.jl"
 
 [combined.loader.arguments]
-foo = "💾DATASET<<<foo::DataFrame>>>"
-bar = "💾DATASET<<<bar::DataFrame>>>"
-baz = "💾DATASET<<<baz::DataFrame>>>"
+foo = "📇DATASET<<foo::DataFrame>>"
+bar = "📇DATASET<<bar::DataFrame>>"
+baz = "📇DATASET<<baz::DataFrame>>"
 #+end_src
 
 #+begin_src julia
@@ -78,5 +78,5 @@ baz = "💾DATASET<<<baz::DataFrame>>>"
 driver = "julia"
 input = "Integer"
 function = "(n::Integer; data::DataFrame) -> repeat(data, n)"
-arguments = { data = "💾DATASET<<<iris::DataFrame>>>" }
+arguments = { data = "📇DATASET<<iris::DataFrame>>" }
 #+end_src

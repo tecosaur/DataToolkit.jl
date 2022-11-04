@@ -4,7 +4,7 @@
 # driver = "julia"
 # type = ["Int"]
 # function = "(; inp) -> length(inp)"
-# arguments = { inp = "💾DATASET<<<somelist::Vector>>>" }
+# arguments = { inp = "📇DATASET<<somelist::Vector>>" }
 
 function getactfn(transformer::AbstractDataTransformer)
     path = get(transformer, "path", nothing)
