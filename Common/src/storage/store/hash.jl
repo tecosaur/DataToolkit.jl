@@ -112,5 +112,12 @@ function chash(collection::DataCollection, vec::Vector, h::UInt)
     h
 end
 
-chash(::DataCollection, obj::Any, h::UInt) = hash(obj, h)
-chash(obj::Any, h::UInt=zero(UInt)) = hash(obj, h)
+chash(::DataCollection, obj::String, h::UInt) = hash(obj, h)
+chash(::DataCollection, obj::Number, h::UInt) = hash(obj, h)
+chash(::DataCollection, obj::Symbol, h::UInt) = hash(obj, h)
+
+chash(c::DataCollection, obj::T, h::UInt) where {T} =
+    reduce(xor, (chash(c, getfield(obj, f), zero(UInt)) for f in fieldnames(T)),
+           init=chash(QualifiedType(T), h))
+
+chash(obj::Any, h::UInt=zero(UInt)) = chash(DataCollection(), obj, h)
