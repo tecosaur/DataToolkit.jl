@@ -40,7 +40,7 @@ A tuple of delimitors defining a dataset reference.
 For example, if set to `("{", "}")` then `{abc}` would
 be recognised as a dataset reference for `abc`.
 """
-const DATASET_REFERENCE_WRAPPER = ("💾DATASET<<<", ">>>")
+const DATASET_REFERENCE_WRAPPER = ("📇DATASET<<", ">>")
 
 """
 A regex which matches dataset references.
