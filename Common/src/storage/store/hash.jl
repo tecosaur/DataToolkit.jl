@@ -53,6 +53,19 @@ special implementations for the following `obj` types:
 """
 function chash end
 
+function chash(c::DataCollection, h::UInt=zero(UInt))
+    h = chash(c, c.version, h)
+    h = chash(c, c.uuid, h)
+    h = reduce(xor, chash.(Ref(c), c.plugins, h))
+    h = chash(c, c.parameters, h)
+    for ds in c.datasets
+        h = chash(c, ds, h)
+    end
+    # REVIEW Not sure if this should be included
+    # h = chash(c, nameof(c.mod), h)
+    h
+end
+
 chash(ds::DataSet, h::UInt=zero(UInt)) =
     chash(ds.collection, ds, h)
 
