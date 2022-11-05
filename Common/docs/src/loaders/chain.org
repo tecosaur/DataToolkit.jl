@@ -2,11 +2,11 @@
 
 * Description
 
-The =nested= loader enables the chaining of multiple loading transformers.
+The =chain= loader enables the chaining of multiple loading transformers.
 
 * Input/output
 
-The =nested= loader can accept any form of input, and produce any form of output.
+The =chain= loader can accept any form of input, and produce any form of output.
 Writing is not currently supported.
 
 * Required packages
@@ -17,13 +17,13 @@ None
 
 #+begin_src toml
 [[iris.loader]]
-driver = "nested"
+driver = "chain"
 loader = ["gzip", "csv"]
 #+end_src
 
 #+begin_src toml
 [[chained.loader]]
-driver = "nested"
+driver = "chain"
 
     [[chained.loader.loaders]]
     driver = "gzip"

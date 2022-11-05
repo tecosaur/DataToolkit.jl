@@ -33,7 +33,7 @@ makedocs(;
             "loaders/iotofile.md",
             "loaders/json.md",
             "loaders/julia.md",
-            "loaders/nested.md",
+            "loaders/chain.md",
             "loaders/passthrough.md",
             "loaders/sqlite.md",
             "loaders/xlsx.md",

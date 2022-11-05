@@ -1,7 +1,7 @@
 # Example:
 #---
 # [data.loader]
-# driver = "nested"
+# driver = "chain"
 # type = ["DataFrames.DataFrame"] # final supported data
 # loaders = [
 #   { driver = "gzip", type = "IO" },
@@ -10,7 +10,7 @@
 # # alternative
 # loaders = [ "gzip", "csv" ]
 
-function load(loader::DataLoader{:nested}, from::Any, ::Type{T}) where {T}
+function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     subloaders = map(spec -> DataLoader(loader.dataset, spec),
                   get(loader, "loaders", Dict{String, Any}[]))
     types = loadtypepath(subloaders, typeof(from), T)
@@ -20,7 +20,7 @@ function load(loader::DataLoader{:nested}, from::Any, ::Type{T}) where {T}
     end
 end
 
-supportedtypes(::Type{DataLoader{:nested}}, spec::Dict{String, Any}) =
+supportedtypes(::Type{DataLoader{:chain}}, spec::Dict{String, Any}) =
     let lastloader = last(get(spec, "loaders", [nothing]))
         if lastloader isa Dict # { driver="X", ... } form
             explicit_type = get(lastloader, "type", nothing)
@@ -54,7 +54,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
             # argument to the Julia function. If not set, then this is
             # a keyword-argument only Julia loader, and so it expects
             # Nothing. Really though, only the input variety of loaders
-            # makes sense in a nested loader. We may as well be
+            # makes sense in a chain loader. We may as well be
             # exhaustive though.
             if isempty(get(toploader, "input", ""))
                 [Nothing]

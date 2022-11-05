@@ -20,12 +20,12 @@ include("storage/web.jl")
 
 include("storage/store/hash.jl")
 
+include("saveload/chain.jl")
 include("saveload/compression.jl")
 include("saveload/csv.jl")
 include("saveload/delim.jl")
 include("saveload/iotofile.jl")
 include("saveload/julia.jl")
-include("saveload/nested.jl")
 include("saveload/passthrough.jl")
 include("saveload/sqlite.jl")
 include("saveload/xlsx.jl")
