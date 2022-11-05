@@ -19,7 +19,9 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
         elseif QualifiedType(sink) == QualifiedType(:DataFrames, :DataFrame)
             # Replace `SentinelArray.ChainedVector` columns with standard vectors.
             csv -> let df = sink(csv)
-                setfield!(df, :columns, Vector{AbstractVector}(getfield(df, :columns) .|> Array))
+                for (i, col) in enumerate(getfield(df, :columns))
+                    getfield(df, :columns)[i] = Array(col)
+                end
                 df
             end
         elseif sink == Matrix
