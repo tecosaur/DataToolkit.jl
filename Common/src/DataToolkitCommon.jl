@@ -25,6 +25,7 @@ include("saveload/compression.jl")
 include("saveload/csv.jl")
 include("saveload/delim.jl")
 include("saveload/iotofile.jl")
+include("saveload/jld2.jl")
 include("saveload/julia.jl")
 include("saveload/passthrough.jl")
 include("saveload/sqlite.jl")
@@ -48,11 +49,12 @@ function __init__()
     @addpkg CodecZlib      "944b1d66-785c-5afd-91f1-9de20f533193"
     @addpkg CodecZstd      "6b39b394-51ab-5f42-8807-6242bab2b4c2"
     @addpkg DBInterface    "a10d1c49-ce27-4219-8d33-6db1a4562965"
+    @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
     @addpkg SQLite         "0aa819cd-b072-5ff4-a722-6bc24af294d9"
     @addpkg XLSX           "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
     @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
     # Plugins
-    @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+    # JLD2 package, already provided for JLD2 loader.
 
     push!(PLUGINS, DEFAULTS_PLUGIN)
     push!(PLUGINS, LOADCACHE_PLUGIN)
