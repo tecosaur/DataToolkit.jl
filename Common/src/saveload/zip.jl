@@ -59,11 +59,12 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
         zarchive = ZipFile.Reader(from)
         for file in zarchive.files
             if file.name == filename
-                IOBuffer(read(file))
+                return IOBuffer(read(file))
             end
         end
+        error("File $filename not found within zip.")
     else
-        @warn "Cannot load entire zip to IO, must specify a particular file."
+        error("Cannot load entire zip to IO, must specify a particular file.")
     end
 end
 
