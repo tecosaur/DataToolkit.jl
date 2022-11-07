@@ -27,12 +27,13 @@ function loadcache_file(loader::DataLoader, source::Any, as::Type)
          string(typeof(source), "-to-", as, ".jld2")))
 end
 
-function loadcache_isstorable(T::Type)
+function loadcache_shouldstore(::DataLoader{driver}, T::Type) where {driver}
     unstorable = T <: IOStream ||
         T <: Function ||
         QualifiedType(Base.typename(T).wrapper) ==
         QualifiedType(:TranscodingStreams, :TranscodingStream)
-    !unstorable
+    silly = driver == :jld2
+    !unstorable && !silly
 end
 
 """
@@ -77,7 +78,7 @@ loadcache = "some_folder"
 """
 const LOADCACHE_PLUGIN = Plugin("loadcache", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
-        if loadcache_isstorable(as) && get(loader, "cache", false) == true
+        if loadcache_shouldstore(loader, as) && get(loader, "cache", false) == true
             @use JLD2
             lhash, path = loadcache_file(loader, source, as)
             if !isdir(dirname(path))
