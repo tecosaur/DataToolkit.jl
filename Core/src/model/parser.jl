@@ -121,6 +121,11 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
 # DataCollection
 # ---------------
 
+DataCollection(name::Union{String, Nothing}=nothing; path::Union{String, Nothing}=nothing) =
+    DataCollection(LATEST_DATA_CONFIG_VERSION, name, uuid4(), String[],
+                   Dict{String, Any}(), DataSet[], path,
+                   DataAdviceAmalgamation(String[]), Main)
+
 function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
     plugins::Vector{String} = get(get(spec, "config", Dict("config" => Dict())), "plugins", String[])
     DataAdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path, mod)
