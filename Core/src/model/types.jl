@@ -201,7 +201,7 @@ DataAdvice(f::Function) # priority is set to 1
 **Logging every time a DataSet is loaded.**
 
 ```julia
-loggingadvisor    = DataAdvice(
+loggingadvisor = DataAdvice(
     function(post::Function, f::typeof(load), loader::DataLoader, input, outtype)
         @info "Loading \$(loader.data.name)"
         (post, f, (loader, input, outtype))
@@ -211,7 +211,7 @@ loggingadvisor    = DataAdvice(
 **Automatically committing each file written.**
 
 ```julia
-writecommitadvisor    = DataAdvice(
+writecommitadvisor = DataAdvice(
     function(post::Function, f::typeof(write), writer::DataWriter{:filesystem}, output, info)
         function writecommit(result)
             run(`git add \$output`)
