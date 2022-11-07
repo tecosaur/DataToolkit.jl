@@ -3,9 +3,8 @@ function load(::DataLoader{:json}, from::IO, as::Type)
     JSON3.read(from)
 end
 
-supportedtypes(::DataLoader{:json}) =
-    QualifiedType.(["JSON3.Object", "JSON3.Array", String,
-                    Number, Boolean, Nothing])
+supportedtypes(::Type{DataLoader{:json}}) =
+    [QualifiedType(Any)]
 
 function save(writer::DataWriter{:json}, dest::IO, info)
     @use JSON3
