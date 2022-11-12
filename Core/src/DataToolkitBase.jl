@@ -33,6 +33,7 @@ include("model/datatree.jl")
 
 include("interaction/externals.jl")
 include("interaction/display.jl")
+include("interaction/manipulation.jl")
 include("interaction/repl.jl")
 
 function __init__()

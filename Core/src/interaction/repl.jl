@@ -1,4 +1,4 @@
-using REPL, REPL.LineEdit
+using REPL.LineEdit
 
 const REPL_KEY = '}'
 const REPL_NAME = :DataRepl
@@ -331,3 +331,27 @@ function allcompletions(::ReplCmd{:show}, sofar::AbstractString)
         String[]
     end
 end
+
+# init
+
+push!(REPL_CMDS,
+    ReplCmd(:init,
+        "Initialise a new data collection
+
+Optionally, a data collection name and path can be specified with the forms:
+  init [NAME]
+  init [PATH]
+  init [NAME] [PATH]
+  init [NAME] at [PATH]
+
+Plugins can also be specified by adding a \"with\" argument,
+  init [...] with PLUGINS...
+To omit the default set of plugins, put \"with -n\" instead, i.e.
+  init [...] with -n PLUGINS...
+
+Example usages:
+  init
+  init /tmp/test
+  init test at /tmp/test
+  init test at /tmp/test with plugin1 plugin2",
+        init))
