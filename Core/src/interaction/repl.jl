@@ -331,10 +331,3 @@ function allcompletions(::ReplCmd{:show}, sofar::AbstractString)
         String[]
     end
 end
-
-# get
-
-push!(REPL_CMDS,
-      ReplCmd(:get,
-              "Fetch data from a certain location.",
-              identity))
