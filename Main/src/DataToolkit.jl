@@ -5,6 +5,9 @@ using DataToolkitCommon
 
 export loadcollection!, dataset, DataSet, @d_str
 
+const Base = DataToolkitBase
+const Common = DataToolkitCommon
+
 const var"@use" = DataToolkitBase.var"@use"
 const var"@addpkg" = DataToolkitBase.var"@addpkg"
 
@@ -35,9 +38,9 @@ end
 Load the `mod`-local `Data.toml` if it exists.
 Unless `force` is set, the data collection is soft-loaded.
 """
-function init(mod::Module=Base.Main; force::Bool=false)
+function init(mod::Module=Main.Base.Main; force::Bool=false)
     project_path = if isnothing(pathof(mod))
-        first(Base.load_path())
+        first(Main.Base.load_path())
     else
         abspath(pathof(mod), "..", "..")
     end
