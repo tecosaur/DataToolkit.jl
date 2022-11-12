@@ -203,7 +203,7 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2])
     help_headings = ["Command", "Action"]
     help_lines = map(REPL_CMDS) do replcmd
         [String(first(typeof(replcmd).parameters)),
-         replcmd.description]
+         first(split(replcmd.description, '\n'))]
     end
     map(displaytable(help_headings, help_lines; maxwidth)) do row
         print(stderr, ' ', row, '\n')
