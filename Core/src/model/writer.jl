@@ -1,3 +1,6 @@
+Base.iswritable(dc::DataCollection) =
+    !isnothing(dc.path) && iswritable(dc.path)
+
 function Base.string(q::QualifiedType)
     if haskey(QUALIFIED_TYPE_SHORTHANDS.reverse, q)
         return QUALIFIED_TYPE_SHORTHANDS.reverse[q]
@@ -75,8 +78,12 @@ Base.write(io::IO, dc::DataCollection) =
                sorted = true, by = k -> get(DATA_CONFIG_KEY_SORT_MAPPING, k, lowercase(k)))
 
 function Base.write(dc::DataCollection)
-    if isnothing(dc.path)
-        throw(ArgumentError("No collection writer is provided, so an IO argument must be given."))
+    if !iswritable(dc)
+        if !isnothing(dc.path)
+            throw(ArgumentError("No collection writer is provided, so an IO argument must be given."))
+        else
+            throw(SystemError("Data collection is not writable"))
+        end
     end
     write(dc.path, dc)
 end

@@ -150,7 +150,7 @@ function Base.show(io::IO, datacollection::DataCollection)
     if !isnothing(datacollection.name)
         printstyled(io, ' ', datacollection.name, color=:magenta)
     end
-    if !isnothing(datacollection.path)
+    if iswritable(datacollection)
         printstyled(io, " (writable)", color=:light_black)
     end
     if !isempty(datacollection.plugins)
