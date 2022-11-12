@@ -36,20 +36,23 @@ end
 """
     init(mod::Module=Main; force::Bool=false)
 Load the `mod`-local `Data.toml` if it exists.
+When `mod` is `Main`, every `Data.toml` on the load path is loaded.
 Unless `force` is set, the data collection is soft-loaded.
 """
 function init(mod::Module=Main.Base.Main; force::Bool=false)
-    project_path = if isnothing(pathof(mod))
-        first(Main.Base.load_path())
+    project_paths = if isnothing(pathof(mod))
+        Main.Base.load_path()
     else
-        abspath(pathof(mod), "..", "..")
+        [abspath(pathof(mod), "..", "..")]
     end
-    if !isdir(project_path)
-        project_path = dirname(project_path)
-    end
-    project_data = joinpath(project_path, "Data.toml")
-    if isfile(project_data)
-        loadcollection!(project_data, mod, soft=!force)
+    for project_path in project_paths
+        if !isdir(project_path)
+            project_path = dirname(project_path)
+        end
+        project_data = joinpath(project_path, "Data.toml")
+        if isfile(project_data)
+            loadcollection!(project_data, mod, soft=!force)
+        end
     end
 end
 
