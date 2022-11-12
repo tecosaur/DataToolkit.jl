@@ -15,6 +15,12 @@ The set of plugins currently availible.
 const PLUGINS = Plugin[]
 
 """
+The set of plugins (by name) that should used by default when creating a
+new data collection.
+"""
+const DEFAULT_PLUGINS = String[]
+
+"""
 The set of packages loaded by each module via `@addpkg`, for use with `@use`.
 
 More specifically, when a module M invokes `@addpkg pkg id` then
