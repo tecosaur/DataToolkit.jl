@@ -13,9 +13,6 @@ map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
          @eval const $var = DataToolkitBase.$var
 end
 
-const PLUGINS = Ref(DataToolkitBase.PLUGINS)
-const EXTRA_PACKAGES = Ref(DataToolkitBase.EXTRA_PACKAGES)
-
 """
     plugins()
 List the currently availible plugins, by name.
