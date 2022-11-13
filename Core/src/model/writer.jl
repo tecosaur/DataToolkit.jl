@@ -1,5 +1,5 @@
 Base.iswritable(dc::DataCollection) =
-    !isnothing(dc.path) && iswritable(dc.path)
+    !isnothing(dc.path) && open(io -> iswritable(io), dc.path, "w")
 
 function Base.string(q::QualifiedType)
     if haskey(QUALIFIED_TYPE_SHORTHANDS.reverse, q)
