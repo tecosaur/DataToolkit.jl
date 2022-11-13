@@ -1,4 +1,4 @@
-using REPL.LineEdit
+using REPL, REPL.LineEdit
 
 const REPL_KEY = '}'
 const REPL_NAME = :DataRepl
@@ -51,8 +51,9 @@ allcompletions(::ReplCmd, ::AbstractString) = String[]
 
 const REPL_CMDS = ReplCmd[]
 
-function find_repl_cmd(cmd::AbstractString; warn::Bool=false)
-    replcmds = filter(c -> startswith(c.trigger, cmd), REPL_CMDS)
+function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
+                       commands::Vector{ReplCmd}=REPL_CMDS)
+    replcmds = filter(c -> startswith(c.trigger, cmd), commands)
     if length(replcmds) == 1
         first(replcmds)
     elseif warn && length(replcmds) > 1
@@ -63,7 +64,7 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false)
     end
 end
 
-function execute_repl_cmd(line::AbstractString)
+function execute_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     cmd_parts = split(line, limit = 2)
     cmd, rest = if length(cmd_parts) == 1
         cmd_parts[1], ""
@@ -74,7 +75,7 @@ function execute_repl_cmd(line::AbstractString)
         rest = cmd[2:end] * rest
         cmd = "help"
     end
-    repl_cmd = find_repl_cmd(cmd, warn=true)
+    repl_cmd = find_repl_cmd(cmd; warn=true, commands)
     if isnothing(repl_cmd)
         Expr(:block, :nothing)
     else
@@ -206,11 +207,7 @@ function init_repl()
     data_mode
 end
 
-# ------------------
-# REPL Commands
-# ------------------
-
-# help
+# The help command
 
 function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2])
     help_headings = ["Command", "Action"]
@@ -245,126 +242,3 @@ push!(REPL_CMDS,
 
 allcompletions(::ReplCmd{:help}, rest::AbstractString) =
     map(c -> String(first(typeof(c).parameters)), REPL_CMDS)
-
-# list
-
-function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize(stdout)[2])
-    if isempty(STACK)
-        println(stderr, "The data collection stack is empty.")
-    else
-        collection = if isempty(collection_str)
-            getlayer(nothing)
-        else
-            getlayer(collection_str)
-        end
-        table_rows = displaytable(
-            ["Dataset", "Description"],
-            map(sort(collection.datasets, by = d -> d.name)) do dataset
-                [dataset.name,
-                 first(split(get(dataset, "description", " "),
-                             '\n', keepempty=false))]
-            end; maxwidth)
-        for row in table_rows
-            print(stderr, ' ', row, '\n')
-        end
-    end
-end
-
-push!(REPL_CMDS,
-      ReplCmd(:list,
-              "List the datasets in a certain collection.",
-              list_datasets))
-
-allcompletions(::ReplCmd{:list}, rest::AbstractString) =
-    filter(cn -> !isnothing(cn), map(c -> c.name, STACK))
-
-help(r::ReplCmd{:list}) = println(stderr,
-    r.description, "\n",
-    "By default, the datasets of the active collection are shown."
-)
-
-# stack
-
-function stack_table(::String; maxwidth::Int=displaysize(stdout)[2])
-    table_rows = displaytable(
-        ["#", "Name", "Datasets", "Plugins"],
-        map(enumerate(STACK)) do (i, collection)
-            [string(i), something(collection.name, ""),
-            length(collection.datasets), join(collection.plugins, ", ")]
-        end; maxwidth)
-    for row in table_rows
-        print(stderr, ' ', row, '\n')
-    end
-end
-
-push!(REPL_CMDS,
-      ReplCmd(:stack,
-              "List the data collections in the stack.",
-              stack_table))
-
-# show
-
-push!(REPL_CMDS,
-    ReplCmd(:show,
-        "List the dataset refered to by an identifier.",
-        ident -> if isempty(ident)
-            println("Provide a dataset to be shown.")
-        else
-            ds = resolve(parse(Identifier, ident))
-            display(ds)
-            if ds isa DataSet
-                print("  UUID:    ")
-                printstyled(ds.uuid, '\n', color=:light_magenta)
-                if !isnothing(get(ds, "description"))
-                    indented_desclines =
-                        join(split(strip(get(ds, "description")),
-                                   '\n'), "\n   ")
-                    println("\n  “\e[3m", indented_desclines, "\e[m”")
-                end
-            end
-            nothing
-        end))
-
-function allcompletions(::ReplCmd{:show}, sofar::AbstractString)
-    try # In case `resolve` or `getlayer` fail.
-        if !isnothing(match(r"^.+::", sofar))
-                identifier = Identifier(first(split(sofar, "::")))
-                types = map(l -> l.type, resolve(identifier).loaders) |>
-                    Iterators.flatten .|> string |> unique
-                string.(string(identifier), "::", types)
-        elseif !isnothing(match(r"^[^:]+:", sofar))
-            layer, _ = split(sofar, ':', limit=2)
-            string.(layer, ':',
-                    getproperty.(getlayer(layer).datasets, :name) |> unique)
-        else
-            vcat(getproperty.(STACK, :name) .* ':',
-                getproperty.(getlayer(nothing).datasets, :name) |> unique)
-        end
-    catch _
-        String[]
-    end
-end
-
-# init
-
-push!(REPL_CMDS,
-    ReplCmd(:init,
-        "Initialise a new data collection
-
-Optionally, a data collection name and path can be specified with the forms:
-  init [NAME]
-  init [PATH]
-  init [NAME] [PATH]
-  init [NAME] at [PATH]
-
-Plugins can also be specified by adding a \"with\" argument,
-  init [...] with PLUGINS...
-To omit the default set of plugins, put \"with -n\" instead, i.e.
-  init [...] with -n PLUGINS...
-
-Example usages:
-  init
-  init /tmp/test
-  init test at /tmp/test
-  init test at /tmp/test with plugin1 plugin2",
-        init))

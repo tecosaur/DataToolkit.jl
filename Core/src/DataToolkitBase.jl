@@ -35,6 +35,7 @@ include("interaction/externals.jl")
 include("interaction/display.jl")
 include("interaction/manipulation.jl")
 include("interaction/repl.jl")
+include("interaction/commands.jl")
 
 function __init__()
     isinteractive() && init_repl()
