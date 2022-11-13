@@ -15,6 +15,11 @@ The set of plugins currently availible.
 const PLUGINS = Plugin[]
 
 """
+A mapping from Plugin names to the documentation of said plugin.
+"""
+const PLUGINS_DOCUMENTATION = Dict{String, Any}()
+
+"""
 The set of plugins (by name) that should used by default when creating a
 new data collection.
 """
