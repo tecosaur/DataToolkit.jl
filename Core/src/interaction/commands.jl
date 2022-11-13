@@ -73,10 +73,7 @@ function init(input::AbstractString)
         else
             first(splitext(basename(path)))
         end
-        response = prompt(" Name [$(name)]: ")
-        if !isempty(response)
-            name = response
-        end
+        name = prompt(" Name: ", name)
     end
 
     init(name, path)

@@ -212,8 +212,21 @@ end
 # ------------------
 
 """
-    prompt(question::AbstractString)
-Interactively ask `question` and return the response string.
+    prompt(question::AbstractString, default::AbstractString="",
+           allowempty::Bool=false, cleardefault::Bool=true)
+Interactively ask `question` and return the response string, optionally
+with a `default` value.
+
+Unless `allowempty` is set an empty response is not accepted.
+If `cleardefault` is set, then an initial backspace will clear the default value.
+
+The prompt supports the following line-edit-y keys:
+- left arrow
+- right arrow
+- home
+- end
+- delete forwards
+- delete backwards
 
 ### Example
 
@@ -223,10 +236,62 @@ What colour is the sky? Blue
 "Blue"
 ```
 """
-function prompt(question::AbstractString)
+function prompt(question::AbstractString, default::AbstractString="",
+                allowempty::Bool=false, cleardefault::Bool=true)
     printstyled(question, color=REPL_QUESTION_COLOR)
     get(stdout, :color, false) && print(Base.text_colors[REPL_USER_INPUT_COLOUR])
-    response = readline(stdin)
+    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, true)
+    response = let response = collect(default)
+        point = length(response)
+        firstinput = true
+        print("\e[s")
+        while true
+            print("\e[u\e[J")
+            if String(response) == default
+                print("\e[90m")
+            end
+            print(String(response))
+            if point < length(response)
+                print("\e[$(length(response) - point)D")
+            end
+            next = Char(REPL.TerminalMenus.readkey(REPL.TerminalMenus.terminal.in_stream))
+            if next == '\r'  # RET
+                if (!isempty(response) || allowempty)
+                    print('\n')
+                    break
+                end
+            elseif next == 'Ϭ' # DEL-forward
+                if point < length(response)
+                    deleteat!(response, point + 1)
+                end
+            elseif next == '\x03' # ^C
+                print("\e[90m^C")
+                throw(InterruptException())
+            elseif next == '\x7f' # DEL
+                if firstinput && cleardefault
+                    response = Char[]
+                    point = 0
+                elseif point > 0
+                    deleteat!(response, point)
+                    point -= 1
+                end
+            elseif next == 'Ϩ' # <left>
+                point = max(0, point - 1)
+            elseif next == 'ϩ' # <right>
+                point = min(length(response), point + 1)
+            elseif next == 'ϭ' # HOME
+                point = 0
+            elseif next == 'Ϯ' # END
+                point = length(response)
+            else
+                point += 1
+                insert!(response, point, next)
+            end
+            firstinput = false
+        end
+        String(response)
+    end
+    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, false)
     get(stdout, :color, false) && print("\e[m")
     response
 end
