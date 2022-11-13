@@ -57,10 +57,10 @@ function __init__()
     # Plugins
     # JLD2 package, already provided for JLD2 loader.
 
-    push!(PLUGINS, DEFAULTS_PLUGIN)
-    push!(PLUGINS, LOADCACHE_PLUGIN)
-    push!(PLUGINS, LOG_PLUGIN)
-    push!(PLUGINS, MEMORISE_PLUGIN)
+    @dataplugin DEFAULTS_PLUGIN :default
+    @dataplugin LOADCACHE_PLUGIN
+    @dataplugin LOG_PLUGIN
+    @dataplugin MEMORISE_PLUGIN :default
 end
 
 end
