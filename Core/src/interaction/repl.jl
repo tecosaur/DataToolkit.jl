@@ -1,5 +1,9 @@
 using REPL, REPL.LineEdit
 
+# ------------------
+# Setting up the 'data>' REPL and framework
+# ------------------
+
 """
 A command that can be used in the `data>` REPL (accessible through '$REPL_KEY').
 
@@ -203,7 +207,119 @@ function init_repl()
     data_mode
 end
 
+# ------------------
+# Interaction utilities
+# ------------------
+
+"""
+    prompt(question::AbstractString)
+Interactively ask `question` and return the response string.
+
+### Example
+
+```julia-repl
+julia> prompt("What colour is the sky? ")
+What colour is the sky? Blue
+"Blue"
+```
+"""
+function prompt(question::AbstractString)
+    printstyled(question, color=REPL_QUESTION_COLOR)
+    get(stdout, :color, false) && print(Base.text_colors[REPL_USER_INPUT_COLOUR])
+    response = readline(stdin)
+    get(stdout, :color, false) && print("\e[m")
+    response
+end
+
+"""
+    prompt_char(question::AbstractString, options::Vector{Char},
+                default::Union{Char, Nothing}=nothing)
+Interatively ask `question`, only accepting `options` keys as answers.
+All keys are converted to lower case on input. If `default` is not nothing and
+'RET' is hit, then `default` will be returned.
+
+Should '^C' be pressed, an InterruptException will be thrown.
+"""
+function prompt_char(question::AbstractString, options::Vector{Char},
+                     default::Union{Char, Nothing}=nothing)
+    printstyled(question, color=REPL_QUESTION_COLOR)
+    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, true)
+    char = '\x01'
+    while char ∉ options
+        char = lowercase(Char(REPL.TerminalMenus.readkey(REPL.TerminalMenus.terminal.in_stream)))
+        if char == '\r' && !isnothing(default)
+            char = default
+        elseif char == '\x03' # ^C
+            print("\e[90m^C")
+            throw(InterruptException())
+        end
+    end
+    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, false)
+    get(stdout, :color, false) && print(Base.text_colors[REPL_USER_INPUT_COLOUR])
+    print(stdout, char, '\n')
+    get(stdout, :color, false) && print("\e[m")
+    char
+end
+
+"""
+    confirm_yn(question::AbstractString, default::Bool=false)
+Interactively ask `question` and accept y/Y/n/N as the response.
+If any other key is pressed, then `default` will be taken as the response.
+A " [y/n]: " string will be appended to the question, with y/n capitalised
+to indicate the default value.
+
+### Example
+
+```julia-repl
+julia> confirm_yn("Do you like chocolate?", true)
+Do you like chocolate? [Y/n]: y
+true
+```
+"""
+function confirm_yn(question::AbstractString, default::Bool=false)
+    char = prompt_char(question * (" [y/N]: ", " [Y/n]: ")[1+ default],
+                       ['y', 'n'], ('n', 'y')[1+default])
+    char == 'y'
+end
+
+"""
+    peelword(input::AbstractString)
+Read the next 'word' from `input`. If `input` starts with a quote, this is the
+unescaped text between the opening and closing quote. Other wise this is simply
+the next word.
+
+Returns a tuple of the form `(word, rest)`.
+
+### Example
+
+```julia-repl
+julia> peelword("one two")
+("one", "two")
+
+julia> peelword("\"one two\" three")
+("one two", "three")
+```
+"""
+function peelword(input::AbstractString)
+    if isempty(input)
+        ("", "")
+    elseif first(lstrip(input)) != '"' || count(==('"'), input) < 2
+        Tuple(match(r"^\s*([^\s]+)\s*(.*?|)$", input).captures .|> String)
+    else # Starts with " and at least two " in `input`.
+        start = findfirst(!isspace, input)::Int
+        stop = nextind(input, start)
+        word = Char[]
+        while input[stop] != '"' && stop <= lastindex(input)
+            push!(word, input[stop + Int(input[stop] == '\\')])
+            stop = nextind(input, stop, 1 + Int(input[stop] == '\\'))
+        end
+        (String(word), input[stop+1:end])
+    end
+end
+
+# ------------------
 # The help command
+# ------------------
 
 function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2])
     help_headings = ["Command", "Action"]
