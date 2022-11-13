@@ -37,9 +37,8 @@ function loadcache_shouldstore(::DataLoader{driver}, T::Type) where {driver}
 end
 
 """
-    Plugin("loadcache", [...])
-Cache the results of data loaders using **JLD2**. Cache file paths are determined by
-the dataset UUID and a hash of the loader and storage backends.
+Cache the results of data loaders using **JLD2**. Cache file paths are
+determined by the dataset UUID and a hash of the loader and storage backends.
 
 It is important to note that this comes with the limitations of JLD2, i.e. some
 data types will not be able to be cachced effectively, such as `IOStream`.

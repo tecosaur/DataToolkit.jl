@@ -1,7 +1,6 @@
 const MEMORISE_CACHE = Dict{Tuple{UUID, UUID, UInt, Type}, Any}()
 
 """
-    Plugin("memorise", [...])
 Cache the results of data loaders in memory.
 This requires `(dataset::DataSet, as::Type)` to consistently identify the same
 loaded information.

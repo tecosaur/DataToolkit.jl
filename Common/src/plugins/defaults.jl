@@ -51,8 +51,7 @@ getdefaults(adt::AbstractDataTransformer) =
     getdefaults(adt.dataset, typeof(adt), first(typeof(adt).parameters))
 
 """
-    Plugin("defaults", [...])
-Applies default values from the "defaults" data collection property.
+Apply default values from the "defaults" data collection property.
 This works with both DataSets and AbstractDataTransformers.
 
 ### Default DataSet property

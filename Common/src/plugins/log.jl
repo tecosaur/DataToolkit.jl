@@ -16,7 +16,6 @@ function should_log_event(event::String, obj::Union{AbstractDataTransformer, Dat
 end
 
 """
-    Plugin("log", [...])
 Log major data set events.
 
 ### Settings
