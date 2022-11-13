@@ -386,9 +386,10 @@ end
 # The help command
 # ------------------
 
-function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2])
+function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
+                        commands::Vector{ReplCmd}=REPL_CMDS)
     help_headings = ["Command", "Action"]
-    help_lines = map(REPL_CMDS) do replcmd
+    help_lines = map(commands) do replcmd
         [String(first(typeof(replcmd).parameters)),
          first(split(replcmd.description, '\n'))]
     end
@@ -397,11 +398,11 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2])
     end
 end
 
-function help_show(cmd::AbstractString)
+function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(cmd)
-        help_cmd_table()
+        help_cmd_table(; commands)
     else
-        repl_cmd = DataToolkitBase.find_repl_cmd(cmd)
+        repl_cmd = find_repl_cmd(cmd; commands)
         if !isnothing(repl_cmd)
             help(repl_cmd)
         else
