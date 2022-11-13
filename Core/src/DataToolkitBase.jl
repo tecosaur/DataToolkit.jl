@@ -12,7 +12,7 @@ export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataCollection, QualifiedType, Identifier, FilePath
 export load, storage, getstorage, putstorage, save, resolve, supportedtypes
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
-export @use, @addpkg
+export @use, @addpkg, @dataplugin
 
 # For plugin packages
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
@@ -30,6 +30,7 @@ include("model/stack.jl")
 include("model/parser.jl")
 include("model/writer.jl")
 include("model/usepkg.jl")
+include("model/dataplugin.jl")
 include("model/datatree.jl")
 
 include("interaction/externals.jl")
