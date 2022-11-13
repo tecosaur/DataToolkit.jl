@@ -82,6 +82,19 @@ function execute_repl_cmd(line::AbstractString)
     end
 end
 
+function toplevel_execute_repl_cmd(line::AbstractString)
+    try
+        execute_repl_cmd(line)
+    catch e
+        if e isa InterruptException
+            printstyled(" !", color=:red, bold=true)
+            print(" Aborted\n")
+        else
+            rethrow(e)
+        end
+    end
+end
+
 function complete_repl_cmd(line::AbstractString)
     if isempty(line)
         (sort(Vector{String}(
@@ -150,7 +163,7 @@ function init_repl()
         on_enter = LineEdit.default_enter_cb,
         complete = DataCompletionProvider(),
         sticky = true)
-    data_mode.on_done = REPL.respond(execute_repl_cmd, repl, data_mode)
+    data_mode.on_done = REPL.respond(toplevel_execute_repl_cmd, repl, data_mode)
 
     push!(repl.interface.modes, data_mode)
 
