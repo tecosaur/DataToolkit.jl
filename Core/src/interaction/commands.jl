@@ -55,7 +55,7 @@ function init(input::AbstractString)
 
     while !isdir(dirname(path))
         printstyled(" ! ", color=:yellow, bold=true)
-        println("directory 'dirname($path)' does not exist")
+        println("Directory 'dirname($path)' does not exist")
         createp = confirm_yn(" Would you like to create this directory?", true)
         if createp
             mkpath(dirname(path))
@@ -64,6 +64,15 @@ function init(input::AbstractString)
             if !endswith(path, ".toml")
                 path = joinpath(path, "Data.toml")
             end
+        end
+    end
+
+    if isfile(path)
+        printstyled(" ! ", color=:yellow, bold=true)
+        println("File '$path' already exists")
+        overwritep = confirm_yn(" Overwrite this file?", false)
+        if !overwritep
+            return nothing
         end
     end
 
