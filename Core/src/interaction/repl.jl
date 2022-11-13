@@ -1,9 +1,5 @@
 using REPL, REPL.LineEdit
 
-const REPL_KEY = '}'
-const REPL_NAME = :DataRepl
-const REPL_PROMPTSTYLE = Base.text_colors[:magenta]
-
 """
 A command that can be used in the `data>` REPL (accessible through '$REPL_KEY').
 

@@ -105,3 +105,32 @@ const DATA_CONFIG_KEY_SORT_MAPPING =
          "storage" => "\0x05",
          "loader" => "\0x06",
          "writer" => "\0x07")
+
+# REPL things
+
+"""
+The key that is used to enter the data REPL.
+"""
+const REPL_KEY = '}'
+
+"""
+A symbol identifying the Data REPL. This is used in a few places,
+such as the command history.
+"""
+const REPL_NAME = :DataRepl
+
+"""
+An ANSI control sequence string that sets the style of the "data>"
+REPL indicator.
+"""
+const REPL_PROMPTSTYLE = Base.text_colors[:magenta]
+
+"""
+The color that should be used for question text presented in a REPL context.
+"""
+const REPL_QUESTION_COLOR = :light_magenta
+
+"""
+The color that should be set for user response text in a REPL context.
+"""
+const REPL_USER_INPUT_COLOUR = :light_yellow

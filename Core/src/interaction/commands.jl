@@ -3,16 +3,6 @@
 # ------------------
 
 """
-The color that should be used for question text presented in a REPL context.
-"""
-const REPL_QUESTION_COLOR = :light_magenta
-
-"""
-The color that should be set for user response text in a REPL context.
-"""
-const REPL_USER_INPUT_COLOUR = :light_yellow
-
-"""
     prompt(question::AbstractString)
 Interactively ask `question` and return the response string.
 
