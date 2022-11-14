@@ -102,10 +102,10 @@ function toplevel_execute_repl_cmd(line::AbstractString)
     end
 end
 
-function complete_repl_cmd(line::AbstractString)
+function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(line)
         (sort(Vector{String}(
-            map(c -> String(first(typeof(c).parameters)), REPL_CMDS))),
+            map(c -> String(first(typeof(c).parameters)), commands))),
          "",
          true)
     else
@@ -115,13 +115,13 @@ function complete_repl_cmd(line::AbstractString)
         else
             cmd_parts
         end
-        repl_cmd = find_repl_cmd(cmd_name)
+        repl_cmd = find_repl_cmd(cmd_name; commands)
         complete = if !isnothing(repl_cmd)
             completions(repl_cmd, rest)
         else
             Vector{String}(
                 filter(ns -> startswith(ns, cmd_name),
-                       sort(getproperty(REPL_CMDS, :trigger))))
+                       sort(getfield.(commands, :trigger))))
         end
         if complete isa Tuple{Vector{String}, String, Bool}
             complete
