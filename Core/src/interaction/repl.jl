@@ -28,7 +28,7 @@ ReplCmd(name::Union{Symbol, String}, description::String, execute::Function)
 
 ```julia
 help(::ReplCmd) # -> print detailed help
-allcompletions(::ReplCmd, sofar::AbstractString) # -> list all candidates
+allcompletions(::ReplCmd) # -> list all candidates
 completions(::ReplCmd, sofar::AbstractString) # -> list relevant candidates
 ```
 """
@@ -46,8 +46,8 @@ ReplCmd(name::Union{Symbol, String}, args...) =
 
 help(r::ReplCmd) = println(stderr, r.description)
 completions(r::ReplCmd, sofar::AbstractString) =
-    sort(filter(s -> startswith(s, sofar), allcompletions(r, sofar)))
-allcompletions(::ReplCmd, ::AbstractString) = String[]
+    sort(filter(s -> startswith(s, sofar), allcompletions(r)))
+allcompletions(::ReplCmd) = String[]
 
 const REPL_CMDS = ReplCmd[]
 
@@ -428,5 +428,5 @@ push!(REPL_CMDS,
               "Display help information on the availible data commands.",
               help_show))
 
-allcompletions(::ReplCmd{:help}, rest::AbstractString) =
+allcompletions(::ReplCmd{:help}) =
     map(c -> String(first(typeof(c).parameters)), REPL_CMDS)
