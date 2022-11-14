@@ -201,3 +201,70 @@ Obtain a list of plugins used in `collection`.
 """
 plugin_list(; collection::DataCollection=first(STACK), quiet::Bool=false) =
     collection.plugins
+
+# ------------------
+# Configuration
+# ------------------
+
+"""
+    config_get(propertypath::Vector{String};
+               collection::DataCollection=first(STACK), quiet::Bool=false)
+Obtain the configuration value at `propertypath` in `collection`.
+
+When no value is set, `nothing` is returned instead and if `quiet` is unset
+"unset" is printed.
+"""
+function config_get(propertypath::Vector{String};
+                    collection::DataCollection=first(STACK), quiet::Bool=false)
+    config = collection.parameters
+    for segment in propertypath
+        config = get(config, segment, nothing)
+        if isnothing(config)
+            quiet || printstyled(" unset\n", color=:light_black)
+            return nothing
+        end
+    end
+    config
+end
+
+"""
+    config_set!(propertypath::Vector{String}, value::Any;
+                collection::DataCollection=first(STACK), quiet::Bool=false)
+Set the configuration at `propertypath` in `collection` to `value`.
+
+Unless `quiet` is set, a success message is printed.
+"""
+function config_set!(propertypath::Vector{String}, value::Any;
+                     collection::DataCollection=first(STACK), quiet::Bool=false)
+    config = collection.parameters
+    for segment in propertypath[1:end-1]
+        if !haskey(config, segment)
+            config[segment] = Dict{String, Any}()
+        end
+        config = config[segment]
+    end
+    config[propertypath[end]] = value
+    write(collection)
+    quiet || printstyled(" ✓ Set $(join(propertypath, '.'))\n", color=:green)
+end
+
+"""
+    config_unset!(propertypath::Vector{String};
+                  collection::DataCollection=first(STACK), quiet::Bool=false)
+Unset the configuration at `propertypath` in `collection`.
+
+Unless `quiet` is set, a success message is printed.
+"""
+function config_unset!(propertypath::Vector{String};
+                       collection::DataCollection=first(STACK), quiet::Bool=false)
+    config = collection.parameters
+    for segment in propertypath[1:end-1]
+        if !haskey(config, segment)
+            config[segment] = Dict{String, Any}()
+        end
+        config = config[segment]
+    end
+    delete!(config, propertypath[end])
+    write(collection)
+    quiet || printstyled(" ✓ Unset $(join(propertypath, '.'))\n", color=:green)
+end

@@ -519,6 +519,115 @@ Call without any arguments to see the availible subcommands.",
               PLUGIN_SUBCOMMANDS))
 
 # ------------------
+# Configuration
+# ------------------
+
+"""
+    config_segments(input::AbstractString)
+Parse a string representation of a TOML-style dotted path into path segments,
+and any remaining content.
+"""
+function config_segments(input::AbstractString)
+    segments = String[]
+    rest = '.' * input
+    while !isempty(rest) && first(rest) == '.'
+        seg, rest = peelword(rest[2:end])
+        !isempty(seg) && push!(segments, String(seg))
+    end
+    segments, strip(rest)
+end
+
+"""
+    config_get(input::AbstractString)
+Parse and call the repl-format config getter command `input`.
+"""
+function config_get(input::AbstractString)
+    segments, rest = config_segments(input)
+    if !isempty(rest)
+        printstyled(" ! ", color=:yellow, bold=true)
+        println("Trailing garbage ignored in get command: \"$rest\"")
+    end
+    value = config_get(segments)
+    if value isa Dict && isempty(value)
+        printstyled(" empty\n", color=:light_black)
+    elseif value isa Dict
+        TOML.print(value)
+    else
+        value
+    end
+end
+
+"""
+    config_set(input::AbstractString)
+Parse and call the repl-format config setter command `input`.
+"""
+function config_set(input::AbstractString)
+    segments, rest = config_segments(input)
+    if isempty(rest)
+        printstyled(" ! ", color=:red, bold=true)
+        println("Value missing")
+    else
+        if isnothing(match(r"^true|false|[.\d]+|\".*\"|\[.*\]|\{.*\}$", rest))
+            rest = string('"', rest, '"')
+        end
+        value = TOML.parse(string("value = ", rest))
+        config_set!(segments, value["value"])
+    end
+end
+
+"""
+    config_unset(input::AbstractString)
+Parse and call the repl-format config un-setter command `input`.
+"""
+function config_unset(input::AbstractString)
+    segments, rest = config_segments(input)
+    if !isempty(rest)
+        printstyled(" ! ", color=:yellow, bold=true)
+        println("Trailing garbage ignored in unset command: \"$rest\"")
+    end
+    config_unset!(segments)
+end
+
+const CONFIG_SUBCOMMANDS = ReplCmd[
+    ReplCmd{:config_get}(
+        "get", "Get the current configuration
+
+The parameter to get the configuration of should be given using TOML-style dot
+seperation.
+
+Examples:
+  get defaults.memorise
+  get loadcache.path
+  get my.\"special thing\".extra", config_get),
+    ReplCmd{:config_set}(
+        "set", "Set a configuration property
+
+The parameter to set the configuration of should be given using TOML-style dot
+seperation.
+
+Similarly, the new value should be expressed using TOML syntax.
+
+Examples:
+  set defaults.memorise true
+  set loadcache.path \"data/loadcache\"
+  set my.\"special thing\".extra {a=1, b=2}", config_set),
+    ReplCmd{:config_unset}(
+        "unset", "Remove a configuration property
+
+The parameter to be removed should be given using TOML-style dot seperation.
+
+Examples:
+  unset defaults.memorise
+  unset loadcache.path
+  unset my.\"special thing\".extra", config_unset),
+]
+
+push!(REPL_CMDS,
+      ReplCmd(:config,
+              "Inspect and modify the current configuration",
+              CONFIG_SUBCOMMANDS))
+
+# ------------------
 # List datasets
 # ------------------
 

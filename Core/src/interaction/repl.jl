@@ -436,7 +436,7 @@ function peelword(input::AbstractString)
     if isempty(input)
         ("", "")
     elseif first(lstrip(input)) != '"' || count(==('"'), input) < 2
-        Tuple(match(r"^\s*([^\s]+)\s*(.*?|)$", input).captures .|> String)
+        Tuple(match(r"^\s*([^\s][^\s.]*)\s*(.*?|)$", input).captures .|> String)
     else # Starts with " and at least two " in `input`.
         start = findfirst(!isspace, input)::Int
         stop = nextind(input, start)
