@@ -533,10 +533,14 @@ function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize
         end
         table_rows = displaytable(
             ["Dataset", "Description"],
-            map(sort(collection.datasets, by = d -> d.name)) do dataset
-                [dataset.name,
-                 first(split(get(dataset, "description", " "),
-                             '\n', keepempty=false))]
+            if isempty(collection.datasets)
+                Vector{Any}[]
+            else
+                map(sort(collection.datasets, by = d -> d.name)) do dataset
+                    [dataset.name,
+                    first(split(get(dataset, "description", " "),
+                                '\n', keepempty=false))]
+                end
             end; maxwidth)
         for row in table_rows
             print(stderr, ' ', row, '\n')
