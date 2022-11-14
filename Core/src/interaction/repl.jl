@@ -11,9 +11,10 @@ A `ReplCmd` must have a:
 - `name`, a symbol designating the command keyword.
 - `trigger`, a string used as the command trigger (defaults to `String(name)`).
 - `description`, a string giving a short overview of the functionality.
-- `execute`, a function which will perform the command's action. The function
-  must take a single argument, the rest of the command as an `AbstractString`
-  (for example, 'cmd arg1 arg2' will call the execute function with "arg1 arg2").
+- `execute`, either a list of sub-ReplCmds, or a function which will perform the
+  command's action. The function must take a single argument, the rest of the
+  command as an `AbstractString` (for example, 'cmd arg1 arg2' will call the
+  execute function with "arg1 arg2").
 
 # Constructors
 
@@ -32,21 +33,35 @@ allcompletions(::ReplCmd) # -> list all candidates
 completions(::ReplCmd, sofar::AbstractString) # -> list relevant candidates
 ```
 """
-struct ReplCmd{name}
+struct ReplCmd{name, E <: Union{Function, Vector}}
     trigger::String
     description::String
-    execute::Function
+    execute::E
+    function ReplCmd{name}(trigger::String, description::String,
+                           execute::Union{Function, Vector{<:ReplCmd}}) where { name }
+        if execute isa Function
+            new{name, Function}(trigger, description, execute)
+        else
+            new{name, Vector{ReplCmd}}(trigger, description, execute)
+        end
+    end
 end
 
-ReplCmd{name}(description::String, execute::Function) where {name} =
+ReplCmd{name}(description::String, execute::Union{Function, Vector{ReplCmd}}) where {name} =
     ReplCmd{name}(String(name), description, execute)
 
 ReplCmd(name::Union{Symbol, String}, args...) =
     ReplCmd{Symbol(name)}(args...)
 
-help(r::ReplCmd) = println(r.description)
+help(r::ReplCmd) = println(' ', r.description)
+function help(r::ReplCmd{<:Any, Vector{ReplCmd}})
+    print(' ', r.description, "\n\n")
+    help_cmd_table(commands = r.execute, sub=true)
+end
 completions(r::ReplCmd, sofar::AbstractString) =
     sort(filter(s -> startswith(s, sofar), allcompletions(r)))
+completions(r::ReplCmd{<:Any, Vector{ReplCmd}}, sofar::AbstractString) =
+    complete_repl_cmd(sofar, commands = r.execute)
 allcompletions(::ReplCmd) = String[]
 
 const REPL_CMDS = ReplCmd[]
@@ -55,7 +70,9 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                        commands::Vector{ReplCmd}=REPL_CMDS,
                        scope::String="Data REPL")
     replcmds = filter(c -> startswith(c.trigger, cmd), commands)
-    if length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd))
+    if cmd == "" && "" in getproperty.(replcmds, :trigger)
+        replcmds[findfirst("" .== getproperty.(replcmds, :trigger))]
+    elseif length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd))
         ReplCmd{:help}("help",
                        "Display help information on the availible $scope commands",
                        cmd -> help_show(cmd; commands))
@@ -63,8 +80,8 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
         first(replcmds)
     elseif warn && length(replcmds) > 1
         printstyled(" ! ", color=:red, bold=true)
-        println("Multiple matching REPL commands: ",
-                join(getproperty.(replcmds, :trigger), ", "),
+        println("Multiple matching $scope commands: ",
+                join(filter(!=(""), getproperty.(replcmds, :trigger)), ", "),
                 ".")
     elseif warn # no matching commands
         printstyled(" ! ", color=:red, bold=true)
@@ -76,19 +93,25 @@ function execute_repl_cmd(line::AbstractString;
                           commands::Vector{ReplCmd}=REPL_CMDS,
                           scope::String="Data REPL")
     cmd_parts = split(line, limit = 2)
-    cmd, rest = if length(cmd_parts) == 1
+    cmd, rest = if length(cmd_parts) == 0
+        "", ""
+    elseif length(cmd_parts) == 1
         cmd_parts[1], ""
     else
         cmd_parts
     end
-    if startswith(cmd, "?") || startswith("help", cmd) # help is special
+    if startswith(cmd, "?")
+        help_show(cmd[2:end]; commands)
+    elseif startswith("help", cmd) && !isempty(cmd) # help is special
         help_show(rest; commands)
     else
         repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
         if isnothing(repl_cmd)
             Expr(:block, :nothing)
-        else
+        elseif repl_cmd isa ReplCmd{<:Any, Function}
             repl_cmd.execute(rest)
+        elseif repl_cmd isa ReplCmd{<:Any, Vector{ReplCmd}}
+            execute_repl_cmd(rest, commands = repl_cmd.execute, scope = repl_cmd.trigger)
         end
     end
 end
@@ -127,9 +150,16 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
                 completions(repl_cmd, rest)
             end
         else
-            cmds = filter(ns -> startswith(ns, cmd_name),
-                          vcat(getfield.(commands, :trigger), "help"))
-            (sort(cmds) .* ' ',
+            all_cmd_names = vcat(getfield.(commands, :trigger), "help")
+            # Keep any ?-prefix if getting help, otherwise it would be nice
+            # to end with a space to get straight to the sub-command/argument.
+            all_cmd_names = if startswith(cmd_name, "?")
+               '?' .* all_cmd_names
+            else
+               all_cmd_names .* ' '
+            end
+            cmds = filter(ns -> startswith(ns, cmd_name), all_cmd_names)
+            (sort(cmds),
              String(line),
              !isempty(cmds))
         end
@@ -407,10 +437,11 @@ end
 # ------------------
 
 function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
-                        commands::Vector{ReplCmd}=REPL_CMDS)
-    help_headings = ["Command", "Action"]
+                        commands::Vector{ReplCmd}=REPL_CMDS,
+                        sub::Bool=false)
+    help_headings = [if sub "Subcommand" else "Command" end, "Action"]
     help_lines = map(commands) do replcmd
-        [String(first(typeof(replcmd).parameters)),
+        [replcmd.trigger,
          first(split(replcmd.description, '\n'))]
     end
     push!(help_lines, ["help", "Display help information on the availible commands"])

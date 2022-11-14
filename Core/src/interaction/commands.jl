@@ -275,28 +275,12 @@ allcompletions(::ReplCmd{:plugin_info}) = getfield.(PLUGINS, :name)
 
 allcompletions(::ReplCmd{:plugin_list}) = ["-a", "--availible"]
 
-"""
-    plugin_dispatch(input::AbstractString)
-Call the relevant plugin_* command in `input`.
-"""
-function plugin_dispatch(input::AbstractString)
-    if isempty(input) || strip(input) in ("?", "h", "he", "hel", "help")
-        help_cmd_table(commands = PLUGIN_SUBCOMMANDS)
-        nothing
-    else
-        execute_repl_cmd(input, commands = PLUGIN_SUBCOMMANDS, scope = "plugin")
-    end
-end
-
 push!(REPL_CMDS,
       ReplCmd(:plugin,
               "Inspect and modify the set of plugins used
 
 Call without any arguments to see the availible subcommands.",
-              plugin_dispatch))
-
-completions(::ReplCmd{:plugin}, sofar::AbstractString) =
-    complete_repl_cmd(sofar, commands = PLUGIN_SUBCOMMANDS)
+              PLUGIN_SUBCOMMANDS))
 
 # ------------------
 # List datasets
