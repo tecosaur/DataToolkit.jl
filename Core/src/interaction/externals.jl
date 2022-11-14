@@ -5,8 +5,9 @@ struct DriverUnimplementedException <: Exception
 end
 
 """
-    loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main; soft::Bool=false)
-Load a data collection from `source` and add it to the data stack.
+    loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main;
+                    soft::Bool=false, index::Int=1)
+Load a data collection from `source` and add it to the data stack at `index`.
 `source` must be accepted by `read(source, DataCollection)`.
 
 `mod` should be set to the Module within which `loadcollection!` is being
@@ -20,7 +21,8 @@ loadcollection!(source, @__MODULE__; soft)
 When `soft` is set, should an data collection already exist with the same UUID,
 nothing will be done and `nothing` will be returned.
 """
-function loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main; soft::Bool=false)
+function loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main;
+                         soft::Bool=false, index::Int=1)
     uuid = UUID(get(if source isa AbstractString
                         open(source, "r") do io TOML.parse(io) end
                     else
@@ -53,7 +55,7 @@ function loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base
         end
         println(stderr, "  You must now refer to these datasets by their UUID to be unambiguous.")
     end
-    pushfirst!(STACK, collection)
+    insert!(STACK, clamp(index, 1, length(STACK)+1), collection)
     collection
 end
 
