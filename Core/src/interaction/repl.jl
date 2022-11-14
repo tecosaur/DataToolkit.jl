@@ -163,7 +163,11 @@ function init_repl()
     end
 
     data_mode = LineEdit.Prompt(
-        "data> ";
+        () -> if isempty(STACK)
+            "(⋅) data> "
+        else
+            "($(first(STACK).name)) data> "
+        end;
         prompt_prefix,
         prompt_suffix,
         keymap_dict = LineEdit.default_keymap_dict,
