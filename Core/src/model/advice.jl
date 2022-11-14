@@ -61,7 +61,7 @@ function Base.getproperty(dta::DataAdviceAmalgamation, prop::Symbol)
             filter(plugin -> plugin.name in getfield(dta, :plugins_wanted), PLUGINS)
         if getfield.(plugins_availible, :name) != getfield(dta, :plugins_used)
             advisors = getfield.(plugins_availible, :advisors) |>
-                Iterators.flatten |> collect
+                Iterators.flatten |> collect |> Vector{DataAdvice}
             sort!(advisors, by = t -> t.priority)
             setfield!(dta, :advisors, advisors)
             setfield!(dta, :adviseall, ∘(reverse(advisors)...))
