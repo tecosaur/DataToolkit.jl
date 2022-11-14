@@ -52,19 +52,25 @@ allcompletions(::ReplCmd, ::AbstractString) = String[]
 const REPL_CMDS = ReplCmd[]
 
 function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
-                       commands::Vector{ReplCmd}=REPL_CMDS)
+                       commands::Vector{ReplCmd}=REPL_CMDS,
+                       scope::String="Data REPL")
     replcmds = filter(c -> startswith(c.trigger, cmd), commands)
     if length(replcmds) == 1
         first(replcmds)
     elseif warn && length(replcmds) > 1
-        @error string("Multiple matching REPL commands: ",
-                      join(getproperty.(replcmds, :trigger), ", "))
+        printstyled(" ! ", color=:red, bold=true)
+        println("Multiple matching REPL commands: ",
+                join(getproperty.(replcmds, :trigger), ", "),
+                ".")
     elseif warn # no matching commands
-        @error "The Data REPL command '$cmd' is not defined."
+        printstyled(" ! ", color=:red, bold=true)
+        println("The $scope command '$cmd' is not defined.")
     end
 end
 
-function execute_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
+function execute_repl_cmd(line::AbstractString;
+                          commands::Vector{ReplCmd}=REPL_CMDS,
+                          scope::String="Data REPL")
     cmd_parts = split(line, limit = 2)
     cmd, rest = if length(cmd_parts) == 1
         cmd_parts[1], ""
@@ -75,7 +81,7 @@ function execute_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_C
         rest = cmd[2:end] * rest
         cmd = "help"
     end
-    repl_cmd = find_repl_cmd(cmd; warn=true, commands)
+    repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
     if isnothing(repl_cmd)
         Expr(:block, :nothing)
     else
