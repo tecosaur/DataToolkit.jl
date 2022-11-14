@@ -480,23 +480,36 @@ const PLUGIN_SUBCOMMANDS = ReplCmd[
 With '-a'/'--availible' all loaded plugins are listed instead.", plugin_list),
 ]
 
-allcompletions(::ReplCmd{:plugin_add}) =
+completions(::ReplCmd{:plugin_add}, sofar::AbstractString) =
     if !isempty(STACK)
-        setdiff(getfield.(PLUGINS, :name), first(STACK).plugins)
+        plugins = split(sofar, r", *| +")
+        options = filter(p -> startswith(p, last(plugins)),
+                         setdiff(getfield.(PLUGINS, :name),
+                                 first(STACK).plugins,
+                                 plugins))
+        (Vector{String}(options),
+         String(last(plugins)),
+         !isempty(options))
     else
         String[]
     end
 
-allcompletions(::ReplCmd{:plugin_remove}) =
+completions(::ReplCmd{:plugin_remove}, sofar::AbstractString) =
     if !isempty(STACK)
-        first(STACK).plugins
+        plugins = split(sofar, r", *| +")
+        options = setdiff(filter(p -> startswith(p, last(plugins)),
+                                 first(STACK).plugins),
+                          plugins)
+        (Vector{String}(options),
+         String(last(plugins)),
+         !isempty(options))
     else
         String[]
     end
 
 allcompletions(::ReplCmd{:plugin_info}) = getfield.(PLUGINS, :name)
 
-allcompletions(::ReplCmd{:plugin_list}) = ["-a", "--availible"]
+allcompletions(::ReplCmd{:plugin_list}) = ["--availible"]
 
 push!(REPL_CMDS,
       ReplCmd(:plugin,
