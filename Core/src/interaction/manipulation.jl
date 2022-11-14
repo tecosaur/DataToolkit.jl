@@ -59,3 +59,75 @@ function init(name::Union{AbstractString, Missing},
     end
     newcollection
 end
+
+# ------------------
+# Plugins
+# ------------------
+
+"""
+    plugin_add(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+               quiet::Bool=false)
+Add `plugins` not currently used in `collection` to `collection`'s plugins, and
+write the collection.
+
+Unless `quiet` is a set a sucess message is printed.
+"""
+function plugin_add(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+                    quiet::Bool=false)
+    new_plugins = setdiff(plugins, collection.plugins)
+    append!(collection.plugins, new_plugins)
+    write(collection)
+    quiet || printstyled(" ✓ Added plugins: $(join(''' .* new_plugins .* ''', ", "))\n", color=:green)
+end
+
+"""
+    plugin_remove(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+                  quiet::Bool=false)
+Remove all `plugins` currently used in `collection`, and write the collection.
+
+Unless `quiet` is a set a sucess message is printed.
+"""
+function plugin_remove(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+                       quiet::Bool=false)
+    rem_plugins = intersect(plugins, collection.plugins)
+    deleteat!(collection.plugins, indexin(rem_plugins, collection.plugins))
+    write(collection)
+    quiet || printstyled(" ✓ Removed plugins: $(join(''' .* rem_plugins .* ''', ", "))\n", color=:green)
+end
+
+"""
+    plugin_info(plugin::AbstractString; quiet::Bool=false)
+Fetch the documentation of `plugin`, or return `nothing` if documentation could
+not be fetched.
+
+If `quiet` is not set warning messages will be ommited when no documentation
+could be fetched.
+"""
+function plugin_info(plugin::AbstractString; quiet::Bool=false)
+    if plugin ∉ getfield.(PLUGINS, :name)
+        if !quiet
+            printstyled(" ! ", color=:red, bold=true)
+            println("The plugin '$plugin' is not currently loaded")
+        end
+    else
+        documentation = get(PLUGINS_DOCUMENTATION, plugin, nothing)
+        if !isnothing(documentation)
+            quiet || printstyled("  The $plugin plugin\n\n", color=:blue, bold=true)
+            documentation
+        else
+            if !quiet
+                printstyled(" ! ", color=:yellow, bold=true)
+                println("The plugin '$plugin' has no documentation (naughty plugin!)")
+            end
+        end
+    end
+end
+
+"""
+    plugin_list(; collection::DataCollection=first(STACK), quiet::Bool=false)
+Obtain a list of plugins used in `collection`.
+
+`quiet` is unused but accepted as an argument for the sake of consistency.
+"""
+plugin_list(; collection::DataCollection=first(STACK), quiet::Bool=false) =
+    collection.plugins
