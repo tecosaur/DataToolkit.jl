@@ -44,7 +44,7 @@ ReplCmd{name}(description::String, execute::Function) where {name} =
 ReplCmd(name::Union{Symbol, String}, args...) =
     ReplCmd{Symbol(name)}(args...)
 
-help(r::ReplCmd) = println(stderr, r.description)
+help(r::ReplCmd) = println(r.description)
 completions(r::ReplCmd, sofar::AbstractString) =
     sort(filter(s -> startswith(s, sofar), allcompletions(r)))
 allcompletions(::ReplCmd) = String[]
@@ -55,7 +55,11 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                        commands::Vector{ReplCmd}=REPL_CMDS,
                        scope::String="Data REPL")
     replcmds = filter(c -> startswith(c.trigger, cmd), commands)
-    if length(replcmds) == 1
+    if length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd))
+        ReplCmd{:help}("help",
+                       "Display help information on the availible $scope commands",
+                       cmd -> help_show(cmd; commands))
+    elseif length(replcmds) == 1
         first(replcmds)
     elseif warn && length(replcmds) > 1
         printstyled(" ! ", color=:red, bold=true)
@@ -77,15 +81,15 @@ function execute_repl_cmd(line::AbstractString;
     else
         cmd_parts
     end
-    if startswith(cmd, "?") # help is special
-        rest = cmd[2:end] * rest
-        cmd = "help"
-    end
-    repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
-    if isnothing(repl_cmd)
-        Expr(:block, :nothing)
+    if startswith(cmd, "?") || startswith("help", cmd) # help is special
+        help_show(rest; commands)
     else
-        repl_cmd.execute(rest)
+        repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
+        if isnothing(repl_cmd)
+            Expr(:block, :nothing)
+        else
+            repl_cmd.execute(rest)
+        end
     end
 end
 
@@ -104,7 +108,7 @@ end
 
 function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(line)
-        (sort(getfield.(commands, :trigger)),
+        (sort(vcat(getfield.(commands, :trigger), "help")),
          "",
          true)
     else
@@ -116,10 +120,15 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
         end
         repl_cmd = find_repl_cmd(cmd_name; commands)
         complete = if !isnothing(repl_cmd) && line != cmd_name
-            completions(repl_cmd, rest)
+            if repl_cmd isa ReplCmd{:help}
+                filter(ns -> startswith(ns, rest),
+                   getfield.(commands, :trigger))
+            else
+                completions(repl_cmd, rest)
+            end
         else
             cmds = filter(ns -> startswith(ns, cmd_name),
-                          getfield.(commands, :trigger))
+                          vcat(getfield.(commands, :trigger), "help"))
             (sort(cmds) .* ' ',
              String(line),
              !isempty(cmds))
@@ -404,6 +413,7 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
         [String(first(typeof(replcmd).parameters)),
          first(split(replcmd.description, '\n'))]
     end
+    push!(help_lines, ["help", "Display help information on the availible commands"])
     map(displaytable(help_headings, help_lines; maxwidth)) do row
         print(stderr, ' ', row, '\n')
     end
@@ -413,21 +423,10 @@ function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(cmd)
         help_cmd_table(; commands)
     else
-        repl_cmd = find_repl_cmd(cmd; commands)
+        repl_cmd = find_repl_cmd(cmd; commands, warn=true)
         if !isnothing(repl_cmd)
             help(repl_cmd)
-        else
-            printstyled(stderr, "ERROR: ", bold=true, color=:red)
-            println(stderr, "Data command $cmd is not defined")
         end
     end
     Expr(:block, :nothing)
 end
-
-push!(REPL_CMDS,
-      ReplCmd(:help,
-              "Display help information on the availible data commands.",
-              help_show))
-
-allcompletions(::ReplCmd{:help}) =
-    map(c -> String(first(typeof(c).parameters)), REPL_CMDS)
