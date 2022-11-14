@@ -104,8 +104,7 @@ end
 
 function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(line)
-        (sort(Vector{String}(
-            map(c -> String(first(typeof(c).parameters)), commands))),
+        (sort(getfield.(commands, :trigger)),
          "",
          true)
     else
@@ -116,19 +115,21 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
             cmd_parts
         end
         repl_cmd = find_repl_cmd(cmd_name; commands)
-        complete = if !isnothing(repl_cmd)
+        complete = if !isnothing(repl_cmd) && line != cmd_name
             completions(repl_cmd, rest)
         else
-            Vector{String}(
-                filter(ns -> startswith(ns, cmd_name),
-                       sort(getfield.(commands, :trigger))))
+            cmds = filter(ns -> startswith(ns, cmd_name),
+                          getfield.(commands, :trigger))
+            (sort(cmds) .* ' ',
+             String(line),
+             !isempty(cmds))
         end
         if complete isa Tuple{Vector{String}, String, Bool}
             complete
         elseif complete isa Vector{String}
             (sort(complete),
-                String(rest),
-                !isempty(complete))
+             String(rest),
+             !isempty(complete))
         else
             throw(error("REPL completions for $cmd_name returned strange result, $(typeof(complete))"))
         end
