@@ -73,7 +73,7 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
     all_cmd_names = getproperty.(commands, :trigger)
     if cmd == "" && "" in all_cmd_names
         replcmds[findfirst("" .== all_cmd_names)]
-    elseif length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd))
+    elseif length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd)) || length(cmd) == 0
         ReplCmd{:help}("help",
                        "Display help information on the availible $scope commands",
                        cmd -> help_show(cmd; commands))
