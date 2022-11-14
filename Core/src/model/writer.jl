@@ -1,5 +1,13 @@
 Base.iswritable(dc::DataCollection) =
-    !isnothing(dc.path) && open(io -> iswritable(io), dc.path, "w")
+    !isnothing(dc.path) && try # why is this such a hassle?
+        open(io -> iswritable(io), dc.path, "a")
+    catch e
+        if e isa SystemError
+            false
+        else
+            rethrow(e)
+        end
+    end
 
 function Base.string(q::QualifiedType)
     if haskey(QUALIFIED_TYPE_SHORTHANDS.reverse, q)
