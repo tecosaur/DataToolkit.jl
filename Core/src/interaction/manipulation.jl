@@ -61,6 +61,76 @@ function init(name::Union{AbstractString, Missing},
 end
 
 # ------------------
+# Stack management
+# ------------------
+
+"""
+    stack_index(ident::Union{Int, String, UUID, DataCollection}; quiet::Bool=false)
+Obtai the index of the data collection identified by `ident` on the stack,
+if it is present. If it is not found, `nothing` is returned and unless `quiet`
+is set a warning is printed.
+"""
+function stack_index(ident::Union{Int, String, UUID}; quiet::Bool=false)
+    if ident isa Int
+        if ident in axes(STACK, 1)
+            ident
+        end
+    elseif ident isa String
+        findfirst(c -> c.name == ident, STACK)
+    elseif ident isa UUID
+        findfirst(c -> c.uuid == ident, STACK)
+    elseif !quiet
+        printstyled(" ! ", color=:red)
+        println("Could not find '$ident' in the stack")
+    end
+end
+
+stack_index(collection::DataCollection) = findfirst(STACK .=== Ref(collection))
+
+"""
+    stack_move(ident::Union{Int, String, UUID, DataCollection}, shift::Int; quiet::Bool=false)
+Find `ident` in the data collection stack, and shift its position by `shift`,
+returning the new index. `shift` is clamped so that the new index lies within
+STACK.
+
+If `ident` could not be resolved, then `nothing` is returned and unless `quiet`
+is set a warning is printed.
+"""
+function stack_move(ident::Union{Int, String, UUID, DataCollection}, shift::Int; quiet::Bool=false)
+    current_index = stack_index(ident; quiet)
+    if !isnothing(current_index)
+        collection = STACK[current_index]
+        new_index = clamp(current_index + shift, 1, length(STACK))
+        if new_index == current_index
+            quiet || printstyled(" ✓ '$(collection.name)' already at #$current_index\n", color=:green)
+        else
+            deleteat!(STACK, current_index)
+            insert!(STACK, new_index, collection)
+            quiet || printstyled(" ✓ Moved '$(collection.name)': #$current_index → #$new_index\n", color=:green)
+        end
+        new_index
+    end
+end
+
+"""
+    stack_remove!(ident::Union{Int, String, UUID, DataCollection}; quiet::Bool=false)
+Find `ident` in the data collection stack and remove it from the stack,
+returning the index at which it was found.
+
+If `ident` could not be resolved, then `nothing` is returned and unless `quiet`
+is set a warning is printed.
+"""
+function stack_remove!(ident::Union{Int, String, UUID, DataCollection}; quiet::Bool=false)
+    index = stack_index(ident; quiet)
+    if !isnothing(index)
+        name = STACK[index].name
+        deleteat!(STACK, index)
+        quiet || printstyled(" ✓ Deleted $name\n", color=:green)
+        index
+    end
+end
+
+# ------------------
 # Plugins
 # ------------------
 
