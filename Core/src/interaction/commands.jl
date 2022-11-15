@@ -700,7 +700,7 @@ push!(REPL_CMDS,
 By default, the datasets of the active collection are shown.",
               list_datasets))
 
-allcompletions(::ReplCmd{:list}, rest::AbstractString) =
+allcompletions(::ReplCmd{:list}) =
     filter(cn -> !isnothing(cn), map(c -> c.name, STACK))
 
 # ------------------
