@@ -47,3 +47,11 @@ function save(writer::DataWriter{:csv}, dest::IO, info)
     end
     CSV.write(dest, info; NamedTuple(kwargs)...)
 end
+
+createpriority(::Type{DataLoader{:csv}}) = 10
+
+function create(::Type{DataLoader{:csv}}, source::String)
+    if !isnothing(match(r"\.[ct]sv$"i, source))
+        Dict{String, Any}()
+    end
+end

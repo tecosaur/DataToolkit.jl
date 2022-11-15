@@ -2,7 +2,8 @@ module DataToolkitCommon
 
 using DataToolkitBase
 import DataToolkitBase: load, save, storage,
-    getstorage, putstorage, supportedtypes
+    getstorage, putstorage, supportedtypes,
+    create, createpriority
 
 using Compat
 

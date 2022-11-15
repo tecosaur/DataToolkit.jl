@@ -26,3 +26,11 @@ end
 
 supportedtypes(::Type{<:DataStorage{:filesystem, <:Any}}) =
     QualifiedType.([IO, Vector{UInt8}, String, FilePath])
+
+createpriority(::Type{<:DataStorage{:filesystem}}) = 70
+
+function create(::Type{<:DataStorage{:filesystem}}, source::String, dataset::DataSet)
+    if isfile(abspath(dirname(dataset.collection.path), expanduser(source)))
+        Dict{String, Any}("path" => source)
+    end
+end

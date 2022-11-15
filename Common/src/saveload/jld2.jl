@@ -20,3 +20,11 @@ function save(::DataLoader{:jld2}, info::Dict{String, Any}, dest::FilePath)
     @use JLD2
     JLD2.save(dest.path, info)
 end
+
+createpriority(::Type{DataLoader{:jld2}}) = 10
+
+function create(::Type{DataLoader{:jld2}}, source::String)
+    if !isnothing(match(r"\.jld2$"i, source))
+        Dict{String, Any}()
+    end
+end

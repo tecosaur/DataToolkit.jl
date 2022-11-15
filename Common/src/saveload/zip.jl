@@ -85,3 +85,16 @@ function load(loader::DataLoader{:zip}, from::FilePath,
               as::Type{<:Union{FilePath, IO, Dict{FilePath, IO}, Dict{String, IO}}})
     open(string(from)) do io load(loader, io, as) end
 end
+
+createpriority(::Type{DataLoader{:zip}}) = 10
+
+function create(::Type{DataLoader{:zip}}, source::String)
+    if !isnothing(match(r"\.zip$"i, source))
+        Dict("file" => (; prompt="File: ", type=String, optional=true),
+             "extract" => function (spec)
+                 if !haskey(spec, "file")
+                     (; prompt="Extract: ", type=String, optional=true)
+                 end
+             end)
+    end
+end

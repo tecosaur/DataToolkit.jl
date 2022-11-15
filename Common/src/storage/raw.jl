@@ -18,3 +18,14 @@ function save(::DataWriter{:passthrough}, dest::DataStorage{:raw}, info::Any)
     write(dest)
     true
 end
+
+createpriority(::Type{<:DataStorage{:raw}}) = 90
+
+function create(::Type{<:DataStorage{:raw}}, source::String)
+    value = try
+        DataToolkitBase.TOML.parse(string("value = ", source))["value"]
+    catch _ nothing end
+    if !isnothing(value)
+        Dict{String, Any}("value" => value)
+    end
+end

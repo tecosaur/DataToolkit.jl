@@ -180,3 +180,11 @@ getstorage(storage::DataStorage{:url}, ::Type{String}) =
 
 supportedtypes(::Type{<:DataStorage{:url, <:Any}}) =
     QualifiedType.([IO, Vector{UInt8}, String, FilePath])
+
+createpriority(::Type{<:DataStorage{:url}}) = 30
+
+function create(::Type{<:DataStorage{:url}}, source::String)
+    if !isnothing(match(r"^(?:https?|ftps?)://", source))
+        Dict{String, Any}("url" => source)
+    end
+end

@@ -12,3 +12,11 @@ end
 
 supportedtypes(::Type{DataLoader{:passthrough}}, _::Dict{String, Any}, dataset::DataSet) =
     reduce(vcat, getproperty.(dataset.storage, :type)) |> unique
+
+createpriority(::Type{DataLoader{:passthrough}}) = 20
+
+function create(::Type{DataLoader{:passthrough}}, source::String, dataset::DataSet)
+    if any(isa.(dataset.storage, DataStorage{:raw}))
+        Dict{String, Any}()
+    end
+end

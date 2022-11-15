@@ -14,3 +14,11 @@ function save(writer::DataWriter{:json}, dest::IO, info)
         JSON3.write(dest, info)
     end
 end
+
+createpriority(::Type{DataLoader{:json}}) = 10
+
+function create(::Type{DataLoader{:json}}, source::String)
+    if !isnothing(match(r"\.json$"i, source))
+        Dict{String, Any}()
+    end
+end
