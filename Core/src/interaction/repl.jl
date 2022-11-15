@@ -307,7 +307,7 @@ What colour is the sky? Blue
 "Blue"
 ```
 """
-function prompt(question::AbstractString, default::AbstractString="",
+function prompt(question::AbstractString, default::AbstractString="";
                 allowempty::Bool=false, cleardefault::Bool=true)
     printstyled(question, color=REPL_QUESTION_COLOR)
     get(stdout, :color, false) && print(Base.text_colors[REPL_USER_INPUT_COLOUR])
