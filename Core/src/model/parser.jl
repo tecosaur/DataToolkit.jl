@@ -79,16 +79,18 @@ supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
 (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::String) =
     ADT(dataset, Dict{String, Any}("driver" => spec))
 
-function fromspec(ADT::Type{<:AbstractDataTransformer},
-                  dataset::DataSet, spec::Dict{String, Any})
+function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
     driver = if ADT isa DataType
         first(ADT.parameters)
     else
         Symbol(lowercase(spec["driver"]))
     end
+    if !(ADT isa DataType)
+        ADT = ADT{driver}
+    end
     ttype = let spec_type = get(spec, "type", nothing)
         if isnothing(spec_type)
-            supportedtypes(if ADT isa DataType ADT else ADT{driver} end, spec, dataset)
+            supportedtypes(ADT, spec, dataset)
         elseif spec_type isa Vector
             QualifiedType.(spec_type)
         elseif spec_type isa String
@@ -104,8 +106,8 @@ function fromspec(ADT::Type{<:AbstractDataTransformer},
     delete!(parameters, "priority")
     dataset.collection.advise(
         identity,
-        ADT{driver}(dataset, ttype, priority,
-                    dataset_parameters(dataset, Val(:extract), parameters)))
+        ADT(dataset, ttype, priority,
+            dataset_parameters(dataset, Val(:extract), parameters)))
 end
 
 # function (ADT::Type{<:AbstractDataTransformer})(collection::DataCollection, spec::Dict{String, Any})
