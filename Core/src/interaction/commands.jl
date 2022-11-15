@@ -658,6 +658,50 @@ Examples:
   unset my.\"special thing\".extra", config_unset),
 ]
 
+"""
+    config_complete(sofar::AbstractString; collection::DataCollection=first(STACK))
+Provide completions for the existing TOML-style property path of `collections`'s
+starting with `sofar`.
+"""
+function config_complete(sofar::AbstractString; collection::DataCollection=first(STACK))
+    segments, rest = config_segments(sofar)
+    if !isempty(rest) # if past path completion
+        return String[]
+    end
+    if isempty(sofar) || last(sofar) == '.'
+        push!(segments, "")
+    end
+    config = collection.parameters
+    for segment in segments[1:end-1]
+        if haskey(config, segment)
+            config = config[segment]
+        else
+            return String[]
+        end
+    end
+    if haskey(config, last(segments))
+        ('.' .* sort(keys(config[last(segments)]) |> collect),
+         "", true)
+    elseif config isa Dict
+        options = sort(keys(config) |> collect)
+        (filter(o -> startswith(o, last(segments)),
+                options),
+         String(last(segments)),
+         !isempty(options))
+    else
+        String[]
+    end
+end
+
+completions(::ReplCmd{:config_get}, sofar::AbstractString) =
+    config_complete(sofar)
+
+completions(::ReplCmd{:config_set}, sofar::AbstractString) =
+    config_complete(sofar)
+
+completions(::ReplCmd{:config_unset}, sofar::AbstractString) =
+    config_complete(sofar)
+
 push!(REPL_CMDS,
       ReplCmd(:config,
               "Inspect and modify the current configuration",
