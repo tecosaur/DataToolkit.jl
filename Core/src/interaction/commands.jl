@@ -1,3 +1,38 @@
+# Utilities
+
+function complete_collection(sofar::AbstractString)
+    name_matches = filter(c -> startswith(c.name, sofar), STACK)
+    if !isempty(name_matches)
+        getproperty.(name_matches, :name)
+    else
+        uuid_matches = filter(c -> startswith(string(c.uuid), sofar), STACK)
+        getproperty.(uuid_matches, :name)
+    end |> Vector{String}
+end
+
+function complete_dataset(sofar::AbstractString)
+    try # In case `resolve` or `getlayer` fail.
+        relevant_options = if !isnothing(match(r"^.+::", sofar))
+                identifier = Identifier(first(split(sofar, "::")))
+                types = map(l -> l.type, resolve(identifier).loaders) |>
+                    Iterators.flatten .|> string |> unique
+                string.(string(identifier), "::", types)
+        elseif !isnothing(match(r"^[^:]+:", sofar))
+            layer, _ = split(sofar, ':', limit=2)
+            filter(o -> startswith(o, sofar),
+                   string.(layer, ':',
+                           sort(unique(getproperty.(
+                               getlayer(layer).datasets, :name)))))
+        else
+            filter(o -> startswith(o, sofar),
+                   vcat(getproperty.(STACK, :name) .* ':',
+                        getproperty.(getlayer(nothing).datasets, :name) |> unique))
+        end
+    catch _
+        String[]
+    end
+end
+
 # ------------------
 # Initialisation
 # ------------------
@@ -309,16 +344,6 @@ Examples:
   remove mydata
   remove 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48", stack_remove),
 ]
-
-function complete_collection(start::AbstractString)
-    name_matches = filter(c -> startswith(c.name, start), STACK)
-    if !isempty(name_matches)
-        getproperty.(name_matches, :name)
-    else
-        uuid_matches = filter(c -> startswith(string(c.uuid), start), STACK)
-        getproperty.(uuid_matches, :name)
-    end
-end
 
 function completions(::ReplCmd{:stack_load}, sofar::AbstractString)
     pathsofar = first(match(r"^(?:\d+ *)?(.*)$", sofar).captures)
@@ -703,22 +728,5 @@ push!(REPL_CMDS,
             nothing
         end))
 
-function allcompletions(::ReplCmd{:show}, sofar::AbstractString)
-    try # In case `resolve` or `getlayer` fail.
-        if !isnothing(match(r"^.+::", sofar))
-                identifier = Identifier(first(split(sofar, "::")))
-                types = map(l -> l.type, resolve(identifier).loaders) |>
-                    Iterators.flatten .|> string |> unique
-                string.(string(identifier), "::", types)
-        elseif !isnothing(match(r"^[^:]+:", sofar))
-            layer, _ = split(sofar, ':', limit=2)
-            string.(layer, ':',
-                    getproperty.(getlayer(layer).datasets, :name) |> unique)
-        else
-            vcat(getproperty.(STACK, :name) .* ':',
-                getproperty.(getlayer(nothing).datasets, :name) |> unique)
-        end
-    catch _
-        String[]
-    end
-end
+completions(::ReplCmd{:show}, sofar::AbstractString) =
+    complete_dataset(sofar)
