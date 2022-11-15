@@ -878,7 +878,8 @@ push!(REPL_CMDS,
     ReplCmd(:show,
         "List the dataset refered to by an identifier",
         ident -> if isempty(ident)
-            println("Provide a dataset to be shown.")
+            printstyled(" ! ", color=:yellow, bold=true)
+            println("Provide a dataset to be shown")
         else
             ds = resolve(parse(Identifier, ident))
             display(ds)
