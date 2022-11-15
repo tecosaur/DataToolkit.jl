@@ -669,7 +669,8 @@ push!(REPL_CMDS,
 
 function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize(stdout)[2])
     if isempty(STACK)
-        println(stderr, "The data collection stack is empty.")
+        printstyled(" ! ", color=:yellow, bold=true)
+        println("The data collection stack is empty")
     else
         collection = if isempty(collection_str)
             getlayer(nothing)
@@ -709,7 +710,7 @@ allcompletions(::ReplCmd{:list}) =
 
 push!(REPL_CMDS,
     ReplCmd(:show,
-        "List the dataset refered to by an identifier.",
+        "List the dataset refered to by an identifier",
         ident -> if isempty(ident)
             println("Provide a dataset to be shown.")
         else
