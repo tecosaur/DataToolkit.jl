@@ -183,11 +183,19 @@ Parse and call the repl-format stack loader command `input`.
 `input` should consist of a path to a Data TOML file or a folder containing a
 Data.toml file. The path may be preceeded by a position in the stack to be
 loaded to, either an integer or the character '*'.
+
+`input` may also be the name of an existing data collection, in which case its
+path is substituted.
 """
 function stack_load(input::AbstractString)
     position, path = match(r"^((?:\d+ +)?)(.*)$", input).captures
     file = if !isempty(path)
-        abspath(expanduser(path))
+        if !endswith(path, ".toml") && !isdir(path) &&
+            !isnothing(findfirst(c -> c.name == path, STACK))
+            getlayer(path).path
+        else
+            abspath(expanduser(path))
+        end
     elseif Base.active_project(false) &&
         isfile(joinpath(Base.active_project(false), "Data.toml"))
         dirname(Base.active_project(false))
