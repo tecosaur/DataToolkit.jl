@@ -806,8 +806,8 @@ function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize
             else
                 map(sort(collection.datasets, by = d -> d.name)) do dataset
                     [dataset.name,
-                    first(split(get(dataset, "description", " "),
-                                '\n', keepempty=false))]
+                     first(split(lstrip(get(dataset, "description", "")),
+                                 '\n', keepempty=true))]
                 end
             end; maxwidth)
         for row in table_rows
