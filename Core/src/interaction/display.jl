@@ -27,7 +27,7 @@ function displaytable(headers::Vector, rows::Vector{<:Vector};
     vcat("\e[1m" * rows[1] * "\e[0m", rule, rows[2:end])
 end
 
-function Base.show(io::IO, dsi::Identifier)
+function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier)
     printstyled(io, something(dsi.collection, "■"), ':', color=:magenta)
     print(io, dsi.dataset)
     # if !isnothing(dsi.version)
