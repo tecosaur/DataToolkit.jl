@@ -1,6 +1,6 @@
 getpath(storage::DataStorage{:filesystem}) =
     abspath(dirname(storage.dataset.collection.path),
-            @something(expanduser(get(storage, "path")) ,
+            @something(expanduser(get(storage, "path")),
                        error("No path")))
 
 function storage(storage::DataStorage{:filesystem}, ::Type{IO};
