@@ -436,11 +436,14 @@ julia> peelword("\"one two\" three")
 ("one two", "three")
 ```
 """
-function peelword(input::AbstractString)
+function peelword(input::AbstractString; allowdot::Bool=true)
     if isempty(input)
         ("", "")
     elseif first(lstrip(input)) != '"' || count(==('"'), input) < 2
-        Tuple(match(r"^\s*([^\s][^\s.]*)\s*(.*?|)$", input).captures .|> String)
+        Tuple(match(ifelse(allowdot,
+                           r"^\s*([^\s][^\s]*)\s*(.*?|)$",
+                           r"^\s*([^\s][^\s.]*)\s*(.*?|)$"),
+                    input).captures .|> String)
     else # Starts with " and at least two " in `input`.
         start = findfirst(!isspace, input)::Int
         stop = nextind(input, start)

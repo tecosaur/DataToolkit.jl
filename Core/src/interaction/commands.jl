@@ -531,7 +531,7 @@ function config_segments(input::AbstractString)
     segments = String[]
     rest = '.' * input
     while !isempty(rest) && first(rest) == '.'
-        seg, rest = peelword(rest[2:end])
+        seg, rest = peelword(rest[2:end], allowdot=false)
         !isempty(seg) && push!(segments, String(seg))
     end
     segments, strip(rest)
