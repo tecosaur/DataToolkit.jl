@@ -42,7 +42,10 @@ function init(input::AbstractString)
             confirm_yn(" Create Data.toml for current project?", true)
             dirname(Base.active_project(false))
         else
-            prompt(" Path to Data TOML file: ")
+            prompt(" Path to Data TOML file: ",
+                   joinpath(if !isnothing(Base.active_project(false))
+                                dirname(Base.active_project(false))
+                            else pwd() end, "$name.toml"))
         end
     elseif first(peelword(rest)) != "with"
         path, rest = peelword(rest)
