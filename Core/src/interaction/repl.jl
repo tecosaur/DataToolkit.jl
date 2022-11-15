@@ -118,7 +118,11 @@ function execute_repl_cmd(line::AbstractString;
         cmd_parts
     end
     if startswith(cmd, "?")
-        help_show(cmd[2:end]; commands)
+        if isempty(rest) || cmd == "?"
+            help_show(cmd[2:end]; commands)
+        else
+            execute_repl_cmd(string(cmd[2:end], " help ", rest); commands, scope)
+        end
     elseif startswith("help", cmd) && !isempty(cmd) # help is special
         help_show(rest; commands)
     else
