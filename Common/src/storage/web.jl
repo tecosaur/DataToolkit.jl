@@ -39,7 +39,7 @@ function download_progress(filename::AbstractString)
     end
 end
 
-function download_to(storage::DataStorage{:url}, target::Union{IO, String})
+function download_to(storage::DataStorage{:web}, target::Union{IO, String})
     @use Downloads
     Downloads.download(
         get(storage, "url"), target;
@@ -50,7 +50,7 @@ function download_to(storage::DataStorage{:url}, target::Union{IO, String})
     target isa IO && seekstart(target)
 end
 
-function checkchecksum(storage::DataStorage{:url}, data::IO)
+function checkchecksum(storage::DataStorage{:web}, data::IO)
     checksum = get(storage, "checksum")
     if checksum == "auto" || checksum isa Integer
         checkchecksum(storage, crc32c(data))
@@ -63,7 +63,7 @@ function checkchecksum(storage::DataStorage{:url}, data::IO)
     end
 end
 
-function checkchecksum(storage::DataStorage{:url}, actual_checksum::Integer)
+function checkchecksum(storage::DataStorage{:web}, actual_checksum::Integer)
     checksum = get(storage, "checksum")
     if checksum == "auto"
         storage.parameters["checksum"] = actual_checksum
@@ -94,7 +94,7 @@ function checkchecksum(storage::DataStorage{:url}, actual_checksum::Integer)
     end
 end
 
-function getstorage(storage::DataStorage{:url}, ::Type{IO})
+function getstorage(storage::DataStorage{:web}, ::Type{IO})
     @something(
         let dlcf = get_dlcache_file(storage)
             if !isnothing(dlcf)
@@ -113,7 +113,7 @@ function getstorage(storage::DataStorage{:url}, ::Type{IO})
         end)
 end
 
-function getstorage(storage::DataStorage{:url}, ::Type{FilePath})
+function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     if get(storage, "cache", false) != false
         FilePath(get_dlcache_file(storage))
     else
@@ -125,7 +125,7 @@ end
 
 const WEB_DEFAULT_CACHEFOLDER = "downloads"
 
-function get_dlcache_file(storage::DataStorage{:url})
+function get_dlcache_file(storage::DataStorage{:web})
     path = if get(storage, "cache") == true
         string(storage.dataset.uuid, ".cache")
     elseif get(storage, "cache") isa String
@@ -172,18 +172,18 @@ function get_dlcache_file(storage::DataStorage{:url})
     end
 end
 
-getstorage(storage::DataStorage{:url}, ::Type{Vector{UInt8}}) =
+getstorage(storage::DataStorage{:web}, ::Type{Vector{UInt8}}) =
     read(getstorage(storage, IO))
 
-getstorage(storage::DataStorage{:url}, ::Type{String}) =
+getstorage(storage::DataStorage{:web}, ::Type{String}) =
     read(getstorage(storage, IO), String)
 
-supportedtypes(::Type{<:DataStorage{:url, <:Any}}) =
+supportedtypes(::Type{<:DataStorage{:web, <:Any}}) =
     QualifiedType.([IO, Vector{UInt8}, String, FilePath])
 
-createpriority(::Type{<:DataStorage{:url}}) = 30
+createpriority(::Type{<:DataStorage{:web}}) = 30
 
-function create(::Type{<:DataStorage{:url}}, source::String)
+function create(::Type{<:DataStorage{:web}}, source::String)
     if !isnothing(match(r"^(?:https?|ftps?)://", source))
         Dict{String, Any}("url" => source)
     end

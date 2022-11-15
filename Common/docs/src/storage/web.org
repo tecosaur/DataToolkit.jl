@@ -30,7 +30,7 @@ Downloading the data on-demand each time it is accessed.
 
 #+begin_src toml
 [[iris.storage]]
-driver = "url"
+driver = "web"
 url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
 #+end_src
 
@@ -38,7 +38,7 @@ Adding a checksum to ensure that the data is unchanged.
 
 #+begin_src toml
 [[iris.storage]]
-driver = "url"
+driver = "web"
 checksum = 4155407972
 url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
 #+end_src
@@ -47,7 +47,7 @@ Specifying a file path to cache the data at.
 
 #+begin_src toml
 [[iris.storage]]
-driver = "url"
+driver = "web"
 cache = "downloads/iris.csv"
 checksum = 4155407972
 url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
@@ -58,7 +58,7 @@ UUID.
 
 #+begin_src toml
 [[iris.storage]]
-driver = "url"
+driver = "web"
 cache = true
 cachefolder = "downloads"
 checksum = 4155407972
