@@ -336,7 +336,7 @@ function prompt(question::AbstractString, default::AbstractString="";
                     deleteat!(response, point + 1)
                 end
             elseif next == '\x03' # ^C
-                print("\e[90m^C")
+                print("\e[m^C\n")
                 throw(InterruptException())
             elseif next == '\x7f' # DEL
                 if firstinput && cleardefault
@@ -386,7 +386,7 @@ function prompt_char(question::AbstractString, options::Vector{Char},
         if char == '\r' && !isnothing(default)
             char = default
         elseif char == '\x03' # ^C
-            print("\e[90m^C")
+            print("\e[m^C\n")
             throw(InterruptException())
         end
     end
