@@ -230,7 +230,7 @@ function stack_remove(input::AbstractString)
     else
         stack_remove!(@something(tryparse(Int, input),
                                  tryparse(UUID, input),
-                                 input))
+                                 String(input)))
         nothing
     end
 end
