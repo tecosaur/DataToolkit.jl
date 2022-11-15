@@ -268,3 +268,155 @@ function config_unset!(propertypath::Vector{String};
     write(collection)
     quiet || printstyled(" ✓ Unset $(join(propertypath, '.'))\n", color=:green)
 end
+
+# ------------------
+# Dataset creation
+# ------------------
+
+"""
+    create(::Type{DataSet}, name::String, spec::Dict{String, Any},
+           source::String="";
+           collection::DataCollection=first(STACK),
+           storage::Vector{Symbol}=Symbol[],
+           loaders::Vector{Symbol}=Symbol[],
+           writers::Vector{Symbol}=Symbol[],
+           quiet::Bool=false)
+Create a new DataSet in `collection`, with a `name` and `spec`.  The data
+transformers will be constructed with each of the backends listed in `storage`,
+`loaders`, and `writers` from `source`. If the symbol `*` is given, all
+possible drivers will be searched and the highest priority driver avilible
+(according to `createpriority`) used. Should no transformer of the specified
+driver and type exist, it will be skipped.
+"""
+function create(::Type{DataSet}, name::String, spec::Dict{String, Any},
+                source::String="";
+                collection::DataCollection=first(STACK),
+                storage::Vector{Symbol}=Symbol[],
+                loaders::Vector{Symbol}=Symbol[],
+                writers::Vector{Symbol}=Symbol[],
+                quiet::Bool=false)
+    spec["uuid"] = uuid4()
+    dataset = collection.advise(fromspec, DataSet, collection, name, spec)
+    for (transformer, slot, drivers) in ((DataStorage, :storage, storage),
+                                         (DataLoader, :loaders, loaders),
+                                         (DataWriter, :writers, writers))
+        for driver in drivers
+            dt = create(transformer, driver, source, dataset)
+            if isnothing(dt)
+                printstyled(" ! ", color=:yellow, bold=true)
+                println("Failed to create '$driver' $(string(nameof(transformer))[5:end])")
+            else
+                push!(getproperty(dataset, slot), dt)
+            end
+        end
+    end
+    push!(collection.datasets, dataset)
+    write(collection)
+    quiet || printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
+    dataset
+end
+
+"""
+    create(T::Type{<:AbstractDataTransformer}, source::String, dataset::DataSet)
+If `source`/`dataset` can be used to construct a data transformer of type `T`,
+do so and return it. Otherwise return `nothing`.
+"""
+create(T::Type{<:AbstractDataTransformer}, source::String, ::DataSet) =
+    create(T::Type{<:AbstractDataTransformer}, source)
+create(T::Type{<:AbstractDataTransformer}, ::String) = nothing
+
+"""
+    createpriority(T::Type{<:AbstractDataTransformer})
+The priority with which a transformer of type `T` should be created.
+This can be any integer, but try to keep to -100:100.
+"""
+createpriority(T::Type{<:AbstractDataTransformer}) = 0
+
+"""
+    create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String, dataset::DataSet)
+Create a new `T` with driver `driver` from `source`/`dataset`.
+
+If `driver` is the symbol `*` then all possible drivers are checked and the
+highest priority (according to `createpriority`) valid driver used. Drivers with
+a priority over 100 will not be considered.
+
+The created data transformer is returned, unless the given `driver` is not
+valid, in which case `nothing` is returned instead.
+"""
+function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String, dataset::DataSet)
+    T ∈ (DataStorage, DataLoader, DataWriter) ||
+        throw(ArgumentError("T=$T should be an driver-less Data{Storage,Loader,Writer}"))
+    function process_spec(spec::Dict{String, <:Any}, driver::Symbol)
+        final_spec = Dict{String, Any}()
+        function expand_value(key::String, value::Any)
+            if value isa Function
+                value = value(final_spec)
+            end
+            final_value = if value isa TOML.Internals.Printer.TOMLValue
+                value
+            elseif value isa NamedTuple
+                type = get(value, :type, String)
+                vprompt = " [$(string(nameof(T))[5:end])] " *
+                    get(value, :prompt, "$key: ")
+                if type == Bool
+                    confirm_yn(vprompt, get(value, :default, false))
+                elseif type == String
+                    res = prompt(vprompt, get(value, :default, "");
+                                 allowempty = get(value, :optional, false))
+                    if !isempty(res) res end
+                elseif type <: Number
+                    parse(type, prompt(vprompt, string(get(value, :default, zero(type)))))
+                end |> get(value, :post, identity)
+            end
+            if !isnothing(final_value)
+                final_spec[key] = final_value
+            end
+        end
+        for (key, value) in spec
+            expand_value(key, value)
+        end
+        final_spec["driver"] = string(driver)
+        final_spec
+    end
+    if driver == :*
+        alldrivers = if T == DataStorage
+            vcat(methods(storage), methods(getstorage))
+        elseif T == DataLoader
+            methods(load)
+        elseif T == DataWriter
+            methods(save)
+        end |>
+            ms -> map(f -> Base.unwrap_unionall(
+                Base.unwrap_unionall(f.sig).types[2]).parameters[1], ms) |>
+            ds -> filter(d -> d isa Symbol, ds) |> unique |>
+            ds -> sort(ds, by=driver -> createpriority(T{driver}))
+            ds -> filter(driver -> createpriority(T{driver}) <= 100, ds)
+        for drv in alldrivers
+            adt = create(T{drv}, source, dataset)
+            if !isnothing(adt)
+                return dataset.collection.advise(
+                    fromspec, T, dataset, process_spec(adt, drv))
+            end
+        end
+    else
+        adt = create(T{drv}, source, dataset)
+        if !isnothing(adt)
+            dataset.collection.advise(
+                fromspec, T, dataset, process_spec(adt, drv))
+        end
+    end
+end
+
+# ------------------
+# Dataset deletion
+# ------------------
+
+"""
+    delete!(dataset::DataSet)
+Remove `dataset` from its parent collection.
+"""
+function Base.delete!(dataset::DataSet)
+    index = findfirst(d -> d.uuid == dataset.uuid, dataset.collection.datasets)
+    deleteat!(dataset.collection.datasets, index)
+    write(dataset.collection)
+end
