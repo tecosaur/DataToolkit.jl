@@ -14,11 +14,14 @@ getdefaults(collection::DataCollection) =
 getdefaults(dataset::DataSet) = getdefaults(dataset.collection)
 
 """
-    getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}, driver::Symbol)
-Get the default parameters of an AbstractDataTransformer of type `ADT` using `driver`
-attached to a certain `dataset`.
+    getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
+               driver::Symbol; resolvetype::Bool=true)
+Get the default parameters of an AbstractDataTransformer of type `ADT` using
+`driver` attached to a certain `dataset`. The default type resolved when
+`resolvetype` is set.
 """
-function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}, driver::Symbol)
+function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
+                     driver::Symbol; resolvetype::Bool=true)
     adt_type = Dict(:DataStorage => "storage",
                     :DataLoader => "loader",
                     :DataWriter => "writer")[nameof(ADT)]
@@ -28,20 +31,32 @@ function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}, dri
         get(get(dataset.collection,
                 "defaults", DEFAULT_DEFAULTS),
             adt_type, Dict{String,Any}())
-    merge(Dict{String,Any}("priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY),
+    implicit_defaults = Dict{String, Any}(
+        "priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY)
+    if resolvetype
+        types = string.(supportedtypes(concrete_adt, Dict{String, Any}(), dataset))
+        implicit_defaults["type"] =
+            if length(types) == 1 first(types) else types end
+    end
+    merge(implicit_defaults,
           get(transformer_defaults, DEFAULTS_ALL, Dict{String,Any}()),
           get(transformer_defaults, String(driver), Dict{String,Any}()))
 end
 
 """
-    getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}; spec::Dict)
+    getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
+                spec::Dict, resolvetype::Bool=true)
 Get the default parameters of an AbstractDataTransformer of type `ADT` where the
-transformer driver is read from `ADT` if possible, and taken from `spec` otherwise.
+transformer driver is read from `ADT` if possible, and taken from `spec`
+otherwise. The default type resolved when `resolvetype` is set.
 """
-getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer}; spec::Dict) =
-    getdefaults(dataset, ADT, if ADT isa DataType
+getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
+            spec::Dict, resolvetype::Bool=true) =
+    getdefaults(dataset, ADT,
+                if ADT isa DataType
                     first(ADT.parameters)
-                else Symbol(spec["driver"]) end)
+                else Symbol(spec["driver"]) end;
+                resolvetype)
 
 """
     getdefaults(adt::AbstractDataTransformer)
@@ -78,10 +93,14 @@ priority=2
 const DEFAULTS_PLUGIN = Plugin("defaults", [
     function (post::Function, f::typeof(fromspec), D::Type{DataSet},
               collection::DataCollection, name::String, spec::Dict{String, Any})
-        (post, f, (D, collection, name, merge(getdefaults(collection), spec))) end,
+        (post, f, (D, collection, name, merge(getdefaults(collection), spec)))
+    end,
     function (post::Function, f::typeof(fromspec), ADT::Type{<:AbstractDataTransformer},
              dataset::DataSet, spec::Dict{String, Any})
-        (post, f, (ADT, dataset, merge(getdefaults(dataset, ADT; spec), spec))) end,
+        (post, f, (ADT, dataset,
+                   merge(getdefaults(dataset, ADT; spec, resolvetype=false),
+                         spec)))
+    end,
     function (post::Function, f::typeof(tospec), ds::DataSet)
         defaults = getdefaults(ds)
         removedefaults(dict) =
