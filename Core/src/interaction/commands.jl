@@ -58,7 +58,7 @@ function init(input::AbstractString)
 
     while !isdir(dirname(path))
         printstyled(" ! ", color=:yellow, bold=true)
-        println("Directory 'dirname($path)' does not exist")
+        println("Directory '$(dirname(path))' does not exist")
         createp = confirm_yn(" Would you like to create this directory?", true)
         if createp
             mkpath(dirname(path))
