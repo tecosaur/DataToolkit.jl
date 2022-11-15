@@ -380,9 +380,9 @@ extracttypes(T::Type) =
         if T1 isa TypeVar T1.ub else T1 end |> splitunions
     end
 
-genericstore = first(methods(storage, Tuple{DataStorage{Any}, Any}))
-genericstoreget = first(methods(getstorage, Tuple{DataStorage{Any}, Any}))
-genericstoreput = first(methods(putstorage, Tuple{DataStorage{Any}, Any}))
+const genericstore = first(methods(storage, Tuple{DataStorage{Any}, Any}))
+const genericstoreget = first(methods(getstorage, Tuple{DataStorage{Any}, Any}))
+const genericstoreput = first(methods(putstorage, Tuple{DataStorage{Any}, Any}))
 
 supportedtypes(L::Type{<:DataLoader}, T::Type=Any) =
     map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[4]),
