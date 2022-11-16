@@ -742,7 +742,7 @@ function create(input::AbstractString)
                 'l' in viarg && push!(targets, :loaders)
                 'w' in viarg && push!(targets, :writers)
             else
-                push!.(getfield.(via, targets), Symbol(viarg))
+                push!.(getfield.(Ref(via), targets), Symbol(viarg))
             end
         end
     else
