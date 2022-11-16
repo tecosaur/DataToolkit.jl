@@ -1,8 +1,8 @@
 const TOMLValue = DataToolkitBase.TOML.Internals.Printer.TOMLValue
 # TOML_TYPES = Base.uniontypes(TOMLValue)
 
-function getstorage(storage::DataStorage{:raw}, ::Type{<:TOMLValue})
-    get(storage.parameters, "value", nothing)
+function getstorage(storage::DataStorage{:raw}, T::Type{<:TOMLValue})
+    get(storage, "value", nothing)::Union{T, Nothing}
 end
 
 function putstorage(storage::DataStorage{:raw}, ::Type{<:TOMLValue})
