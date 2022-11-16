@@ -13,7 +13,7 @@ None
 
 * Parameters
 
-- ident :: The identifier of the dataset to be loaded.
+- source :: The identifier of the source dataset to be loaded.
 
 * Usage examples
 
