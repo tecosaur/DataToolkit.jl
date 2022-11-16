@@ -328,22 +328,24 @@ create(T::Type{<:AbstractDataTransformer}, ::String) = nothing
 """
     createpriority(T::Type{<:AbstractDataTransformer})
 The priority with which a transformer of type `T` should be created.
-This can be any integer, but try to keep to -100:100.
+This can be any integer, but try to keep to -100–100 (see `create`).
 """
 createpriority(T::Type{<:AbstractDataTransformer}) = 0
 
 """
-    create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String, dataset::DataSet)
+    create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String, dataset::DataSet;
+           minpriority::Int=-100, maxpriority::Int=100)
 Create a new `T` with driver `driver` from `source`/`dataset`.
 
 If `driver` is the symbol `*` then all possible drivers are checked and the
 highest priority (according to `createpriority`) valid driver used. Drivers with
-a priority over 100 will not be considered.
+a priority outside `minpriority`–`maxpriority` will not be considered.
 
 The created data transformer is returned, unless the given `driver` is not
 valid, in which case `nothing` is returned instead.
 """
-function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String, dataset::DataSet)
+function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String, dataset::DataSet;
+                minpriority::Int=-100, maxpriority::Int=100)
     T ∈ (DataStorage, DataLoader, DataWriter) ||
         throw(ArgumentError("T=$T should be an driver-less Data{Storage,Loader,Writer}"))
     function process_spec(spec::Dict{String, <:Any}, driver::Symbol)
@@ -390,7 +392,8 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
                 Base.unwrap_unionall(f.sig).types[2]).parameters[1], ms) |>
             ds -> filter(d -> d isa Symbol, ds) |> unique |>
             ds -> sort(ds, by=driver -> createpriority(T{driver})) |>
-            ds -> filter(driver -> createpriority(T{driver}) <= 100, ds)
+            ds -> filter(driver ->
+                minpriority <= createpriority(T{driver}) <= maxpriority, ds)
         for drv in alldrivers
             spec = create(T{drv}, source, dataset)
             if !isnothing(spec)
