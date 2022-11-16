@@ -29,9 +29,15 @@ const MEMORISE_PLUGIN = Plugin("memorise", [
             else
                 false
             end
+            stillvalid(::Any) = true
+            stillvalid(info::IO) =
+                isopen(info) && try
+                    seekstart(info)
+                    true
+                catch _ false end
             if should_memorise
                 dskey = (dataset.collection.uuid, dataset.uuid, chash(dataset), as)
-                if haskey(MEMORISE_CACHE, dskey)
+                if haskey(MEMORISE_CACHE, dskey) && stillvalid(MEMORISE_CACHE[dskey])
                     if should_log_event("memorise", dataset)
                         @info "Loading '$(dataset.name)' (as $as) from memory copy"
                     end
