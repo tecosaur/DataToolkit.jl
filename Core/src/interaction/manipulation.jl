@@ -389,7 +389,7 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
             ms -> map(f -> Base.unwrap_unionall(
                 Base.unwrap_unionall(f.sig).types[2]).parameters[1], ms) |>
             ds -> filter(d -> d isa Symbol, ds) |> unique |>
-            ds -> sort(ds, by=driver -> createpriority(T{driver}))
+            ds -> sort(ds, by=driver -> createpriority(T{driver})) |>
             ds -> filter(driver -> createpriority(T{driver}) <= 100, ds)
         for drv in alldrivers
             adt = create(T{drv}, source, dataset)
