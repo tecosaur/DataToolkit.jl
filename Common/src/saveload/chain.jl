@@ -103,3 +103,29 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
         end
     end
 end
+
+createpriority(::Type{DataLoader{:chain}}) = 5
+
+function create(::Type{DataLoader{:chain}}, source::String, dataset::DataSet)
+    # Prompted by compressed file types, e.g. ".csv.gz"
+    if !isnothing(match(r"\.\w+\.\w+$", source))
+        base, inner, outer = match(r"^(.*)\.(\w+)\.(\w+)$", source).captures
+        outerloader = create(DataLoader, :*, source, dataset;
+                             minpriority=1+createpriority(DataLoader{:chain}))
+        if !isnothing(outerloader)
+            innerloader = create(DataLoader, :*, "$base.$inner", dataset)
+            if !isnothing(innerloader)
+                minimalspec(template) = Dict{String, Any}(
+                    "driver" => template["driver"])
+                ospec = dataset.collection.advise(tospec, outerloader)
+                ispec = dataset.collection.advise(tospec, innerloader)
+                Dict{String, Any}("loaders" =>
+                    if ospec == minimalspec(ospec) && ispec == minimalspec(ispec)
+                        [ospec["driver"], ispec["driver"]]
+                    else
+                        [ospec, ispec]
+                    end)
+            end
+        end
+    end
+end
