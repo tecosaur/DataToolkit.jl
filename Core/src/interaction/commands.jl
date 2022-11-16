@@ -754,10 +754,13 @@ function create(input::AbstractString)
     elseif !isempty(rest)
         rest
     else
-        prompt(" From: ")
+        prompt(" From: ", allowempty=true)
     end
+    spec = Dict{String, Any}()
     description = prompt(" Description: ", allowempty=true)
-    spec = Dict{String, Any}("description" => description)
+    if !isempty(description)
+        spec["description"] = description
+    end
     while (attribute = prompt(" [Attribute]: ", allowempty=true)) |> !isempty
         print("\e[A\e[G\e[K")
         value = prompt(" $attribute: ")
