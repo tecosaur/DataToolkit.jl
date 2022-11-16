@@ -21,8 +21,8 @@ function complete_dataset(sofar::AbstractString)
             layer, _ = split(sofar, ':', limit=2)
             filter(o -> startswith(o, sofar),
                    string.(layer, ':',
-                           sort(unique(getproperty.(
-                               getlayer(layer).datasets, :name)))))
+                           unique(getproperty.(
+                               getlayer(layer).datasets, :name))))
         else
             filter(o -> startswith(o, sofar),
                    vcat(getproperty.(STACK, :name) .* ':',
@@ -30,7 +30,7 @@ function complete_dataset(sofar::AbstractString)
         end
     catch _
         String[]
-    end
+    end |> options -> sort(options, by=natkeygen)
 end
 
 # ------------------
@@ -680,10 +680,10 @@ function config_complete(sofar::AbstractString; collection::DataCollection=first
         end
     end
     if haskey(config, last(segments))
-        ('.' .* sort(keys(config[last(segments)]) |> collect),
+        ('.' .* sort(keys(config[last(segments)]) |> collect, by=natkeygen),
          "", true)
     elseif config isa Dict
-        options = sort(keys(config) |> collect)
+        options = sort(keys(config) |> collect, by=natkeygen)
         (filter(o -> startswith(o, last(segments)),
                 options),
          String(last(segments)),
@@ -848,7 +848,7 @@ function list_datasets(collection_str::AbstractString; maxwidth::Int=displaysize
             if isempty(collection.datasets)
                 Vector{Any}[]
             else
-                map(sort(collection.datasets, by = d -> d.name)) do dataset
+                map(sort(collection.datasets, by = d -> natkeygen(d.name))) do dataset
                     [dataset.name,
                      first(split(lstrip(get(dataset, "description", "")),
                                  '\n', keepempty=true))]

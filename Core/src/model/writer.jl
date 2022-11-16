@@ -84,10 +84,45 @@ function tospec(dc::DataCollection)
           end)
 end
 
-Base.write(io::IO, dc::DataCollection) =
+"""
+    natkeygen(key::String)
+Generate a sorting key for `key` that when used with `sort` will put the
+collection in "natural order".
+
+```julia-repl
+julia> sort(["A1", "A10", "A02", "A1.5"], by=natkeygen)
+4-element Vector{String}:
+ "A1"
+ "A1.5"
+ "A02"
+ "A10"
+```
+"""
+function natkeygen(key::String)
+    map(eachmatch(r"(\d*\.\d+)|(\d+)|([^\d]+)", lowercase(key))) do (; captures)
+        float, int, str = captures
+        if !isnothing(float)
+            f = parse(Float64, float)
+            fint, dec = floor(Int, f), mod(f, 1)
+            '0' * Char(fint) * string(dec)[3:end]
+        elseif !isnothing(int)
+            '0' * Char(parse(Int, int))
+        else
+            str
+        end
+    end
+end
+
+function Base.write(io::IO, dc::DataCollection)
+    datakeygen(key) = if haskey(DATA_CONFIG_KEY_SORT_MAPPING, key)
+        [DATA_CONFIG_KEY_SORT_MAPPING[key]]
+    else
+        natkeygen(key)
+    end
     TOML.print(io, filter(((_, value),) -> !isnothing(value) && !isempty(value),
                           convert(Dict, dc));
-               sorted = true, by = k -> get(DATA_CONFIG_KEY_SORT_MAPPING, k, lowercase(k)))
+               sorted = true, by = datakeygen)
+end
 
 function Base.write(dc::DataCollection)
     if !iswritable(dc)
