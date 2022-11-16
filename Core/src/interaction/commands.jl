@@ -718,7 +718,7 @@ function create(input::AbstractString)
         return nothing
     end
     confirm_stack_first_writable() || return nothing
-    name, rest = if isnothing(match(r"^(?:v|via|f|from)\b", input))
+    name, rest = if isnothing(match(r"^(?:v|via|f|from)\b|^\s*$", input))
         peelword(input)
     else
         prompt(" Name: "), input
