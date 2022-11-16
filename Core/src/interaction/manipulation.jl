@@ -392,17 +392,17 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
             ds -> sort(ds, by=driver -> createpriority(T{driver})) |>
             ds -> filter(driver -> createpriority(T{driver}) <= 100, ds)
         for drv in alldrivers
-            adt = create(T{drv}, source, dataset)
-            if !isnothing(adt)
+            spec = create(T{drv}, source, dataset)
+            if !isnothing(spec)
                 return dataset.collection.advise(
-                    fromspec, T, dataset, process_spec(adt, drv))
+                    fromspec, T, dataset, process_spec(spec, drv))
             end
         end
     else
-        adt = create(T{drv}, source, dataset)
-        if !isnothing(adt)
+        spec = create(T{driver}, source, dataset)
+        if !isnothing(spec)
             dataset.collection.advise(
-                fromspec, T, dataset, process_spec(adt, drv))
+                fromspec, T, dataset, process_spec(spec, driver))
         end
     end
 end
