@@ -1,21 +1,21 @@
-for (lib, name, stream_decompress, decompress,
+for (lib, name, ext, stream_decompress, decompress,
      stream_compress, compress) in
-    ((:CodecZlib, :gzip,
+    ((:CodecZlib, :gzip, "gzip|gz",
       :GzipDecompressorStream, :GzipDecompressor,
       :GzipCompressorStream, :GzipCompressor),
-     (:CodecZlib, :zlib,
+     (:CodecZlib, :zlib, "zlib",
       :ZlibDecompressorStream, :ZlibDecompressor,
       :ZlibCompressorStream, :ZlibCompressor),
-     (:CodecZlib, :deflate,
+     (:CodecZlib, :deflate, "zz",
       :DeflateDecompressorStream, :DeflateDecompressor,
       :DeflateCompressorStream, :DeflateCompressor),
-     (:CodecBzip2, :bzip2,
+     (:CodecBzip2, :bzip2, "bzip|bz",
       :Bzip2DecompressorStream, :Bzip2Decompressor,
       :Bzip2CompressorStream, :Bzip2Compressor),
-     (:CodecXz, :xz,
+     (:CodecXz, :xz, "xz",
       :XzDecompressorStream, :XzDecompressor,
       :XzCompressorStream, :XzCompressor),
-     (:CodecZstd, :zstd,
+     (:CodecZstd, :zstd, "zstd",
       :ZstdDecompressorStream, :ZstdDecompressor,
       :ZstdCompressorStream, :ZstdCompressor))
     eval(quote
@@ -38,6 +38,14 @@ for (lib, name, stream_decompress, decompress,
 
              supportedtypes(::Type{DataLoader{$(QuoteNode(name))}}) =
                  QualifiedType.([IO, Vector{UInt8}, String])
+
+             createpriority(::Type{DataLoader{$(QuoteNode(name))}}) = 10
+
+             function create(::Type{DataLoader{$(QuoteNode(name))}}, source::String)
+                 if !isnothing(match($(Regex("\\.$ext\$", "i")), source))
+                     Dict{String, Any}()
+                 end
+             end
 
              function save(::DataWriter{$(QuoteNode(name))}, dest::IO, info::IOStream)
                  @use $lib
