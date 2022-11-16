@@ -28,7 +28,7 @@ function loadcache_file(loader::DataLoader, source::Any, as::Type)
 end
 
 function loadcache_shouldstore(::DataLoader{driver}, T::Type) where {driver}
-    unstorable = T <: IOStream ||
+    unstorable = T <: IO ||
         T <: Function ||
         QualifiedType(Base.typename(T).wrapper) ==
         QualifiedType(:TranscodingStreams, :TranscodingStream)
