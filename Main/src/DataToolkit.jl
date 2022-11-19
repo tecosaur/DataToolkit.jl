@@ -3,7 +3,7 @@ module DataToolkit
 using DataToolkitBase
 using DataToolkitCommon
 
-export loadcollection!, dataset, DataSet, @d_str
+export loadcollection!, dataset, DataSet, @d_str, @data_cmd
 
 const Base = DataToolkitBase
 const Common = DataToolkitCommon
@@ -31,6 +31,15 @@ Shorthand for loading a dataset in the default format,
 """
 macro d_str(ident::String)
     :(read(dataset($ident)))
+end
+
+"""
+    @data_cmd -> Data REPL command result
+Proxy for running the command in the Data REPL,
+e.g. ```data`config set demo 1` ``` is equivalent to `data> config set demo 1`.
+"""
+macro data_cmd(line::String)
+    :(DataToolkitBase.toplevel_execute_repl_cmd($line))
 end
 
 """
