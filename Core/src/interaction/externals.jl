@@ -175,8 +175,8 @@ function _read(dataset::DataSet, as::Type)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
                     if !isnothing(datahandle)
-                        result = applytransformer(
-                            dataset, load, loader, datahandle, as)
+                        result = invokerecent(dataset.collection.advise,
+                                              load, loader, datahandle, as)
                         if !isnothing(result)
                             return result
                         end
@@ -199,31 +199,6 @@ function _read(dataset::DataSet, as::Type)
         throw(error("There are no loaders for '$(dataset.name)' that can provide $as"))
     else
         throw(error("There are no availible storage backends for '$(dataset.name)' that can be used by a loader for $as."))
-    end
-end
-
-"""
-    applytransformer(dataset::DataSet, action::Function, transformer::AbstractDataTransformer,
-                     datahandle::Any, as::Type; invokelatest::Bool=false)
-Call the advised function `action(transformer, datahandle, as)`, re-calling
-with `invokelatest` when `PkgRequiredRerunNeeded` is raised.
-"""
-function applytransformer(dataset::DataSet, action::Function, transformer::AbstractDataTransformer,
-                    datahandle::Any, info::Any; invokelatest::Bool=false)
-    try
-        if invokelatest
-            Base.invokelatest(dataset.collection.advise,
-                              action, transformer, datahandle, info)
-        else
-            dataset.collection.advise(action, transformer, datahandle, info)
-        end
-    catch e
-        if e isa PkgRequiredRerunNeeded
-            applytransformer(dataset, action, transformer, datahandle, info;
-                             invokelatest=true)
-        else
-            rethrow(e)
-        end
     end
 end
 
@@ -330,8 +305,8 @@ function Base.write(dataset::DataSet, info::T) where {T}
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = true)
                     if !isnothing(datahandle)
-                        res = applytransformer(
-                            dataset, save, writer, datahandle, info)
+                        res = invokerecent(dataset.collection.advise,
+                                           save, writer, datahandle, info)
                         if res isa IO && isopen(res)
                             close(res)
                         end

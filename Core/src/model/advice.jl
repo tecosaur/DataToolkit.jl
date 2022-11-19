@@ -25,35 +25,25 @@ else
 end
 
 function (dt::DataAdvice{C, F})(
-    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, _KWARGS_TYPE};
-    invokelatest::Bool=false) where {C, F}
+    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, _KWARGS_TYPE}) where {C, F}
     # @info "Testing $dt"
     kwkeys = getfield(kwargs, :itr) # `keys(kwargs)` works in 1.7+
     if hasmethod(dt.f, Tuple{typeof(post), typeof(func), atypeof.(args)...}, kwkeys)
         # @info "Applying $dt"
-        try
-            result = if invokelatest
-                Base.invokelatest(df.f, post, func, args...; kwargs...)
-            else
-                dt.f(post, func, args...; kwargs...)
-            end
-            if result isa Tuple{Function, Function, Tuple}
-                post, func, args = result
-                (post, func, args, _KWARGS_0)
-            else
-                result
-            end
-        catch e
-            if e isa PkgRequiredRerunNeeded
-                dt((post, func, args, kwargs); invokelatest=true)
-            else
-                rethrow(e)
-            end
+        result = invokerecent(dt.f, post, func, args...; kwargs...)
+        if result isa Tuple{Function, Function, Tuple}
+            post, func, args = result
+            (post, func, args, NamedTuple())
+        else
+            result
         end
     else
         (post, func, args, kwargs) # act as the identity fuction
     end
 end
+
+Base.empty(::Type{DataAdviceAmalgamation}) =
+    DataAdviceAmalgamation(identity, DataAdvice[], String[], String[])
 
 function Base.getproperty(dta::DataAdviceAmalgamation, prop::Symbol)
     if getfield(dta, :plugins_wanted) != getfield(dta, :plugins_used)

@@ -1,16 +1,31 @@
-struct PkgRequiredRerunNeeded <: Exception end
+struct PkgRequiredRerunNeeded end
 
+"""
+    get_package(pkg::Base.PkgId)
+    get_package(from::Module, name::Symbol)
+Obtain a module specified by either `pkg` or identified by `name` and declared
+by `from`. Should the package not be currently loaded, in Julia ≥ 1.7
+DataToolkit will atempt to lazy-load the package and return its module.
+
+Failure to either locate `name` or require `pkg` will result in an exception
+being thrown.
+"""
 function get_package(pkg::Base.PkgId)
     if !Base.root_module_exists(pkg)
-        @warn string("The package $pkg is required to load your dataset.\n",
-                     "`DataToolkitBase` will import this module for you, ",
-                     "but this may not always work as expected.\n",
-                     "To silence this message, add `using $(pkg.name)` ",
-                     "at the top of your code somewhere.")
+        if VERSION < v"1.7" # Before `Base.invokelatest`
+            @error string(
+                "The package $pkg is required for the operation of DataToolkit.\n",
+                "DataToolkit can not do this for you, so please add `using $(pkg.name)`\n",
+                "as appropriate then re-trying this operation.")
+            throw(ErrorException("Missing package: $pkg"))
+        else
+            @info "Lazy-loading $pkg. Consider adding `using $(pkg.name)`"
+        end
         Base.require(pkg)
-        throw(PkgRequiredRerunNeeded())
+        PkgRequiredRerunNeeded()
+    else
+        Base.root_module(pkg)
     end
-    Base.root_module(pkg)
 end
 
 function get_package(from::Module, name::Symbol)
@@ -54,6 +69,9 @@ end
     @use pkg: foo as bar, bar as baz...
 Fetch modules previously registered with `@addpkg`, and import them into the
 current namespace. This macro tries to largely mirror the syntax of `using`.
+
+If a required package had to be loaded for the `@use` statement, a
+`PkgRequiredRerunNeeded` singleton will be returned.
 
 # Example
 
@@ -123,12 +141,68 @@ macro use(terms::Union{Expr, Symbol}...)
         end
     end
     Expr(:block,
-         map(pkgs) do (pkg, as)
-             Expr(:(=), esc(as),
-                  :($(@__MODULE__).get_package(
-                      @__MODULE__, $(QuoteNode(pkg)))))
-         end...,
+         Iterators.flatten(
+             map(pkgs) do (pkg, as)
+                 (Expr(:(=), esc(as),
+                       :($(@__MODULE__).get_package(
+                           @__MODULE__, $(QuoteNode(pkg))))),
+                  :($(esc(as)) isa $(esc(:Core)).Module || return $(esc(as))))
+         end)...,
          map(imports) do (pkg, load, as)
              Expr(:(=), esc(as), :($(esc(pkg)).$load))
          end...)
+end
+
+"""
+    getmethod(f, args...)
+Return the specific method invoked with f(args...).
+
+The implementation is optimised for the case where `getmethod` is
+often called with the same arguments.
+
+Should `f` be anything other than a function (e.g. an instance of another type),
+then for efficient operation ensure `empty` is defined for the type of `f`.
+"""
+@generated function getmethod(::F, args...) where { F <: Function }
+    first(methods(F.instance, args))
+end
+
+@generated function getmethod(T, args...)
+    if hasmethod(empty, Tuple{Type{T}})
+        first(methods(empty(T), args))
+    else
+        :(first(methods(T, $args)))
+    end
+end
+
+"""
+    update_recency!()
+Update `RECENT_WORLD_AGE` to the current world age.
+"""
+function update_recency!()
+    RECENT_WORLD_AGE[] = Base.get_world_counter()
+end
+
+"""
+    invokerecent(f, args...; kwargs...)
+Invoke `f(args...; kwargs...)`, ensuring that it is run with a world age at
+least as recent as `RECENT_WORLD_AGE`. Should the method have been compiled with
+an older world age, it will be invoked via `invokelatest`.
+
+If `f(...)` returns `PkgRequiredRerunNeeded()` then `RECENT_WORLD_AGE` is
+updated via `update_recency!()` and `invokerecent` re-called.
+"""
+function invokerecent(f, args...; kwargs...)
+    method = getmethod(f, args...)
+    result = if method.primary_world >= RECENT_WORLD_AGE[]
+            f(args...; kwargs...)
+        else
+            Base.invokelatest(f, args...; kwargs...)
+        end
+    if result isa PkgRequiredRerunNeeded
+        update_recency!()
+        invokerecent(f, args...; kwargs...)
+    else
+        result
+    end
 end
