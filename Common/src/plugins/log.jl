@@ -51,6 +51,6 @@ const LOG_PLUGIN = Plugin("log", [
         if should_log_event("storage", storer)
             @info "Opening '$(storer.dataset.name)' as $(as) from $(first(typeof(storer).parameters)) in $(ifelse(write, "write", "read")) mode"
         end
-        (post, f, (storer, as), pairs((; write)))
+        (post, f, (storer, as), (; write))
     end
 ])
