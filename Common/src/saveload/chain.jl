@@ -68,20 +68,22 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                         DataToolkitBase.get_package(
                             toploader.dataset.collection.mod,
                             iqtype.parentmodule)
-                        # If neither a `PkgRequiredRerunNeeded` or `ArgumentError`
-                        # are raised, then then the package is already loaded
-                        # and the unresolvable type will still be unresolvable,
-                        # so return nothing.
+                        # If no error is raised, then then the package is
+                        # already loaded and the unresolvable type will still be
+                        # unresolvable, so return nothing.
                         Some(nothing)
-                    end
-                catch e
-                    if e isa DataToolkitBase.PkgRequiredRerunNeeded
-                        convert(Type, iqtype)
-                    elseif !(e isa ArgumentError) # ArgumentError => pkg not registered
-                        rethrow(e)
-                    end
+                    end catch e e end
+                if itype isa DataToolkitBase.PkgRequiredRerunNeeded
+                    convert(Type, iqtype)
+                elseif itype isa ArgumentError
+                    nothing # ArgumentError => pkg not registered
+                elseif itype isa Exception
+                    rethrow(itype)
+                elseif !isnothing(itype)
+                    [itype]
+                else
+                    Type[]
                 end
-                if !isnothing(itype); [itype] else Type[] end
             end
         else
             potentialmethods =
