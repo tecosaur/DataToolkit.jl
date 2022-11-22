@@ -1,0 +1,91 @@
+const CREATE_DOC = "Create a new data set in the current collection
+
+This will interactively ask for all required information.
+
+Optionally, the name and source can be specified using the following forms:
+  create NAME
+  create NAME from SOURCE
+  create from SOURCE
+As a shorthand, 'f' can be used instead of 'from'.
+
+The transformers drivers used can also be specified by using a 'via' argument
+before 'from', with a form like so:
+  create via TRANSFORMERS...
+  create NAME via TRANSFORMERS... from SOURCE
+The type of transformer can also be specified using flags. Namely storage (-s),
+loader (-l), and writer (-w). For example:
+  create via -s web -l csv
+Invalid transformer drivers are automatically skipped, so one could use:
+  create via -sl web csv
+which would be equivalent to `create via -s web csv -l web csv`, but only 'web'
+will be reccognised as a valid storage backend and 'csv' as a valid loader.
+This works well in most cases, which is why '-sl' are the default flags.
+
+Full examples:
+  create iris from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+  create iris via web csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+  create iris via -s web -l csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+  create \"from\" from.txt # create a data set with the name from"
+
+function create(input::AbstractString)
+    confirm_stack_nonempty() || begin
+        printstyled(" i ", color=:cyan, bold=true)
+        println("Consider creating a data collection first with 'init'")
+        return nothing
+    end
+    confirm_stack_first_writable() || return nothing
+    name, rest = if isnothing(match(r"^(?:v|via|f|from)\b|^\s*$|^https?://", input)) &&
+        !isfile(first(peelword(input)))
+        peelword(input)
+    else
+        prompt(" Name: "), String(input)
+    end
+    if name in getproperty.(first(STACK).datasets, :name)
+        confirm_yn(" '$name' names an existing data set, continue anyway?", false) ||
+            return nothing
+        printstyled(" i ", color=:cyan, bold=true)
+        println("Consider setting additional attributes to disambiguate")
+    end
+    via = (; storage = Symbol[],
+           loaders = Symbol[],
+           writers = Symbol[])
+    if first(peelword(rest)) ∈ ("v", "via")
+        targets = [:storage, :loaders]
+        while !isempty(rest) && first(peelword(rest)) ∉ ("f", "from")
+            viarg, rest = peelword(rest)
+            if first(viarg) == '-'
+                targets = []
+                's' in viarg && push!(targets, :storage)
+                'l' in viarg && push!(targets, :loaders)
+                'w' in viarg && push!(targets, :writers)
+            else
+                push!.(getfield.(Ref(via), targets), Symbol(viarg))
+            end
+        end
+    else
+        push!(via.storage, :*)
+        push!(via.loaders, :*)
+    end
+    from = if first(peelword(rest)) ∈ ("f", "from")
+        last(peelword(rest))
+    elseif !isempty(rest)
+        rest
+    else
+        prompt(" From: ", allowempty=true)
+    end
+    spec = Dict{String, Any}()
+    description = prompt(" Description: ", allowempty=true)
+    if !isempty(description)
+        spec["description"] = description
+    end
+    while (attribute = prompt(" [Attribute]: ", allowempty=true)) |> !isempty
+        print("\e[A\e[G\e[K")
+        value = prompt(" $attribute: ")
+        if isnothing(match(r"^true|false|[.\d]+|\".*\"|\[.*\]|\{.*\}$", value))
+            value = string('"', value, '"')
+        end
+        spec[attribute] = TOML.parse(string("value = ", value))["value"]
+    end
+    print("\e[A\e[G\e[K")
+    DataToolkitBase.create(DataSet, name, spec, from; via...)
+end

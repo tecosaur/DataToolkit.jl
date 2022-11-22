@@ -10,8 +10,8 @@ using Compat
 using Dates
 using Tables
 using CRC32c: crc32c
-using REPL.TerminalMenus
 using UUIDs
+using TOML
 
 include("storage/filesystem.jl")
 include("storage/null.jl")
@@ -39,7 +39,11 @@ include("plugins/log.jl") # Must be early so `should_log_event` is availible.
 include("plugins/loadcache.jl")
 include("plugins/memorise.jl")
 
+include("repl/repl.jl")
+
 function __init__()
+    REPLcmds.add_repl_cmds()
+
     # Storage
     @addpkg Downloads      "f43a241f-c20a-4ad4-852c-f6b1247861c6"
     @addpkg DelimitedFiles "8bb1440f-4735-579b-a4ab-409b98df4dab"
