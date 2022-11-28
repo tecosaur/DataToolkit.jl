@@ -31,7 +31,7 @@ function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
         dir = if isnothing(loader.dataset.collection.path) pwd()
             else dirname(loader.dataset.collection.path) end
         cd(dir) do
-            DataToolkitBase.invokerecent(loadfn; arguments...)::R
+            DataToolkitBase.invokepkglatest(loadfn; arguments...)::R
         end
     end
 end
@@ -47,7 +47,7 @@ function load(loader::DataLoader{:julia}, from::Any, R::Type)
             dir = if isnothing(loader.dataset.collection.path) pwd()
             else dirname(loader.dataset.collection.path) end
             cd(dir) do
-                DataToolkitBase.invokerecent(loadfn, from; arguments...)::R
+                DataToolkitBase.invokepkglatest(loadfn, from; arguments...)::R
             end
         end
     end
@@ -61,7 +61,7 @@ function save(writer::DataWriter{:julia}, dest, info)
     dir = if isnothing(writer.dataset.collection.path) pwd()
     else dirname(writer.dataset.collection.path) end
     cd(dir) do
-        DataToolkitBase.invokerecent(writefn, dest, info; arguments...)
+        DataToolkitBase.invokepkglatest(writefn, dest, info; arguments...)
     end
 end
 
