@@ -12,11 +12,12 @@
 
 function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     subloaders = map(spec -> DataLoader(loader.dataset, spec),
-                  get(loader, "loaders", Dict{String, Any}[]))
+                     get(loader, "loaders", Dict{String, Any}[]))
     types = loadtypepath(subloaders, typeof(from), T)
     if !isnothing(types)
-        reduce((value, (subloader, as)) -> load(subloader, value, as),
-            zip(subloaders, types), init=from)::T
+        reduce((value, (subloader, as)) ->
+            DataToolkitBase.invokepkglatest(load, subloader, value, as),
+               zip(subloaders, types), init=from)::Union{T, Nothing}
     end
 end
 
@@ -60,26 +61,29 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                 [Nothing]
             else
                 iqtype = QualifiedType(get(toploader, "input"))
-                itype = try
-                    @something convert(Type, iqtype) begin
-                        # It may be the case that the loader requires a lazy loaded
-                        # package, in this case it may be a good idea to just /try/
-                        # requiring it and seeing what happens.
-                        DataToolkitBase.get_package(
-                            toploader.dataset.collection.mod,
-                            iqtype.parentmodule)
-                        # If no error is raised, then then the package is
+                itype = @something convert(Type, iqtype) try
+                    # It may be the case that the loader requires a lazy loaded
+                    # package, in this case it may be a good idea to just /try/
+                    # requiring it and seeing what happens.
+                    pkg = DataToolkitBase.get_package(
+                        toploader.dataset.collection.mod,
+                        iqtype.parentmodule)
+                    if pkg isa DataToolkitBase.PkgRequiredRerunNeeded
+                        convert(Type, iqtype)
+                    else
+                        # If no rerun is raised, then then the package is
                         # already loaded and the unresolvable type will still be
                         # unresolvable, so return nothing.
                         Some(nothing)
-                    end catch e e end
-                if itype isa DataToolkitBase.PkgRequiredRerunNeeded
-                    convert(Type, iqtype)
-                elseif itype isa ArgumentError
-                    nothing # ArgumentError => pkg not registered
-                elseif itype isa Exception
-                    rethrow(itype)
-                elseif !isnothing(itype)
+                    end
+                catch e
+                    if e isa ArgumentError
+                        Some(nothing)
+                    else
+                        rethrow(e)
+                    end
+                end
+                if !isnothing(itype)
                     [itype]
                 else
                     Type[]
