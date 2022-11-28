@@ -11,7 +11,7 @@ function (dt::DataAdvice{C, F})(
     # @info "Testing $dt"
     if hasmethod(dt.f, Tuple{typeof(post), typeof(func), atypeof.(args)...}, keys(kwargs))
         # @info "Applying $dt"
-        result = invokerecent(dt.f, post, func, args...; kwargs...)
+        result = invokepkglatest(dt.f, post, func, args...; kwargs...)
         if result isa Tuple{Function, Function, Tuple}
             post, func, args = result
             (post, func, args, NamedTuple())
@@ -57,9 +57,7 @@ function (dta::DataAdviceAmalgamation)(
 end
 
 function (dta::DataAdviceAmalgamation)(func::Function, args...; kwargs...)
-    # @info "Calling $func($(join(string.(args), ", ")))"
     post::Function, func2::Function, args2::Tuple, kwargs2::NamedTuple =
         dta((identity, func, args, merge(NamedTuple(), kwargs)))
-    # @info "Applying $(length(dta.advisers)) advisors to '$func($args, $kwargs)'"
-    func2(args2...; kwargs2...) |> post
+    invokepkglatest(func2, args2...; kwargs2...) |> post
 end
