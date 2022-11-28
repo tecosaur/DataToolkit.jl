@@ -11,15 +11,28 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
             split(cbsplit[1], '.'), Tuple{}()
         else
             split(cbsplit[1], '.'),
-            # REVIEW should this support commas within type parameters?
-            # e.g. A{B,C{D,E}}. This feels like probably a bit much.
-            Tuple(map(p -> @something(tryparse(Int, p),
-                                      tryparse(Float64, p),
-                                      if first(p) == ':'
-                                          Symbol(p[2:end])
-                                      end,
-                                      parse(QualifiedType, p)),
-                      split(cbsplit[2][begin:end-1], r", ?")))
+            let typeparams = Meta.parse(spec[1+length(cbsplit[1]):end])
+                destruct(param) = if param isa Number
+                    param
+                elseif param isa QuoteNode
+                    param.value
+                elseif param isa Expr && param.head == :tuple
+                    Tuple(destruct.(param.args))
+                elseif param isa Symbol
+                    QualifiedType(Symbol(Base.binding_module(Main, param)),
+                                  param, Tuple{}())
+                elseif param isa Expr && param.head == :.
+                    parse(QualifiedType, string(param))
+                elseif param isa Expr && param.head == :<: && last(param.args) isa Symbol
+                    TypeVar(if length(param.args) == 2
+                                first(param.args)
+                            else :T end,
+                            getfield(Main, last(param.args)))
+                else
+                    throw(ArgumentError("Invalit QualifiedType parameter $(sprint(show, param)) in $(sprint(show, spec))"))
+                end
+                Tuple(destruct.(typeparams.args))
+            end
         end
     end
     parentmodule, name = if length(components) == 1

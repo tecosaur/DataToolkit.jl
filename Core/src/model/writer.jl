@@ -28,7 +28,11 @@ function Base.string(q::QualifiedType)
         parstr = map(q.parameters) do p
             if p isa Symbol
                 string(':', p)
-            else string(p) end
+            elseif p isa TypeVar
+                string(p.name, "<:", string(p.ub))
+            else
+                string(p)
+            end
         end
         string(qname, '{', join(parstr, ','), '}')
     end
