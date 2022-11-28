@@ -41,7 +41,6 @@ include("interaction/repl.jl")
 include("interaction/commands.jl")
 
 function __init__()
-    RECENT_WORLD_AGE[] = Base.get_world_counter()
     isinteractive() && init_repl()
 end
 

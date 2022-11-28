@@ -175,8 +175,8 @@ function _read(dataset::DataSet, as::Type)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
                     if !isnothing(datahandle)
-                        result = invokerecent(dataset.collection.advise,
-                                              load, loader, datahandle, as)
+                        result = dataset.collection.advise(
+                            load, loader, datahandle, as)
                         if !isnothing(result)
                             return result
                         end
@@ -305,8 +305,8 @@ function Base.write(dataset::DataSet, info::T) where {T}
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = true)
                     if !isnothing(datahandle)
-                        res = invokerecent(dataset.collection.advise,
-                                           save, writer, datahandle, info)
+                        res = dataset.collection.advise(
+                            save, writer, datahandle, info)
                         if res isa IO && isopen(res)
                             close(res)
                         end

@@ -154,54 +154,14 @@ macro use(terms::Union{Expr, Symbol}...)
 end
 
 """
-    getmethod(f, args...)
-Return the specific method invoked with f(args...).
-
-The implementation is optimised for the case where `getmethod` is
-often called with the same arguments.
-
-Should `f` be anything other than a function (e.g. an instance of another type),
-then for efficient operation ensure `empty` is defined for the type of `f`.
+    invokepkglatest(f, args...; kwargs...)
+Call `f(args...; kwargs...)` via `invokelatest`, and re-run if
+PkgRequiredRerunNeeded is returned.
 """
-@generated function getmethod(::F, args...) where { F <: Function }
-    first(methods(F.instance, args))
-end
-
-@generated function getmethod(T, args...)
-    if hasmethod(empty, Tuple{Type{T}})
-        first(methods(empty(T), args))
-    else
-        :(first(methods(T, $args)))
-    end
-end
-
-"""
-    update_recency!()
-Update `RECENT_WORLD_AGE` to the current world age.
-"""
-function update_recency!()
-    RECENT_WORLD_AGE[] = Base.get_world_counter()
-end
-
-"""
-    invokerecent(f, args...; kwargs...)
-Invoke `f(args...; kwargs...)`, ensuring that it is run with a world age at
-least as recent as `RECENT_WORLD_AGE`. Should the method have been compiled with
-an older world age, it will be invoked via `invokelatest`.
-
-If `f(...)` returns `PkgRequiredRerunNeeded()` then `RECENT_WORLD_AGE` is
-updated via `update_recency!()` and `invokerecent` re-called.
-"""
-function invokerecent(f, args...; kwargs...)
-    method = getmethod(f, args...)
-    result = if method.primary_world >= RECENT_WORLD_AGE[]
-            f(args...; kwargs...)
-        else
-            Base.invokelatest(f, args...; kwargs...)
-        end
+function invokepkglatest(@nospecialize(f), @nospecialize args...; kwargs...)
+    result = Base.invokelatest(f, args...; kwargs...)
     if result isa PkgRequiredRerunNeeded
-        update_recency!()
-        invokerecent(f, args...; kwargs...)
+        invokepkglatest(f, args...; kwargs...)
     else
         result
     end

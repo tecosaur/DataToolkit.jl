@@ -1,5 +1,3 @@
-const RECENT_WORLD_AGE = Ref(zero(UInt))
-
 """
 The `DataCollection.version` set on all created `DataCollection`s, and assumed
 when reading any Data.toml files which do not set `data_config_version`.
