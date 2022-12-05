@@ -54,24 +54,45 @@ function checkchecksum(storage::DataStorage{:web}, data::IO)
     checksum = get(storage, "checksum")
     if checksum == "auto" || checksum isa Integer
         checkchecksum(storage, crc32c(data))
-        true
     elseif !isnothing(checksum)
         @warn "Invalid url storage checksum: $checksum, ignoring."
-        false
+        (false, false)
     else
-        false
+        (false, false)
     end
 end
 
-function checkchecksum(storage::DataStorage{:web}, actual_checksum::Integer)
+"""
+    checkchecksum(storage::DataStorage{:web}, actual_checksum::Integer; noerror::Bool=false)
+    checkchecksum(storage::DataStorage{:web}, data::IO; noerror::Bool=false)
+Check if the stated checksum of `storage` (if any) matches `actual_checksum`
+(or the computed checksum of `data`, if given instead).
+
+Should this not be the case, in an interactive session where the data collection
+is writable the user will be asked if they want to change the checksum. Otherwise,
+unless `noerror` is set an error will be raised.
+
+The return value is a `Tuple{Bool, Bool}` signifying
+- whether the checksum matches
+- whether the checksum was modified
+
+Hence, the three expected return values are:
+    (true, false)
+    (true, true)
+    (false, false)
+"""
+function checkchecksum(storage::DataStorage{:web}, actual_checksum::Integer; noerror::Bool=true)
     checksum = get(storage, "checksum")
     if checksum == "auto"
         storage.parameters["checksum"] = actual_checksum
         @info "Writing checksum for $(storage.dataset.name)'s url storage."
         write(storage)
+        (true, true)
     elseif checksum isa Integer
-        if actual_checksum != checksum
-            if isinteractive()
+        if actual_checksum == checksum
+            (true, false)
+        else
+            if isinteractive() && iswritable(storage.dataset.collection)
                 printstyled(stderr, "!", color=:yellow, bold=true)
                 print(" Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
                       "  Expected the CRC32c checksum to be $checksum, got $actual_checksum.\n",
@@ -82,15 +103,20 @@ function checkchecksum(storage::DataStorage{:web}, actual_checksum::Integer)
                 if choice == 1 # Overwrite
                     storage.parameters["checksum"] = actual_checksum
                     write(storage)
+                    (true, true)
                 else
-                    error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                                 " Expected $checksum, got $actual_checksum."))
+                    noerror || error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
+                                            " Expected $checksum, got $actual_checksum."))
+                    (false, false)
                 end
             else
-                error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                             " Expected $checksum, got $actual_checksum."))
+                noerror || error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
+                                        " Expected $checksum, got $actual_checksum."))
+                (false, false)
             end
         end
+    else
+        (false, false)
     end
 end
 
@@ -104,7 +130,7 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
         try
             io = IOBuffer()
             download_to(storage, io)
-            checkchecksum(storage, io) && seekstart(io)
+            checkchecksum(storage, io) |> first && seekstart(io)
             io
         catch err
             url = get(storage, "url")
@@ -126,23 +152,38 @@ end
 const WEB_DEFAULT_CACHEFOLDER = "downloads"
 
 function get_dlcache_file(storage::DataStorage{:web})
-    path = if get(storage, "cache") == true
-        string(storage.dataset.uuid, ".cache")
-    elseif get(storage, "cache") isa String
-        get(storage, "cache")
-    elseif get(storage, "cache", false) == false
-    else
-        @warn "Invalid cache parameter: $(get(storage, "cache")), ignoring."
-    end
-    if !isnothing(path)
-        fullpath = joinpath(
-            if !isnothing(storage.dataset.collection.path)
-                dirname(storage.dataset.collection.path)
+    function getpath(; full::Bool=false)
+        path = if get(storage, "cache") == true
+            urlext = something(match(r"\.\w+(?:\.[bgzx]z|\.[bg]?zip|\.zstd)?$",
+                                    get(storage, "url")),
+                            (; match=".cache")).match
+            string(string(hash(get(storage, "url")), base=16),
+                '-',
+                string(chash(DataCollection(), storage.parameters, zero(UInt)), base=16),
+                urlext)
+        elseif get(storage, "cache") isa String
+            get(storage, "cache")
+        elseif get(storage, "cache", false) == false
+        else
+            @warn "Invalid cache parameter: $(get(storage, "cache")), ignoring."
+        end
+        if !isnothing(path)
+            if full
+                joinpath(
+                    if !isnothing(storage.dataset.collection.path)
+                        dirname(storage.dataset.collection.path)
+                    else
+                        pwd()
+                    end,
+                    get(storage, "cachefolder", WEB_DEFAULT_CACHEFOLDER),
+                    path)
             else
-                pwd()
-            end,
-            get(storage, "cachefolder", WEB_DEFAULT_CACHEFOLDER),
-            path)
+                path
+            end
+        end
+    end
+    if !isnothing(getpath())
+        fullpath = getpath(full=true)
         if !isfile(fullpath)
             if !isdir(dirname(fullpath))
                 mkpath(dirname(fullpath))
@@ -161,7 +202,11 @@ function get_dlcache_file(storage::DataStorage{:web})
             end
             checksum = parse(Int, read(checksumfile, String))
             try
-                checkchecksum(storage, checksum)
+                _, modified = checkchecksum(storage, checksum)
+                if modified
+                    oldpath, fullpath = fullpath, getpath(full=true)
+                    mv(oldpath, fullpath)
+                end
             catch e
                 rm(fullpath)
                 rm(checksumfile)
