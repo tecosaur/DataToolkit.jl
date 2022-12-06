@@ -4,13 +4,16 @@ function AbstractTrees.children(dataset::DataSet)
     dataset_references = Identifier[]
     add_datasets!(dataset_references, dataset.parameters)
     for paramsource in vcat(dataset.storage, dataset.loaders, dataset.writers)
-        add_datasets!(dataset_references, paramsource.parameters)
+        add_datasets!(dataset_references, paramsource)
     end
     resolve.(Ref(dataset.collection), dataset_references,
              resolvetype=false)
 end
 
 printnode(io::IO, d::DataSet) = print(io, d.name)
+
+add_datasets!(acc::Vector{Identifier}, adt::AbstractDataTransformer) =
+    add_datasets!(acc, adt.parameters)
 
 add_datasets!(acc::Vector{Identifier}, props::Dict) =
     for val in values(props)
