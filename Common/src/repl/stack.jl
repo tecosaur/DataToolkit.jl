@@ -24,7 +24,7 @@ Parse and call the repl-format stack promotion command `input`.
 promotion amount, either an integer or the character '*'.
 """
 function stack_promote(input::AbstractString)
-    ident, repeat = match(r"^(.*?)((?: *\d+| *\*)?)$", input).captures
+    ident, repeat = match(r"^(.*?)((?: +-?\d+| +\*)?)$", input).captures
     DataToolkitBase.stack_move(
         @something(tryparse(Int, ident),
                    tryparse(UUID, ident),
@@ -45,7 +45,7 @@ Parse and call the repl-format stack demote command `input`.
 promotion amount, either an integer or the character '*'.
 """
 function stack_demote(input::AbstractString)
-    ident, repeat = match(r"^(.*?)((?: \d+)?)$", input).captures
+    ident, repeat = match(r"^(.*?)((?: +-?\d+| +\*)?)$", input).captures
     DataToolkitBase.stack_move(
         @something(tryparse(Int, ident),
                    tryparse(UUID, ident),
