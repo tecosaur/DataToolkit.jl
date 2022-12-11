@@ -1,4 +1,4 @@
-const TOMLValue = DataToolkitBase.TOML.Internals.Printer.TOMLValue
+const TOMLValue = TOML.Internals.Printer.TOMLValue
 # TOML_TYPES = Base.uniontypes(TOMLValue)
 
 function getstorage(storage::DataStorage{:raw}, T::Type{<:TOMLValue})
@@ -23,7 +23,7 @@ createpriority(::Type{<:DataStorage{:raw}}) = 90
 
 function create(::Type{<:DataStorage{:raw}}, source::String)
     value = try
-        DataToolkitBase.TOML.parse(string("value = ", source))["value"]
+        TOML.parse(string("value = ", source))["value"]
     catch _ nothing end
     if !isnothing(value)
         Dict{String, Any}("value" => value)
