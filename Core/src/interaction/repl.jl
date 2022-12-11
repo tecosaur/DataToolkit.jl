@@ -171,13 +171,17 @@ function execute_repl_cmd(line::AbstractString;
         cmd_parts
     end
     if startswith(cmd, "?")
-        if isempty(rest) || cmd == "?"
-            help_show(cmd[2:end]; commands)
-        else
-            execute_repl_cmd(string(cmd[2:end], " help ", rest); commands, scope)
-        end
+        execute_repl_cmd(string("help ", line[2:end]); commands, scope)
     elseif startswith("help", cmd) && !isempty(cmd) # help is special
-        help_show(rest; commands)
+        rest_parts = split(rest, limit=2)
+        if length(rest_parts) <= 1
+            help_show(rest; commands)
+        elseif find_repl_cmd(rest_parts[1]; commands) isa ReplCmd{<:Any, Vector{ReplCmd}}
+            execute_repl_cmd(string(rest_parts[1], " help ", rest_parts[2]);
+                             commands, scope)
+        else
+            help_show(rest_parts[1]; commands)
+        end
     else
         repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
         if isnothing(repl_cmd)
