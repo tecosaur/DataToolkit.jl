@@ -139,3 +139,4 @@ const REPL_QUESTION_COLOR = :light_magenta
 The color that should be set for user response text in a REPL context.
 """
 const REPL_USER_INPUT_COLOUR = :light_yellow
+const REPL_CMDS = ReplCmd[]

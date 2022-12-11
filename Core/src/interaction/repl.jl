@@ -4,7 +4,7 @@ using REPL, REPL.LineEdit
 # Setting up the 'data>' REPL and framework
 # ------------------
 
-"""
+@doc """
 A command that can be used in the `data>` REPL (accessible through '$REPL_KEY').
 
 A `ReplCmd` must have a:
@@ -32,20 +32,7 @@ help(::ReplCmd) # -> print detailed help
 allcompletions(::ReplCmd) # -> list all candidates
 completions(::ReplCmd, sofar::AbstractString) # -> list relevant candidates
 ```
-"""
-struct ReplCmd{name, E <: Union{Function, Vector}}
-    trigger::String
-    description::String
-    execute::E
-    function ReplCmd{name}(trigger::String, description::String,
-                           execute::Union{Function, Vector{<:ReplCmd}}) where { name }
-        if execute isa Function
-            new{name, Function}(trigger, description, execute)
-        else
-            new{name, Vector{ReplCmd}}(trigger, description, execute)
-        end
-    end
-end
+""" ReplCmd
 
 ReplCmd{name}(description::String, execute::Union{Function, Vector{ReplCmd}}) where {name} =
     ReplCmd{name}(String(name), description, execute)
@@ -63,8 +50,6 @@ completions(r::ReplCmd, sofar::AbstractString) =
 completions(r::ReplCmd{<:Any, Vector{ReplCmd}}, sofar::AbstractString) =
     complete_repl_cmd(sofar, commands = r.execute)
 allcompletions(::ReplCmd) = String[]
-
-const REPL_CMDS = ReplCmd[]
 
 function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                        commands::Vector{ReplCmd}=REPL_CMDS,
