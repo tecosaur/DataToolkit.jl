@@ -25,6 +25,16 @@ ReplCmd(name::Union{Symbol, String}, trigger::String, description::String, execu
 ReplCmd(name::Union{Symbol, String}, description::String, execute::Function)
 ```
 
+# Examples
+
+```julia
+ReplCmd(:echo, "print the argument", identity)
+ReplCmd(:addone, "return the input plus one", v -> 1 + parse(Int, v))
+ReplCmd(:math, "A collection of basic integer arithmatic",
+    [ReplCmd(:add, "a + b + ...", nums -> sum(parse.(Int, split(nums))))],
+     ReplCmd(:mul, "a * b * ...", nums -> prod(parse.(Int, split(nums)))))
+```
+
 # Methods
 
 ```julia

@@ -132,11 +132,17 @@ const REPL_PROMPTSTYLE = Base.text_colors[:magenta]
 
 """
 The color that should be used for question text presented in a REPL context.
+This should be a symbol present in `Base.text_colors`.
 """
 const REPL_QUESTION_COLOR = :light_magenta
 
 """
 The color that should be set for user response text in a REPL context.
+This should be a symbol present in `Base.text_colors`.
 """
 const REPL_USER_INPUT_COLOUR = :light_yellow
+
+"""
+The set of commands availible directly in the Data REPL.
+"""
 const REPL_CMDS = ReplCmd[]
