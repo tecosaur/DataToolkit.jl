@@ -1,7 +1,7 @@
 name = "DataToolkit"
 uuid = "dc83c90b-d41d-4e55-bdb7-0fc919659999"
 authors = ["TEC <tec@tecosaur.com> and contributors"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 DataToolkitBase = "e209d0c3-e863-446f-9b45-de6ca9730756"
@@ -10,8 +10,8 @@ Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [compat]
 julia = "1"
-DataToolkitBase = "^0.1"
-DataToolkitCommon = "^0.1"
+DataToolkitBase = "^0.2"
+DataToolkitCommon = "^0.2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
