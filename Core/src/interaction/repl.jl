@@ -90,6 +90,23 @@ not implemented.
 """
 allcompletions(::ReplCmd) = String[]
 
+"""
+    find_repl_cmd(cmd::AbstractString; warn::Bool=false,
+                  commands::Vector{ReplCmd}=REPL_CMDS,
+                  scope::String="Data REPL")
+Examine the command string `cmd`, and look for a command from `commands` that is
+uniquely identified. Either the identified command or `nothing` will be returned.
+
+Should `cmd` start with `help` or `?` then a `ReplCmd{:help}` command is returned.
+
+If `cmd` is ambiguous and `warn` is true, then a message listing all potentially
+matching commands is printed.
+
+If `cmd` does not match any of `commands` and `warn` is true, then a warning
+message is printed. Adittionally, should the named command in `cmd` have more
+than a 3/5th longest common subsequence overlap with any of `commands`, then
+those commands are printed as suggestions.
+"""
 function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                        commands::Vector{ReplCmd}=REPL_CMDS,
                        scope::String="Data REPL")
@@ -130,6 +147,18 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
     end
 end
 
+"""
+    execute_repl_cmd(line::AbstractString;
+                     commands::Vector{ReplCmd}=REPL_CMDS,
+                     scope::String="Data REPL")
+Examine `line` and identify the leading command, then:
+- Show an error if the command is not given in `commands`
+- Show help, if help is asked for (see `help_show`)
+- Call the command's execute function, if applicable
+- Call `execute_repl_cmd` on the argument with `commands`
+  set to the command's subcommands and `scope` set to the command's trigger,
+  if applicable
+"""
 function execute_repl_cmd(line::AbstractString;
                           commands::Vector{ReplCmd}=REPL_CMDS,
                           scope::String="Data REPL")
@@ -161,6 +190,13 @@ function execute_repl_cmd(line::AbstractString;
     end
 end
 
+"""
+    toplevel_execute_repl_cmd(line::AbstractString)
+Call `execute_repl_cmd(line)`, but gracefully catch an InterruptException if
+thrown.
+
+This is the main entrypoint for command execution.
+"""
 function toplevel_execute_repl_cmd(line::AbstractString)
     try
         execute_repl_cmd(line)
@@ -174,6 +210,14 @@ function toplevel_execute_repl_cmd(line::AbstractString)
     end
 end
 
+"""
+    complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
+Return potential completion candidates for `line` provided by `commands`.
+More specifically, the command being completed is identified and
+`completions(cmd::ReplCmd{:cmd}, sofar::AbstractString)` called.
+
+Special behaviour is implemented for the help command.
+"""
 function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(line)
         (sort(vcat(getfield.(commands, :trigger), "help")),
@@ -220,6 +264,9 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
     end
 end
 
+"""
+A singleton to allow for for Data REPL specific completion dispatching.
+"""
 struct DataCompletionProvider <: REPL.LineEdit.CompletionProvider end
 
 function REPL.complete_line(::DataCompletionProvider,
@@ -234,8 +281,16 @@ function REPL.complete_line(::DataCompletionProvider,
     complete_repl_cmd(full)
 end
 
+"""
+    init_repl()
+Construct the Data REPL `LineEdit.Prompt` and configure it and the REPL to
+behave appropriately. Other than boilerplate, this basically consists of:
+- Setting the prompt style
+- Setting the execution function (`toplevel_execute_repl_cmd`)
+- Setting the completion to use `DataCompletionProvider`
+"""
 function init_repl()
-    # With *heavy* inspiration taken from https://github.com/MasonProtter/ReplMaker.jl
+    # With *heavy* inspiration from https://github.com/MasonProtter/ReplMaker.jl
     repl = Base.active_repl
     if !isdefined(repl, :interface)
         repl.interface = repl.setup_interface(repl)
@@ -484,6 +539,15 @@ end
 # The help command
 # ------------------
 
+"""
+    help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
+                   commands::Vector{ReplCmd}=REPL_CMDS,
+                   sub::Bool=false)
+Print a table showing the triggers and descriptions (limited to the first line)
+of `commands`, under the headers "Command" and "Action" (or "Subcommand" if
+`sub` is set). The table is truncated if necessary so it is no wider than
+`maxwidth`.
+"""
 function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
                         commands::Vector{ReplCmd}=REPL_CMDS,
                         sub::Bool=false)
@@ -498,6 +562,11 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
     end
 end
 
+"""
+    help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
+If `cmd` refers to a command in `commands`, show its help (via `help`).
+If `cmd` is empty, list `commands` via `help_cmd_table`.
+"""
 function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(cmd)
         help_cmd_table(; commands)
