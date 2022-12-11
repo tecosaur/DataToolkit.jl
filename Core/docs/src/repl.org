@@ -1,117 +1,89 @@
 #+title: The Data REPL
 
-* Getting help
+* General design
 
-The ~help~ command will give an overview of the data commands available, and one
-may call ~help CMD~ for an description of a particular data command.
+An extensible "Data REPL" is provided to make directly interacting with the
+=Data.toml= a bit more convenient. It can be entered by pressing =}= on an empty
+=julia>= REPL line.
+
 #+begin_example
+julia> # type }
+data>
 data> help
-data> help stack
+ Command  Action
+ ───────────────────────────────────────────────────────────
+ help     Display help information on the available commands
 #+end_example
 
-* Acting on the data collection stack
-
-To list the current data collections on the stack, simply call the ~stack~
-command with no arguments.
+The foremost data collection is also listed in the prompt in much the same
+manner as =(environment) pkg>=, i.e.
 
 #+begin_example
-data> stack
+(⋅) data>        # No currently loaded data collections
+(example) data>  # The top data collection is "example"
 #+end_example
 
-The ~stack~ command also allows you to operate on the data collection stack.
-The ~load~ subcommand adds new layer from a data collection specification file,
-one may run:
+Commands (and sub-commands) can be triggered by typing them out in full (i.e.
+=cmd args...=) but also abbreviated up to the unique stem. For instance if =cmd= is
+the only command starting with =c=, then it can be called with any of
++ =data> cmd args...=
++ =data> cm args...=
++ =data> c args...=
+However, should a command =conflict= also exist, then =c= is no longer a unique stem
+and so =c args...= will produce an error message like so:
 
 #+begin_example
-data> stack load path/to/Data.toml
+data> c args...
+ ! Multiple matching Data REPL commands: cmd, conflict
 #+end_example
 
-The freshly loaded data collection will be placed at the top of the stack. Reloading a collection thus moves it to the top of the stack. However, dedicated subcommands exist for moving layers of the data stack.
-To move a collection to the top of the stack, one may use the ~promote~ subcommand.
+* The help command
+
+=help= is implemented specially in the Data REPL. It can be invoked normally (i.e.
+=help cmd=) but also with =?= prefix (i.e. =?cmd=). Furthermore, all commands with
+sub-commands with automatically have a =help= sub-command added. Overall, =help=
+supports the following usage patterns.
+
 #+begin_example
-data> stack promote NAME OR UUID
+data> help             # List available commands.
+data> help cmd         # Obtain the help for cmd, or
+data> help cmd         # list available sub-command (if applicable).
+data> ?cmd             # Obtain the help for cmd.
+data> help cmd subcmd  # Obtain the help for subcmd.
+data> ?cmd subcmd      # Obtain the help for subcmd.
+data> cmd help subcmd  # Obtain the help for subcmd.
+data> cmd ?subcmd      # Obtain the help for subcmd.
 #+end_example
 
-Similarly, to move a collection down the stack, one may use the ~demote~ subcommand.
-#+begin_example
-data> stack demote NAME OR UUID
-#+end_example
+* Extending the Data REPL
+** Registering commands
 
-* Looking at data sets in a collection
+To register a command, one simply needs to push a ~ReplCmd~ onto ~REPL_CMDS~.
 
-The available data sets within a collection can be viewed with the ~list~ command
-#+begin_example
-data> list
-#+end_example
-
-This lists the data sets present in the collection at the top of the stack. To view the data sets of another collection, provide its name to the ~list~ command.
-#+begin_example
-data> list OTHER DATA COLLECTION
-#+end_example
-
-One may also view a particular data set in more detail using the ~show~  command.
-Simply give a data ~Identifier~ and it will resolve it --- much like the ~dataset~ function, but without requiring you to leave the Data REPL.
-#+begin_example
-show IDENTIFIER
-#+end_example
-
-** Creating a new data set
-
-*** From scratch
-
-*** From a storage location
-
-** Removing a data set
-
-** Creating new REPL commands
-
-The Data REPL can be easily extended in just a few steps.
-
-First, one must create a ~ReplCmd~ object, like so:
-#+begin_src julia
-ReplCmd{:demo}("A demo command", _ -> "Hello")
+#+begin_src @docs
+REPL_CMDS
 #+end_src
 
 #+begin_src @docs
 ReplCmd
 #+end_src
 
-Then, simply push this to the global vector ~REPL_CMDS~. You can now call the ~demo~ command in the Data REPL.
-#+begin_example
-data> demo
-"hello"
-#+end_example
+** Helper functions
 
-An expanded help message can be provided by adding a method to the ~help~ function as follows:
-#+begin_src julia
-function help(::ReplCmd{:demo})
-    println(stderr, "This is a demo command created for the Data REPL documentation.")
-end
+To create a pleasant user interface, a number of utility functions are provided.
+
+#+begin_src @docs
+prompt
 #+end_src
 
-This will be shown when calling the ~help~ command on ~demo~. By default, the
-short description given when creating ~ReplCmd{:demo}~ is used. The short
-description is always used in the help table.
-#+begin_example
-data> help
- Command  Shorthand  Action                                                  
- ──────────────────────────────────
- demo                A demo command
- ...                 ...
- 
-data> help demo
-This is a demo command created for the Data REPL
-#+end_example
-
-Completions can also be provided by adding a method to the ~completion~ function.
-#+begin_src julia
-function completions(::ReplCmd{:demo}, input::AbstractString)
-    filter(s -> startswith(s, "input"), ["hi", "hello", "howdy"])
-end
+#+begin_src @docs
+prompt_char
 #+end_src
 
-For reference, the default implementations of ~help~ and ~completions~ are as follows:
-#+begin_src julia
-help(r::ReplCmd) = println(stderr, r.description)
-completions(::ReplCmd, ::AbstractString) = String[]
+#+begin_src @docs
+confirm_yn
+#+end_src
+
+#+begin_src @docs
+peelword
 #+end_src
