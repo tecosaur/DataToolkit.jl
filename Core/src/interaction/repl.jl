@@ -140,7 +140,7 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
             lengths[end, end]
         end
         overlaps = longest_common_subsequence.(cmd, all_cmd_names)
-        if maximum(overlaps) > length(cmd) * 3/5
+        if maximum(overlaps, init=0) > length(cmd) * 3/5
             printstyled(" i ", color=:cyan, bold=true)
             println("Perhaps you meant '$(all_cmd_names[argmax(overlaps)])'?")
         end
