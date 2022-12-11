@@ -60,7 +60,7 @@ function init(input::AbstractString)
             prompt(" Path to Data TOML file: ",
                    joinpath(if !isnothing(Base.active_project(false))
                                 dirname(Base.active_project(false))
-                            else pwd() end, "$name.toml"))
+                            else pwd() end, "$(coalesce(name, "Data")).toml"))
         end
     elseif first(peelword(rest)) != "with"
         path, rest = peelword(rest)
