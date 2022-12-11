@@ -120,6 +120,9 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                        cmd -> help_show(cmd; commands))
     elseif length(replcmds) == 1
         first(replcmds)
+    elseif length(replcmds) > 1 &&
+        sum(cmd .== getproperty.(replcmds, :trigger)) == 1 # single exact match
+        replcmds[findfirst(c -> c.trigger == cmd, replcmds)]
     elseif warn && length(replcmds) > 1
         printstyled(" ! ", color=:red, bold=true)
         println("Multiple matching $scope commands: ",
