@@ -463,7 +463,7 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
         [replcmd.trigger,
          first(split(replcmd.description, '\n'))]
     end
-    push!(help_lines, ["help", "Display help information on the availible commands"])
+    push!(help_lines, ["help", "Display help information on the available commands"])
     map(displaytable(help_headings, help_lines; maxwidth)) do row
         print(stderr, ' ', row, '\n')
     end
