@@ -68,6 +68,20 @@ REPL_CMDS
 ReplCmd
 #+end_src
 
+** Completion
+
+As hinted by the ~ReplCmd~ docstring, completions can be implemented by
+implementing ~completions(::ReplCmd{:CMD_ID}, sofar::AbstractString)~ or
+~allcompletions~.
+
+#+begin_src @docs
+completions
+#+end_src
+
+#+begin_src @docs
+allcompletions
+#+end_src
+
 ** Helper functions
 
 To create a pleasant user interface, a number of utility functions are provided.

@@ -50,15 +50,44 @@ ReplCmd{name}(description::String, execute::Union{Function, Vector{ReplCmd}}) wh
 ReplCmd(name::Union{Symbol, String}, args...) =
     ReplCmd{Symbol(name)}(args...)
 
+"""
+    help(r::ReplCmd)
+Print the help string for `r`.
+
+    help(r::ReplCmd{<:Any, Vector{ReplCmd}})
+Print the help string and subcommand table for `r`.
+"""
 help(r::ReplCmd) = println(' ', r.description)
 function help(r::ReplCmd{<:Any, Vector{ReplCmd}})
     print(' ', r.description, "\n\n")
     help_cmd_table(commands = r.execute, sub=true)
 end
+
+"""
+    completions(r::ReplCmd, sofar::AbstractString)
+Obtain a list of `String` completion candidates baesd on `sofar`.
+All candidates should begin with `sofar`.
+
+Should this function not be implemented for the specific ReplCmd `r`,
+`allcompletions(r)` will be called and filter to candiadates that begin
+with `sofar`.
+
+If `r` has subcommands, then the subcommand prefix will be removed and
+`completions` re-called on the relevant subcommand.
+"""
 completions(r::ReplCmd, sofar::AbstractString) =
     sort(filter(s -> startswith(s, sofar), allcompletions(r)))
 completions(r::ReplCmd{<:Any, Vector{ReplCmd}}, sofar::AbstractString) =
     complete_repl_cmd(sofar, commands = r.execute)
+
+"""
+    allcompletions(r::ReplCmd)
+Obtain all possible `String` completion candiadates for `r`.
+This defaults to the empty vector `String[]`.
+
+`allcompletions` is only called when `completions(r, sofar::AbstractString)` is
+not implemented.
+"""
 allcompletions(::ReplCmd) = String[]
 
 function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
