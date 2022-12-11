@@ -78,7 +78,7 @@ function stack_load(input::AbstractString)
         else
             abspath(expanduser(path))
         end
-    elseif Base.active_project(false) &&
+    elseif !isnothing(Base.active_project(false)) &&
         isfile(joinpath(Base.active_project(false), "Data.toml"))
         dirname(Base.active_project(false))
     elseif isfile("Data.toml")
