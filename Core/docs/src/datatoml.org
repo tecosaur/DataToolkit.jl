@@ -61,6 +61,16 @@ priority=2
 
 Note that as a consequence of this special table, no data set may be named "config".
 
+DataToolkitBase reserves exactly one config attribute: =locked=. This is used to
+indicate that the =Data.toml= file should not be modified, and to override it the
+attribute must be changed within the =Data.toml= file. By setting =config.locked =
+true=, you protecct yourself from accidental modifications to the data file.
+
+This functionality is provided here rather than in DataToolkitsCommon etc.
+because it supported via the implementation of
+~Base.iswritable(::DataCollection)~, and so downstream packages would only be able
+to support this by overriding this method.
+
 * Structure of a data set
 
 #+begin_src toml

@@ -152,6 +152,8 @@ function Base.show(io::IO, datacollection::DataCollection)
     end
     if iswritable(datacollection)
         printstyled(io, " (writable)", color=:light_black)
+    elseif get(datacollection, "locked", false) === true
+        printstyled(io, " (locked)", color=:light_black)
     end
     if !isempty(datacollection.plugins)
         print(io, "\n  Plugins: ")
