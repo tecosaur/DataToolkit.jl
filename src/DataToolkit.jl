@@ -47,6 +47,10 @@ end
 Load the `mod`-local `Data.toml` if it exists.
 When `mod` is `Main`, every `Data.toml` on the load path is loaded.
 Unless `force` is set, the data collection is soft-loaded.
+
+A `Data.d` directory can be used in place of a `Data.toml`, in which case
+every toml file within it will be read. Mixing `Data.d/*.toml` and `Data.toml`
+is discouraged.
 """
 function init(mod::Module=Main.Base.Main; force::Bool=false)
     project_paths = if isnothing(pathof(mod))
@@ -58,9 +62,23 @@ function init(mod::Module=Main.Base.Main; force::Bool=false)
         if !isdir(project_path)
             project_path = dirname(project_path)
         end
-        project_data = joinpath(project_path, "Data.toml")
-        if isfile(project_data)
-            loadcollection!(project_data, mod, soft=!force)
+        # Load Data.d/*.toml
+        data_dir = joinpath(project_path, "Data.d")
+        if isdir(data_dir)
+            dfiles = filter(f -> endswith(f, ".toml"),
+                            readdir(data_dir, join=true))
+            for dfile in filter(f -> basename(f) != "Data.toml", dfiles)
+                loadcollection!(dfile, mod, soft=!force)
+            end
+            # Load Data.toml last so that is is first in the stack.
+            joinpath(data_dir, "Data.toml") in dfiles &&
+                loadcollection!("Data.d/Data.toml", mod, soft=!force)
+        end
+        # Load Data.toml
+        data_file = joinpath(project_path, "Data.toml")
+        if isfile(data_file)
+            isdir(data_dir) && @warn "($mod) consider placing Data.toml file inside Data.d directory"
+            loadcollection!(data_file, mod, soft=!force)
         end
     end
 end
