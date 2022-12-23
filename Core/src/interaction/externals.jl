@@ -150,7 +150,7 @@ function _read(dataset::DataSet, as::Type)
                              methods(load, Tuple{DataLoader, Any, Any}))
     qtype = QualifiedType(as)
     # Filter to loaders which are declared in `dataset` as supporting `as`.
-    # These will have already been orderd by priority during parsing.
+    # These will have already been ordered by priority during parsing.
     potential_loaders =
         filter(loader -> any(st -> st ⊆ qtype, loader.type), dataset.loaders)
     for loader in potential_loaders

@@ -3,6 +3,11 @@ A representation of a Julia type that does not need the type to be defined in
 the Julia session, and can be stored as a string. This is done by storing the
 type name and the module it belongs to as Symbols.
 
+!!! warning
+    While `QualifiedType` is currently quite capable, it is not currently
+    able to express the full gamut of Julia types. In future this will be improved,
+    but it will likely always be restricted to a certain subset.
+
 # Subtyping
 
 While the subtype operator cannot work on QualifiedTypes (`<:` is a built-in),
@@ -11,10 +16,10 @@ This works by simply `convert`ing the QualifiedTypes to the correspanding Type
 and then applying the subtype operator.
 
 ```julia-repl
-julia> QualifiedTypes(:Base, :Vector) ⊆ QualifiedTypes(:Core, Array)
+julia> QualifiedTypes(:Base, :Vector) ⊆ QualifiedTypes(:Core, :Array)
 true
 
-julia> Matrix ⊆ QualifiedTypes(:Core, Array)
+julia> Matrix ⊆ QualifiedTypes(:Core, :Array)
 true
 
 julia> QualifiedTypes(:Base, :Vector) ⊆ AbstractVector
@@ -145,11 +150,11 @@ empty kargs value will be automatically substituted as the fourth value.
 ```
     input=(action args kwargs)
          ┃                 ┏╸post=identity
-       ╭─╂────advisor #1───╂─╮
+       ╭─╂────advisor 1────╂─╮
        ╰─╂─────────────────╂─╯
-       ╭─╂────advisor #2───╂─╮
+       ╭─╂────advisor 2────╂─╮
        ╰─╂─────────────────╂─╯
-       ╭─╂────advisor #3───╂─╮
+       ╭─╂────advisor 3────╂─╮
        ╰─╂─────────────────╂─╯
          ┃                 ┃
          ▼                 ▽
@@ -168,8 +173,8 @@ By modifying `post` via rightwards-composition (i.e. `post -> post ∘ extra`) t
 transdurers compose quite nicely.
 
 ```
-        ╭ advisor #1 ╌╌╌╌╌╌╌╌─╮
-        ┆ ╭ advisor #2 ╌╌╌╌╌╮ ┆
+        ╭╌ advisor 1 ╌╌╌╌╌╌╌╌─╮
+        ┆ ╭╌ advisor 2 ╌╌╌╌╌╮ ┆
         ┆ ┆                 ┆ ┆
 input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
         ┆ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ ┆
@@ -181,8 +186,8 @@ Otherwise, when post is left-composed (i.e. `post -> extra ∘ post`), advisors
 compose like so:
 
 ```
-        ╭ advisor #1 ╌╌╌╌╌╌─╮
-        ┆ ╭ advisor #2 ╌╌╌╌╌┼╌╮
+        ╭╌ advisor 1 ╌╌╌╌╌╌─╮
+        ┆ ╭╌ advisor 2 ╌╌╌╌╌┼╌╮
         ┆ ┆                 ┆ ┆
 input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
         ╰╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ ┆
@@ -198,7 +203,7 @@ DataAdvice(f::Function) # priority is set to 1
 
 # Examples
 
-**Logging every time a DataSet is loaded.**
+**1. Logging every time a DataSet is loaded.**
 
 ```julia
 loggingadvisor = DataAdvice(
@@ -208,7 +213,7 @@ loggingadvisor = DataAdvice(
     end)
 ```
 
-**Automatically committing each file written.**
+**2. Automatically committing each data file write.**
 
 ```julia
 writecommitadvisor = DataAdvice(
