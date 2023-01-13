@@ -133,7 +133,7 @@ end
 function Base.read(dataset::DataSet)
     as = nothing
     for qtype in getproperty.(dataset.loaders, :type) |> Iterators.flatten
-        as = convert(Type, qtype)
+        as = convert(Type, qtype, mod=dataset.collection.mod)
         isnothing(as) || break
     end
     isnothing(as) && error("Data set '$(dataset.name)' could not be loaded in any form.")
@@ -152,7 +152,8 @@ function _read(dataset::DataSet, as::Type)
     # Filter to loaders which are declared in `dataset` as supporting `as`.
     # These will have already been ordered by priority during parsing.
     potential_loaders =
-        filter(loader -> any(st -> st ⊆ qtype, loader.type), dataset.loaders)
+        filter(loader -> any(st -> ⊆(st, qtype, mod=dataset.collection.mod), loader.type),
+               dataset.loaders)
     for loader in potential_loaders
         load_fn_sigs = filter(fnsig -> loader isa fnsig.types[2], all_load_fn_sigs)
         # Find the highest priority load function that can be satisfied,
@@ -211,7 +212,10 @@ function Base.read(ident::Identifier)
     if isnothing(ident.type)
         throw(ArgumentError("Cannot read from DataSet Identifier without type information."))
     end
-    read(ident, convert(Type, ident.type))
+    read(ident, if !isnothing(ident.type)
+             mod = getlayer(ident.collection).mod
+             convert(Type, ident.type; mod)
+         end)
 end
 
 """
@@ -253,7 +257,7 @@ Storage ◀────▶ Data          Information
 """
 function Base.open(data::DataSet, as::Type; write::Bool=false)
     for storage_provider in data.storage
-        if any(t -> as ⊆ t, storage_provider.type)
+        if any(t -> ⊆(as, t, mod=data.collection.mod), storage_provider.type)
             result = data.collection.advise(
                 storage, storage_provider, as; write)
             if !isnothing(result)
@@ -263,7 +267,7 @@ function Base.open(data::DataSet, as::Type; write::Bool=false)
     end
 end
 # Base.open(data::DataSet, qas::QualifiedType; write::Bool) =
-#     open(convert(Type, qas), data; write)
+#     open(convert(Type, qas, mod=data.collection.mod), data; write)
 
 function storage(storer::DataStorage, as::Type; write::Bool=false)
     if write
@@ -288,7 +292,8 @@ function Base.write(dataset::DataSet, info::T) where {T}
     # Filter to loaders which are declared in `dataset` as supporting `as`.
     # These will have already been orderd by priority during parsing.
     potential_writers =
-        filter(writer -> any(st -> qtype ⊆ st, writer.type), dataset.writers)
+        filter(writer -> any(st -> ⊆(qtype, st, mod=datset.collection.mod), writer.type),
+               dataset.writers)
     for writer in potential_writers
         write_fn_sigs = filter(fnsig -> writer isa fnsig.types[2], all_write_fn_sigs)
         # Find the highest priority load function that can be satisfied,

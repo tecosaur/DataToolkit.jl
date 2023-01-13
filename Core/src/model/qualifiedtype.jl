@@ -9,9 +9,11 @@ end
 
 QualifiedType(qt::QualifiedType) = qt
 
-function Base.convert(::Type{Type}, qt::QualifiedType)
-    mod = if isdefined(Main, qt.parentmodule)
-        getfield(Main, qt.parentmodule)
+function Base.convert(::Type{Type}, qt::QualifiedType; mod::Module=Main)
+    mod = if qt.parentmodule === :Main
+        mod
+    elseif isdefined(mod, qt.parentmodule)
+        getfield(mod, qt.parentmodule)
     else
         hmod = Some(nothing)
         for (pkgid, pmod) in Base.loaded_modules
@@ -28,7 +30,7 @@ function Base.convert(::Type{Type}, qt::QualifiedType)
         if isempty(qt.parameters) T else
             tparams = map(qt.parameters) do p
                 if p isa QualifiedType
-                    convert(Type, p)
+                    convert(Type, p; mod)
                 else p end
             end
             if any(@. tparams isa TypeVar)
@@ -41,17 +43,19 @@ function Base.convert(::Type{Type}, qt::QualifiedType)
     end
 end
 
-function Base.issubset(a::QualifiedType, b::QualifiedType)
+function Base.issubset(a::QualifiedType, b::QualifiedType; mod::Module=Main)
     if a == b
         true
     else
-        A, B = convert(Type, a), convert(Type, b)
+        A, B = convert(Type, a; mod), convert(Type, b; mod)
         !any(isnothing, (A, B)) && A <: B
     end
 end
 
-Base.issubset(a::QualifiedType, b::Type) = issubset(a, QualifiedType(b))
-Base.issubset(a::Type, b::QualifiedType) = issubset(QualifiedType(a), b)
+Base.issubset(a::QualifiedType, b::Type; mod::Module=Main) =
+    issubset(a, QualifiedType(b); mod)
+Base.issubset(a::Type, b::QualifiedType; mod::Module=Main) =
+    issubset(QualifiedType(a), b; mod)
 
 # For the sake of convenience when parsing(foward)/writing(reverse).
 const QUALIFIED_TYPE_SHORTHANDS = let forward =

@@ -52,8 +52,8 @@ function resolve(collection::DataCollection, ident::Identifier;
         if isnothing(ident.type)
             datasets
         else
-            filter(d -> any(l -> any(t -> t ⊆ ident.type, l.type),
-                                  d.loaders), datasets)
+            filter(d -> any(l -> any(t -> ⊆(t, ident.type, mod=collection.mod), l.type),
+                            d.loaders), datasets)
         end
     filter_parameters(datasets) =
         filter(datasets) do d
@@ -66,7 +66,7 @@ function resolve(collection::DataCollection, ident::Identifier;
     if length(matchingdatasets) == 1
         dataset = first(matchingdatasets)
         if !isnothing(ident.type) && resolvetype
-            read(dataset, convert(Type, ident.type))
+            read(dataset, convert(Type, ident.type, mod=collection.mod))
         else
             dataset
         end
