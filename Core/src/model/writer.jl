@@ -138,7 +138,7 @@ function tomlreformat!(io::IO)
         #  1. key = "string..."
         #  2. 'key...' = "string..."
         #  3. "key..." = "string..."
-        if !isnothing(match(r"^\s*[\"'A-Za-z0-9_-].*= * \".*\"$", line))
+        if !isnothing(match(r"^\s*(?:[A-Za-z0-9_-]+|\'[ \"A-Za-z0-9_-]+\'|\"[ 'A-Za-z0-9_-]+\") *= * \".*\"$", line))
             write(out, line[1:findfirst(!isspace, line)-1]) # apply indent
             key, value = first(TOML.parse(line))
             if length(value) < 40 || count('\n', value) < 3
