@@ -9,25 +9,32 @@ unzipped too.
 Set `log` to see unzipping progress.
 """
 function unzip(archive::IO, dir::String=pwd();
-               recursive::Bool=false, log::Bool=false)
+               recursive::Bool=false, log::Bool=false,
+               onlyfile::Union{String, Nothing}=nothing)
     @use ZipFile
     if !isdir(dir) mkpath(dir) end
     zarchive = ZipFile.Reader(archive)
     for file in zarchive.files
-        log && @info "(unzip) extracting $(file.name)"
-        out_file = joinpath(dir, file.name)
-        if endswith(file.name, "/") || endswith(file.name, "\\")
-            mkdir(out_file)
-        elseif endswith(file.name, ".zip")
-            if recursive
-                unzip(IOBuffer(read(file)),
-                      joinpath(dir, first(splitext(file.name)));
-                      recursive, log)
+        if isnothing(onlyfile) || file.name == onlyfile ||
+            recursive && endswith(file.name, ".zip") && startswith(onlyfile, first(splitext(file.name)))
+            log && @info "(unzip) extracting $(file.name)"
+            out_file = joinpath(dir, file.name)
+            isdir(dirname(out_file)) || mkpath(dirname(out_file))
+            if endswith(file.name, "/") || endswith(file.name, "\\")
+                mkdir(out_file)
+            elseif endswith(file.name, ".zip")
+                if recursive
+                    unzip(IOBuffer(read(file)),
+                          joinpath(dir, first(splitext(file.name)));
+                          recursive, log, onlyfile = if !isnothing(onlyfile)
+                              replace(onlyfile, file.name => "")
+                          end)
+                else
+                    write(out_file, read(file))
+                end
             else
                 write(out_file, read(file))
             end
-        else
-            write(out_file, read(file))
         end
     end
     close(zarchive)
@@ -37,19 +44,24 @@ unzip(file::String, dir::String=dirname(file); recursive::Bool=false, log::Bool=
     open(file) do io unzip(io, dir; recursive, log) end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
-    @use ZipFile
-    dir = if !isnothing(get(loader, "extract"))
+    path = if !isnothing(get(loader, "extract"))
         abspath(dirname(loader.dataset.collection.path),
                 get(loader, "extract"))
     else
         joinpath(tempdir(), "jl_datatoolkit_zip_" * string(chash(loader), base=16))
     end
-    if !isdir(dir)
-        unzip(from, dir;
+    file = get(loader, "file", nothing)
+    if !isdir(path) || !isnothing(file) && !isfile(joinpath(path, file))
+        unzip(from, path;
               recursive = get(loader, "recursive", false),
-              log = should_log_event("unzip", loader))
+              log = should_log_event("unzip", loader),
+              onlyfile = file)
     end
-    FilePath(dir)
+    if isnothing(file)
+        FilePath(path)
+    else
+        FilePath(joinpath(path, file))
+    end
 end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
