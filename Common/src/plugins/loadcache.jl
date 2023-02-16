@@ -24,7 +24,10 @@ function loadcache_file(loader::DataLoader, source::Any, as::Type)
          string(loader.dataset.uuid),
          # Loader
          string(lhash, base=16),
-         string(typeof(source), "-to-", as, ".jld2")))
+         string(string(QualifiedType(typeof(source))),
+                "-to-",
+                string(QualifiedType(as)),
+                ".jld2")))
 end
 
 function loadcache_shouldstore(::DataLoader{driver}, T::Type) where {driver}
