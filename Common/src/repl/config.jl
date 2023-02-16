@@ -23,7 +23,7 @@ function config_get(input::AbstractString)
         printstyled(" ! ", color=:yellow, bold=true)
         println("Trailing garbage ignored in get command: \"$rest\"")
     end
-    value = config_get(segments)
+    value = DataToolkitBase.config_get(segments)
     if value isa Dict && isempty(value)
         printstyled(" empty\n", color=:light_black)
     elseif value isa Dict
@@ -47,7 +47,7 @@ function config_set(input::AbstractString)
             rest = string('"', rest, '"')
         end
         value = TOML.parse(string("value = ", rest))
-        config_set!(segments, value["value"])
+        DataToolkitBase.config_set!(segments, value["value"])
     end
 end
 
@@ -61,7 +61,7 @@ function config_unset(input::AbstractString)
         printstyled(" ! ", color=:yellow, bold=true)
         println("Trailing garbage ignored in unset command: \"$rest\"")
     end
-    config_unset!(segments)
+    DataToolkitBase.config_unset!(segments)
 end
 
 const CONFIG_SUBCOMMANDS = ReplCmd[
@@ -119,7 +119,7 @@ function config_complete(sofar::AbstractString; collection::DataCollection=first
             return String[]
         end
     end
-    if haskey(config, last(segments))
+    if haskey(config, last(segments)) && config[last(segments)] isa Dict
         ('.' .* sort(keys(config[last(segments)]) |> collect, by=natkeygen),
          "", true)
     elseif config isa Dict
