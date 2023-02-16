@@ -19,8 +19,12 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
                 elseif param isa Expr && param.head == :tuple
                     Tuple(destruct.(param.args))
                 elseif param isa Symbol
-                    QualifiedType(Symbol(Base.binding_module(Main, param)),
-                                  param, Tuple{}())
+                    if haskey(QUALIFIED_TYPE_SHORTHANDS.forward, string(param))
+                        QUALIFIED_TYPE_SHORTHANDS.forward[string(param)]
+                    else
+                        QualifiedType(Symbol(Base.binding_module(Main, param)),
+                                      param, Tuple{}())
+                    end
                 elseif param isa Expr && param.head == :.
                     parse(QualifiedType, string(param))
                 elseif param isa Expr && param.head == :<: && last(param.args) isa Symbol
