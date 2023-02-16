@@ -58,7 +58,7 @@ function init(mod::Module=Main.Base.Main; force::Bool=false)
     else
         [abspath(pathof(mod), "..", "..")]
     end
-    for project_path in project_paths
+    for project_path in project_paths |> reverse
         if !isdir(project_path)
             project_path = dirname(project_path)
         end
