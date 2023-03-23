@@ -20,12 +20,12 @@ for (lib, name, ext, stream_decompress, decompress,
       :ZstdCompressorStream, :ZstdCompressor))
     eval(quote
              function load(::DataLoader{$(QuoteNode(name))}, from::IO, ::Type{IO})
-                 @use $lib
+                 @import $lib
                  $lib.$stream_decompress(from)
              end
 
              function load(::DataLoader{$(QuoteNode(name))}, from::IO, ::Type{Vector{UInt8}})
-                 @use $lib
+                 @import $lib
                  transcode($lib.$decompress, read(from))
              end
 
@@ -48,14 +48,14 @@ for (lib, name, ext, stream_decompress, decompress,
              end
 
              function save(::DataWriter{$(QuoteNode(name))}, dest::IO, info::IOStream)
-                 @use $lib
+                 @import $lib
                  stream = $lib.$stream_compress(dest)
                  write(stream, info)
                  stream
              end
 
              function save(::DataWriter{$(QuoteNode(name))}, dest::IO, info)
-                 @use $lib
+                 @import $lib
                  write(dest, transcode($lib.$compress, info))
              end
          end)

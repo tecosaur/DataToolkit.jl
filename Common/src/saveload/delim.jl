@@ -1,5 +1,5 @@
 function load(loader::DataLoader{:delim}, from::IO, ::Type{Matrix})
-    @use DelimitedFiles
+    @import DelimitedFiles
     dtype::Type = convert(Type, QualifiedType(get(loader, "type", "Any")))
     delim::Char = first(get(loader, "delim", ","))
     eol::Char = first(get(loader, "eol", "\n"))
@@ -17,7 +17,7 @@ function load(loader::DataLoader{:delim}, from::IO, ::Type{Matrix})
 end
 
 function save(writer::DataWriter{:delim}, dest::IO, info::Union{Vector, Matrix})
-    @use DelimitedFiles
+    @import DelimitedFiles
     delim::Char = first(get(writer, "delim", ","))
     DelimitedFiles.writedlm(dest, info; delim)
     close(dest)

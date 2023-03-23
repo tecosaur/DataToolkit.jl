@@ -40,7 +40,7 @@ function download_progress(filename::AbstractString)
 end
 
 function download_to(storage::DataStorage{:web}, target::Union{IO, String})
-    @use Downloads
+    @import Downloads
     Downloads.download(
         get(storage, "url"), target;
         headers = get(storage, "headers", Dict{String, String}()),

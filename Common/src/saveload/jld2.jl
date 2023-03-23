@@ -1,5 +1,5 @@
 function load(loader::DataLoader{:jld2}, from::FilePath, R::Type)
-    @use JLD2
+    @import JLD2
     key = get(loader, "key", nothing)
     if isnothing(key)
         @assert R == Dict{String, Any}
@@ -17,7 +17,7 @@ supportedtypes(::Type{DataLoader{:jld2}}, spec::Dict{String, Any}) =
     [QualifiedType(if haskey(spec, "key") Any else Dict{String, Any} end)]
 
 function save(::DataLoader{:jld2}, info::Dict{String, Any}, dest::FilePath)
-    @use JLD2
+    @import JLD2
     JLD2.save(dest.path, info)
 end
 

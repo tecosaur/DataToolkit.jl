@@ -81,7 +81,7 @@ loadcache = "some_folder"
 const LOADCACHE_PLUGIN = Plugin("loadcache", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if loadcache_shouldstore(loader, as) && get(loader, "cache", false) == true
-            @use JLD2
+            @import JLD2
             lhash, path = loadcache_file(loader, source, as)
             if !isdir(dirname(path))
                 mkpath(dirname(path))

@@ -1,5 +1,5 @@
 function load(loader::DataLoader{:csv}, from::IO, sink::Type)
-    @use CSV
+    @import CSV
     kwargs = Dict(Symbol(k) => v for (k, v) in
                       get(loader, "args", Dict{String, Any}()))
     if haskey(kwargs, :types)
@@ -37,7 +37,7 @@ supportedtypes(::Type{DataLoader{:csv}}) =
      QualifiedType(:CSV, :File)]
 
 function save(writer::DataWriter{:csv}, dest::IO, info)
-    @use CSV
+    @import CSV
     kwargs = Dict(Symbol(k) => v for (k, v) in
                       get(writer, "args", Dict{String, Any}()))
     for charkey in (:quotechar, :openquotechar, :escapechar)

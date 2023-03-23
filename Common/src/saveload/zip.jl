@@ -11,7 +11,7 @@ Set `log` to see unzipping progress.
 function unzip(archive::IO, dir::String=pwd();
                recursive::Bool=false, log::Bool=false,
                onlyfile::Union{String, Nothing}=nothing)
-    @use ZipFile
+    @import ZipFile
     if !isdir(dir) mkpath(dir) end
     zarchive = ZipFile.Reader(archive)
     for file in zarchive.files
@@ -65,7 +65,7 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
 end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
-    @use ZipFile
+    @import ZipFile
     filename = get(loader, "file")
     if !isnothing(filename)
         zarchive = ZipFile.Reader(from)
@@ -81,7 +81,7 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
 end
 
 function load(::DataLoader{:zip}, from::IO, ::Type{Dict{FilePath, IO}})
-    @use ZipFile
+    @import ZipFile
     zarchive = ZipFile.Reader(from)
     Dict{FilePath, IO}(FilePath(file.name) => IOBuffer(read(file))
                        for file in zarchive.files

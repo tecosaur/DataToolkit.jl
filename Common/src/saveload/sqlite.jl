@@ -1,5 +1,5 @@
 function load(loader::DataLoader{:sqlite}, from::FilePath, as::Type)
-    @use SQLite
+    @import SQLite
     db = SQLite.DB(string(from))
     # We would dispatch on `as` being a `SQLite.DB`,
     # but we only just made `SQLite` availible so this
@@ -7,7 +7,7 @@ function load(loader::DataLoader{:sqlite}, from::FilePath, as::Type)
     if as == SQLite.DB
         db
     else
-        @use DBInterface
+        @import DBInterface
         query = @something(get(loader, "query"),
                            string("SELECT ",
                                   get(loader, "columns", "*"),
@@ -23,7 +23,7 @@ supportedtypes(::Type{DataLoader{:sqlite}}) =
      QualifiedType(:Core, :Any)]
 
 function save(writer::DataWriter{:sqlite}, dest::FilePath, info::Any)
-    @use SQLite
+    @import SQLite
     SQLite.load!(info, SQLite.DB(string(dest)), get(writer, "table", "data");
                  ifnotexists = get(writer, "ifnotexists", false),
                  analyze = get(writer, "analyze", false))
