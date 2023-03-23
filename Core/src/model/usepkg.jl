@@ -41,7 +41,7 @@ end
     @addpkg name::Symbol uuid::String
 
 Register the package identifed by `name` with UUID `uuid`.
-This package may now be used with `@use \$name`.
+This package may now be used with `@import \$name`.
 
 All @addpkg statements should lie within a module's `__init__` function.
 
@@ -62,28 +62,7 @@ function addpkg(mod::Module, name::Symbol, uuid::Union{UUID, String})
     EXTRA_PACKAGES[mod][name]= Base.PkgId(UUID(uuid), String(name))
 end
 
-"""
-    @use pkg1, pkg2...
-    @use pkg1 as name1, pkg2 as name2...
-    @use pkg: foo, bar...
-    @use pkg: foo as bar, bar as baz...
-Fetch modules previously registered with `@addpkg`, and import them into the
-current namespace. This macro tries to largely mirror the syntax of `using`.
-
-If a required package had to be loaded for the `@use` statement, a
-`PkgRequiredRerunNeeded` singleton will be returned.
-
-# Example
-
-```julia
-@use pkg
-pkg.dothing(...)
-# Alternative form
-@use pkg: dothing
-dothing(...)
-```
-"""
-macro use(terms::Union{Expr, Symbol}...)
+macro localimport(terms::Union{Expr, Symbol}...)
     pkgs = Tuple{Symbol, Symbol}[]
     imports = Tuple{Symbol, Symbol, Symbol}[]
     function flattento!(stack, terms)
@@ -96,13 +75,13 @@ macro use(terms::Union{Expr, Symbol}...)
         end
     end
     if length(terms) == 1 && terms[1] isa Symbol
-        # Case: @use pkg
+        # Case: @import pkg
         push!(pkgs, (terms[1], terms[1]))
     elseif terms[1] isa Expr &&
         ((terms[1].head == :call && terms[1].args[1] == :(:)) ||
         (terms[1].head == :tuple && terms[1].args[1] isa Expr &&
         terms[1].args[1].head == :call && terms[1].args[1].args[1] == :(:)))
-        # Case: @use pkg: a, b as c, d, e, f as g, h, ...
+        # Case: @import pkg: a, b as c, d, e, f as g, h, ...
         stack = Symbol[]
         pkg = if terms[1].head == :call
             append!(stack, terms[1].args[3:end])
@@ -124,10 +103,10 @@ macro use(terms::Union{Expr, Symbol}...)
             end
         end
     elseif length(terms) == 1 && terms[1] isa Expr && terms[1].head == :tuple
-        # Case: @use pkg1, pkg2, pkg3, ...
+        # Case: @import pkg1, pkg2, pkg3, ...
         append!(pkgs, zip(terms[1].args, terms[1].args) |> collect)
     else
-        # Case: @use pkg1 as pkg2, pkg3, ...
+        # Case: @import pkg1 as pkg2, pkg3, ...
         stack = Symbol[]
         flattento!(stack, terms)
         while !isempty(stack)
@@ -152,6 +131,31 @@ macro use(terms::Union{Expr, Symbol}...)
              Expr(:(=), esc(as), :($(esc(pkg)).$load))
          end...)
 end
+
+# To get around ERROR: syntax: invalid name "import"
+const var"@import" = var"@localimport"
+
+@doc """
+    @import pkg1, pkg2...
+    @import pkg1 as name1, pkg2 as name2...
+    @import pkg: foo, bar...
+    @import pkg: foo as bar, bar as baz...
+Fetch modules previously registered with `@addpkg`, and import them into the
+current namespace. This macro tries to largely mirror the syntax of `using`.
+
+If a required package had to be loaded for the `@import` statement, a
+`PkgRequiredRerunNeeded` singleton will be returned.
+
+# Example
+
+```julia
+@import pkg
+pkg.dothing(...)
+# Alternative form
+@import pkg: dothing
+dothing(...)
+```
+""" :(@import)
 
 """
     invokepkglatest(f, args...; kwargs...)

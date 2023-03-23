@@ -5,7 +5,7 @@ data transformer, one would come across packages that /may/ be needed.
 
 Every possibly desired package could be shoved into the list of dependences, but
 this is a somewhat crude approach. A more granular approach is enabled with two
-macros, ~@addpkg~ and ~@use~.
+macros, ~@addpkg~ and ~@import~.
 
 * Letting DataToolkitBase know about extra packages
 
@@ -16,7 +16,7 @@ macros, ~@addpkg~ and ~@use~.
 * Using extra packages
 
 #+begin_src @docs
-@use
+@import
 #+end_src
 
 * Example
@@ -33,14 +33,14 @@ function __init__()
 end
 
 function load(::DataLoader{:csv}, from::IOStream, ::Type{DataFrame})
-    @use CSV
+    @import CSV
     result = CSV.read(from, DataFrame)
     close(from)
     result
 end
 
 function load(::DataLoader{:delimcsv}, from::IOStream, ::Type{DataFrame})
-    @use DelimitedFiles
+    @import DelimitedFiles
     result = DelimitedFiles.readdlm(from, ',', DataFrame)
     close(from)
     result

@@ -26,11 +26,11 @@ new data collection.
 const DEFAULT_PLUGINS = String[]
 
 """
-The set of packages loaded by each module via `@addpkg`, for use with `@use`.
+The set of packages loaded by each module via `@addpkg`, for import with `@import`.
 
 More specifically, when a module M invokes `@addpkg pkg id` then
 `EXTRA_PACKAGES[M][pkg] = id` is set, and then this information is used
-with `@use` to obtain the package from the root module.
+with `@import` to obtain the package from the root module.
 """
 const EXTRA_PACKAGES = Dict{Module, Dict{Symbol, Base.PkgId}}()
 

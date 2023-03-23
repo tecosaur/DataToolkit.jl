@@ -13,7 +13,7 @@ export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
 export load, storage, getstorage, putstorage, save, resolve,
     supportedtypes, create, createpriority
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
-export @use, @addpkg, @dataplugin
+export @import, @addpkg, @dataplugin
 
 # For plugin packages
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
