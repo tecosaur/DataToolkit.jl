@@ -274,27 +274,21 @@ end
 # ------------------
 
 """
-    create(::Type{DataSet}, name::String, spec::Dict{String, Any},
-           source::String="";
-           collection::DataCollection=first(STACK),
-           storage::Vector{Symbol}=Symbol[],
-           loaders::Vector{Symbol}=Symbol[],
-           writers::Vector{Symbol}=Symbol[],
-           quiet::Bool=false)
-Create a new DataSet in `collection`, with a `name` and `spec`.  The data
-transformers will be constructed with each of the backends listed in `storage`,
-`loaders`, and `writers` from `source`. If the symbol `*` is given, all
-possible drivers will be searched and the highest priority driver avilible
+    add(::Type{DataSet}, name::String, spec::Dict{String, Any}, source::String="";
+        collection::DataCollection=first(STACK), storage::Vector{Symbol}=Symbol[],
+        loaders::Vector{Symbol}=Symbol[], writers::Vector{Symbol}=Symbol[],
+        quiet::Bool=false)
+Create a new DataSet with a `name` and `spec`, and add it to `collection`.  The
+data transformers will be constructed with each of the backends listed in
+`storage`, `loaders`, and `writers` from `source`. If the symbol `*` is given,
+all possible drivers will be searched and the highest priority driver avilible
 (according to `createpriority`) used. Should no transformer of the specified
 driver and type exist, it will be skipped.
 """
-function create(::Type{DataSet}, name::String, spec::Dict{String, Any},
-                source::String="";
-                collection::DataCollection=first(STACK),
-                storage::Vector{Symbol}=Symbol[],
-                loaders::Vector{Symbol}=Symbol[],
-                writers::Vector{Symbol}=Symbol[],
-                quiet::Bool=false)
+function add(::Type{DataSet}, name::String, spec::Dict{String, Any}, source::String="";
+             collection::DataCollection=first(STACK),
+             storage::Vector{Symbol}=Symbol[], loaders::Vector{Symbol}=Symbol[],
+             writers::Vector{Symbol}=Symbol[], quiet::Bool=false)
     spec["uuid"] = uuid4()
     dataset = collection.advise(fromspec, DataSet, collection, name, spec)
     for (transformer, slot, drivers) in ((DataStorage, :storage, storage),
@@ -323,7 +317,7 @@ do so and return it. Otherwise return `nothing`.
 """
 create(T::Type{<:AbstractDataTransformer}, source::String, ::DataSet) =
     create(T::Type{<:AbstractDataTransformer}, source)
-create(T::Type{<:AbstractDataTransformer}, ::String) = nothing
+create(::Type{<:AbstractDataTransformer}, ::String) = nothing
 
 """
     createpriority(T::Type{<:AbstractDataTransformer})
