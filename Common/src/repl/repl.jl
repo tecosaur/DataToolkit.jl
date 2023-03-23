@@ -16,7 +16,7 @@ include("init.jl")
 include("stack.jl")
 include("plugins.jl")
 include("config.jl")
-include("create.jl")
+include("add.jl")
 include("delete.jl")
 include("list.jl")
 include("show.jl")
@@ -43,7 +43,7 @@ Call without any arguments to see the availible subcommands.",
                   CONFIG_SUBCOMMANDS))
 
     push!(REPL_CMDS,
-          ReplCmd(:create, CREATE_DOC, create))
+          ReplCmd(:add, ADD_DOC, add))
 
     push!(REPL_CMDS,
           ReplCmd(:delete, DELETE_DOC, delete))

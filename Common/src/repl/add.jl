@@ -1,33 +1,33 @@
-const CREATE_DOC = "Create a new data set in the current collection
+const ADD_DOC = "Add a data set to the current collection
 
 This will interactively ask for all required information.
 
 Optionally, the name and source can be specified using the following forms:
-  create NAME
-  create NAME from SOURCE
-  create from SOURCE
+  add NAME
+  add NAME from SOURCE
+  add from SOURCE
 As a shorthand, 'f' can be used instead of 'from'.
 
 The transformers drivers used can also be specified by using a 'via' argument
 before 'from', with a form like so:
-  create via TRANSFORMERS...
-  create NAME via TRANSFORMERS... from SOURCE
+  add via TRANSFORMERS...
+  add NAME via TRANSFORMERS... from SOURCE
 The type of transformer can also be specified using flags. Namely storage (-s),
 loader (-l), and writer (-w). For example:
-  create via -s web -l csv
+  add via -s web -l csv
 Invalid transformer drivers are automatically skipped, so one could use:
-  create via -sl web csv
-which would be equivalent to `create via -s web csv -l web csv`, but only 'web'
+  add via -sl web csv
+which would be equivalent to `add via -s web csv -l web csv`, but only 'web'
 will be reccognised as a valid storage backend and 'csv' as a valid loader.
 This works well in most cases, which is why '-sl' are the default flags.
 
 Full examples:
-  create iris from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
-  create iris via web csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
-  create iris via -s web -l csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
-  create \"from\" from.txt # create a data set with the name from"
+  add iris from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+  add iris via web csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+  add iris via -s web -l csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+  add \"from\" from.txt # add a data set with the name from"
 
-function create(input::AbstractString)
+function add(input::AbstractString)
     confirm_stack_nonempty() || begin
         printstyled(" i ", color=:cyan, bold=true)
         println("Consider creating a data collection first with 'init'")
@@ -87,5 +87,5 @@ function create(input::AbstractString)
         spec[attribute] = TOML.parse(string("value = ", value))["value"]
     end
     print("\e[A\e[G\e[K")
-    DataToolkitBase.create(DataSet, name, spec, from; via...)
+    DataToolkitBase.add(DataSet, name, spec, from; via...)
 end
