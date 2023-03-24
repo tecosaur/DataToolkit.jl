@@ -1,3 +1,5 @@
+using Pkg
+
 struct PkgRequiredRerunNeeded end
 
 """
@@ -19,9 +21,20 @@ function get_package(pkg::Base.PkgId)
                 "as appropriate then re-trying this operation.")
             throw(ErrorException("Missing package: $pkg"))
         else
-            @info "Lazy-loading $pkg. Consider adding `using $(pkg.name)`"
+            @info "Lazy-loading $pkg"
         end
-        Base.require(pkg)
+        try
+            Base.require(pkg)
+        catch err
+            pkgmsg = "is required but does not seem to be installed"
+            if err isa ArgumentError && occursin(pkgmsg, err.msg) &&
+                isdefined(Pkg.REPLMode, :try_prompt_pkg_add) && isinteractive()
+                Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)]) ||
+                    throw(ErrorException("Missing package: $pkg"))
+            else
+                rethrow(err)
+            end
+        end
         PkgRequiredRerunNeeded()
     else
         Base.root_module(pkg)
