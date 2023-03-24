@@ -59,22 +59,43 @@ function loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base
     collection
 end
 
-function dataset(ident_str::AbstractString, parameters::Dict{String, Any})
-    ident = Identifier(ident_str, parameters)
-    resolve(ident)
+"""
+    dataset([collection::DataCollection], identstr::AbstractString, [parameters::Dict{String, Any}])
+    dataset([collection::DataCollection], identstr::AbstractString, [parameters::Pair{Symbol, Any}...])
+
+Return the data set identified by `identstr`, optionally specifying the `collection`
+the data set should be found in and any `parameters` that apply.
+"""
+dataset(identstr::AbstractString) = resolve(identstr; resolvetype=false)
+dataset(identstr::AbstractString, parameters::Dict{String, Any}) =
+    resolve(identstr, parameters; resolvetype=false)
+
+function dataset(identstr::AbstractString, kv::Pair{Symbol, <:Any}, kvs::Pair{Symbol, <:Any}...)
+    parameters = Dict{String, Any}()
+    parameters[String(first(kv))] = last(kv)
+    for (key, value) in kvs
+        parameters[String(key)] = value
+    end
+    dataset(identstr, parameters)
 end
 
-dataset(ident_str::AbstractString; kwparams...) =
-    dataset(ident_str, Dict{String, Any}(String(k) => v for (k, v) in kwparams))
+dataset(collection::DataCollection, identstr::AbstractString) =
+    resolve(collection, @advise parse(Identifier, identstr);
+            resolvetype=false)
 
-function dataset(collection::DataCollection, ident_str::AbstractString, parameters::Dict{String, Any})
-    resolve(collection, ident)
+function dataset(collection::DataCollection, identstr::AbstractString, parameters::Dict{String, Any})
     ident = @advise parse(Identifier, identstr)
+    resolve(collection, Identifier(ident, parameters); resolvetype=false)
 end
 
-dataset(collection::DataCollection, ident_str::AbstractString; kwparams...) =
-    dataset(collection, ident_str,
-            Dict{String, Any}(String(k) => v for (k, v) in kwparams))
+function dataset(collection::DataCollection, identstr::AbstractString, kv::Pair{Symbol, <:Any}, kvs::Pair{Symbol, <:Any}...)
+    parameters = Dict{String, Any}()
+    parameters[String(first(kv))] = last(kv)
+    for (key, value) in kvs
+        parameters[String(key)] = value
+    end
+    dataset(collection, identstr, parameters)
+end
 
 """
     read(filename::AbstractString, DataCollection; writer::Union{Function, Nothing})

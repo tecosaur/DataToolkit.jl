@@ -1,13 +1,22 @@
 Identifier(ident::Identifier, params::Dict{String, Any}; replace::Bool=false) =
-    Identifier(ident.collection,
-               ident.dataset,
-               ident.type,
-               if replace; params else merge(ident.parameters, params) end)
+    Identifier(ident.collection, ident.dataset, ident.type,
+               if replace || isempty(ident.parameters);
+                   params
+               else
+                   merge(ident.parameters, params)
+               end)
 
-Identifier(spec::AbstractString) = parse(Identifier, spec)
+Identifier(ident::Identifier, ::Nothing; replace::Bool=false) =
+    if replace
+        Identifier(ident, Dict{String, Any}(); replace)
+    else
+        ident
+    end
+
+# Identifier(spec::AbstractString) = parse(Identifier, spec)
 
 Identifier(spec::AbstractString, params::Dict{String, Any}) =
-    Identifier(Identifier(spec), params)
+    Identifier(parse(Identifier, spec), params)
 
 function Base.string(ident::Identifier)
     string(if !isnothing(ident.collection)
@@ -55,13 +64,16 @@ function resolve(collection::DataCollection, ident::Identifier;
             filter(d -> any(l -> any(t -> ⊆(t, ident.type, mod=collection.mod), l.type),
                             d.loaders), datasets)
         end
-    filter_parameters(datasets) =
+    filter_parameters(datasets, ignore) =
         filter(datasets) do d
-            all((param, value)::Pair -> d.parameters[param] == value,
+            all((param, value)::Pair ->
+                param in ignore || d.parameters[param] == value,
                 ident.parameters)
         end
-    matchingdatasets = collection.datasets |>
-        filter_nameid |> filter_type |> filter_parameters
+    matchingdatasets = collection.datasets |> filter_nameid |> filter_type
+    matchingdatasets, ignoreparams =
+        @advise collection refine(matchingdatasets, ident, String[])
+    matchingdatasets = filter_parameters(matchingdatasets, ignoreparams)
     # TODO non-generic errors
     if length(matchingdatasets) == 1
         dataset = first(matchingdatasets)
@@ -76,6 +88,14 @@ function resolve(collection::DataCollection, ident::Identifier;
         throw(error("Multiple datasets from '$(collection.name)' matched the identifier $ident"))
     end
 end
+
+"""
+    refine(datasets::Vector{DataSet}, ::Identifier, ignoreparams::Vector{String})
+This is a stub function that exists soley as as an advise point for data set
+filtering during resolution of an identifier.
+"""
+refine(datasets::Vector{DataSet}, ::Identifier, ignoreparams::Vector{String}) =
+    (datasets, ignoreparams)
 
 """
     resolve(ident::Identifier; resolvetype::Bool=true, stack=STACK)
@@ -94,3 +114,27 @@ resolve(ident::Identifier; resolvetype::Bool=true, stack::Vector{DataCollection}
         end
         throw(error("No datasets in $(join(''' .* getproperty.(stack, :name) .* ''', ", ", ", or ")) matched the identifier $ident"))
     end
+
+"""
+    resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
+            resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
+Attempt to resolve the identifier given by `identstr` and `parameters` against
+each layer of the data `stack` in turn.
+"""
+function resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
+                 resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
+    if (cname = parse(Identifier, identstr).collection) |> !isnothing
+        collection = getlayer(cname)
+        ident = Identifier((@advise collection parse(Identifier, identstr)),
+                           parameters)
+        resolve(collection, ident; resolvetype)
+    else
+        for collection in stack
+            ident = Identifier((@advise collection parse(Identifier, identstr)),
+                               parameters)
+            result = resolve(collection, ident; resolvetype, requirematch=false)
+            !isnothing(result) && return result
+        end
+        throw(error("No datasets in $(join(''' .* getproperty.(stack, :name) .* ''', ", ", ", or ")) matched the identifier $ident"))
+    end
+end

@@ -10,7 +10,7 @@ export loadcollection!, dataset
 # For extension packages
 export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataCollection, QualifiedType, Identifier, FilePath
-export load, storage, getstorage, putstorage, save, resolve,
+export load, storage, getstorage, putstorage, save, resolve, refine,
     supportedtypes, create, createpriority
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
 export @import, @addpkg, @dataplugin, @advise
