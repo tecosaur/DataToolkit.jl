@@ -68,8 +68,8 @@ dataset(ident_str::AbstractString; kwparams...) =
     dataset(ident_str, Dict{String, Any}(String(k) => v for (k, v) in kwparams))
 
 function dataset(collection::DataCollection, ident_str::AbstractString, parameters::Dict{String, Any})
-    ident = Identifier(ident_str, parameters)
     resolve(collection, ident)
+    ident = @advise parse(Identifier, identstr)
 end
 
 dataset(collection::DataCollection, ident_str::AbstractString; kwparams...) =
@@ -128,7 +128,7 @@ TODO explain further
 ```
 """
 function Base.read(dataset::DataSet, as::Type)
-    dataset.collection.advise(_read, dataset, as)
+    @advise _read(dataset, as)
 end
 function Base.read(dataset::DataSet)
     as = nothing
@@ -137,7 +137,7 @@ function Base.read(dataset::DataSet)
         isnothing(as) || break
     end
     isnothing(as) && error("Data set '$(dataset.name)' could not be loaded in any form.")
-    dataset.collection.advise(_read, dataset, as)
+    @advise _read(dataset, as)
 end
 
 """
@@ -176,8 +176,7 @@ function _read(dataset::DataSet, as::Type)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
                     if !isnothing(datahandle)
-                        result = dataset.collection.advise(
-                            load, loader, datahandle, as)
+                        result = @advise dataset load(loader, datahandle, as)
                         if !isnothing(result)
                             return result
                         end
@@ -190,8 +189,7 @@ function _read(dataset::DataSet, as::Type)
         # without an explicit storage backend.
         for load_fn_sig in load_fn_sigs
             if load_fn_sig.types[3] == Nothing
-                return dataset.collection.advise(
-                    load, loader, nothing, as)
+                return @advise dataset load(loader, nothing, as)
             end
         end
     end
@@ -258,8 +256,7 @@ Storage ◀────▶ Data          Information
 function Base.open(data::DataSet, as::Type; write::Bool=false)
     for storage_provider in data.storage
         if any(t -> ⊆(as, t, mod=data.collection.mod), storage_provider.type)
-            result = data.collection.advise(
-                storage, storage_provider, as; write)
+            result = @advise data storage(storage_provider, as; write)
             if !isnothing(result)
                 return result
             end
@@ -310,8 +307,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = true)
                     if !isnothing(datahandle)
-                        res = dataset.collection.advise(
-                            save, writer, datahandle, info)
+                        res = @advise dataset save(writer, datahandle, info)
                         if res isa IO && isopen(res)
                             close(res)
                         end

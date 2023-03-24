@@ -58,7 +58,7 @@ function Base.parse(::Type{Identifier}, spec::AbstractString; advised::Bool=fals
     collection, rest::SubString{String} = match(r"^(?:([^:]+):)?([^:].*)?$", spec).captures
     collection_isuuid = !isnothing(collection) && !isnothing(match(r"^[0-9a-f]{8}-[0-9a-f]{4}$", collection))
     if !isnothing(collection) && !advised
-        return getlayer(collection).advise(parse, Identifier, spec, advised=true)
+        @advise getlayer(collection) parse(Identifier, spec, advised=true)
     end
     dataset, rest = match(r"^([^:@#]+)(.*)$", rest).captures
     dtype = match(r"^(?:::([A-Za-z0-9{, }\.]+)|::)?$", rest).captures[1]
@@ -91,7 +91,7 @@ supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
     supportedtypes(ADT)
 
 (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
-    dataset.collection.advise(fromspec, ADT, dataset, spec)
+    @advise fromspec(ADT, dataset, spec)
 
 (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::String) =
     ADT(dataset, Dict{String, Any}("driver" => spec))
@@ -121,14 +121,13 @@ function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::
     delete!(parameters, "driver")
     delete!(parameters, "type")
     delete!(parameters, "priority")
-    dataset.collection.advise(
-        identity,
+    @advise dataset identity(
         ADT(dataset, ttype, priority,
             dataset_parameters(dataset, Val(:extract), parameters)))
 end
 
 # function (ADT::Type{<:AbstractDataTransformer})(collection::DataCollection, spec::Dict{String, Any})
-#     collection.advise(fromspec, ADT, collection, spec)
+#     @advise fromspec(ADT, collection, spec)
 # end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
@@ -205,7 +204,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
             push!(collection.datasets, DataSet(collection, name, dspec))
         end
     end
-    collection.advise(identity, collection)
+    @advise identity(collection)
 end
 
 # ---------------
@@ -213,7 +212,7 @@ end
 # ---------------
 
 function DataSet(collection::DataCollection, name::String, spec::Dict{String, Any})
-    collection.advise(fromspec, DataSet, collection, name, spec)
+    @advise fromspec(DataSet, collection, name, spec)
 end
 
 function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
@@ -239,5 +238,5 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
         end
         sort!(getfield(dataset, afield), by=a->a.priority)
     end
-    collection.advise(identity, dataset)
+    @advise identity(dataset)
 end

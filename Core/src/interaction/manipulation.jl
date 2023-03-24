@@ -290,7 +290,7 @@ function add(::Type{DataSet}, name::String, spec::Dict{String, Any}, source::Str
              storage::Vector{Symbol}=Symbol[], loaders::Vector{Symbol}=Symbol[],
              writers::Vector{Symbol}=Symbol[], quiet::Bool=false)
     spec["uuid"] = uuid4()
-    dataset = collection.advise(fromspec, DataSet, collection, name, spec)
+    dataset = @advise fromspec(DataSet, collection, name, spec)
     for (transformer, slot, drivers) in ((DataStorage, :storage, storage),
                                          (DataLoader, :loaders, loaders),
                                          (DataWriter, :writers, writers))
@@ -391,15 +391,13 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
         for drv in alldrivers
             spec = create(T{drv}, source, dataset)
             if !isnothing(spec)
-                return dataset.collection.advise(
-                    fromspec, T, dataset, process_spec(spec, drv))
+                return @advise fromspec(T, dataset, process_spec(spec, drv))
             end
         end
     else
         spec = create(T{driver}, source, dataset)
         if !isnothing(spec)
-            dataset.collection.advise(
-                fromspec, T, dataset, process_spec(spec, driver))
+            return @advise fromspec(T, dataset, process_spec(spec, driver))
         end
     end
 end

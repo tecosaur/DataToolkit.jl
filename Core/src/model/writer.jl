@@ -41,7 +41,7 @@ function Base.string(q::QualifiedType)
 end
 
 function Base.convert(::Type{Dict}, adt::AbstractDataTransformer)
-    adt.dataset.collection.advise(tospec, adt)
+    @advise tospec(adt)
 end
 
 function tospec(adt::AbstractDataTransformer)
@@ -56,7 +56,7 @@ function tospec(adt::AbstractDataTransformer)
 end
 
 function Base.convert(::Type{Dict}, ds::DataSet)
-    ds.collection.advise(tospec, ds)
+    @advise tospec(ds)
 end
 
 function tospec(ds::DataSet)
@@ -69,7 +69,7 @@ function tospec(ds::DataSet)
 end
 
 function Base.convert(::Type{Dict}, dc::DataCollection)
-    dc.advise(tospec, dc)
+    @advise tospec(dc)
 end
 
 function tospec(dc::DataCollection)
