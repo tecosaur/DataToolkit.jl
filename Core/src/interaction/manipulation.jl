@@ -7,6 +7,7 @@
          path::Union{AbstractString, Nothing};
          uuid::UUID=uuid4(), plugins::Vector{String}=DEFAULT_PLUGINS,
          write::Bool=true, addtostack::Bool=true, quiet::Bool=false)
+
 Create a new data collection.
 
 This can be an in-memory data collection, when `path` is set to `nothing`, or a
@@ -66,6 +67,7 @@ end
 
 """
     stack_index(ident::Union{Int, String, UUID, DataCollection}; quiet::Bool=false)
+
 Obtai the index of the data collection identified by `ident` on the stack,
 if it is present. If it is not found, `nothing` is returned and unless `quiet`
 is set a warning is printed.
@@ -89,6 +91,7 @@ stack_index(collection::DataCollection) = findfirst(STACK .=== Ref(collection))
 
 """
     stack_move(ident::Union{Int, String, UUID, DataCollection}, shift::Int; quiet::Bool=false)
+
 Find `ident` in the data collection stack, and shift its position by `shift`,
 returning the new index. `shift` is clamped so that the new index lies within
 STACK.
@@ -114,6 +117,7 @@ end
 
 """
     stack_remove!(ident::Union{Int, String, UUID, DataCollection}; quiet::Bool=false)
+
 Find `ident` in the data collection stack and remove it from the stack,
 returning the index at which it was found.
 
@@ -137,6 +141,7 @@ end
 """
     plugin_add(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
                quiet::Bool=false)
+
 Add `plugins` not currently used in `collection` to `collection`'s plugins, and
 write the collection.
 
@@ -153,6 +158,7 @@ end
 """
     plugin_remove(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
                   quiet::Bool=false)
+
 Remove all `plugins` currently used in `collection`, and write the collection.
 
 Unless `quiet` is a set a sucess message is printed.
@@ -167,6 +173,7 @@ end
 
 """
     plugin_info(plugin::AbstractString; quiet::Bool=false)
+
 Fetch the documentation of `plugin`, or return `nothing` if documentation could
 not be fetched.
 
@@ -195,6 +202,7 @@ end
 
 """
     plugin_list(; collection::DataCollection=first(STACK), quiet::Bool=false)
+
 Obtain a list of plugins used in `collection`.
 
 `quiet` is unused but accepted as an argument for the sake of consistency.
@@ -209,6 +217,7 @@ plugin_list(; collection::DataCollection=first(STACK), quiet::Bool=false) =
 """
     config_get(propertypath::Vector{String};
                collection::DataCollection=first(STACK), quiet::Bool=false)
+
 Obtain the configuration value at `propertypath` in `collection`.
 
 When no value is set, `nothing` is returned instead and if `quiet` is unset
@@ -230,6 +239,7 @@ end
 """
     config_set!(propertypath::Vector{String}, value::Any;
                 collection::DataCollection=first(STACK), quiet::Bool=false)
+
 Set the configuration at `propertypath` in `collection` to `value`.
 
 Unless `quiet` is set, a success message is printed.
@@ -251,6 +261,7 @@ end
 """
     config_unset!(propertypath::Vector{String};
                   collection::DataCollection=first(STACK), quiet::Bool=false)
+
 Unset the configuration at `propertypath` in `collection`.
 
 Unless `quiet` is set, a success message is printed.
@@ -278,6 +289,7 @@ end
         collection::DataCollection=first(STACK), storage::Vector{Symbol}=Symbol[],
         loaders::Vector{Symbol}=Symbol[], writers::Vector{Symbol}=Symbol[],
         quiet::Bool=false)
+
 Create a new DataSet with a `name` and `spec`, and add it to `collection`.  The
 data transformers will be constructed with each of the backends listed in
 `storage`, `loaders`, and `writers` from `source`. If the symbol `*` is given,
@@ -312,6 +324,7 @@ end
 
 """
     create(T::Type{<:AbstractDataTransformer}, source::String, dataset::DataSet)
+
 If `source`/`dataset` can be used to construct a data transformer of type `T`,
 do so and return it. Otherwise return `nothing`.
 """
@@ -321,6 +334,7 @@ create(::Type{<:AbstractDataTransformer}, ::String) = nothing
 
 """
     createpriority(T::Type{<:AbstractDataTransformer})
+
 The priority with which a transformer of type `T` should be created.
 This can be any integer, but try to keep to -100–100 (see `create`).
 """
@@ -329,6 +343,7 @@ createpriority(T::Type{<:AbstractDataTransformer}) = 0
 """
     create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String, dataset::DataSet;
            minpriority::Int=-100, maxpriority::Int=100)
+
 Create a new `T` with driver `driver` from `source`/`dataset`.
 
 If `driver` is the symbol `*` then all possible drivers are checked and the
@@ -408,6 +423,7 @@ end
 
 """
     delete!(dataset::DataSet)
+
 Remove `dataset` from its parent collection.
 """
 function Base.delete!(dataset::DataSet)

@@ -5,6 +5,7 @@ struct PkgRequiredRerunNeeded end
 """
     get_package(pkg::Base.PkgId)
     get_package(from::Module, name::Symbol)
+
 Obtain a module specified by either `pkg` or identified by `name` and declared
 by `from`. Should the package not be currently loaded, in Julia ≥ 1.7
 DataToolkit will atempt to lazy-load the package and return its module.
@@ -153,6 +154,7 @@ const var"@import" = var"@localimport"
     @import pkg1 as name1, pkg2 as name2...
     @import pkg: foo, bar...
     @import pkg: foo as bar, bar as baz...
+
 Fetch modules previously registered with `@addpkg`, and import them into the
 current namespace. This macro tries to largely mirror the syntax of `using`.
 

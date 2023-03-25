@@ -1,5 +1,6 @@
 """
     iswritable(dc::DataCollection)
+
 Check whether a data collection is backed by a writable file.
 """
 Base.iswritable(dc::DataCollection) =
@@ -92,6 +93,7 @@ end
 
 """
     natkeygen(key::String)
+
 Generate a sorting key for `key` that when used with `sort` will put the
 collection in "natural order".
 
@@ -121,6 +123,7 @@ end
 
 """
     tomlreformat!(io::IO)
+
 Consume `io` representing a TOML file, and reformat it to improve readability.
 Currently this takes the form of the following changes:
 - Replace inline multi-line strings with multi-line toml strings.

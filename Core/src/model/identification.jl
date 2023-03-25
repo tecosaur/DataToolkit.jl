@@ -31,6 +31,7 @@ end
 """
     resolve(collection::DataCollection, ident::Identifier;
             resolvetype::Bool=true, requirematch::Bool=true)
+
 Attempt to resolve an identifier (`ident`) to a particular data set.
 Matching data sets will searched for from `collection`.
 
@@ -91,6 +92,7 @@ end
 
 """
     refine(datasets::Vector{DataSet}, ::Identifier, ignoreparams::Vector{String})
+
 This is a stub function that exists soley as as an advise point for data set
 filtering during resolution of an identifier.
 """
@@ -99,6 +101,7 @@ refine(datasets::Vector{DataSet}, ::Identifier, ignoreparams::Vector{String}) =
 
 """
     resolve(ident::Identifier; resolvetype::Bool=true, stack=STACK)
+
 Attempt to resolve `ident` using the specified data layer, if present, trying
 every layer of the data stack in turn otherwise.
 """
@@ -118,6 +121,7 @@ resolve(ident::Identifier; resolvetype::Bool=true, stack::Vector{DataCollection}
 """
     resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
             resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
+
 Attempt to resolve the identifier given by `identstr` and `parameters` against
 each layer of the data `stack` in turn.
 """

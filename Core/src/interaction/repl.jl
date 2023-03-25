@@ -52,9 +52,11 @@ ReplCmd(name::Union{Symbol, String}, args...) =
 
 """
     help(r::ReplCmd)
+
 Print the help string for `r`.
 
     help(r::ReplCmd{<:Any, Vector{ReplCmd}})
+
 Print the help string and subcommand table for `r`.
 """
 help(r::ReplCmd) = println(' ', r.description)
@@ -65,6 +67,7 @@ end
 
 """
     completions(r::ReplCmd, sofar::AbstractString)
+
 Obtain a list of `String` completion candidates baesd on `sofar`.
 All candidates should begin with `sofar`.
 
@@ -82,6 +85,7 @@ completions(r::ReplCmd{<:Any, Vector{ReplCmd}}, sofar::AbstractString) =
 
 """
     allcompletions(r::ReplCmd)
+
 Obtain all possible `String` completion candiadates for `r`.
 This defaults to the empty vector `String[]`.
 
@@ -94,6 +98,7 @@ allcompletions(::ReplCmd) = String[]
     find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                   commands::Vector{ReplCmd}=REPL_CMDS,
                   scope::String="Data REPL")
+
 Examine the command string `cmd`, and look for a command from `commands` that is
 uniquely identified. Either the identified command or `nothing` will be returned.
 
@@ -154,6 +159,7 @@ end
     execute_repl_cmd(line::AbstractString;
                      commands::Vector{ReplCmd}=REPL_CMDS,
                      scope::String="Data REPL")
+
 Examine `line` and identify the leading command, then:
 - Show an error if the command is not given in `commands`
 - Show help, if help is asked for (see `help_show`)
@@ -199,6 +205,7 @@ end
 
 """
     toplevel_execute_repl_cmd(line::AbstractString)
+
 Call `execute_repl_cmd(line)`, but gracefully catch an InterruptException if
 thrown.
 
@@ -219,6 +226,7 @@ end
 
 """
     complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
+
 Return potential completion candidates for `line` provided by `commands`.
 More specifically, the command being completed is identified and
 `completions(cmd::ReplCmd{:cmd}, sofar::AbstractString)` called.
@@ -290,6 +298,7 @@ end
 
 """
     init_repl()
+
 Construct the Data REPL `LineEdit.Prompt` and configure it and the REPL to
 behave appropriately. Other than boilerplate, this basically consists of:
 - Setting the prompt style
@@ -371,6 +380,7 @@ end
 """
     prompt(question::AbstractString, default::AbstractString="",
            allowempty::Bool=false, cleardefault::Bool=true)
+
 Interactively ask `question` and return the response string, optionally
 with a `default` value.
 
@@ -456,6 +466,7 @@ end
 """
     prompt_char(question::AbstractString, options::Vector{Char},
                 default::Union{Char, Nothing}=nothing)
+
 Interatively ask `question`, only accepting `options` keys as answers.
 All keys are converted to lower case on input. If `default` is not nothing and
 'RET' is hit, then `default` will be returned.
@@ -485,6 +496,7 @@ end
 
 """
     confirm_yn(question::AbstractString, default::Bool=false)
+
 Interactively ask `question` and accept y/Y/n/N as the response.
 If any other key is pressed, then `default` will be taken as the response.
 A " [y/n]: " string will be appended to the question, with y/n capitalised
@@ -506,6 +518,7 @@ end
 
 """
     peelword(input::AbstractString)
+
 Read the next 'word' from `input`. If `input` starts with a quote, this is the
 unescaped text between the opening and closing quote. Other wise this is simply
 the next word.
@@ -550,6 +563,7 @@ end
     help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
                    commands::Vector{ReplCmd}=REPL_CMDS,
                    sub::Bool=false)
+
 Print a table showing the triggers and descriptions (limited to the first line)
 of `commands`, under the headers "Command" and "Action" (or "Subcommand" if
 `sub` is set). The table is truncated if necessary so it is no wider than
@@ -571,6 +585,7 @@ end
 
 """
     help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
+
 If `cmd` refers to a command in `commands`, show its help (via `help`).
 If `cmd` is empty, list `commands` via `help_cmd_table`.
 """

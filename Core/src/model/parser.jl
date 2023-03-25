@@ -74,6 +74,7 @@ end
 
 """
     supportedtypes(ADT::Type{<:AbstractDataTransformer})::Vector{QualifiedType}
+
 Return a list of types supported by the data transformer `ADT`.
 
 This is used as the default value for the `type` key in the Data TOML.

@@ -7,6 +7,7 @@ end
 """
     loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main;
                     soft::Bool=false, index::Int=1)
+
 Load a data collection from `source` and add it to the data stack at `index`.
 `source` must be accepted by `read(source, DataCollection)`.
 
@@ -99,6 +100,7 @@ end
 
 """
     read(filename::AbstractString, DataCollection; writer::Union{Function, Nothing})
+
 Read the entire contents of a file as a `DataCollection`.
 
 The default value of writer is `self -> write(filename, self)`.
@@ -118,6 +120,7 @@ Base.read(io::IO, ::Type{DataCollection};
 """
     read(dataset::DataSet, as::Type)
     read(dataset::DataSet) # as default type
+
 Obtain information from `dataset` in the form of `as`, with the appropriate
 loader and storage provider automatically determined.
 
@@ -163,6 +166,7 @@ end
 
 """
     _read(dataset::DataSet, as::Type)
+
 The advisible implementation of `read(dataset::DataSet, as::Type)`
 This is essentially an excersise in useful indirection.
 """
@@ -239,6 +243,7 @@ end
 
 """
     load(loader::DataLoader{driver}, source::Any, as::Type)
+
 Using a certain `loader`, obtain information in the form of
 `as` from the data given by `source`.
 
@@ -261,6 +266,7 @@ load((loader, source, as)::Tuple{DataLoader, Any, Type}) =
 
 """
     open(dataset::DataSet, as::Type; write::Bool=false)
+
 Obtain the data of `dataset` in the form of `as`, with the appropriate storage
 provider automatically selected.
 
@@ -301,6 +307,7 @@ putstorage(::DataStorage, ::Any) = nothing
 
 """
     write(dataset::DataSet, info::Any)
+
 TODO write docstring
 """
 function Base.write(dataset::DataSet, info::T) where {T}
@@ -347,6 +354,7 @@ end
 
 """
     save(writer::Datasaveer{driver}, destination::Any, information::Any)
+
 Using a certain `writer`, save the `information` to the `destination`.
 
 This fufills this component of the overall data flow:
