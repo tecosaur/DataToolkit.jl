@@ -8,7 +8,7 @@ export loadcollection!, dataset, DataSet, @d_str, @data_cmd
 const Base = DataToolkitBase
 const Common = DataToolkitCommon
 
-const var"@use" = DataToolkitBase.var"@use"
+const var"@import" = DataToolkitBase.var"@import"
 const var"@addpkg" = DataToolkitBase.var"@addpkg"
 
 map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
