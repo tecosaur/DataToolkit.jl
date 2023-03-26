@@ -18,6 +18,7 @@ end
 
 """
     plugins()
+
 List the currently availible plugins, by name.
 """
 plugins() = getfield.(DataToolkitBase.PLUGINS, :name)
@@ -26,6 +27,7 @@ include("addpkgs.jl")
 
 """
     @d_str -> loaded data
+
 Shorthand for loading a dataset in the default format,
 `d"iris"` is equivalent to `read(dataset("iris"))`.
 """
@@ -35,6 +37,7 @@ end
 
 """
     @data_cmd -> Data REPL command result
+
 Proxy for running the command in the Data REPL,
 e.g. ```data`config set demo 1` ``` is equivalent to `data> config set demo 1`.
 """
@@ -44,6 +47,7 @@ end
 
 """
     init(mod::Module=Main; force::Bool=false)
+
 Load the `mod`-local `Data.toml` if it exists.
 When `mod` is `Main`, every `Data.toml` on the load path is loaded.
 Unless `force` is set, the data collection is soft-loaded.
