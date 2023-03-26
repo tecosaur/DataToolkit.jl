@@ -1,6 +1,6 @@
 #+title: Reference
 
-* Exported
+* Exported Symbols
 ** Macros
 *** DataToolkit
 
@@ -50,7 +50,11 @@ loadcollection!
 DataSet
 #+end_src
 
-* Unexported
+* Unexported Symbols
+** Modules
+
+=DataToolkitBase= and =DataToolkitCommon= are available as =Base= and =Common= respectively.
+
 ** Macros
 *** DataToolkit
 
@@ -66,7 +70,10 @@ DataToolkit.getlayer
 #+end_src
 
 ** Types
-*** DataToolkitBase
+*** DataToolkitBase :ATTACH:
+:PROPERTIES:
+:ID:       2f8f07ef-d4e4-4041-94b8-c9294535f0d4
+:END:
 
 #+begin_src @docs
 DataToolkit.DataCollection
