@@ -63,6 +63,12 @@ DataToolkit.@addpkgs
 #+end_src
 
 ** Functions
+*** DataToolkit
+
+#+begin_src @docs
+DataToolkit.addpkgs
+#+end_src
+
 *** DataToolkitBase
 
 #+begin_src @docs
