@@ -379,10 +379,12 @@ end
 
 """
     prompt(question::AbstractString, default::AbstractString="",
-           allowempty::Bool=false, cleardefault::Bool=true)
+           allowempty::Bool=false, cleardefault::Bool=true,
+           multiline::Bool=false)
 
 Interactively ask `question` and return the response string, optionally
-with a `default` value.
+with a `default` value. If `multiline` is true, `RET` must be pressed
+twice consecutively to submit a value.
 
 Unless `allowempty` is set an empty response is not accepted.
 If `cleardefault` is set, then an initial backspace will clear the default value.
@@ -404,63 +406,110 @@ What colour is the sky? Blue
 ```
 """
 function prompt(question::AbstractString, default::AbstractString="";
-                allowempty::Bool=false, cleardefault::Bool=true)
-    printstyled(question, color=REPL_QUESTION_COLOR)
-    get(stdout, :color, false) && print(Base.text_colors[REPL_USER_INPUT_COLOUR])
-    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, true)
-    response = let response = collect(default)
-        point = length(response)
-        firstinput = true
-        print("\e[s")
-        while true
-            print("\e[u\e[J")
-            if String(response) == default
-                print("\e[90m")
-            end
-            print(String(response))
-            if point < length(response)
-                print("\e[$(length(response) - point)D")
-            end
-            next = Char(REPL.TerminalMenus.readkey(REPL.TerminalMenus.terminal.in_stream))
-            if next == '\r'  # RET
-                if (!isempty(response) || allowempty)
-                    print('\n')
-                    break
-                end
-            elseif next == 'Ϭ' # DEL-forward
-                if point < length(response)
-                    deleteat!(response, point + 1)
-                end
-            elseif next == '\x03' # ^C
-                print("\e[m^C\n")
-                throw(InterruptException())
-            elseif next == '\x7f' # DEL
+                 allowempty::Bool=false, cleardefault::Bool=true,
+                 multiline::Bool=false)
+    firstinput = true
+    # Set `:color` to `false` in the stdout, so that the
+    # terminal doesn't report color support, and the
+    # prompt isn't bold.
+    term = REPL.Terminals.TTYTerminal(
+        get(ENV, "TERM", Sys.iswindows() ? "" : "dumb"),
+        stdin, IOContext(stdout, :color => false), stderr)
+    keymap = REPL.LineEdit.keymap([
+        Dict{Any, Any}(
+            "^C" => (_...) -> throw(InterruptException()),
+            # Backspace
+            '\b' => function (s::REPL.LineEdit.MIState, o...)
                 if firstinput && cleardefault
-                    response = Char[]
-                    point = 0
-                elseif point > 0
-                    deleteat!(response, point)
-                    point -= 1
+                    REPL.LineEdit.edit_clear(s)
+                else
+                    REPL.LineEdit.edit_backspace(s)
                 end
-            elseif next == 'Ϩ' # <left>
-                point = max(0, point - 1)
-            elseif next == 'ϩ' # <right>
-                point = min(length(response), point + 1)
-            elseif next == 'ϭ' # HOME
-                point = 0
-            elseif next == 'Ϯ' # END
-                point = length(response)
-            else
-                point += 1
-                insert!(response, point, next)
-            end
-            firstinput = false
-        end
-        String(response)
+            end,
+            # Delete
+            "\e[3~" => function (s::REPL.LineEdit.MIState, o...)
+                if firstinput && cleardefault
+                    REPL.LineEdit.edit_clear(s)
+                else
+                    REPL.LineEdit.edit_delete(s)
+                end
+            end,
+            # Return
+            '\r' => function (s::REPL.LineEdit.MIState, o...)
+                if multiline
+                    if eof(REPL.LineEdit.buffer(s)) && s.key_repeats >= 1
+                        REPL.LineEdit.commit_line(s)
+                        :done
+                    else
+                        REPL.LineEdit.edit_insert_newline(s)
+                    end
+                else
+                    if REPL.LineEdit.on_enter(s) &&
+                        (allowempty || REPL.LineEdit.buffer(s).size != 0)
+                        REPL.LineEdit.commit_line(s)
+                        :done
+                    else
+                        REPL.LineEdit.beep(s)
+                    end
+                end
+            end),
+        REPL.LineEdit.default_keymap,
+        REPL.LineEdit.escape_defaults
+    ])
+    prompt = REPL.LineEdit.Prompt(
+        question,
+        Base.text_colors[REPL_QUESTION_COLOR], # prompt_prefix
+        Base.text_colors[ifelse(
+            isempty(default), REPL_USER_INPUT_COLOUR, :light_black)], # prompt_suffix
+        "", "", "", # output_prefix, output_prefix_prefix, output_prefix_suffix
+        keymap, # keymap
+        nothing, # repl
+        REPL.LatexCompletions(), # complete
+        _ -> true, # on_enter
+        () -> nothing, # on_done
+        REPL.LineEdit.EmptyHistoryProvider(), # hist
+        false) # sticky
+    interface = REPL.LineEdit.ModalInterface([prompt])
+    istate = REPL.LineEdit.init_state(term, interface)
+    pstate = istate.mode_state[prompt]
+    if !isempty(default)
+        write(pstate.input_buffer, default)
     end
-    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, false)
-    get(stdout, :color, false) && print("\e[m")
-    response
+    Base.reseteof(term)
+    REPL.LineEdit.raw!(term, true)
+    REPL.LineEdit.enable_bracketed_paste(term)
+    try
+        pstate.ias = REPL.LineEdit.InputAreaState(0, 0)
+        REPL.LineEdit.refresh_multi_line(term, pstate)
+        while true
+            kmap = REPL.LineEdit.keymap(pstate, prompt)
+            matchfn = REPL.LineEdit.match_input(kmap, istate)
+            kdata = REPL.LineEdit.keymap_data(pstate, prompt)
+            status = matchfn(istate, kdata)
+            if status === :ok
+            elseif status === :ignore
+                istate.last_action = istate.current_action
+            elseif status === :done
+                print("\e[F")
+                if firstinput
+                    pstate.p.prompt_suffix = Base.text_colors[REPL_USER_INPUT_COLOUR]
+                    REPL.LineEdit.refresh_multi_line(term, pstate)
+                end
+                print('\n')
+                return rstrip(REPL.LineEdit.input_string(pstate), '\n')
+            else
+                return nothing
+            end
+            if firstinput
+                pstate.p.prompt_suffix = Base.text_colors[REPL_USER_INPUT_COLOUR]
+                REPL.LineEdit.refresh_multi_line(term, pstate)
+                firstinput = false
+            end
+        end
+    finally
+        REPL.LineEdit.raw!(term, false) &&
+            REPL.LineEdit.disable_bracketed_paste(term)
+    end
 end
 
 """
