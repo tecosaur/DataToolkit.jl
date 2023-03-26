@@ -1,5 +1,8 @@
 #+title: Reference
 
+This is the public API for DataToolkit. Some symbols have been exported for
+convenience, others need to be specifically imported or accessed with =DataToolkit.=.
+
 * Exported Symbols
 ** Macros
 *** DataToolkit
