@@ -1,7 +1,8 @@
 #+title: Reference
 
-* Macros
-** DataToolkit
+* Exported
+** Macros
+*** DataToolkit
 
 #+begin_src @docs
 @d_str
@@ -11,11 +12,7 @@
 @data_cmd
 #+end_src
 
-#+begin_src @docs
-DataToolkit.@addpkgs
-#+end_src
-
-** DataToolkitBase
+*** DataToolkitBase
 
 #+begin_src @docs
 DataToolkit.@import
@@ -25,8 +22,8 @@ DataToolkit.@import
 DataToolkit.@addpkg
 #+end_src
 
-* Functions
-** DataToolkit
+** Functions
+*** DataToolkit
 
 #+begin_src @docs
 init
@@ -36,7 +33,7 @@ init
 plugins
 #+end_src
 
-** DataToolkitBase
+*** DataToolkitBase
 
 #+begin_src @docs
 dataset
@@ -46,16 +43,30 @@ dataset
 loadcollection!
 #+end_src
 
-#+begin_src @docs
-DataToolkit.getlayer
-#+end_src
-
-* Types
-** DataToolkitBase
+** Types
+*** DataToolkitBase
 
 #+begin_src @docs
 DataSet
 #+end_src
+
+* Unexported
+** Macros
+*** DataToolkit
+
+#+begin_src @docs
+DataToolkit.@addpkgs
+#+end_src
+
+** Functions
+*** DataToolkitBase
+
+#+begin_src @docs
+DataToolkit.getlayer
+#+end_src
+
+** Types
+*** DataToolkitBase
 
 #+begin_src @docs
 DataToolkit.DataCollection
