@@ -23,39 +23,25 @@ include("show.jl")
 
 function add_repl_cmds()
     push!(REPL_CMDS,
-          ReplCmd(:init, INIT_DOC, init))
-
-    push!(REPL_CMDS,
+          ReplCmd(:init, INIT_DOC, init),
           ReplCmd(:stack,
                   "Operate on the data collection stack",
-                  STACK_SUBCOMMANDS))
-
-    push!(REPL_CMDS,
-      ReplCmd(:plugin,
-              "Inspect and modify the set of plugins used
+                  STACK_SUBCOMMANDS),
+          ReplCmd(:plugin,
+                  "Inspect and modify the set of plugins used
 
 Call without any arguments to see the availible subcommands.",
-              PLUGIN_SUBCOMMANDS))
-
-    push!(REPL_CMDS,
+                  PLUGIN_SUBCOMMANDS),
           ReplCmd(:config,
                   "Inspect and modify the current configuration",
-                  CONFIG_SUBCOMMANDS))
-
-    push!(REPL_CMDS,
-          ReplCmd(:add, ADD_DOC, add))
-
-    push!(REPL_CMDS,
-          ReplCmd(:delete, DELETE_DOC, delete))
-
-    push!(REPL_CMDS,
+                  CONFIG_SUBCOMMANDS),
+          ReplCmd(:add, ADD_DOC, add),
+          ReplCmd(:delete, DELETE_DOC, delete),
           ReplCmd(:list,
                   "List the datasets in a certain collection
 
 By default, the datasets of the active collection are shown.",
-                  repl_list))
-
-    push!(REPL_CMDS,
+                  repl_list),
           ReplCmd(:show,
                   "List the dataset refered to by an identifier",
                   repl_show))
