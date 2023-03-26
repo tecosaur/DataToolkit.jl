@@ -1,0 +1,10 @@
+#+title: Introduction
+
+=DataToolkit= bundles =DataToolkitBase= and =DataToolkitCommon=, and provides a very
+thin convenience layer on top.
+
+For details on the fundamental system, see the [[https://tecosaur.github.io/DataToolkitBase.jl/][DataToolkitBase]] docs; for details
+on the transformers and plugins available see the [[https://tecosaur.github.io/DataToolkitCommon.jl][DataToolkitCommon]] docs.
+
+In future, this documentation will be expanded with a "quickstart guide" among
+other things. The current form is basically a stub.
