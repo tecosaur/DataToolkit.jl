@@ -3,7 +3,7 @@ function repl_show(input::AbstractString)
         printstyled(" ! ", color=:yellow, bold=true)
         println("Provide a dataset to be shown")
     else
-        ds = resolve(parse(Identifier, input))
+        ds = resolve(input)
         display(ds)
         if ds isa DataSet
             print("  UUID:    ")
