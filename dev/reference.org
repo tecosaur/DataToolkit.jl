@@ -1,0 +1,86 @@
+#+title: Reference
+
+* Macros
+** DataToolkit
+
+#+begin_src @doc
+@d_str
+#+end_src
+
+#+begin_src @doc
+@data_cmd
+#+end_src
+
+#+begin_src @doc
+DataToolkit.@addpkgs
+#+end_src
+
+** DataToolkitBase
+
+#+begin_src @doc
+DataToolkit.@import
+#+end_src
+
+#+begin_src @doc
+DataToolkit.@addpkg
+#+end_src
+
+* Functions
+** DataToolkit
+
+#+begin_src @doc
+init
+#+end_src
+
+#+begin_src @doc
+plugins
+#+end_src
+
+** DataToolkitBase
+
+#+begin_src @doc
+dataset
+#+end_src
+
+#+begin_src @doc
+loadcollection!
+#+end_src
+
+#+begin_src @doc
+DataToolkit.getlayer
+#+end_src
+
+* Types
+** DataToolkitBase
+
+#+begin_src @doc
+DataSet
+#+end_src
+
+#+begin_src @doc
+DataToolkit.DataCollection
+#+end_src
+
+#+begin_src @doc
+DataToolkit.DataSet
+#+end_src
+
+#+begin_src @doc
+DataToolkit.DataStorage
+#+end_src
+
+#+begin_src @doc
+DataToolkit.DataLoader
+#+end_src
+
+#+begin_src @doc
+DataToolkit.DataWriter
+#+end_src
+
+#+begin_src @doc
+DataToolkit.Identifier
+#+end_src
+
+#+begin_src @doc
+DataToolkit.Plugin
+#+end_src
