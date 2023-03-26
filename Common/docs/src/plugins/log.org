@@ -1,5 +1,5 @@
 #+title: Log
 
 #+begin_src @docs
-LOG_PLUGIN
+DataToolkitCommon.LOG_PLUGIN
 #+end_src

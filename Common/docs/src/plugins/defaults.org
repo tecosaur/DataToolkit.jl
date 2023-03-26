@@ -1,5 +1,5 @@
 #+title: Defaults
 
 #+begin_src @docs
-DEFAULTS_PLUGIN
+DataToolkitCommon.DEFAULTS_PLUGIN
 #+end_src
