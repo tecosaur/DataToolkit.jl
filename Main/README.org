@@ -1,4 +1,4 @@
-#+title: DataToolkit
+#+title: [[file:docs/src/assets/logotype.svg]]
 #+author: tecosaur
 
 #+html: <a href="https://tecosaur.github.io/DataToolkit.jl/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
