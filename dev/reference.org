@@ -23,15 +23,6 @@ DataToolkit.@addpkg
 #+end_src
 
 ** Functions
-*** DataToolkit
-
-#+begin_src @docs
-init
-#+end_src
-
-#+begin_src @docs
-plugins
-#+end_src
 
 *** DataToolkitBase
 
@@ -64,6 +55,14 @@ DataToolkit.@addpkgs
 
 ** Functions
 *** DataToolkit
+
+#+begin_src @docs
+DataToolkit.init
+#+end_src
+
+#+begin_src @docs
+DataToolkit.plugins
+#+end_src
 
 #+begin_src @docs
 DataToolkit.addpkgs
