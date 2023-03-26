@@ -3,84 +3,84 @@
 * Macros
 ** DataToolkit
 
-#+begin_src @doc
+#+begin_src @docs
 @d_str
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 @data_cmd
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.@addpkgs
 #+end_src
 
 ** DataToolkitBase
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.@import
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.@addpkg
 #+end_src
 
 * Functions
 ** DataToolkit
 
-#+begin_src @doc
+#+begin_src @docs
 init
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 plugins
 #+end_src
 
 ** DataToolkitBase
 
-#+begin_src @doc
+#+begin_src @docs
 dataset
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 loadcollection!
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.getlayer
 #+end_src
 
 * Types
 ** DataToolkitBase
 
-#+begin_src @doc
+#+begin_src @docs
 DataSet
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.DataCollection
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.DataSet
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.DataStorage
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.DataLoader
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.DataWriter
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.Identifier
 #+end_src
 
-#+begin_src @doc
+#+begin_src @docs
 DataToolkit.Plugin
 #+end_src
