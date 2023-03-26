@@ -9,9 +9,10 @@ export loadcollection!, dataset
 
 # For extension packages
 export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
-    DataSet, DataCollection, QualifiedType, Identifier, FilePath
+    DataSet, DataCollection, QualifiedType, Identifier, FilePath,
+    LintItem, LintReport
 export load, storage, getstorage, putstorage, save, resolve, refine,
-    supportedtypes, create, createpriority
+    supportedtypes, create, createpriority, lint
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
 export @import, @addpkg, @dataplugin, @advise
 
@@ -39,6 +40,7 @@ include("interaction/externals.jl")
 include("interaction/display.jl")
 include("interaction/manipulation.jl")
 include("interaction/repl.jl")
+include("interaction/lint.jl")
 
 function __init__()
     isinteractive() && init_repl()

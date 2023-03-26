@@ -111,6 +111,26 @@ const DATA_CONFIG_KEY_SORT_MAPPING =
          "loader" => "\0x06",
          "writer" => "\0x07")
 
+# Linting
+
+"""
+A mapping from severity symbols to integers.
+This is used to assist with more readable construction of `LintItem`s.
+"""
+const LINT_SEVERITY_MAPPING =
+    Dict(:debug => 0x05,
+         :info => 0x04,
+         :suggestion => 0x03,
+         :warning => 0x02,
+         :error => 0x01)
+
+const LINT_SEVERITY_MESSAGES =
+    Dict(0x01 => (:red, "Error"),
+         0x02 => (:yellow, "Warning"),
+         0x03 => (:light_yellow, "Suggestion"),
+         0x04 => (:light_blue, "Info"),
+         0x05 => (:light_black, "Debug"))
+
 # REPL things
 
 """
