@@ -44,6 +44,7 @@ makedocs(;
             "plugins/loadcache.md",
             "plugins/log.md",
             "plugins/memorise.md",
+            "plugins/versions.md",
         ],
     ],
     repo="https://github.com/tecosaur/DataToolkitCommon.jl/blob/{commit}{path}#L{line}",

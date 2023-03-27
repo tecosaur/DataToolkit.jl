@@ -36,6 +36,7 @@ include("saveload/zip.jl")
 
 include("plugins/defaults.jl")
 include("plugins/log.jl") # Must be early so `should_log_event` is availible.
+include("plugins/versions.jl")
 include("plugins/loadcache.jl")
 include("plugins/memorise.jl")
 
@@ -61,10 +62,12 @@ function __init__()
     @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
     # Plugins
     # JLD2 package, already provided for JLD2 loader.
+    @addpkg Pkg            "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
     @dataplugin DEFAULTS_PLUGIN :default
     @dataplugin LOADCACHE_PLUGIN
     @dataplugin LOG_PLUGIN
+    @dataplugin VERSIONS_PLUGIN
     @dataplugin MEMORISE_PLUGIN :default
 end
 
