@@ -317,7 +317,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
     # Filter to loaders which are declared in `dataset` as supporting `as`.
     # These will have already been orderd by priority during parsing.
     potential_writers =
-        filter(writer -> any(st -> ⊆(qtype, st, mod=datset.collection.mod), writer.type),
+        filter(writer -> any(st -> ⊆(qtype, st, mod=dataset.collection.mod), writer.type),
                dataset.writers)
     for writer in potential_writers
         write_fn_sigs = filter(fnsig -> writer isa fnsig.types[2], all_write_fn_sigs)
