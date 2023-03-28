@@ -3,8 +3,8 @@ DataAdvice(f::Function) =
 
 Base.methods(dt::DataAdvice) = methods(dt.f)
 
-function (dt::DataAdvice{C, F})(
-    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, NamedTuple}) where {C, F}
+function (dt::DataAdvice{F, C})(
+    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, NamedTuple}) where {F, C}
     # Abstract-y `typeof`.
     atypeof(val::Any) = typeof(val)
     atypeof(val::Type) = Type{val}

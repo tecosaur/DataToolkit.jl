@@ -132,7 +132,7 @@ struct DataWriter{driver} <: AbstractDataTransformer{driver}
 end
 
 """
-    DataAdvice{context, func} <: Function
+    DataAdvice{func, context} <: Function
 DataAdvices allow for composable, highly flexible modifications of data by
 encapsulating a function call. They are inspired by elisp's advice system,
 namely the most versitile form — `:around` advice, and Clojure's advisors.

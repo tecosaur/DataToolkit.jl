@@ -67,15 +67,15 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     print(io, ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", ::DataAdvice{C, F}) where {C, F}
-    print(io, "DataAdvice{$C, $F}")
+function Base.show(io::IO, ::MIME"text/plain", ::DataAdvice{F, C}) where {F, C}
+    print(io, "DataAdvice{$F, $C}")
 end
 
 function Base.show(io::IO, p::Plugin)
     print(io, "Plugin(")
     show(io, p.name)
     print(io, ", [")
-    context(::DataAdvice{C, F}) where {C, F} = (C, F)
+    context(::DataAdvice{F, C}) where {F, C} = (F, C)
     print(io, join(string.(context.(p.advisors)), ", "))
     print(io, "])")
 end
