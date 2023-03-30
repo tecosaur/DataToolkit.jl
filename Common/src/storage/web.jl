@@ -1,3 +1,5 @@
+import REPL.TerminalMenus: request, RadioMenu
+
 function download_progress(filename::AbstractString)
     start_time = time()
     min_seconds_before_eta = 5
