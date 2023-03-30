@@ -110,11 +110,11 @@ function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::
         if isnothing(spec_type)
             supportedtypes(ADT, spec, dataset)
         elseif spec_type isa Vector
-            QualifiedType.(spec_type)
+            parse.(QualifiedType, spec_type)
         elseif spec_type isa String
-            [QualifiedType(spec_type)]
+            [parse(QualifiedType, spec_type)]
         else
-            error("Parse error: invalid ADT type") # TODO use custom exception type
+            error("Parse error: invalid ADT type '$spec_type' ($(typeof(spec_type)))") # TODO use custom exception type
         end
     end
     priority = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
