@@ -152,7 +152,11 @@ function plugin_add(plugins::Vector{<:AbstractString}, collection::DataCollectio
     new_plugins = setdiff(plugins, collection.plugins)
     append!(collection.plugins, new_plugins)
     write(collection)
-    quiet || printstyled(" ✓ Added plugins: $(join(''' .* new_plugins .* ''', ", "))\n", color=:green)
+    if !quiet && !isempty(new_plugins)
+        printstyled(" +", color=:light_green, bold=true)
+        print(" Added plugins: ")
+        printstyled(join(new_plugins, ", "), '\n', color=:green)
+    end
 end
 
 """
@@ -168,7 +172,11 @@ function plugin_remove(plugins::Vector{<:AbstractString}, collection::DataCollec
     rem_plugins = intersect(plugins, collection.plugins)
     deleteat!(collection.plugins, indexin(rem_plugins, collection.plugins))
     write(collection)
-    quiet || printstyled(" ✓ Removed plugins: $(join(''' .* rem_plugins .* ''', ", "))\n", color=:green)
+    if !quiet && !isempty(rem_plugins)
+        printstyled(" -", color=:light_red, bold=true)
+        print(" Removed plugins: ")
+        printstyled(join(rem_plugins, ", "), '\n', color=:green)
+    end
 end
 
 """
