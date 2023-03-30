@@ -142,7 +142,7 @@ const REPL_KEY = '}'
 A symbol identifying the Data REPL. This is used in a few places,
 such as the command history.
 """
-const REPL_NAME = :DataRepl
+const REPL_NAME = :data_toolkit
 
 """
 An ANSI control sequence string that sets the style of the "data>"
