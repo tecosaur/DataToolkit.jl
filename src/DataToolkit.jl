@@ -3,7 +3,7 @@ module DataToolkit
 using DataToolkitBase
 using DataToolkitCommon
 
-export loadcollection!, dataset, DataSet, @d_str, @data_cmd
+export loadcollection!, dataset, DataSet, @d_str, @data_cmd, @import
 
 const Base = DataToolkitBase
 const Common = DataToolkitCommon
