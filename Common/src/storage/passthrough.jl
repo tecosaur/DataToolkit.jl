@@ -1,10 +1,13 @@
-getstorage(storage::DataStorage{:passthrough}, T::Type) =
-    read(resolve(parse(Identifier, get(storage, "source"))), T)
+function getstorage(storage::DataStorage{:passthrough}, T::Type)
+    collection = storage.dataset.collection
+    ident = @advise collection parse(Identifier, get(storage, "source"))
+    read(resolve(collection, ident), T)
+end
 
 createpriority(::Type{<:DataStorage{:passthrough}}) = 60
 
 function create(::Type{<:DataStorage{:passthrough}}, source::String)
-    if try resolve(parse(Identifier, source)); true catch _ false end
+    if try resolve(source); true catch _ false end
         Dict{String, Any}("source" => source)
     end
 end
@@ -16,7 +19,8 @@ DataToolkitBase.add_datasets!(acc::Vector{Identifier}, storage::DataStorage{:pas
     DataToolkitBase.add_datasets!(acc, parse(Identifier, get(storage, "source")))
 
 function chash(collection::DataCollection, storage::DataStorage{:passthrough}, h::UInt)
-    sourceh = chash(collection, parse(Identifier, get(storage, "source")), h)
+    ident = @advise collection parse(Identifier, get(storage, "source"))
+    sourceh = chash(collection, ident, h)
     invoke(chash, Tuple{DataCollection, AbstractDataTransformer, UInt},
            collection, storage, sourceh)
 end
