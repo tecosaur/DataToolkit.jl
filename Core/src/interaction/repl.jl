@@ -495,7 +495,7 @@ function prompt(question::AbstractString, default::AbstractString="";
                     pstate.p.prompt_suffix = Base.text_colors[REPL_USER_INPUT_COLOUR]
                     REPL.LineEdit.refresh_multi_line(term, pstate)
                 end
-                print('\n')
+                print("\e[39m\n")
                 return rstrip(REPL.LineEdit.input_string(pstate), '\n')
             else
                 return nothing
