@@ -64,12 +64,18 @@ function plugin_edit(::AbstractString)
     append!(first(STACK).plugins, added_plugins)
     write(first(STACK))
     if isempty(added_plugins) && isempty(removed_plugins)
-        printstyled(" ✓ No change to plugins\n", color=:green)
+        printstyled(" No change to plugins\n", color=:green)
     else
-        isempty(added_plugins) ||
-            printstyled(" ✓ Added plugins: $(join(''' .* added_plugins .* ''', ", "))\n", color=:green)
-        isempty(removed_plugins) ||
-            printstyled(" ✓ Removed plugins: $(join(''' .* removed_plugins .* ''', ", "))\n", color=:green)
+        if !isempty(added_plugins)
+            printstyled(" +", color=:light_green, bold=true)
+            print(" Added plugins: ")
+            printstyled(join(added_plugins, ", "), '\n', color=:green)
+        end
+        if !isempty(removed_plugins)
+            printstyled(" -", color=:light_red, bold=true)
+            print(" Removed plugins: ")
+            printstyled(join(removed_plugins, ", "), '\n', color=:green)
+        end
     end
 end
 
