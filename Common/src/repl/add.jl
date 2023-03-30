@@ -73,6 +73,17 @@ function add(input::AbstractString)
     else
         prompt(" From: ", allowempty=true)
     end
+    spec = prompt_attributes()
+    DataToolkitBase.add(DataSet, name, spec, from; via...)
+end
+
+"""
+    prompt_attributes() -> Dict{String, Any}
+
+Interactively prompt for a description and other arbitrary attributes, with
+values interpreted using `TOML.parse`.
+"""
+function prompt_attributes()
     spec = Dict{String, Any}()
     description = prompt(" Description: ", allowempty=true)
     if !isempty(description)
@@ -87,5 +98,5 @@ function add(input::AbstractString)
         spec[attribute] = TOML.parse(string("value = ", value))["value"]
     end
     print("\e[A\e[G\e[K")
-    DataToolkitBase.add(DataSet, name, spec, from; via...)
+    spec
 end
