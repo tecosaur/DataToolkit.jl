@@ -1,7 +1,7 @@
 #+title: Reference
 
 This is the public API for DataToolkit. Some symbols have been exported for
-convenience, others need to be specifically imported or accessed with =DataToolkit.=.
+convenience, others need to be specifically imported or accessed with =DataToolkit.<thing>=.
 
 * Exported Symbols
 ** Macros
@@ -18,11 +18,7 @@ convenience, others need to be specifically imported or accessed with =DataToolk
 *** DataToolkitBase
 
 #+begin_src @docs
-DataToolkit.@import
-#+end_src
-
-#+begin_src @docs
-DataToolkit.@addpkg
+@import
 #+end_src
 
 ** Functions
@@ -56,6 +52,10 @@ DataSet
 DataToolkit.@addpkgs
 #+end_src
 
+#+begin_src @docs
+DataToolkit.@addpkg
+#+end_src
+
 ** Functions
 *** DataToolkit
 
@@ -78,10 +78,7 @@ DataToolkit.getlayer
 #+end_src
 
 ** Types
-*** DataToolkitBase :ATTACH:
-:PROPERTIES:
-:ID:       2f8f07ef-d4e4-4041-94b8-c9294535f0d4
-:END:
+*** DataToolkitBase
 
 #+begin_src @docs
 DataToolkit.DataCollection
