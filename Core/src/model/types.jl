@@ -274,7 +274,7 @@ as a function. However, it also supports the following convenience syntax:
 
 ```
 DataAdviceAmalgamation(adviseall::Function, advisors::Vector{DataAdvice},
-                           plugins_wanted::Vector{String}, plugins_used::Vector{String})
+                       plugins_wanted::Vector{String}, plugins_used::Vector{String})
 DataAdviceAmalgamation(plugins::Vector{String})
 DataAdviceAmalgamation(collection::DataCollection)
 ```
