@@ -52,7 +52,7 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     get(io, :omittype, false) || print(io, '}')
     print(io, "(")
     for qtype in adt.type
-        type = convert(Type, qtype, mod=adt.dataset.collection.mod)
+        type = typeify(qtype, mod=adt.dataset.collection.mod)
         if !isnothing(type)
             printstyled(io, type, color=:yellow)
         else
@@ -101,7 +101,7 @@ function Base.show(io::IO, dataset::DataSet)
         print(io, " (")
         qtypes = vcat(getfield.(dataset.loaders, :type)...) |> unique
         for qtype in qtypes
-            type = convert(Type, qtype, mod=dataset.collection.mod)
+            type = typeify(qtype, mod=dataset.collection.mod)
             if !isnothing(type)
                 printstyled(io, type, color=:yellow)
             else

@@ -9,7 +9,13 @@ end
 
 QualifiedType(qt::QualifiedType) = qt
 
-function Base.convert(::Type{Type}, qt::QualifiedType; mod::Module=Main)
+"""
+    typeify(qt::QualifiedType; mod::Module=Main)
+
+Convert `qt` to a `Type` availible in `mod`, if possible.
+If this cannot be done, `nothing` is returned instead.
+"""
+function typeify(qt::QualifiedType; mod::Module=Main)
     mod = if qt.parentmodule === :Main
         mod
     elseif isdefined(mod, qt.parentmodule)
@@ -30,7 +36,7 @@ function Base.convert(::Type{Type}, qt::QualifiedType; mod::Module=Main)
         if isempty(qt.parameters) T else
             tparams = map(qt.parameters) do p
                 if p isa QualifiedType
-                    convert(Type, p; mod)
+                    typeify(p; mod)
                 else p end
             end
             if any(@. tparams isa TypeVar)
@@ -47,7 +53,7 @@ function Base.issubset(a::QualifiedType, b::QualifiedType; mod::Module=Main)
     if a == b
         true
     else
-        A, B = convert(Type, a; mod), convert(Type, b; mod)
+        A, B = typeify(a; mod), typeify(b; mod)
         !any(isnothing, (A, B)) && A <: B
     end
 end

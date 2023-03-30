@@ -157,7 +157,7 @@ end
 function Base.read(dataset::DataSet)
     as = nothing
     for qtype in getproperty.(dataset.loaders, :type) |> Iterators.flatten
-        as = convert(Type, qtype, mod=dataset.collection.mod)
+        as = typeify(qtype, mod=dataset.collection.mod)
         isnothing(as) || break
     end
     isnothing(as) && error("Data set '$(dataset.name)' could not be loaded in any form.")
@@ -188,7 +188,7 @@ function _read(dataset::DataSet, as::Type)
         for storage in dataset.storage
             for load_fn_sig in load_fn_sigs
                 supported_storage_types = Vector{Type}(
-                    filter(!isnothing, convert.(Type, storage.type)))
+                    filter(!isnothing, typeify.(storage.type)))
                 valid_storage_types =
                     filter(stype -> let accept = load_fn_sig.types[3]
                                if accept isa TypeVar
@@ -237,7 +237,7 @@ function Base.read(ident::Identifier)
     end
     read(ident, if !isnothing(ident.type)
              mod = getlayer(ident.collection).mod
-             convert(Type, ident.type; mod)
+             typeify(ident.type; mod)
          end)
 end
 
@@ -291,7 +291,7 @@ function Base.open(data::DataSet, as::Type; write::Bool=false)
     end
 end
 # Base.open(data::DataSet, qas::QualifiedType; write::Bool) =
-#     open(convert(Type, qas, mod=data.collection.mod), data; write)
+#     open(typeify(qas, mod=data.collection.mod), data; write)
 
 function storage(storer::DataStorage, as::Type; write::Bool=false)
     if write
@@ -328,7 +328,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
         for storage in dataset.storage
             for write_fn_sig in write_fn_sigs
                 supported_storage_types = Vector{Type}(
-                    filter(!isnothing, convert.(Type, storage.type)))
+                    filter(!isnothing, typeify.(storage.type)))
                 valid_storage_types =
                     filter(stype -> stype <: write_fn_sig.types[3],
                            supported_storage_types)
