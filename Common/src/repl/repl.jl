@@ -5,6 +5,7 @@ using REPL, REPL.TerminalMenus
 using DataToolkitBase
 using TOML
 using UUIDs
+using Dates
 
 import DataToolkitBase: REPL_CMDS, ReplCmd, completions, allcompletions,
     prompt, prompt_char, confirm_yn, peelword, displaytable, natkeygen,
@@ -20,6 +21,7 @@ include("add.jl")
 include("delete.jl")
 include("list.jl")
 include("show.jl")
+include("make.jl")
 
 function add_repl_cmds()
     push!(REPL_CMDS,
@@ -34,6 +36,9 @@ function add_repl_cmds()
 
 By default, the datasets of the active collection are shown.",
                   repl_list),
+          ReplCmd(:make,
+                  MAKE_DOC,
+                  repl_make),
           ReplCmd(:plugin,
                   "Inspect and modify the set of plugins used
 
