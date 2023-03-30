@@ -38,7 +38,7 @@ end
 
 function load(loader::DataLoader{:julia}, from::Any, R::Type)
     if !isempty(get(loader, "input", ""))
-        desired_type = convert(Type, QualifiedType(get(loader, "input", "")))
+        desired_type = typeify(QualifiedType(get(loader, "input", "")))
         if from isa desired_type
             loadfn = getactfn(loader)
             arguments = Dict{Symbol,Any}(

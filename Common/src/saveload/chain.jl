@@ -47,7 +47,7 @@ produce `targettype` from an initial `fromtype`. If this is not possible,
 """
 function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype::Type)
     toploader = last(subloaders)
-    loadertypes = filter(!isnothing, convert.(Type, toploader.type))
+    loadertypes = filter(!isnothing, typeify.(toploader.type))
     if length(subloaders) > 1
         midtypes = if toploader isa DataLoader{:julia}
             # Julia loaders are a bit special, as they have parameter
@@ -61,7 +61,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                 [Nothing]
             else
                 iqtype = QualifiedType(get(toploader, "input"))
-                itype = @something convert(Type, iqtype) try
+                itype = @something typeify(iqtype) try
                     # It may be the case that the loader requires a lazy loaded
                     # package, in this case it may be a good idea to just /try/
                     # requiring it and seeing what happens.
@@ -69,7 +69,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                         toploader.dataset.collection.mod,
                         iqtype.parentmodule)
                     if pkg isa DataToolkitBase.PkgRequiredRerunNeeded
-                        convert(Type, iqtype)
+                        typeify(iqtype)
                     else
                         # If no rerun is raised, then then the package is
                         # already loaded and the unresolvable type will still be

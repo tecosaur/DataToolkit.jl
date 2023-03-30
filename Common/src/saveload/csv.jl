@@ -3,15 +3,15 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     kwargs = Dict(Symbol(k) => v for (k, v) in
                       get(loader, "args", Dict{String, Any}()))
     if haskey(kwargs, :types)
-        kwargs[:types] = convert.(Type, QualifiedType.(kwargs[:types]))
+        kwargs[:types] = typeify.(QualifiedType.(kwargs[:types]))
     end
     if haskey(kwargs, :typemap)
         kwargs[:typemap] = Dict{Type, Type}(
-            convert(Type, QualifiedType(k)) => convert(Type, QualifiedType(v))
+            typeify(QualifiedType(k)) => typeify(QualifiedType(v))
             for (k, v) in kwargs[:typemap])
     end
     if haskey(kwargs, :stringtype)
-        kwargs[:stringtype] = convert.(Type, QualifiedType.(kwargs[:stringtype]))
+        kwargs[:stringtype] = typeify.(QualifiedType.(kwargs[:stringtype]))
     end
     CSV.File(from; NamedTuple(kwargs)...) |>
         if sink == Any || sink == CSV.File

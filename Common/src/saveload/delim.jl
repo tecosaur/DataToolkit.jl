@@ -1,6 +1,6 @@
 function load(loader::DataLoader{:delim}, from::IO, ::Type{Matrix})
     @import DelimitedFiles
-    dtype::Type = convert(Type, QualifiedType(get(loader, "type", "Any")))
+    dtype::Type = something(typeify(QualifiedType(get(loader, "type", "Any"))), Any)
     delim::Char = first(get(loader, "delim", ","))
     eol::Char = first(get(loader, "eol", "\n"))
     header::Bool = get(loader, "header", false)
