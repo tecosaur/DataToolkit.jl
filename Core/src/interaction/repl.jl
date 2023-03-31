@@ -136,21 +136,11 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
     elseif warn # no matching commands
         printstyled(" ! ", color=:red, bold=true)
         println("The $scope command '$cmd' is not defined.")
-        function longest_common_subsequence(a, b)
-            lengths = zeros(Int, length(a) + 1, length(b) + 1)
-            for (i, x) in enumerate(a), (j, y) in enumerate(b)
-                lengths[i+1, j+1] = if x == y
-                    lengths[i, j] + 1
-                else
-                    max(lengths[i+1, j], lengths[i, j+1])
-                end
-            end
-            lengths[end, end]
-        end
-        overlaps = longest_common_subsequence.(cmd, all_cmd_names)
-        if maximum(overlaps, init=0) > length(cmd) * 3/5
+        push!(all_cmd_names, "help")
+        cmdsims = stringsimilarity.(cmd, all_cmd_names)
+        if maximum(cmdsims, init=0) >= 0.5
             printstyled(" i ", color=:cyan, bold=true)
-            println("Perhaps you meant '$(all_cmd_names[argmax(overlaps)])'?")
+            println("Perhaps you meant '$(all_cmd_names[argmax(cmdsims)])'?")
         end
     end
 end
