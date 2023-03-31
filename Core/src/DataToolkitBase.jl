@@ -24,6 +24,7 @@ export ReplCmd, REPL_CMDS, help, completions, allcompletions,
 
 include("model/types.jl")
 include("model/globals.jl")
+include("model/utils.jl")
 
 include("model/advice.jl")
 include("model/qualifiedtype.jl")
