@@ -13,6 +13,28 @@ Identifier(ident::Identifier, ::Nothing; replace::Bool=false) =
         ident
     end
 
+function Identifier(ds::DataSet, collection::Union{Symbol, Nothing}=:name,
+                    name::Symbol=something(collection, :name))
+    Identifier(
+        if collection == :uuid
+            ds.collection.uuid
+        elseif collection == :name
+            ds.collection.name
+        elseif isnothing(collection)
+        else
+            throw(ArgumentError("collection argument must be :uuid, :name, or nothing — not $collection"))
+        end,
+        if name == :uuid
+            ds.uuid
+        elseif name == :name
+            ds.name
+        else
+            throw(ArgumentError("name argument must be :uuid or :name — not $name"))
+        end,
+        nothing,
+        ds.parameters)
+end
+
 # Identifier(spec::AbstractString) = parse(Identifier, spec)
 
 Identifier(spec::AbstractString, params::Dict{String, Any}) =
