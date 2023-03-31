@@ -27,19 +27,23 @@ function displaytable(headers::Vector, rows::Vector{<:Vector};
     vcat("\e[1m" * rows[1] * "\e[0m", rule, rows[2:end])
 end
 
-function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier)
+function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier;
+                   collection::Union{DataCollection, Nothing}=nothing)
     printstyled(io, something(dsi.collection, "■"), ':', color=:magenta)
-    print(io, dsi.dataset)
-    # if !isnothing(dsi.version)
-    #     printstyled(io, '@', color=:cyan)
-    #     if dsi.version isa VersionNumber
-    #         printstyled(io, 'v', color=:cyan)
-    #     end
-    #     printstyled(io, dsi.version, color=:cyan)
-    # end
-    # if !isnothing(dsi.hash)
-    #     printstyled(io, '#', string(dsi.hash, base=16), color=:light_black)
-    # end
+    if isnothing(collection)
+        print(io, dsi.dataset)
+    else
+        dname = string(dsi.dataset)
+        nameonly = Identifier(nothing, dsi.dataset, nothing, dsi.parameters)
+        namestr = @advise collection string(nameonly)
+        if startswith(namestr, dname)
+            print(io, dsi.dataset)
+            printstyled(io, namestr[nextind(namestr, length(dname)):end],
+                        color=:cyan)
+        else
+            print(io, namestr)
+        end
+    end
     if !isnothing(dsi.type)
         printstyled(io, "::", string(dsi.type), color=:yellow)
     end
