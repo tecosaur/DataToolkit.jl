@@ -153,7 +153,7 @@ function Base.write(dc::DataCollection)
         if !isnothing(dc.path)
             throw(ArgumentError("No collection writer is provided, so an IO argument must be given."))
         else
-            throw(SystemError("Data collection is not writable"))
+            throw(ReadonlyCollection(dc))
         end
     end
     write(dc.path, dc)

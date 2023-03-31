@@ -264,7 +264,7 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
              String(rest),
              !isempty(complete))
         else
-            throw(error("REPL completions for $cmd_name returned strange result, $(typeof(complete))"))
+            error("REPL completions for $cmd_name returned strange result, $(typeof(complete))")
         end
     end
 end

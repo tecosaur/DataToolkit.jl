@@ -20,22 +20,18 @@ function get_package(pkg::Base.PkgId)
                 "The package $pkg is required for the operation of DataToolkit.\n",
                 "DataToolkit can not do this for you, so please add `using $(pkg.name)`\n",
                 "as appropriate then re-trying this operation.")
-            throw(ErrorException("Missing package: $pkg"))
-        else
-            @info "Lazy-loading $pkg"
+            throw(MissingPackage(pkg))
         end
+        @info "Lazy-loading $pkg"
         try
             Base.require(pkg)
+            true
         catch err
             pkgmsg = "is required but does not seem to be installed"
-            if err isa ArgumentError && occursin(pkgmsg, err.msg) &&
-                isdefined(Pkg.REPLMode, :try_prompt_pkg_add) && isinteractive()
-                Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)]) ||
-                    throw(ErrorException("Missing package: $pkg"))
-            else
-                rethrow(err)
-            end
-        end
+            err isa ArgumentError && occursin(pkgmsg, err.msg) &&
+                isdefined(Pkg.REPLMode, :try_prompt_pkg_add) && isinteractive() &&
+                Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
+        end || throw(MissingPackage(pkg))
         PkgRequiredRerunNeeded()
     else
         Base.root_module(pkg)
@@ -47,7 +43,7 @@ function get_package(from::Module, name::Symbol)
     if !isnothing(pkgid)
         get_package(pkgid)
     else
-        throw(ArgumentError("Package $name was not registered by $from, and so cannot be used by $from."))
+        throw(UnregisteredPackage(name, from))
     end
 end
 
@@ -102,6 +98,13 @@ const ImportTerm = NamedTuple{(:pkg, :property, :as),
 const PkgList = Vector{PkgTerm}
 const ImportList = Vector{ImportTerm}
 
+struct InvalidImportForm <: Exception
+    msg::String
+end
+
+Base.showerror(io::IO, err::InvalidImportForm) =
+    print(io, "InvalidImportForm: ", err.msg)
+
 """
     addimport!(pkg::Symbol, property::Symbol,
                alias::Union{Symbol, Nothing}=nothing; imports::ImportList)
@@ -126,7 +129,7 @@ function addimport!(pkg::Union{Expr, Symbol}, property::Expr,
         push!(imports, (; pkg, property, as))
         as
     else
-        throw(ArgumentError("Invalid package property: $property"))
+        throw(InvalidImportForm("$property is not valid property of $pkg"))
     end
 end
 
@@ -163,7 +166,7 @@ function addpkg!(name::Expr, alias::Union{Symbol, Nothing}=nothing;
         _, prop = splitfirst(name)
         addimport!(pkgas, prop, alias; imports)
     else
-        throw(ArgumentError("Invalid package name: $name"))
+        throw(InvalidImportForm("$name is not a valid package name"))
     end
 end
 

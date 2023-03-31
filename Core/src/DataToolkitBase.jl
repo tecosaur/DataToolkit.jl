@@ -13,6 +13,10 @@ export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
     LintItem, LintReport
 export load, storage, getstorage, putstorage, save, resolve, refine,
     supportedtypes, typeify, create, createpriority, lint
+export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
+    PackageException, UnregisteredPackage, MissingPackage,
+    DataOperationException, CollectionVersionMismatch, EmptyStackError,
+    ReadonlyCollection, TransformerError, UnsatisfyableTransformer
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
 export @import, @addpkg, @dataplugin, @advise
 
@@ -25,8 +29,9 @@ export ReplCmd, REPL_CMDS, help, completions, allcompletions,
 include("model/types.jl")
 include("model/globals.jl")
 include("model/utils.jl")
-
 include("model/advice.jl")
+include("model/errors.jl")
+
 include("model/qualifiedtype.jl")
 include("model/identification.jl")
 include("model/parameters.jl")

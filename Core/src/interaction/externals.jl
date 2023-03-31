@@ -160,7 +160,7 @@ function Base.read(dataset::DataSet)
         as = typeify(qtype, mod=dataset.collection.mod)
         isnothing(as) || break
     end
-    isnothing(as) && error("Data set '$(dataset.name)' could not be loaded in any form.")
+    isnothing(as) && throw(TransformerError("Data set $(sprint(show, dataset.name)) could not be loaded in any form."))
     @advise _read(dataset, as)
 end
 
@@ -218,11 +218,13 @@ function _read(dataset::DataSet, as::Type)
             end
         end
     end
-    # TODO non-generic error type
     if length(potential_loaders) == 0
-        throw(error("There are no loaders for '$(dataset.name)' that can provide $as"))
+        throw(UnsatisfyableTransformer{DataLoader}(dataset, [qtype]))
     else
-        throw(error("There are no availible storage backends for '$(dataset.name)' that can be used by a loader for $as."))
+        loadertypes = map(f -> QualifiedType(f.types[3]),
+                          filter(f -> any(l -> l isa f.types[2], potential_loaders),
+                                 all_load_fn_sigs))
+        throw(UnsatisfyableTransformer{DataStorage}(dataset, loadertypes))
     end
 end
 
@@ -346,9 +348,9 @@ function Base.write(dataset::DataSet, info::T) where {T}
         end
     end
     if length(potential_writers) == 0
-        error("There are no writers for '$(dataset.name)' that can work with $T")
+        throw(TransformerError("There are no writers for $(sprint(show, dataset.name)) that can work with $T"))
     else
-        error("There are no availible storage backends for '$(dataset.name)' that can be used by a writer for $T.")
+        TransformerError("There are no availible storage backends for $(sprint(show, dataset.name)) that can be used by a writer for $T.")
     end
 end
 

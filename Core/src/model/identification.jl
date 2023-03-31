@@ -74,6 +74,31 @@ function resolve(collection::DataCollection, ident::Identifier;
     if collection_mismatch
         return resolve(getlayer(ident.collection), ident)
     end
+    matchingdatasets = refine(collection, collection.datasets, ident)
+    if length(matchingdatasets) == 1
+        dataset = first(matchingdatasets)
+        if !isnothing(ident.type) && resolvetype
+            read(dataset, typeify(ident.type, mod=collection.mod))
+        else
+            dataset
+        end
+    elseif length(matchingdatasets) == 0 && requirematch
+        throw(UnsatisfyableTransformer{DataLoader}(first(pretypefilter), ident.type))
+    elseif length(matchingdatasets) > 1
+        throw(AmbiguousIdentifier((@advise collection string(ident)),
+                                  matchingdatasets, collection))
+    end
+end
+
+"""
+    refine(collection::DataCollection, datasets::Vector{DataSet}, ident::Identifier)
+
+Filter `datasets` (from `collection`) to data sets than match the identifier `ident`.
+
+This function contains an advise entrypoint where plugins can apply further filtering,
+applied to the method `refine(::Vector{DataSet}, ::Identifier, ::Vector{String})`.
+"""
+function refine(collection::DataCollection, datasets::Vector{DataSet}, ident::Identifier)
     filter_nameid(datasets) =
         if ident.dataset isa UUID
             filter(d -> d.uuid == ident.dataset, datasets)
@@ -93,23 +118,10 @@ function resolve(collection::DataCollection, ident::Identifier;
                 param in ignore || d.parameters[param] == value,
                 ident.parameters)
         end
-    matchingdatasets = collection.datasets |> filter_nameid |> filter_type
+    matchingdatasets = datasets |> filter_nameid |> filter_type
     matchingdatasets, ignoreparams =
         @advise collection refine(matchingdatasets, ident, String[])
-    matchingdatasets = filter_parameters(matchingdatasets, ignoreparams)
-    # TODO non-generic errors
-    if length(matchingdatasets) == 1
-        dataset = first(matchingdatasets)
-        if !isnothing(ident.type) && resolvetype
-            read(dataset, typeify(ident.type, mod=collection.mod))
-        else
-            dataset
-        end
-    elseif length(matchingdatasets) == 0 && requirematch
-        throw(error("No datasets from '$(collection.name)' matched the identifier $ident"))
-    elseif length(matchingdatasets) > 1
-        throw(error("Multiple datasets from '$(collection.name)' matched the identifier $ident"))
-    end
+    filter_parameters(matchingdatasets, ignoreparams)
 end
 
 """
@@ -137,7 +149,7 @@ resolve(ident::Identifier; resolvetype::Bool=true, stack::Vector{DataCollection}
                 return result
             end
         end
-        throw(error("No datasets in $(join(''' .* getproperty.(stack, :name) .* ''', ", ", ", or ")) matched the identifier $ident"))
+        throw(UnresolveableIdentifier{DataSet}(string(ident)))
     end
 
 """
@@ -149,6 +161,7 @@ each layer of the data `stack` in turn.
 """
 function resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
                  resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
+    isempty(stack) && throw(EmptyStackError())
     if (cname = parse(Identifier, identstr).collection) |> !isnothing
         collection = getlayer(cname)
         ident = Identifier((@advise collection parse(Identifier, identstr)),
@@ -161,6 +174,6 @@ function resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, 
             result = resolve(collection, ident; resolvetype, requirematch=false)
             !isnothing(result) && return result
         end
-        throw(error("No datasets in $(join(''' .* getproperty.(stack, :name) .* ''', ", ", ", or ")) matched the identifier $ident"))
+        throw(UnresolveableIdentifier{DataSet}(identstr))
     end
 end

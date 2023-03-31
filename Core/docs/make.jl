@@ -28,6 +28,7 @@ makedocs(;
             "Data Advice" => "advising.md",
         ],
         "Internals" => "libinternal.md",
+        "Errors" => "errors.md",
     ],
     repo="https://github.com/tecosaur/DataToolkitBase.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkitBase.jl",
