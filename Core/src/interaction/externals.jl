@@ -371,9 +371,8 @@ save((writer, dest, info)::Tuple{DataWriter, Any, Any}) =
 
 # For use during parsing, see `fromspec` in `model/parser.jl`.
 
-splitunions(T::Type) = if T isa Union Base.uniontypes(T) else (T,) end
-
-extracttypes(T::Type) =
+function extracttypes(T::Type)
+    splitunions(T::Type) = if T isa Union Base.uniontypes(T) else (T,) end
     if T == Type || T == Any
         (Any,)
     elseif T isa UnionAll
@@ -384,6 +383,7 @@ extracttypes(T::Type) =
         T1 = first(T.parameters)
         if T1 isa TypeVar T1.ub else T1 end |> splitunions
     end
+end
 
 const genericstore = first(methods(storage, Tuple{DataStorage{Any}, Any}))
 const genericstoreget = first(methods(getstorage, Tuple{DataStorage{Any}, Any}))
