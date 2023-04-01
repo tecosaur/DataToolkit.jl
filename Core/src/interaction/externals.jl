@@ -389,16 +389,16 @@ const genericstore = first(methods(storage, Tuple{DataStorage{Any}, Any}))
 const genericstoreget = first(methods(getstorage, Tuple{DataStorage{Any}, Any}))
 const genericstoreput = first(methods(putstorage, Tuple{DataStorage{Any}, Any}))
 
-supportedtypes(L::Type{<:DataLoader}, T::Type=Any) =
+supportedtypes(L::Type{<:DataLoader}, T::Type=Any)::Vector{QualifiedType} =
     map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[4]),
         methods(load, Tuple{L, T, Any})) |>
             Iterators.flatten .|> QualifiedType |> unique |> reverse
 
-supportedtypes(W::Type{<:DataWriter}, T::Type=Any) =
+supportedtypes(W::Type{<:DataWriter}, T::Type=Any)::Vector{QualifiedType} =
     map(fn -> QualifiedType(Base.unwrap_unionall(fn.sig).types[3]),
         methods(save, Tuple{W, T, Any})) |> unique |> reverse
 
-supportedtypes(S::Type{<:DataStorage}) =
+supportedtypes(S::Type{<:DataStorage})::Vector{QualifiedType} =
     map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[3]),
         let ms = filter(m -> m != genericstore, methods(storage, Tuple{S, Any}))
             if isempty(ms)
