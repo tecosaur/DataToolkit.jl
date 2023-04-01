@@ -100,8 +100,11 @@ supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
 function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
     driver = if ADT isa DataType
         first(ADT.parameters)
-    else
+    elseif haskey(spec, "driver")
         Symbol(lowercase(spec["driver"]))
+    else
+        @warn "$ADT for $(sprint(show, dataset.name)) has no driver!"
+        :MISSING
     end
     if !(ADT isa DataType)
         ADT = ADT{driver}
@@ -114,8 +117,12 @@ function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::
         elseif spec_type isa String
             [parse(QualifiedType, spec_type)]
         else
-            error("Parse error: invalid ADT type '$spec_type' ($(typeof(spec_type)))") # TODO use custom exception type
+            @warn "Invalid ADT type '$spec_type', ignoring"
         end
+    end
+    if isempty(ttype)
+        @warn """Could not find any types that $ADT of $(sprint(show, dataset.name)) supports.
+                 Consider adding a 'type' parameter."""
     end
     priority = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
     parameters = copy(spec)
@@ -173,7 +180,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                       end,
                       string(gensym("unnamed"))[3:end])
     uuid = UUID(@something get(spec, "uuid", nothing) begin
-                    @warn "Data collection '$(something(name, "<unnamed>"))' had no UUID, one has been generated."
+                    @info "Data collection '$(something(name, "<unnamed>"))' had no UUID, one has been generated."
                     uuid4()
                 end)
     plugins::Vector{String} = get(spec, "plugins", String[])
@@ -218,7 +225,7 @@ end
 
 function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
     uuid = UUID(@something get(spec, "uuid", nothing) begin
-                    @warn "Data set '$name' had no UUID, one has been generated."
+                    @info "Data set '$name' had no UUID, one has been generated."
                     uuid4()
                 end)
     store = get(spec, "store", "DEFAULTSTORE")
