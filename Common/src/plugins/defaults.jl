@@ -55,7 +55,7 @@ getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
     getdefaults(dataset, ADT,
                 if ADT isa DataType
                     first(ADT.parameters)
-                else Symbol(spec["driver"]) end;
+                else Symbol(get(spec, "driver", "MISSING")) end;
                 resolvetype)
 
 """
