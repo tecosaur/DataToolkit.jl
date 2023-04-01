@@ -33,7 +33,7 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
                             else :T end,
                             getfield(Main, last(param.args)))
                 else
-                    throw(ArgumentError("Invalit QualifiedType parameter $(sprint(show, param)) in $(sprint(show, spec))"))
+                    throw(ArgumentError("Invalid QualifiedType parameter $(sprint(show, param)) in $(sprint(show, spec))"))
                 end
                 Tuple(destruct.(typeparams.args))
             end
