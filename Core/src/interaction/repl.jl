@@ -184,7 +184,6 @@ function execute_repl_cmd(line::AbstractString;
     else
         repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
         if isnothing(repl_cmd)
-            Expr(:block, :nothing)
         elseif repl_cmd isa ReplCmd{<:Any, Function}
             repl_cmd.execute(rest)
         elseif repl_cmd isa ReplCmd{<:Any, Vector{ReplCmd}}
@@ -637,5 +636,5 @@ function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
             help(repl_cmd)
         end
     end
-    Expr(:block, :nothing)
+    nothing
 end
