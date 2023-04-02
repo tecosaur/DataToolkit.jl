@@ -46,6 +46,7 @@ makedocs(;
             "plugins/memorise.md",
             "plugins/versions.md",
         ],
+        "REPL" => "repl.md",
     ],
     repo="https://github.com/tecosaur/DataToolkitCommon.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkitCommon.jl",

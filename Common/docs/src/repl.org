@@ -1,0 +1,121 @@
+#+title: REPL
+
+All of the relevant help for the REPL can be accessed from inside the REPL. They
+are repeated here verbatim.
+
+#+begin_src @eval
+using Markdown
+Core.eval(Main, quote
+              function datarepl(cmd)
+                  Markdown = $Markdown
+                  pipe = Pipe()
+                  started = Base.Event()
+                  writer = @async redirect_stdio(stdout=pipe, stderr=pipe) do
+                      notify(started)
+                      DataToolkitCommon.DataToolkitBase.execute_repl_cmd(cmd)
+                      close(Base.pipe_writer(pipe))
+                  end
+                  wait(started)
+                  result = read(pipe, String)
+                  wait(writer)
+                  Markdown.MD([
+                      Markdown.Header{3}([Markdown.Code("$cmd")]),
+                      Markdown.Code("ansi", replace(result, r"\e\[\d+m" => ""))])
+              end
+          end)
+nothing
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("help")
+#+end_src
+
+-----
+
+#+begin_src @eval
+Main.datarepl("?add")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?delete")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?config")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?config get")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?config set")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?config unset")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?list")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?make")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?plugin")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?plugin add")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?plugin remove")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?plugin edit")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?plugin info")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?plugin list")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?search")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?show")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?stack")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?stack promote")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?stack demote")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?stack load")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?stack remove")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?help")
+#+end_src
