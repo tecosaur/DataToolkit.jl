@@ -21,6 +21,7 @@ include("add.jl")
 include("delete.jl")
 include("list.jl")
 include("show.jl")
+include("search.jl")
 include("make.jl")
 
 function add_repl_cmds()
@@ -44,6 +45,9 @@ By default, the datasets of the active collection are shown.",
 
 Call without any arguments to see the availible subcommands.",
                   PLUGIN_SUBCOMMANDS),
+          ReplCmd(:search,
+                  "Search for a particular data collection",
+                  search),
           ReplCmd(:show,
                   "List the dataset refered to by an identifier",
                   repl_show),
