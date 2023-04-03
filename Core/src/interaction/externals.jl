@@ -172,7 +172,7 @@ This is essentially an excersise in useful indirection.
 """
 function _read(dataset::DataSet, as::Type)
     all_load_fn_sigs = map(fn -> Base.unwrap_unionall(fn.sig),
-                             methods(load, Tuple{DataLoader, Any, Any}))
+                           methods(load, Tuple{DataLoader, Any, Any}))
     qtype = QualifiedType(as)
     # Filter to loaders which are declared in `dataset` as supporting `as`.
     # These will have already been ordered by priority during parsing.

@@ -69,7 +69,7 @@ function addpkg(mod::Module, name::Symbol, uuid::Union{UUID, String})
     if !haskey(EXTRA_PACKAGES, mod)
         EXTRA_PACKAGES[mod] = Dict{Symbol, Vector{Base.PkgId}}()
     end
-    EXTRA_PACKAGES[mod][name]= Base.PkgId(UUID(uuid), String(name))
+    EXTRA_PACKAGES[mod][name] = Base.PkgId(UUID(uuid), String(name))
 end
 
 """
