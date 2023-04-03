@@ -54,3 +54,125 @@ load(loader::DataLoader, datahandle, as::Type)
 storage(provider::DataStorage, as::Type; write::Bool)
 save(writer::DataWriter, datahandle, info)
 #+end_src
+
+* Index of advised calls
+
+#+begin_src @eval
+using Markdown
+content = Any[]
+
+const AdviseRecord = NamedTuple{(:location, :parent, :invocation), Tuple{LineNumberNode, <:Union{Expr, Symbol}, Expr}}
+function findadvice!(acc::Vector{AdviseRecord}, expr::Expr; parent=nothing)
+    if expr.head == :macrocall && first(expr.args) == Symbol("@advise")
+        push!(acc, (; location=expr.args[2], parent, invocation=expr.args[end]))
+    else
+        if isnothing(parent) && expr.head == :function
+            parent = if first(expr.args) isa Expr
+                first(first(expr.args).args)
+            else
+                first(expr.args)
+            end
+        elseif isnothing(parent) && expr.head == :(=) &&
+            first(expr.args) isa Expr && first(expr.args).head == :call
+            parent = first(first(expr.args).args)
+        end
+        findadvice!.(Ref(acc), expr.args; parent)
+    end
+end
+findadvice!(acc, ::Any; parent=nothing) = nothing
+
+alladvice = Vector{AdviseRecord}()
+for (root, dirs, files) in walkdir("../../src")
+    for file in files
+        @info "Analysing $file for advise"
+        path = joinpath(root, file)
+        expr = Meta.parseall(read(path, String); filename=path)
+        findadvice!(alladvice, expr)
+    end
+end
+
+AdvItem = NamedTuple{(:line, :parent, :invocation), Tuple{Int, Union{Expr, Symbol}, Expr}}
+advbyfunc = Dict{Symbol, Dict{Symbol, Vector{AdvItem}}}()
+atypes = first.(getfield.(getfield.(alladvice, :invocation), :args)) |> unique
+afiles = getfield.(getfield.(alladvice, :location), :file) |> unique
+
+for atype in atypes
+    advs = filter(a -> first(a.invocation.args) == atype, alladvice)
+    advbyfunc[atype] = Dict{Symbol, Vector{AdvItem}}()
+    for (; location, parent, invocation) in advs
+        if !haskey(advbyfunc[atype], location.file)
+            advbyfunc[atype][location.file] = Vector{AdvItem}()
+        end
+        push!(advbyfunc[atype][location.file], (; line=location.line, parent, invocation))
+    end
+end
+
+push!(content, Markdown.Paragraph([
+    "There are ", Markdown.Bold(string(length(alladvice))),
+    " advised function calls, across ",
+    Markdown.Bold(string(length(unique(getfield.(getfield.(alladvice, :location), :file))))),
+    " files, covering ", Markdown.Bold(string(length(advbyfunc))),
+    " functions (automatically detected)."]))
+
+push!(content, Markdown.Header{3}(["Arranged by function"]))
+
+for fname in sort(keys(advbyfunc) |> collect)
+    instances = advbyfunc[fname]
+    nadv = sum(length, values(instances))
+    push!(content, Markdown.Header{4}([
+        Markdown.Code(String(fname)),
+        if nadv == 1
+            " (1 instance)"
+        else
+            " ($nadv instances)"
+        end]))
+    list = Markdown.List(Any[], -1, false)
+    for file in sort(keys(instances) |> collect)
+        details = instances[file]
+        sublist = Markdown.List(Any[], -1, false)
+        for (; line, parent, invocation) in details
+            push!(sublist.items, Markdown.Paragraph(
+                ["On line ", string(line), " ",
+                 Markdown.Code(string(invocation)),
+                 " is advised within a ",
+                 Markdown.Code(string(parent)), " method."]))
+        end
+        push!(list.items, Any[
+            Markdown.Paragraph([Markdown.Italic(last(splitpath(String(file))))]),
+            sublist])
+    end
+    push!(content, list)
+end
+
+push!(content, Markdown.Header{3}(["Arranged by file"]))
+
+advbyfile = Dict{Symbol, Vector{AdvItem}}()
+for (; location, parent, invocation) in alladvice
+    if !haskey(advbyfile, location.file)
+        advbyfile[location.file] = Vector{AdvItem}()
+    end
+    push!(advbyfile[location.file], (; line=location.line, parent, invocation))
+end
+
+for file in sort(afiles)
+    instances = advbyfile[file]
+    push!(content, Markdown.Header{5}([
+        Markdown.Code(last(splitpath(String(file)))),
+        if length(instances) == 1
+            " (1 instance)"
+        else
+            " ($(length(instances)) instances)"
+        end]))
+    list = Markdown.List(Any[], -1, false)
+    for (; line, parent, invocation) in instances
+        push!(list.items, [Markdown.Paragraph(
+            ["On line ", string(line), " ",
+             Markdown.Code(string(invocation)),
+             " is advised within a ",
+             Markdown.Code(string(parent)), " method."])])
+    end
+    push!(content, list)
+end
+
+Markdown.MD(content)
+#+end_src
