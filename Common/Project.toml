@@ -1,7 +1,7 @@
 name = "DataToolkitCommon"
 uuid = "9e6fccbf-6142-406a-aa4c-75c1ae647f53"
 authors = ["TEC <tec@tecosaur.com> and contributors"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 CRC32c = "8bf52ea8-c179-5cab-976a-9e18b702a9bc"
@@ -16,7 +16,7 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
 Compat = "3.29, 4"
-DataToolkitBase = "~0.2"
+DataToolkitBase = "~0.3"
 Tables = "1"
 julia = "1.6"
 
