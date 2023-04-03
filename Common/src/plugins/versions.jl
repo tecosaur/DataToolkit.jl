@@ -91,5 +91,36 @@ const VERSIONS_PLUGIN = Plugin("versions", [
                 delete!(copy(ident.parameters), "version"))
         end
         (post, f, (ident,))
+    end,
+    function (post::Function, f::typeof(lint), obj::DataSet, linters::Vector{Method})
+        append!(linters, methods(lint_versions, Tuple{DataSet, Val}).ms)
+        (post, f, (obj, linters))
     end
 ])
+
+function lint_versions(obj::DataSet, ::Val{:valid_version})
+    if haskey(obj.parameters, "version")
+        if get(obj, "version") isa Number
+            LintItem(obj, :warning, :valid_version,
+                     "Version number ($(get(obj, "version"))) should be provided as a string",
+                     function (li::LintItem)
+                         li.source.parameters["version"] =
+                             string(li.source.parameters["version"])
+                         true
+                     end, true)
+        elseif isnothing(tryparse(VersionNumber, string(get(obj, "version"))))
+            LintItem(obj, :warning, :valid_version,
+                     "Invalid version number $(sprint(show, get(obj, "version")))",
+                     lint_fix_version)
+        end
+    end
+end
+
+function lint_fix_version(lintitem::LintItem{DataSet})
+    newversion = prompt("  Version: ")
+    while isnothing(tryparse(VersionNumber, newversion))
+        newversion = prompt("  Version (X.Y.Z): ")
+    end
+    lintitem.source.parameters["version"] = newversion
+    true
+end

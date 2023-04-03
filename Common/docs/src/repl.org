@@ -45,6 +45,10 @@ Main.datarepl("?config")
 #+end_src
 
 #+begin_src @eval
+Main.datarepl("?check")
+#+end_src
+
+#+begin_src @eval
 Main.datarepl("?config get")
 #+end_src
 

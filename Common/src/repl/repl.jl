@@ -22,6 +22,7 @@ include("delete.jl")
 include("list.jl")
 include("show.jl")
 include("search.jl")
+include("lint.jl")
 include("make.jl")
 
 function add_repl_cmds()
@@ -32,6 +33,12 @@ function add_repl_cmds()
           ReplCmd(:config,
                   "Inspect and modify the current configuration",
                   CONFIG_SUBCOMMANDS),
+          ReplCmd(:check,
+                  "Check the state for potential issues
+
+By default, this operates on the active collection, however it can
+also be applied to any other collection or a specific data set.",
+                  repl_lint),
           ReplCmd(:list,
                   "List the datasets in a certain collection
 

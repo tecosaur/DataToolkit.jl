@@ -73,3 +73,19 @@ function create(::Type{DataLoader{:julia}}, source::String)
         Dict{String, Any}("path" => source)
     end
 end
+
+function lint(loader::DataLoader{:julia}, ::Val{:non_list_julia_args})
+    if haskey(loader.parameters, "arguments") &&
+        loader.parameters["arguments"] isa Vector
+        fixer = if length(loader.parameters["arguments"]) == 1
+            function (li::LintItem{DataLoader{:julia}})
+                li.source.parameters["arguments"] =
+                    first(li.source.parameters["arguments"])
+                true
+            end
+        end
+        LintItem(loader, :error, :non_list_julia_args,
+                 "Argument set is a list of argument sets",
+                 fixer, !isnothing(fixer))
+    end
+end

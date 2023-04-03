@@ -3,7 +3,7 @@ module DataToolkitCommon
 using DataToolkitBase
 import DataToolkitBase: load, save, storage,
     getstorage, putstorage, supportedtypes,
-    create, createpriority
+    create, createpriority, lint
 
 using Compat
 
@@ -41,6 +41,8 @@ include("plugins/loadcache.jl")
 include("plugins/memorise.jl")
 
 include("repl/repl.jl")
+
+include("misc/lintrules.jl")
 
 function __init__()
     REPLcmds.add_repl_cmds()
