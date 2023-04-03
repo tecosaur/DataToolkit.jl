@@ -364,3 +364,21 @@ function Base.showerror(io::IO, err::UnsatisfyableTransformer{DataLoader})
           join(string.(err.types), ", ", ", or "),
           ". The defined loaders are as follows:")
 end
+
+"""
+    OrphanDataSet(dataset::DataSet)
+
+The data set (`dataset`) is no longer a child of its parent collection.
+
+This error should not occur, and is intended as a sanity check should
+something go quite wrong.
+"""
+struct OrphanDataSet <: DataOperationException
+    dataset::DataSet
+end
+
+function Base.showerror(io::IO, err::OrphanDataSet)
+    print(io, "OrphanDataSet: The data set ", err.dataset.name,
+          " [", err.dataset.uuid, "] is no longer a child of of its parent collection.\n",
+          "This should not occur, and indicates that something fundamental has gone wrong.")
+end

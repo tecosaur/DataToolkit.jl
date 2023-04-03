@@ -439,3 +439,36 @@ function Base.delete!(dataset::DataSet)
     deleteat!(dataset.collection.datasets, index)
     write(dataset.collection)
 end
+
+# ------------------
+# Dataset modification
+# ------------------
+
+"""
+    replace!(dataset::DataSet; [name, uuid, parameters, storage, loaders, writers])
+
+Perform an in-place update of `dataset`, optionally replacing any of the `name`,
+`uuid`, `parameters`, `storage`, `loaders`, or `writers` fields.
+"""
+function Base.replace!(dataset::DataSet;
+                       name::String = dataset.name,
+                       uuid::UUID = dataset.uuid,
+                       parameters::Dict{String, Any} = dataset.parameters,
+                       storage::Vector{DataStorage} = dataset.storage,
+                       loaders::Vector{DataLoader} = dataset.loaders,
+                       writers::Vector{DataWriter} = dataset.writers)
+    iswritable(dataset.collection) || throw(ReadonlyCollection(dataset.collection))
+    dsindex = findfirst(==(dataset), dataset.collection.datasets)
+    !isnothing(dsindex) || throw(OrphanDataSet(dataset))
+    replacement = DataSet(dataset.collection, name, uuid, parameters,
+                          DataStorage[], DataLoader[], DataWriter[])
+    for (tfield, transformers) in zip((:storage, :loaders, :writers),
+                                      (storage, loaders, writers))
+        for transformer in transformers
+            push!(getfield(replacement, tfield),
+                  typeof(transformer)(replacement, transformer.type,
+                                      transformer.priority, transformer.parameters))
+        end
+    end
+    dataset.collection.datasets[dsindex] = replacement
+end

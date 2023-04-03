@@ -16,7 +16,8 @@ export load, storage, getstorage, putstorage, save, resolve, refine,
 export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     PackageException, UnregisteredPackage, MissingPackage,
     DataOperationException, CollectionVersionMismatch, EmptyStackError,
-    ReadonlyCollection, TransformerError, UnsatisfyableTransformer
+    ReadonlyCollection, TransformerError, UnsatisfyableTransformer,
+    OrphanDataSet
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
 export @import, @addpkg, @dataplugin, @advise
 

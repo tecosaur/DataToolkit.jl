@@ -45,3 +45,7 @@ TransformerError
 #+begin_src @docs
 UnsatisfyableTransformer
 #+end_src
+
+#+begin_src @docs
+OrphanDataSet
+#+end_src
