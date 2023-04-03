@@ -1,11 +1,23 @@
 function displaytable(rows::Vector{<:Vector};
                       spacing::Integer=2, maxwidth::Int=80)
-    column_widths =
-        maximum.(textwidth.(string.(getindex.(rows, i)))
-                 for i in 1:length(rows[1]))
-    table_width = sum(column_widths) + spacing * length(column_widths)
+    column_widths = min.(maxwidth,
+                         maximum.(textwidth.(string.(getindex.(rows, i)))
+                                  for i in 1:length(rows[1])))
     if sum(column_widths) > maxwidth
-        column_widths = max.(1, floor.(Int, column_widths .* maxwidth/table_width))
+        # Resize columns according to the square root of their width
+        rootwidths = sqrt.(column_widths)
+        table_width = sum(column_widths) + spacing * length(column_widths)
+        rootcorrection = sum(column_widths) / sum(sqrt, column_widths)
+        rootwidths = rootcorrection .* sqrt.(column_widths) .* maxwidth/table_width
+        # Look for any expanded columns, and redistribute their excess space
+        # proportionally.
+        overwides = column_widths .< rootwidths
+        if any(overwides)
+            gap = sum((rootwidths .- column_widths)[overwides])
+            rootwidths[overwides] = column_widths[overwides]
+            @. rootwidths[.!overwides] += gap * rootwidths[.!overwides]/sum(rootwidths[.!overwides])
+        end
+        column_widths = max.(1, floor.(Int, rootwidths))
     end
     makelen(content::String, len::Int) =
         if length(content) <= len
