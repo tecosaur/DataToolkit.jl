@@ -179,6 +179,19 @@ function _read(dataset::DataSet, as::Type)
     potential_loaders =
         filter(loader -> any(st -> ⊆(st, qtype, mod=dataset.collection.mod), loader.type),
                dataset.loaders)
+    # If no matching loaders could be found, be a bit generous and /just try/
+    # filtering to the specified `as` type. If this works, it's probably what's
+    # wanted, and incompatability should be caught by later stages.
+    if isempty(potential_loaders)
+        # Here I use `!isempty(methods(...))` which may seem strange, given
+        # `hasmethod` exists. While in theory it would be reasonable to expect
+        # that `hasmethod(f, Tuple{A, Union{}, B})` would return true if a method
+        # with the signature `Tuple{A, <:Any, B}` existed, this is unfortunately
+        # not the case in practice, and so we must resort to `methods`.
+        potential_loaders =
+            filter(loader -> !isempty(methods(load, Tuple{typeof(loader), <:Any, Type{as}})),
+                   dataset.loaders)
+    end
     for loader in potential_loaders
         load_fn_sigs = filter(fnsig -> loader isa fnsig.types[2], all_load_fn_sigs)
         # Find the highest priority load function that can be satisfied,
