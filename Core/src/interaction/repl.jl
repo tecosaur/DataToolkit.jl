@@ -485,7 +485,7 @@ function prompt(question::AbstractString, default::AbstractString="";
                     REPL.LineEdit.refresh_multi_line(term, pstate)
                 end
                 print("\e[39m\n")
-                return rstrip(REPL.LineEdit.input_string(pstate), '\n')
+                return String(rstrip(REPL.LineEdit.input_string(pstate), '\n'))
             else
                 return nothing
             end
