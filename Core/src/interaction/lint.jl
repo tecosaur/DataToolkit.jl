@@ -213,10 +213,10 @@ function lintfix(report::LintReport, manualfix::Bool=false)
         print(ifelse(sum(last.(autofixed)) == 1, " issue: ", " issues: "))
         for fixresult in filter(last, autofixed)
             i, lintitem, _ = fixresult
-            printstyled('[', i, ']', color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
+            printstyled(i, color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
             fixresult === last(autofixed) || print(", ")
         end
-        print('\n')
+        print(".\n")
         if !all(last, autofixed)
             print("Failed to automatically fix ", sum(.!last.(autofixed)), " issues: ")
             printstyled(sum(.!last.(autofixed)), color=:light_white)
