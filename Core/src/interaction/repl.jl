@@ -446,18 +446,13 @@ function prompt(question::AbstractString, default::AbstractString="";
         REPL.LineEdit.escape_defaults
     ])
     prompt = REPL.LineEdit.Prompt(
-        question,
-        Base.text_colors[REPL_QUESTION_COLOR], # prompt_prefix
-        Base.text_colors[ifelse(
-            isempty(default), REPL_USER_INPUT_COLOUR, :light_black)], # prompt_suffix
-        "", "", "", # output_prefix, output_prefix_prefix, output_prefix_suffix
-        keymap, # keymap
-        nothing, # repl
-        REPL.LatexCompletions(), # complete
-        _ -> true, # on_enter
-        () -> nothing, # on_done
-        REPL.LineEdit.EmptyHistoryProvider(), # hist
-        false) # sticky
+        question;
+        prompt_prefix = Base.text_colors[REPL_QUESTION_COLOR],
+        prompt_suffix = Base.text_colors[ifelse(
+            isempty(default), REPL_USER_INPUT_COLOUR, :light_black)],
+        keymap_dict = keymap,
+        complete = REPL.LatexCompletions(),
+        on_enter = _ -> true)
     interface = REPL.LineEdit.ModalInterface([prompt])
     istate = REPL.LineEdit.init_state(term, interface)
     pstate = istate.mode_state[prompt]
