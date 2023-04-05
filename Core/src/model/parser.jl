@@ -178,10 +178,6 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                     uuid4()
                 end)
     plugins::Vector{String} = get(spec, "plugins", String[])
-    stores = get(parameters, "store", Dict{String, Any}())
-    for reserved in ("store")
-        delete!(parameters, reserved)
-    end
     parameters = get(spec, "config", Dict{String, Any}()) |> smallify
     unavailible_plugins = setdiff(plugins, getproperty.(PLUGINS, :name))
     if length(unavailible_plugins) > 0
@@ -222,7 +218,6 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
                     @info "Data set '$name' had no UUID, one has been generated."
                     uuid4()
                 end)
-    store = get(spec, "store", "DEFAULTSTORE")
     parameters = smallify(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
         delete!(parameters, reservedname)
