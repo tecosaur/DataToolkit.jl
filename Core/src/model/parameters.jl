@@ -1,6 +1,8 @@
-function dataset_parameters(collection::DataCollection, action::Val, params::Dict{String,Any})
-    Dict{String, Any}(key => dataset_parameters(collection, action, value)
-                      for (key, value) in params)
+function dataset_parameters(collection::DataCollection, action::Val, params::SmallDict{String,Any})
+    SmallDict{String, Any}(
+        keys(params) |> collect,
+        [dataset_parameters(collection, action, value)
+         for value in values(params)])
 end
 
 function dataset_parameters(collection::DataCollection, action::Val, param::Vector)

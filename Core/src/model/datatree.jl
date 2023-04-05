@@ -15,7 +15,7 @@ printnode(io::IO, d::DataSet) = print(io, d.name)
 add_datasets!(acc::Vector{Identifier}, adt::AbstractDataTransformer) =
     add_datasets!(acc, adt.parameters)
 
-add_datasets!(acc::Vector{Identifier}, props::Dict) =
+add_datasets!(acc::Vector{Identifier}, props::SmallDict) =
     for val in values(props)
         add_datasets!(acc, val)
     end

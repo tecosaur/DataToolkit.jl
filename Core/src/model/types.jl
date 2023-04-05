@@ -49,6 +49,23 @@ struct QualifiedType{T <: Tuple}
 end
 
 """
+    SmallDict{K, V}
+
+A little (ordered) dictionary type for a small number of keys.
+Rather than doing anything clever with hashes, it just keeps
+a list of keys, and a list of values.
+
+For a small number of items, this has time and particularly space advantages
+over a standard dictionary — a Dict{String, Any}("a" => 1) is about 4x larger
+than the equivalent SmallDict. Futrher testing indicates this provides a ~40%
+reduction on the overall in-memory size of a `DataCollection`.
+"""
+struct SmallDict{K, V} <: AbstractDict{K, V}
+    keys::Vector{K}
+    values::Vector{V}
+end
+
+"""
 A description that can be used to uniquely identify a DataSet.
 
 Four fields are used to describe the target DataSet:
@@ -63,7 +80,7 @@ Four fields are used to describe the target DataSet:
 Identifier(collection::Union{AbstractString, UUID, Nothing},
            dataset::Union{AbstractString, UUID},
            type::Union{QualifiedType, Nothing},
-           parameters::Dict{String, Any})
+           parameters::SmallDict{String, Any})
 ```
 
 # Parsing
@@ -81,7 +98,7 @@ struct Identifier
     collection::Union{AbstractString, UUID, Nothing}
     dataset::Union{AbstractString, UUID}
     type::Union{<:QualifiedType, Nothing}
-    parameters::Dict{String, Any}
+    parameters::SmallDict{String, Any}
 end
 
 """
@@ -106,7 +123,7 @@ In addition, each subtype has the following fields:
 - `type::Vector{<:QualifiedType}`, the Julia types the method supports
 - `priority::Int`, the priority with which this method should be used,
   compared to alternatives. Lower values have higher priority.
-- `parameters::Dict{String, Any}`, any parameters applied to the method.
+- `parameters::SmallDict{String, Any}`, any parameters applied to the method.
 """
 abstract type AbstractDataTransformer{driver} end
 
@@ -114,21 +131,21 @@ struct DataStorage{driver, T} <: AbstractDataTransformer{driver}
     dataset::T
     type::Vector{<:QualifiedType}
     priority::Int
-    parameters::Dict{String, Any}
+    parameters::SmallDict{String, Any}
 end
 
 struct DataLoader{driver} <: AbstractDataTransformer{driver}
     dataset
     type::Vector{<:QualifiedType}
     priority::Int
-    parameters::Dict{String, Any}
+    parameters::SmallDict{String, Any}
 end
 
 struct DataWriter{driver} <: AbstractDataTransformer{driver}
     dataset
     type::Vector{<:QualifiedType}
     priority::Int
-    parameters::Dict{String, Any}
+    parameters::SmallDict{String, Any}
 end
 
 """
@@ -255,7 +272,7 @@ struct DataSet
     collection
     name::String
     uuid::UUID
-    parameters::Dict{String, Any}
+    parameters::SmallDict{String, Any}
     storage::Vector{DataStorage}
     loaders::Vector{DataLoader}
     writers::Vector{DataWriter}
@@ -291,7 +308,7 @@ struct DataCollection
     name::Union{String, Nothing}
     uuid::UUID
     plugins::Vector{String}
-    parameters::Dict{String, Any}
+    parameters::SmallDict{String, Any}
     datasets::Vector{DataSet}
     path::Union{String, Nothing}
     advise::DataAdviceAmalgamation

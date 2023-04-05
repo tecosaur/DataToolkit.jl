@@ -65,7 +65,7 @@ function Base.parse(::Type{Identifier}, spec::AbstractString; advised::Bool=fals
     Identifier(if collection_isuuid; UUID(collection) else collection end,
                something(tryparse(UUID, dataset), dataset),
                if !isnothing(dtype) parse(QualifiedType, dtype) end,
-               Dict{String,Any}())
+               SmallDict{String,Any}())
 end
 
 # ---------------
@@ -85,10 +85,10 @@ In some cases, it makes sense for this to be explicitly defined for a particular
 transformer. """
 function supportedtypes end # See `interaction/externals.jl` for method definitions.
 
-supportedtypes(ADT::Type{<:AbstractDataTransformer}, spec::Dict{String, Any}, _::DataSet) =
+supportedtypes(ADT::Type{<:AbstractDataTransformer}, spec::SmallDict{String, Any}, _::DataSet) =
     supportedtypes(ADT, spec)
 
-supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
+supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::SmallDict{String, Any}) =
     supportedtypes(ADT)
 
 (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
@@ -98,10 +98,11 @@ supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
     ADT(dataset, Dict{String, Any}("driver" => spec))
 
 function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
+    parameters = smallify(spec)
     driver = if ADT isa DataType
         first(ADT.parameters)
-    elseif haskey(spec, "driver")
-        Symbol(lowercase(spec["driver"]))
+    elseif haskey(parameters, "driver")
+        Symbol(lowercase(parameters["driver"]))
     else
         @warn "$ADT for $(sprint(show, dataset.name)) has no driver!"
         :MISSING
@@ -109,9 +110,9 @@ function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::
     if !(ADT isa DataType)
         ADT = ADT{driver}
     end
-    ttype = let spec_type = get(spec, "type", nothing)
+    ttype = let spec_type = get(parameters, "type", nothing)
         if isnothing(spec_type)
-            supportedtypes(ADT, spec, dataset)
+            supportedtypes(ADT, parameters, dataset)
         elseif spec_type isa Vector
             parse.(QualifiedType, spec_type)
         elseif spec_type isa String
@@ -124,8 +125,7 @@ function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::
         @warn """Could not find any types that $ADT of $(sprint(show, dataset.name)) supports.
                  Consider adding a 'type' parameter."""
     end
-    priority = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
-    parameters = copy(spec)
+    priority = get(parameters, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
     delete!(parameters, "driver")
     delete!(parameters, "type")
     delete!(parameters, "priority")
@@ -140,7 +140,7 @@ end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
                     type::Vector{<:QualifiedType}, priority::Int,
-                    parameters::Dict{String, Any}) where {driver} =
+                    parameters::SmallDict{String, Any}) where {driver} =
                         DataStorage{driver, typeof(dataset)}(dataset, type, priority, parameters)
 
 # ---------------
@@ -149,7 +149,7 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
 
 DataCollection(name::Union{String, Nothing}=nothing; path::Union{String, Nothing}=nothing) =
     DataCollection(LATEST_DATA_CONFIG_VERSION, name, uuid4(), String[],
-                   Dict{String, Any}(), DataSet[], path,
+                   SmallDict{String, Any}(), DataSet[], path,
                    DataAdviceAmalgamation(String[]), Main)
 
 function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
@@ -178,11 +178,11 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                     uuid4()
                 end)
     plugins::Vector{String} = get(spec, "plugins", String[])
-    parameters = get(spec, "config", Dict{String, Any}())
     stores = get(parameters, "store", Dict{String, Any}())
     for reserved in ("store")
         delete!(parameters, reserved)
     end
+    parameters = get(spec, "config", Dict{String, Any}()) |> smallify
     unavailible_plugins = setdiff(plugins, getproperty.(PLUGINS, :name))
     if length(unavailible_plugins) > 0
         @warn string("The ", join(unavailible_plugins, ", ", ", and "),
@@ -223,7 +223,7 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
                     uuid4()
                 end)
     store = get(spec, "store", "DEFAULTSTORE")
-    parameters = copy(spec)
+    parameters = smallify(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
         delete!(parameters, reservedname)
     end

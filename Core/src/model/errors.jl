@@ -247,7 +247,7 @@ by the current version of $(@__MODULE__).
 # Example occurance
 
 ```julia-repl
-julia> fromspec(DataCollection, Dict{String, Any}("data_config_version" => -1))
+julia> fromspec(DataCollection, SmallDict{String, Any}("data_config_version" => -1))
 ERROR: CollectionVersionMismatch: -1 (specified) ≠ $LATEST_DATA_CONFIG_VERSION (current)
   The data collection specification uses the v-1 data collection format, however
   the installed DataToolkitBase version expects the v$LATEST_DATA_CONFIG_VERSION version of the format.
@@ -298,7 +298,7 @@ Modification of `collection` is not viable, as it is read-only.
 # Example Occurance
 
 ```julia-repl
-julia> lockedcollection = DataCollection(Dict{String, Any}("uuid" => Base.UUID(rand(UInt128)), "config" => Dict{String, Any}("locked" => true)))
+julia> lockedcollection = DataCollection(SmallDict{String, Any}("uuid" => Base.UUID(rand(UInt128)), "config" => SmallDict{String, Any}("locked" => true)))
 julia> write(lockedcollection)
 ERROR: ReadonlyCollection: The data collection unnamed#298 is locked
 Stacktrace: [...]
@@ -321,7 +321,7 @@ A catch-all for issues involving data transformers, with details given in `msg`.
 # Example occurance
 
 ```julia-repl
-julia> emptydata = DataSet(DataCollection(), "empty", Dict{String, Any}("uuid" => Base.UUID(rand(UInt128))))
+julia> emptydata = DataSet(DataCollection(), "empty", SmallDict{String, Any}("uuid" => Base.UUID(rand(UInt128))))
 DataSet empty
 
 julia> read(emptydata)
@@ -345,7 +345,7 @@ there is no transformer that satisfies this restriction.
 # Example occurance
 
 ```julia-repl
-julia> emptydata = DataSet(DataCollection(), "empty", Dict{String, Any}("uuid" => Base.UUID(rand(UInt128))))
+julia> emptydata = DataSet(DataCollection(), "empty", SmallDict{String, Any}("uuid" => Base.UUID(rand(UInt128))))
 DataSet empty
 
 julia> read(emptydata, String)
