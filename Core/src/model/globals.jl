@@ -84,7 +84,7 @@ this Dict under the following keys:
 """
 const DATA_CONFIG_RESERVED_ATTRIBUTES =
     Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "config"],
-         :dataset => ["uuid", "store", "storage", "loader", "writer"],
+         :dataset => ["uuid", "storage", "loader", "writer"],
          :transformer => ["driver", "type", "priority"])
 
 """
