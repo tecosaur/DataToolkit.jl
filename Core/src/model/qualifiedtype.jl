@@ -67,6 +67,7 @@ Base.issubset(a::Type, b::QualifiedType; mod::Module=Main) =
 const QUALIFIED_TYPE_SHORTHANDS = let forward =
     Dict{String, QualifiedType}(
         "FilePath" => QualifiedType(FilePath),
+        "DataSet" => QualifiedType(Symbol(@__MODULE__), :DataSet),
         "DataFrame" => QualifiedType(:DataFrames, :DataFrame))
     (; forward, reverse = Dict(val => key for (key, val) in forward))
 end
