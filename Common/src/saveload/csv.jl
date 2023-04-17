@@ -1,7 +1,7 @@
 function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     @import CSV
-    kwargs = Dict(Symbol(k) => v for (k, v) in
-                      get(loader, "args", Dict{String, Any}()))
+    kwargs = Dict{Symbol, Any}(
+        Symbol(k) => v for (k, v) in get(loader, "args", Dict{String, Any}()))
     if haskey(kwargs, :types)
         kwargs[:types] = typeify.(QualifiedType.(kwargs[:types]))
     end
