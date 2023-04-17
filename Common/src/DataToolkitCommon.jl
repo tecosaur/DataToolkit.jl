@@ -40,7 +40,7 @@ include("plugins/versions.jl")
 include("plugins/loadcache.jl")
 include("plugins/memorise.jl")
 
-include("repl/repl.jl")
+include("repl/REPLcmds.jl")
 
 include("misc/lintrules.jl")
 
