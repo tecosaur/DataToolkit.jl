@@ -4,6 +4,7 @@ authors = ["TEC <tec@tecosaur.com> and contributors"]
 version = "0.3.0"
 
 [deps]
+BaseDirs = "18cc8868-cbac-4acf-b575-c8ff214dc66f"
 CRC32c = "8bf52ea8-c179-5cab-976a-9e18b702a9bc"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 DataToolkitBase = "e209d0c3-e863-446f-9b45-de6ca9730756"

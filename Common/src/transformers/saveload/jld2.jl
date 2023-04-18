@@ -28,3 +28,5 @@ function create(::Type{DataLoader{:jld2}}, source::String)
         Dict{String, Any}()
     end
 end
+
+Store.shouldstore(::DataLoader{:jld2}, ::Type) = false

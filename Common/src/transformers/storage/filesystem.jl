@@ -34,3 +34,5 @@ function create(::Type{<:DataStorage{:filesystem}}, source::String, dataset::Dat
         Dict{String, Any}("path" => source)
     end
 end
+
+Store.shouldstore(::DataStorage{:filesystem}) = false

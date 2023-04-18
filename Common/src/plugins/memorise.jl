@@ -36,7 +36,8 @@ const MEMORISE_PLUGIN = Plugin("memorise", [
                     true
                 catch _ false end
             if should_memorise
-                dskey = (dataset.collection.uuid, dataset.uuid, chash(dataset), as)
+                dskey = (dataset.collection.uuid, dataset.uuid,
+                         mapreduce(Store.rhash, xor, dataset.loaders), as)
                 if haskey(MEMORISE_CACHE, dskey) && stillvalid(MEMORISE_CACHE[dskey])
                     if should_log_event("memorise", dataset)
                         @info "Loading '$(dataset.name)' (as $as) from memory copy"

@@ -13,13 +13,13 @@ using CRC32c: crc32c
 using UUIDs
 using TOML
 
+include("store/Store.jl")
+
 include("transformers/storage/filesystem.jl")
 include("transformers/storage/null.jl")
 include("transformers/storage/passthrough.jl")
 include("transformers/storage/raw.jl")
 include("transformers/storage/web.jl")
-
-include("transformers/storage/store/hash.jl")
 
 include("transformers/saveload/chain.jl")
 include("transformers/saveload/compression.jl")

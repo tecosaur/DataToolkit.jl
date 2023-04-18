@@ -48,7 +48,7 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
         abspath(dirname(loader.dataset.collection.path),
                 get(loader, "extract"))
     else
-        joinpath(tempdir(), "jl_datatoolkit_zip_" * string(chash(loader), base=16))
+        joinpath(tempdir(), "jl_datatoolkit_zip_" * string(Store.rhash(loader), base=16))
     end
     file = get(loader, "file", nothing)
     if !isdir(path) || !isnothing(file) && !isfile(joinpath(path, file))
