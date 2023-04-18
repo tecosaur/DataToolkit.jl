@@ -47,19 +47,15 @@ function Base.convert(::Type{SourceInfo}, spec::Dict{String, Any})
         end
     end
     checksum = if haskey(spec, "checksum")
-        typestr, valstr = split(spec["checksum"], ':')
-        type = Symbol(typestr)
-        val = if type === :crc32c
-            parse(UInt32, valstr, base=16)
-        elseif type === :xxhash
-            parse(UInt128, valstr, base=16)
-        end
-        type, val
+        parsechecksum(spec["checksum"]) end
+    type = if haskey(spec, "type") && haskey(spec, "typehash")
+        parse(QualifiedType, spec["type"]),
+        parse(UInt64, spec["typehash"], base=16)
     end
     SourceInfo(parse(UInt64, spec["recipe"], base=16),
                parse.(UUID, spec["references"]),
                spec["accessed"],
-               checksum,
+               checksum, type,
                get(spec, "extension", nothing))
 end
 
@@ -90,6 +86,10 @@ function Base.convert(::Type{Dict}, sinfo::SourceInfo)
     if !isnothing(sinfo.checksum)
         d["checksum"] = string(sinfo.checksum[1], ':',
                                string(sinfo.checksum[2], base=16))
+    end
+    if !isnothing(sinfo.type)
+        d["type"] = string(first(sinfo.type))
+        d["typehash"] = string(last(sinfo.type), base=16)
     end
     d
 end

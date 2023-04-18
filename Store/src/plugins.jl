@@ -44,3 +44,40 @@ const STORE_PLUGIN = Plugin("store", [
             (post, f, (storer, as), (; write))
         end
     end])
+
+"""
+Cache the results of data loaders using the `Serialisation` standard library. Cache keys
+are determined by the loader "recipe" and the type requested.
+
+It is important to note that not all data types can be cached effectively, such
+as an `IOStream`.
+
+## Configuration
+
+Caching of individual loaders can be disabled by setting the "cache" parameter
+to `false`, i.e.
+
+```toml
+[[somedata.loader]]
+cache = false
+...
+```
+"""
+const CACHE_PLUGIN = Plugin("cache", [
+    function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
+        if shouldstore(loader, as) && get(loader, "cache", true) === true
+            # Get any applicable cache file
+            cache = getsource(loader, as)
+            file = storefile(cache)
+            if !isnothing(file)
+                @info "Reading from cache file"
+                update_source(cache, loader)
+                (post, identity, (deserialize(file),))
+            else
+                @info "Saving to cache"
+                (post ∘ storesave(loader), f, (loader, source, as))
+            end
+        else
+            (post, f, (loader, source, as))
+        end
+    end])
