@@ -11,7 +11,7 @@ export loadcollection!, dataset
 export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataCollection, QualifiedType, Identifier, FilePath, SmallDict,
     LintItem, LintReport
-export load, storage, getstorage, putstorage, save, resolve, refine,
+export load, storage, getstorage, putstorage, save, getlayer, resolve, refine,
     supportedtypes, typeify, create, createpriority, lint
 export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     PackageException, UnregisteredPackage, MissingPackage,
