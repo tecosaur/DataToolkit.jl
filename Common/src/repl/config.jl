@@ -73,7 +73,6 @@ seperation.
 
 Examples:
   get defaults.memorise
-  get loadcache.path
   get my.\"special thing\".extra", config_get),
     ReplCmd{:config_set}(
         "set", "Set a configuration property
@@ -85,7 +84,6 @@ Similarly, the new value should be expressed using TOML syntax.
 
 Examples:
   set defaults.memorise true
-  set loadcache.path \"data/loadcache\"
   set my.\"special thing\".extra {a=1, b=2}", config_set),
     ReplCmd{:config_unset}(
         "unset", "Remove a configuration property
@@ -94,7 +92,6 @@ The parameter to be removed should be given using TOML-style dot seperation.
 
 Examples:
   unset defaults.memorise
-  unset loadcache.path
   unset my.\"special thing\".extra", config_unset),
 ]
 

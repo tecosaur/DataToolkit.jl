@@ -19,6 +19,7 @@ struct SourceInfo
     references::Vector{UUID}
     accessed::DateTime
     checksum::Union{Nothing, Tuple{Symbol, Unsigned}}
+    type::Union{Nothing, Tuple{QualifiedType, UInt64}}
     extension::String
 end
 

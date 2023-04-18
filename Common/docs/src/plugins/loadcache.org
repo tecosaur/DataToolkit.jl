@@ -1,5 +1,0 @@
-#+title: Loadcache
-
-#+begin_src @docs
-DataToolkitCommon.LOADCACHE_PLUGIN
-#+end_src

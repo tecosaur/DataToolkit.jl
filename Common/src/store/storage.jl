@@ -182,9 +182,26 @@ end
 storesave(storage::DataStorage, as::Type) =
     result -> storesave(storage, as, result)
 
-function update_source(source::SourceInfo, storage::DataStorage)
+function storesave(loader::DataLoader, value::T) where {T}
+    newsource = SourceInfo(
+        rhash(loader),
+        [loader.dataset.collection.uuid],
+        now(),
+        nothing, (QualifiedType(T), rhash(T)),
+        "jls")
+    dest = storefile(newsource)
+    serialize(dest, value)
+    chmod(dest, 0o100444 & filemode(STORE_DIR)) # Make read-only
+    update_source(newsource, loader)
+    value
+end
+
+storesave(loader::DataLoader) =
+    value -> storesave(loader, value)
+
+function update_source(source::SourceInfo, transformer::AbstractDataTransformer)
     global INVENTORY
-    collection = storage.dataset.collection
+    collection = transformer.dataset.collection
     cindex = findfirst(Base.Fix1(≃, collection), INVENTORY.collections)
     sindex = findfirst(Base.Fix1(≃, source), INVENTORY.sources)
     modify_inventory() do
@@ -204,7 +221,7 @@ function update_source(source::SourceInfo, storage::DataStorage)
         else
             INVENTORY.sources[sindex] = SourceInfo(
                 source.recipe, source.references, now(),
-                source.checksum, source.extension)
+                source.checksum, source.type, source.extension)
         end
     end
 end

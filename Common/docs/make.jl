@@ -41,7 +41,6 @@ makedocs(;
         ],
         "Plugins" => Any[
             "plugins/defaults.md",
-            "plugins/loadcache.md",
             "plugins/log.md",
             "plugins/memorise.md",
             "plugins/versions.md",
