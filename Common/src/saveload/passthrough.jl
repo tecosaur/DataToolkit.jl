@@ -10,7 +10,7 @@ function save(::DataWriter{:passthrough}, dest::IO, info::Any)
     write(dest, info)
 end
 
-supportedtypes(::Type{DataLoader{:passthrough}}, _::Dict{String, Any}, dataset::DataSet) =
+supportedtypes(::Type{DataLoader{:passthrough}}, ::SmallDict{String, Any}, dataset::DataSet) =
     reduce(vcat, getproperty.(dataset.storage, :type)) |> unique
 
 createpriority(::Type{DataLoader{:passthrough}}) = 20

@@ -21,7 +21,7 @@ function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     end
 end
 
-supportedtypes(::Type{DataLoader{:chain}}, spec::Dict{String, Any}) =
+supportedtypes(::Type{DataLoader{:chain}}, spec::SmallDict{String, Any}) =
     let lastloader = last(get(spec, "loaders", [nothing]))
         if lastloader isa Dict # { driver="X", ... } form
             explicit_type = get(lastloader, "type", nothing)
