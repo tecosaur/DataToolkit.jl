@@ -5,6 +5,7 @@ const STORE_PLUGIN = Plugin("store", [
     function (post::Function, f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
         global INVENTORY
         # Get any applicable cache file
+        update_inventory()
         source = getsource(storer)
         file = storefile(storer)
         if !shouldstore(storer) || write
@@ -12,14 +13,15 @@ const STORE_PLUGIN = Plugin("store", [
             # written to), then it should be removed before proceeding as
             # normal.
             if !isnothing(source)
-                index = findfirst(==(source), INVENTORY.sources)
-                !isnothing(index) && deleteat!(INVENTORY.sources, index)
+                index = findfirst(==(source), INVENTORY.stores)
+                !isnothing(index) && deleteat!(INVENTORY.stores, index)
+                write(INVENTORY)
             end
             (post, f, (storer, as), (; write))
         elseif !isnothing(file)
             # If using a cache file, ensure the parent collection is registered
             # as a reference.
-            update_source(source, storer)
+            update_source!(source, storer)
             if as === IO || as === IOStream
                 (post, identity, (open(file, "r"),))
             elseif as === FilePath
@@ -67,12 +69,17 @@ const CACHE_PLUGIN = Plugin("cache", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if shouldstore(loader, as) && get(loader, "cache", true) === true
             # Get any applicable cache file
+            update_inventory()
             cache = getsource(loader, as)
             file = storefile(cache)
             if !isnothing(file)
                 @info "Reading from cache file"
-                update_source(cache, loader)
-                (post, identity, (deserialize(file),))
+                for pkg in cache.packages
+                    DataToolkitBase.get_package(pkg)
+                end
+                update_source!(cache, loader)
+                info = Base.invokelatest(deserialize, file)
+                (post, identity, (info,))
             else
                 @info "Saving to cache"
                 (post ∘ storesave(loader), f, (loader, source, as))

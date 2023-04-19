@@ -36,10 +36,11 @@ function parsechecksum(checksum::String)
     type, val
 end
 
-function Base.convert(::Type{SourceInfo}, spec::Dict{String, Any})
+function Base.convert(::Type{StoreSource}, spec::Dict{String, Any})
     for (key, type) in (("recipe", String),
                         ("references", Vector{String}),
-                        ("accessed", DateTime))
+                        ("accessed", DateTime),
+                        ("extension", String))
         if !haskey(spec, key)
             throw(ArgumentError("Spec dict does not contain the required key: $key"))
         elseif !(spec[key] isa type)
@@ -48,15 +49,33 @@ function Base.convert(::Type{SourceInfo}, spec::Dict{String, Any})
     end
     checksum = if haskey(spec, "checksum")
         parsechecksum(spec["checksum"]) end
-    type = if haskey(spec, "type") && haskey(spec, "typehash")
-        parse(QualifiedType, spec["type"]),
-        parse(UInt64, spec["typehash"], base=16)
+    StoreSource(parse(UInt64, spec["recipe"], base=16),
+                parse.(UUID, spec["references"]),
+                spec["accessed"], checksum,
+                spec["extension"])
+end
+
+function Base.convert(::Type{CacheSource}, spec::Dict{String, Any})
+    for (key, type) in (("recipe", String),
+                        ("references", Vector{String}),
+                        ("accessed", DateTime),
+                        ("type", String),
+                        ("typehash", String),
+                        ("packages", Vector))
+        if !haskey(spec, key)
+            throw(ArgumentError("Spec dict does not contain the required key: $key"))
+        elseif !(spec[key] isa type)
+            throw(ArgumentError("Spec dict key $key is a $(typeof(spec[key])) not a $type"))
+        end
     end
-    SourceInfo(parse(UInt64, spec["recipe"], base=16),
-               parse.(UUID, spec["references"]),
-               spec["accessed"],
-               checksum, type,
-               get(spec, "extension", nothing))
+    packages = map(pkg -> Base.PkgId(parse(UUID, pkg["uuid"]), pkg["name"]),
+                   spec["packages"])
+    CacheSource(parse(UInt64, spec["recipe"], base=16),
+                parse.(UUID, spec["references"]),
+                spec["accessed"],
+                parse(QualifiedType, spec["type"]),
+                parse(UInt64, spec["typehash"], base=16),
+                packages)
 end
 
 function Base.convert(::Type{Dict}, conf::InventoryConfig)
@@ -78,7 +97,7 @@ function Base.convert(::Type{Pair}, cinfo::CollectionInfo)
     string(cinfo.uuid) => d
 end
 
-function Base.convert(::Type{Dict}, sinfo::SourceInfo)
+function Base.convert(::Type{Dict}, sinfo::StoreSource)
     d = Dict{String, Any}("recipe" => string(sinfo.recipe, base=16),
                           "references" => string.(sinfo.references),
                           "accessed" => sinfo.accessed,
@@ -87,11 +106,19 @@ function Base.convert(::Type{Dict}, sinfo::SourceInfo)
         d["checksum"] = string(sinfo.checksum[1], ':',
                                string(sinfo.checksum[2], base=16))
     end
-    if !isnothing(sinfo.type)
-        d["type"] = string(first(sinfo.type))
-        d["typehash"] = string(last(sinfo.type), base=16)
-    end
     d
+end
+
+function Base.convert(::Type{Dict}, sinfo::CacheSource)
+    Dict{String, Any}("recipe" => string(sinfo.recipe, base=16),
+                      "references" => string.(sinfo.references),
+                      "accessed" => sinfo.accessed,
+                      "type" => string(sinfo.type),
+                      "typehash" => string(sinfo.typehash, base=16),
+                      "packages" =>
+                          map(p -> Dict("name" => p.name,
+                                        "uuid" => string(p.uuid)),
+                              sinfo.packages))
 end
 
 function Base.convert(::Type{Dict}, inv::Inventory)
@@ -99,7 +126,8 @@ function Base.convert(::Type{Dict}, inv::Inventory)
                       "config" => convert(Dict, inv.config),
                       "collections" => Dict{String, Any}(
                           convert(Pair, cinfo) for cinfo in inv.collections),
-                      "source" => convert.(Dict, inv.sources))
+                      "store" => convert.(Dict, inv.stores),
+                      "cache" => convert.(Dict, inv.caches))
 end
 
 function Base.write(io::IO, inv::Inventory)
@@ -114,8 +142,9 @@ function load_inventory(path::String)
     config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
     collections = [convert(CollectionInfo, key => val)
                    for (key, val) in get(data, "collections", Dict{String, Any}[])]
-    sources = convert.(SourceInfo, get(data, "source", Dict{String, Any}[]))
-    Inventory(file, config, collections, sources)
+    stores = convert.(StoreSource, get(data, "store", Dict{String, Any}[]))
+    caches = convert.(CacheSource, get(data, "cache", Dict{String, Any}[]))
+    Inventory(file, config, collections, stores, caches)
 end
 
 function update_inventory()
@@ -129,18 +158,27 @@ function update_inventory()
                 InventoryFile(path, time()),
                 convert(InventoryConfig, Dict{String, Any}()),
                 CollectionInfo[],
-                SourceInfo[])
+                StoreSource[],
+                CacheSource[])
             write(INVENTORY)
         end
-    elseif mtime(INVENTORY.file.path) > INVENTORY.file.recency
-        INVENTORY = load_inventory(INVENTORY.file.path)
+    else
+        update_inventory(INVENTORY)
     end
+    INVENTORY
 end
 
-function modify_inventory(modify_fn::Function)
-    update_inventory()
+function update_inventory(inventory::Inventory)
+    if mtime(inventory.file.path) > inventory.file.recency
+        inventory = load_inventory(inventory.file.path)
+    end
+    inventory
+end
+
+function modify_inventory(modify_fn::Function, inventory::Inventory=INVENTORY)
+    update_inventory(inventory)
     modify_fn()
-    write(INVENTORY)
+    write(inventory)
 end
 
 # Garbage Collection
@@ -174,7 +212,7 @@ function garbage_collect!(inv::Inventory, log::Bool=true)
             end
             print('\n')
         end
-        nsources = length(inv.sources) + length(orphan_sources)
+        nsources = length(inv.stores) + length(inv.caches) + length(orphan_sources)
         printstyled("   Checked", bold=true, color=:green)
         println(' ', nsources, " cached item",
                 ifelse(nsources == 1, "", "s"),
@@ -214,7 +252,6 @@ The `active_collections` value gives both the data collection UUIDs, as well
 as all known recipe hashes.
 """
 function scan_collections(inv::Inventory)
-    max_collection_age = get(inv.config, "max_age", 30)
     active_collections = Dict{UUID, Set{UInt64}}()
     live_collections = Set{UUID}()
     ghost_collections = Set{UUID}()
@@ -238,12 +275,12 @@ function scan_collections(inv::Inventory)
                 else
                     push!(live_collections, collection.uuid)
                 end
-            elseif days_since(collection.seen) <= max_collection_age
+            elseif days_since(collection.seen) <= inv.config.max_age
                 push!(ghost_collections, collection.uuid)
             else
                 push!(dead_collections, collection.uuid)
             end
-        elseif days_since(collection.seen) <= max_collection_age
+        elseif days_since(collection.seen) <= inv.config.max_age
             push!(ghost_collections, collection.uuid)
         else
             push!(dead_collections, collection.uuid)
@@ -272,21 +309,23 @@ function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
                                 active_collections::Dict{UUID, Set{UInt64}})
     orphan_sources = SourceInfo[]
     num_recipe_checks = 0
-    let i = 1; while i <= length(inv.sources)
-        source = inv.sources[i]
-        filter!(source.references) do r
-            r ∈ inactive_collections ||
-                if haskey(active_collections, r)
-                    num_recipe_checks += 1
-                    source.recipe ∈ active_collections[r]
-            else false end
-        end
-        if isempty(source.references)
-            push!(orphan_sources, source)
-            deleteat!(inv.sources, i)
-        else
-            i += 1
-        end
-    end end
+    for sources in (inv.stores, inv.caches)
+        let i = 1; while i <= length(sources)
+            source = sources[i]
+            filter!(source.references) do r
+                r ∈ inactive_collections ||
+                    if haskey(active_collections, r)
+                        num_recipe_checks += 1
+                        source.recipe ∈ active_collections[r]
+                else false end
+            end
+            if isempty(source.references)
+                push!(orphan_sources, source)
+                deleteat!(sources, i)
+            else
+                i += 1
+            end
+        end end
+    end
     (; orphan_sources, num_recipe_checks)
 end

@@ -14,28 +14,40 @@ struct CollectionInfo
     seen::DateTime
 end
 
-struct SourceInfo
+abstract type SourceInfo end
+
+struct StoreSource <: SourceInfo
     recipe::UInt64
     references::Vector{UUID}
     accessed::DateTime
     checksum::Union{Nothing, Tuple{Symbol, Unsigned}}
-    type::Union{Nothing, Tuple{QualifiedType, UInt64}}
     extension::String
+end
+
+struct CacheSource <: SourceInfo
+    recipe::UInt64
+    references::Vector{UUID}
+    accessed::DateTime
+    type::QualifiedType
+    typehash::UInt64
+    packages::Vector{Base.PkgId}
 end
 
 struct Inventory
     file::InventoryFile
     config::InventoryConfig
     collections::Vector{CollectionInfo}
-    sources::Vector{SourceInfo}
+    stores::Vector{StoreSource}
+    caches::Vector{CacheSource}
 end
 
 ≃(a::CollectionInfo, b::CollectionInfo) = a.uuid == b.uuid
 ≃(a::DataCollection, b::CollectionInfo) = a.uuid == b.uuid
 ≃(a::CollectionInfo, b::DataCollection) = b ≃ a
 
-function ≃(a::SourceInfo, b::SourceInfo)
-    a.recipe == b.recipe &&
-        a.checksum == b.checksum &&
-        a.extension == b.extension
-end
+≃(a::SourceInfo, b::SourceInfo) = false
+≃(a::StoreSource, b::StoreSource) =
+    a.recipe == b.recipe && a.checksum == b.checksum &&
+    a.extension == b.extension
+≃(a::CacheSource, b::CacheSource) =
+    a.recipe == b.recipe && a.typehash == b.typehash
