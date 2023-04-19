@@ -23,6 +23,9 @@ const STORE_PLUGIN = Plugin("store", [
             # as a reference.
             update_source!(source, storer)
             if as === IO || as === IOStream
+                if should_log_event("store", storer)
+                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+                end
                 (post, identity, (open(file, "r"),))
             elseif as === FilePath
                 (post, identity, (FilePath(file),))
@@ -73,7 +76,9 @@ const CACHE_PLUGIN = Plugin("cache", [
             cache = getsource(loader, as)
             file = storefile(cache)
             if !isnothing(file)
-                @info "Reading from cache file"
+                if should_log_event("cache", loader)
+                    @info "Loading $as form of $(sprint(show, loader.dataset.name)) from the store"
+                end
                 for pkg in cache.packages
                     DataToolkitBase.get_package(pkg)
                 end
@@ -81,7 +86,6 @@ const CACHE_PLUGIN = Plugin("cache", [
                 info = Base.invokelatest(deserialize, file)
                 (post, identity, (info,))
             else
-                @info "Saving to cache"
                 (post ∘ storesave(loader), f, (loader, source, as))
             end
         else

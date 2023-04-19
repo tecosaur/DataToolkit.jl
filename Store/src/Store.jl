@@ -8,6 +8,8 @@ using TOML
 using UUIDs
 using Serialization
 
+import ..DataToolkitCommon: should_log_event
+
 const STORE_DIR = BaseDirs.User.cache(BaseDirs.Project("Data Store"), create=true)
 
 include("types.jl")
