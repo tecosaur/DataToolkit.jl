@@ -13,6 +13,9 @@ using CRC32c: crc32c
 using UUIDs
 using TOML
 
+# Defined in `plugins/log.jl`, but also wanted for the store plugins.
+function should_log_event end
+
 include("store/Store.jl")
 
 include("transformers/storage/filesystem.jl")

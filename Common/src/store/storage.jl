@@ -166,6 +166,9 @@ function storesave(storage::DataStorage, ::Type{FilePath}, file::FilePath)
         [storage.dataset.collection.uuid],
         now(), checksum, fileextension(storage))
     dest = storefile(newsource)
+    if should_log_event("store", storage)
+        @info "Writing $(sprint(show, storage.dataset.name)) to storage"
+    end
     if startswith(file.path, tempdir())
         mv(file.path, dest)
     else
@@ -223,6 +226,9 @@ function storesave(loader::DataLoader, value::T) where {T}
         [loader.dataset.collection.uuid],
         now(), QualifiedType(T), rhash(T), pkgs)
     dest = storefile(newsource)
+    if should_log_event("cache", loader)
+        @info "Saving $T form of $(sprint(show, loader.dataset.name)) to the store"
+    end
     Base.invokelatest(serialize, dest, value)
     chmod(dest, 0o100444 & filemode(STORE_DIR)) # Make read-only
     update_source!(newsource, loader)
