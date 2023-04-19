@@ -8,6 +8,9 @@ Determine the apropriate file extension for a file caching the contents of
 """
 fileextension(::DataStorage) = "cache"
 
+fileextension(s::StoreSource) = s.extension
+fileextension(s::CacheSource) = "jls"
+
 """
     shouldstore(storage::DataStorage)
     shouldstore(loader::DataLoader, T::Type)
@@ -27,8 +30,8 @@ function getsource(storage::DataStorage; inventory::Inventory=INVENTORY)
     recipe = rhash(storage)
     checksum = get(storage, "checksum", nothing)
     if isnothing(checksum)
-        for record in inventory.sources
-            if record.recipe == recipe && isnothing(record.type)
+        for record in inventory.stores
+            if record.recipe == recipe
                 return record
             end
         end
@@ -37,10 +40,8 @@ function getsource(storage::DataStorage; inventory::Inventory=INVENTORY)
         # so nothing can match.
     else
         checksum2 = parsechecksum(checksum)
-        for record in inventory.sources
-            if record.recipe === recipe &&
-                record.checksum === checksum2 &&
-                isnothing(record.type)
+        for record in inventory.stores
+            if record.recipe === recipe && record.checksum === checksum2
                 return record
             end
         end
@@ -49,17 +50,17 @@ end
 
 function getsource(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
     recipe = rhash(loader)
-    for record in inventory.sources
-        if record.recipe == recipe && !isnothing(record.type)
-            rtype = typeify(first(record.type))
-            if !isnothing(rtype) && rtype <: as && rhash(rtype) == last(record.type)
+    for record in inventory.caches
+        if record.recipe == recipe
+            rtype = typeify(record.type)
+            if !isnothing(rtype) && rtype <: as && rhash(rtype) == record.typehash
                 return record
             end
         end
     end
 end
 
-function storefile(source::SourceInfo; inventory::Inventory=INVENTORY)
+function storefile(source::StoreSource; inventory::Inventory=INVENTORY)
     joinpath(dirname(inventory.file.path),
              string(if isnothing(source.checksum)
                         string("R-", string(source.recipe, base=16))
@@ -67,9 +68,14 @@ function storefile(source::SourceInfo; inventory::Inventory=INVENTORY)
                         string(source.checksum[1], '-',
                                string(source.checksum[2], base=16))
                     end,
-                    if isnothing(source.type) ""
-                    else '-' * string(last(source.type), base=16) end,
-                    '.', source.extension))
+                    '.', fileextension(source)))
+end
+
+function storefile(source::SourceInfo; inventory::Inventory=INVENTORY)
+    joinpath(dirname(inventory.file.path),
+             string(string("R-", string(source.recipe, base=16)),
+                    '-', string(source.typehash, base=16),
+                    '.', fileextension(source)))
 end
 
 storefile(::Nothing) = nothing # For convenient chaning with `getsource`
@@ -81,10 +87,11 @@ function storefile(storage::DataStorage; inventory::Inventory=INVENTORY)
         if isfile(file)
             file
         else
+            @info "Deleting store"
             # If the cache file has been removed, remove the associated
             # source info.
-            index = findfirst(==(source), inventory.sources)
-            !isnothing(index) && deleteat!(inventory.sources, index)
+            index = findfirst(==(source), inventory.stores)
+            !isnothing(index) && deleteat!(inventory.stores, index)
             nothing
         end
     end
@@ -99,8 +106,8 @@ function storefile(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
         else
             # If the cache file has been removed, remove the associated
             # source info.
-            index = findfirst(==(source), inventory.sources)
-            !isnothing(index) && deleteat!(inventory.sources, index)
+            index = findfirst(==(source), inventory.caches)
+            !isnothing(index) && deleteat!(inventory.caches, index)
             nothing
         end
     end
@@ -154,13 +161,10 @@ function storesave(storage::DataStorage, ::Type{FilePath}, file::FilePath)
     # `rhash` result, should the checksum property be modified and included
     # in the hashing.
     checksum = getchecksum(storage, file.path)
-    newsource = SourceInfo(
+    newsource = StoreSource(
         rhash(storage),
         [storage.dataset.collection.uuid],
-        now(),
-        checksum,
-        nothing,
-        fileextension(storage))
+        now(), checksum, fileextension(storage))
     dest = storefile(newsource)
     if startswith(file.path, tempdir())
         mv(file.path, dest)
@@ -168,7 +172,7 @@ function storesave(storage::DataStorage, ::Type{FilePath}, file::FilePath)
         cp(file.path, dest)
     end
     chmod(dest, 0o100444 & filemode(STORE_DIR)) # Make read-only
-    update_source(newsource, storage)
+    update_source!(newsource, storage)
     dest
 end
 
@@ -182,46 +186,85 @@ end
 storesave(storage::DataStorage, as::Type) =
     result -> storesave(storage, as, result)
 
+function involvedmodules!(mods::Vector{Module}, x::T) where {T}
+    if parentmodule(T) ∉ (Base, Core) && parentmodule(T) ∉ mods
+        push!(mods, parentmodule(T))
+    end
+    if isconcretetype(T)
+        for field in fieldnames(T)
+            involvedmodules!(mods, getfield(x, field))
+        end
+    end
+end
+
+function involvedmodules!(mods::Vector{Module}, x::T) where {T <: AbstractArray}
+    if parentmodule(T) ∉ (Base, Core) && parentmodule(T) ∉ mods
+        push!(mods, parentmodule(T))
+    end
+    if isconcretetype(eltype(T))
+        involvedmodules!(mods, first(x))
+    else
+        for elt in x
+            involvedmodules!(mods, elt)
+        end
+    end
+end
+
+function involvedmodules(x)
+    mods = Module[]
+    involvedmodules!(mods, x)
+    mods
+end
+
 function storesave(loader::DataLoader, value::T) where {T}
-    newsource = SourceInfo(
+    pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], involvedmodules(value))
+    newsource = CacheSource(
         rhash(loader),
         [loader.dataset.collection.uuid],
-        now(),
-        nothing, (QualifiedType(T), rhash(T)),
-        "jls")
+        now(), QualifiedType(T), rhash(T), pkgs)
     dest = storefile(newsource)
-    serialize(dest, value)
+    Base.invokelatest(serialize, dest, value)
     chmod(dest, 0o100444 & filemode(STORE_DIR)) # Make read-only
-    update_source(newsource, loader)
+    update_source!(newsource, loader)
     value
 end
 
 storesave(loader::DataLoader) =
     value -> storesave(loader, value)
 
-function update_source(source::SourceInfo, transformer::AbstractDataTransformer)
-    global INVENTORY
+function update_source!(source::Union{StoreSource, CacheSource},
+                        transformer::AbstractDataTransformer;
+                        inventory::Inventory=INVENTORY)
+    update_inventory(inventory)
     collection = transformer.dataset.collection
-    cindex = findfirst(Base.Fix1(≃, collection), INVENTORY.collections)
-    sindex = findfirst(Base.Fix1(≃, source), INVENTORY.sources)
-    modify_inventory() do
-        if isnothing(cindex)
-            push!(INVENTORY.collections,
+    cindex = findfirst(Base.Fix1(≃, collection), inventory.collections)
+    sources = if source isa StoreSource
+        inventory.stores
+    else
+        inventory.caches
+    end
+    sindex = findfirst(Base.Fix1(≃, source), sources)
+    if isnothing(cindex)
+        push!(inventory.collections,
                 CollectionInfo(collection.uuid, collection.path,
                                 collection.name, now()))
-        else
-            INVENTORY.collections[cindex] = CollectionInfo(
-                collection.uuid, collection.path, collection.name, now())
-        end
-        if collection.uuid ∉ source.references
-            push!(source.references, collection.uuid)
-        end
-        if isnothing(sindex)
-            push!(INVENTORY.sources, source)
-        else
-            INVENTORY.sources[sindex] = SourceInfo(
-                source.recipe, source.references, now(),
-                source.checksum, source.type, source.extension)
-        end
+    else
+        inventory.collections[cindex] = CollectionInfo(
+            collection.uuid, collection.path, collection.name, now())
     end
+    if collection.uuid ∉ source.references
+        push!(source.references, collection.uuid)
+    end
+    if isnothing(sindex)
+        push!(sources, source)
+    else
+        sources[sindex] = update_atime(source)
+    end
+    write(inventory)
 end
+
+update_atime(s::StoreSource) =
+    StoreSource(s.recipe, s.references, now(), s.checksum, s.extension)
+
+update_atime(s::CacheSource) =
+    CacheSource(s.recipe, s.references, now(), s.type, s.typehash, s.packages)
