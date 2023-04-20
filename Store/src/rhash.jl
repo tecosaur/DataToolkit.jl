@@ -86,8 +86,12 @@ or `T` is a primitive type hash the name and parent module name.
 """
 function rhash(::Type{T}, h::UInt=zero(UInt)) where {T}
     if !isconcretetype(T)
-        hash(T)
+        h = hash(T, h)
     else
+        h = hash(nameof(T), h)
+        for param in Base.unwrap_unionall(T).parameters
+            h = rhash(param, h)
+        end
         for fname in fieldnames(T)
             h = hash(fname, h)
         end

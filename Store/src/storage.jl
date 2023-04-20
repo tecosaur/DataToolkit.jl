@@ -52,8 +52,9 @@ function getsource(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
     recipe = rhash(loader)
     for record in inventory.caches
         if record.recipe == recipe
-            rtype = typeify(record.type)
-            if !isnothing(rtype) && rtype <: as && rhash(rtype) == record.typehash
+            type, thash = first(record.types)
+            rtype = typeify(type)
+            if !isnothing(rtype) && rtype <: as && rhash(rtype) == thash
                 return record
             end
         end
@@ -74,7 +75,7 @@ end
 function storefile(source::SourceInfo; inventory::Inventory=INVENTORY)
     joinpath(dirname(inventory.file.path),
              string(string("R-", string(source.recipe, base=16)),
-                    '-', string(source.typehash, base=16),
+                    '-', string(last(first(source.types)), base=16),
                     '.', fileextension(source)))
 end
 
@@ -189,42 +190,54 @@ end
 storesave(storage::DataStorage, as::Type) =
     result -> storesave(storage, as, result)
 
-function involvedmodules!(mods::Vector{Module}, x::T) where {T}
-    if parentmodule(T) ∉ (Base, Core) && parentmodule(T) ∉ mods
-        push!(mods, parentmodule(T))
+function pkgtypes!(types::Vector{Type}, x::T) where {T}
+    M = parentmodule(T)
+    if M ∉ (Base, Core) && !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
+        push!(types, T)
     end
     if isconcretetype(T)
         for field in fieldnames(T)
-            involvedmodules!(mods, getfield(x, field))
+            pkgtypes!(types, getfield(x, field))
         end
     end
 end
 
-function involvedmodules!(mods::Vector{Module}, x::T) where {T <: AbstractArray}
-    if parentmodule(T) ∉ (Base, Core) && parentmodule(T) ∉ mods
-        push!(mods, parentmodule(T))
+function pkgtypes!(types::Vector{Type}, x::T) where {T <: AbstractArray}
+    M = parentmodule(T)
+    if M ∉ (Base, Core) && !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
+        push!(types, T)
     end
     if isconcretetype(eltype(T))
-        involvedmodules!(mods, first(x))
+        if parentmodule(eltype(T)) ∈ (Base, Core)
+        elseif startswith(pkgdir(parentmodule(eltype(T))), Sys.STDLIB)
+        elseif eltype(T) ∈ types
+        elseif !isempty(x) && isassigned(x, firstindex(x))
+            pkgtypes!(types, first(x))
+        end
     else
         for elt in x
-            involvedmodules!(mods, elt)
+            pkgtypes!(types, elt)
         end
     end
 end
 
-function involvedmodules(x)
-    mods = Module[]
-    involvedmodules!(mods, x)
-    mods
+function pkgtypes(x)
+    types = Type[]
+    pkgtypes!(types, x)
+    types
 end
 
 function storesave(loader::DataLoader, value::T) where {T}
-    pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], involvedmodules(value))
+    ptypes = pkgtypes(value)
+    modules = unique(parentmodule.(ptypes))
+    pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], modules)
+    !isempty(ptypes) && first(ptypes) == T ||
+        pushfirst!(ptypes, T)
     newsource = CacheSource(
         rhash(loader),
         [loader.dataset.collection.uuid],
-        now(), QualifiedType(T), rhash(T), pkgs)
+        now(), QualifiedType.(ptypes) .=> rhash.(ptypes),
+        pkgs)
     dest = storefile(newsource)
     if should_log_event("cache", loader)
         @info "Saving $T form of $(sprint(show, loader.dataset.name)) to the store"
@@ -273,4 +286,4 @@ update_atime(s::StoreSource) =
     StoreSource(s.recipe, s.references, now(), s.checksum, s.extension)
 
 update_atime(s::CacheSource) =
-    CacheSource(s.recipe, s.references, now(), s.type, s.typehash, s.packages)
+    CacheSource(s.recipe, s.references, now(), s.types, s.packages)

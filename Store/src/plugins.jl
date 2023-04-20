@@ -75,12 +75,19 @@ const CACHE_PLUGIN = Plugin("cache", [
             update_inventory()
             cache = getsource(loader, as)
             file = storefile(cache)
+            # Ensure all needed packages are loaded, and all relevant
+            # types have the same structure, before loading.
+            if !isnothing(file)
+                for pkg in cache.packages
+                    DataToolkitBase.get_package(pkg)
+                end
+                if !all(@. rhash(typeify(first(cache.types))) == last(cache.types))
+                    file = nothing
+                end
+            end
             if !isnothing(file)
                 if should_log_event("cache", loader)
                     @info "Loading $as form of $(sprint(show, loader.dataset.name)) from the store"
-                end
-                for pkg in cache.packages
-                    DataToolkitBase.get_package(pkg)
                 end
                 update_source!(cache, loader)
                 info = Base.invokelatest(deserialize, file)
