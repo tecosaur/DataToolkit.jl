@@ -28,8 +28,7 @@ struct CacheSource <: SourceInfo
     recipe::UInt64
     references::Vector{UUID}
     accessed::DateTime
-    type::QualifiedType
-    typehash::UInt64
+    types::Vector{Pair{QualifiedType, UInt64}}
     packages::Vector{Base.PkgId}
 end
 
@@ -50,4 +49,4 @@ end
     a.recipe == b.recipe && a.checksum == b.checksum &&
     a.extension == b.extension
 ≃(a::CacheSource, b::CacheSource) =
-    a.recipe == b.recipe && a.typehash == b.typehash
+    a.recipe == b.recipe && a.types == b.types

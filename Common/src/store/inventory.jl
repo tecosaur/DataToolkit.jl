@@ -59,8 +59,8 @@ function Base.convert(::Type{CacheSource}, spec::Dict{String, Any})
     for (key, type) in (("recipe", String),
                         ("references", Vector{String}),
                         ("accessed", DateTime),
-                        ("type", String),
-                        ("typehash", String),
+                        ("types", Vector{String}),
+                        ("typehashes", Vector{String}),
                         ("packages", Vector))
         if !haskey(spec, key)
             throw(ArgumentError("Spec dict does not contain the required key: $key"))
@@ -73,8 +73,8 @@ function Base.convert(::Type{CacheSource}, spec::Dict{String, Any})
     CacheSource(parse(UInt64, spec["recipe"], base=16),
                 parse.(UUID, spec["references"]),
                 spec["accessed"],
-                parse(QualifiedType, spec["type"]),
-                parse(UInt64, spec["typehash"], base=16),
+                parse.(QualifiedType, spec["types"]) .=>
+                    parse.(UInt64, spec["typehashes"], base=16),
                 packages)
 end
 
@@ -113,8 +113,8 @@ function Base.convert(::Type{Dict}, sinfo::CacheSource)
     Dict{String, Any}("recipe" => string(sinfo.recipe, base=16),
                       "references" => string.(sinfo.references),
                       "accessed" => sinfo.accessed,
-                      "type" => string(sinfo.type),
-                      "typehash" => string(sinfo.typehash, base=16),
+                      "types" => string.(first.(sinfo.types)),
+                      "typehashes" => string.(last.(sinfo.types), base=16),
                       "packages" =>
                           map(p -> Dict("name" => p.name,
                                         "uuid" => string(p.uuid)),
@@ -130,8 +130,28 @@ function Base.convert(::Type{Dict}, inv::Inventory)
                       "cache" => convert.(Dict, inv.caches))
 end
 
+const INVENTORY_TOML_SORT_MAPPING =
+    Dict(# top level
+         "inventory_version" => "\0x01",
+         "config" => "\0x02",
+         "collections" => "\0x03",
+         "store" => "\0x04",
+         "cache" => "\0x05",
+         # store/cache item
+         "recipe" => "\0x01",
+         "accessed" => "\0x02",
+         "references" => "\0x03",
+         "types" => "\0x04",
+         "typehashes" => "\0x05",
+         "checksum" => "\0x06",
+         "extension" => "\0x07",
+         # packages
+         "name" => "\0x01",
+         "uuid" => "\0x02")
+
 function Base.write(io::IO, inv::Inventory)
-    TOML.print(io, convert(Dict, inv))
+    keygen(key) = get(INVENTORY_TOML_SORT_MAPPING, key, key)
+    TOML.print(io, convert(Dict, inv), sorted=true, by=keygen)
 end
 
 Base.write(inv::Inventory) = write(inv.file.path, inv)
