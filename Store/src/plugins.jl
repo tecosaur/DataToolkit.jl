@@ -1,11 +1,31 @@
+const STORE_GC_CONFIG_INFO = """
+Three (system-wide) settings determine garbage collection behaviour:
+1. `max_age` (default $(DEFAULT_INVENTORY_CONFIG.max_age)): The maximum number
+   of days since a collection was last seen before it is removed from
+   consideration.
+2. `max_size` (default $(DEFAULT_INVENTORY_CONFIG.max_size)): The maximum
+   (total) size of the store.
+3. `recency_beta` (default $(DEFAULT_INVENTORY_CONFIG.recency_beta)): When
+   removing items to avoid going over `max_size`, how much recency should be
+   valued. Can be set to any value in (-∞, ∞). Larger (positive) values weight
+   recency more, and negative values weight size more. -1 and 1 are equivalent.
+"""
+
 """
 Cache IO from data storage backends.
+
+### Configuration
+
+System-wide configuration can be set via the `store gc set` REPL command, or
+directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
+
+$STORE_GC_CONFIG_INFO
 """
 const STORE_PLUGIN = Plugin("store", [
     function (post::Function, f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
         global INVENTORY
         # Get any applicable cache file
-        update_inventory()
+        update_inventory!()
         source = getsource(storer)
         file = storefile(storer)
         if !shouldstore(storer) || write
@@ -67,12 +87,17 @@ to `false`, i.e.
 cache = false
 ...
 ```
+
+System-wide configuration can be set via the `store gc set` REPL command, or
+directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
+
+$STORE_GC_CONFIG_INFO
 """
 const CACHE_PLUGIN = Plugin("cache", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if shouldstore(loader, as) && get(loader, "cache", true) === true
             # Get any applicable cache file
-            update_inventory()
+            update_inventory!()
             cache = getsource(loader, as)
             file = storefile(cache)
             # Ensure all needed packages are loaded, and all relevant

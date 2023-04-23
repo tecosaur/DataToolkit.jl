@@ -2,15 +2,22 @@ const INVENTORY_VERSION = 0
 
 INVENTORY::Union{Inventory, Nothing} = nothing
 
-const DEFAULT_INVENTORY_CONFIG = (; max_age = 30 )
+const DEFAULT_INVENTORY_CONFIG =
+    (max_age = 30, max_size = 50*1024^3, recency_beta = 1)
+
+const MSG_LABEL_WIDTH = 10
 
 # Reading and writing
 
 function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
-    max_age = if haskey(spec, "max_age") && spec["max_age"] isa Int
-        spec["max_age"]
-    else DEFAULT_INVENTORY_CONFIG.max_age end
-    InventoryConfig(max_age)
+    getkey(key::Symbol, T::Type, noth::Bool=false) = if haskey(spec, String(key))
+        if spec[String(key)] isa T; spec[String(key)]
+        elseif spec[String(key)] === "nothing"; nothing
+        else getfield(DEFAULT_INVENTORY_CONFIG, key) end
+    else getfield(DEFAULT_INVENTORY_CONFIG, key) end
+    InventoryConfig(getkey(:max_age, Int, true),
+                    getkey(:max_size, Number, true),
+                    getkey(:recency_beta, Int))
 end
 
 function Base.convert(::Type{CollectionInfo}, (uuid, spec)::Pair{String, Dict{String, Any}})
@@ -80,8 +87,11 @@ end
 
 function Base.convert(::Type{Dict}, conf::InventoryConfig)
     d = Dict{String, Any}()
-    if conf.max_age != DEFAULT_INVENTORY_CONFIG.max_age
-        d["max_age"] = conf.max_age
+    for key in (:max_age, :max_size, :recency_beta)
+        if getfield(conf, key) != getfield(DEFAULT_INVENTORY_CONFIG, key)
+            value = getfield(conf, key)
+            d[String(key)] = if isnothing(value) "nothing" else value end
+        end
     end
     d
 end
@@ -167,7 +177,7 @@ function load_inventory(path::String)
     Inventory(file, config, collections, stores, caches)
 end
 
-function update_inventory()
+function update_inventory!()
     global INVENTORY
     if isnothing(INVENTORY)
         path = joinpath(STORE_DIR, "Inventory.toml")
@@ -183,7 +193,7 @@ function update_inventory()
             write(INVENTORY)
         end
     else
-        update_inventory(INVENTORY)
+        INVENTORY = update_inventory(INVENTORY)
     end
     INVENTORY
 end
@@ -196,12 +206,59 @@ function update_inventory(inventory::Inventory)
 end
 
 function modify_inventory(modify_fn::Function, inventory::Inventory=INVENTORY)
-    update_inventory(inventory)
+    inventory === INVENTORY && update_inventory!()
     modify_fn()
     write(inventory)
 end
 
 # Garbage Collection
+
+function files(inv::Inventory)
+    map(Iterators.flatten((inv.stores, inv.caches))) do source
+        storefile(source; inventory=inv)
+    end
+end
+
+function humansize(bytes::Integer)
+    units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
+    magnitude = floor(Int, log(1024, 1 + bytes))
+    if 10 < bytes < 10*1024^magnitude
+        round(bytes / 1024^magnitude, digits=1)
+    else
+        round(Int, bytes / 1024^magnitude)
+    end, units[1+magnitude]
+end
+
+function parsebytesize(size::AbstractString)
+    m = match(r"^\s*(\d+)\s*(|k|M|G|T|P)(|i|I)[bB]?\s*$", size)
+    !isnothing(m) || throw(ArgumentError("Invalid byte size $(sprint(show, size))"))
+    num, multiplier, ibi = m.captures
+    exponent = findfirst(==(multiplier), ("", "k", "M", "G", "T", "P")) - 1
+    parse(Int, num) * ifelse(isempty(ibi), 1000, 1024)^exponent
+end
+
+function printstats(inv::Inventory=INVENTORY)
+    filesize = (f -> if isfile(f) stat(f).size else 0 end) ∘ storefile
+    printstyled(lpad("Tracking", MSG_LABEL_WIDTH), bold=true, color=:green)
+    println(' ', length(inv.collections), " collections")
+    storesizes = map(filesize, inv.stores)
+    printstyled(lpad("Stored", MSG_LABEL_WIDTH), bold=true, color=:green)
+    println(' ', length(inv.stores), " files, taking up $(join(humansize(sum(storesizes))))")
+    cachesizes = map(filesize, inv.caches)
+    printstyled(lpad("Cached", MSG_LABEL_WIDTH), bold=true, color=:green)
+    println(' ', length(inv.caches), " data sets, taking up $(join(humansize(sum(cachesizes))))")
+    printstyled(lpad("Largest", MSG_LABEL_WIDTH), bold=true, color=:green)
+    println(" stored file is $(join(humansize(maximum(storesizes))))",
+            ", cache file is $(join(humansize(maximum(cachesizes))))")
+    printstyled(lpad("Total", MSG_LABEL_WIDTH), bold=true, color=:green)
+    totalsize = sum(storesizes) + sum(cachesizes)
+    print(' ', join(humansize(totalsize)))
+    if !isnothing(inv.config.max_size)
+        print(" / ", join(humansize(inv.config.max_size)),
+              " (", floor(Int, 100 * totalsize / inv.config.max_size), "%)")
+    end
+    print('\n')
+end
 
 """
     garbage_collect!(inv::Inventory, log::Bool=true)
@@ -211,19 +268,19 @@ Examine `inv`, and garbage collect old entries.
 If `log` is set, an informative message is printed giving an overview
 of actions taken.
 """
-function garbage_collect!(inv::Inventory, log::Bool=true)
+function garbage_collect!(inv::Inventory=INVENTORY; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
     (; active_collections, live_collections, ghost_collections, dead_collections) =
         scan_collections(inv)
-    deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
+    dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
     inactive_collections = live_collections ∪ ghost_collections
     (; orphan_sources, num_recipe_checks) =
-        refresh_sources!(inv; inactive_collections, active_collections)
+        refresh_sources!(inv; inactive_collections, active_collections, dryrun)
     if log
-        printstyled("   Scanned", bold=true, color=:green)
+        printstyled(lpad("Scanned", MSG_LABEL_WIDTH), bold=true, color=:green)
         println(' ', length(live_collections), " collection",
                 ifelse(length(live_collections) == 1, "", "s"))
         if !isempty(ghost_collections) || !isempty(dead_collections)
-            printstyled("  Inactive", bold=true, color=:green)
+            printstyled(lpad("Inactive", MSG_LABEL_WIDTH), bold=true, color=:green)
             print(" collections: ",
                   length(ghost_collections) + length(dead_collections),
                   " found")
@@ -233,21 +290,132 @@ function garbage_collect!(inv::Inventory, log::Bool=true)
             print('\n')
         end
         nsources = length(inv.stores) + length(inv.caches) + length(orphan_sources)
-        printstyled("   Checked", bold=true, color=:green)
+        printstyled(lpad("Checked", MSG_LABEL_WIDTH), bold=true, color=:green)
         println(' ', nsources, " cached item",
                 ifelse(nsources == 1, "", "s"),
                 " (", num_recipe_checks, " recipe check",
                 ifelse(num_recipe_checks == 1, "", "s"), ")")
-        printstyled("   Removed", bold=true, color=:green)
-        if isempty(dead_collections) && isempty(orphan_sources)
+        orphan_files = setdiff(readdir(dirname(inv.file.path), join=true),
+                               files(inv), (inv.file.path,))
+        deleted_bytes = 0
+        for f in orphan_files
+            if isdir(f)
+                @warn "Found a file in the inventory folder, this is quite irregular"
+                dryrun || rm(f, force=true, recursive=true)
+            else
+                deleted_bytes += stat(f).size
+                dryrun || rm(f, force=true)
+            end
+        end
+        truncated_sources, truncsource_bytes = garbage_trim_size!(inv; dryrun)
+        dryrun || for source in truncated_sources
+            file = storefile(source)
+            isfile(file) && rm(file, force=true)
+        end
+        if !isempty(truncated_sources) && trimmsg
+            printstyled("Data Toolkit Store", color=:magenta, bold=true)
+            println(" trimmed ", length(truncated_sources), " items (",
+                    join(humansize(truncsource_bytes)), ") to avoid going over the maximum size")
+        end
+        deleted_bytes += truncsource_bytes
+        printstyled(lpad(ifelse(dryrun, "Would remove", "Removed"), MSG_LABEL_WIDTH),
+                    bold=true, color=:green)
+        if isempty(dead_collections) && isempty(orphan_sources) && isempty(orphan_files) && isempty(truncated_sources)
             println(" nothing")
         else
-            println(' ', length(dead_collections), " collection",
-                    ifelse(length(dead_collections) == 1, "", "s"),
-                    ", ", length(orphan_sources), " cached item",
-                    ifelse(length(orphan_sources) == 1, "", "s"))
+            length(dead_collections) > 0 &&
+                print(' ', length(dead_collections), " collection",
+                      ifelse(length(dead_collections) == 1, "", "s"))
+            length(orphan_sources) > 0 &&
+                print(ifelse(!isempty(dead_collections), ", ", ""),
+                      length(orphan_sources), " cached item",
+                      ifelse(length(orphan_sources) == 1, "", "s"))
+            orphan_delta = length(orphan_files) - length(orphan_sources)
+            orphan_delta > 0 &&
+                print(ifelse(!isempty(dead_collections) || !isempty(orphan_sources),
+                             ", ", " "),
+                      orphan_delta, " orphan file",
+                      ifelse(orphan_delta == 1, "", "s"))
+            !isempty(truncated_sources) &&
+                print(ifelse(!isempty(dead_collections) || !isempty(orphan_sources) || orphan_delta > 0,
+                             ", ", " "),
+                      length(truncated_sources), " large item",
+                      ifelse(length(truncated_sources) == 1, "", "s"))
+            if deleted_bytes > 0
+                print('\n')
+                removedsize, removedunits = humansize(deleted_bytes)
+                printstyled(lpad(ifelse(dryrun, "Would free", "Freed"), MSG_LABEL_WIDTH),
+                            bold=true, color=:green)
+                print(" $removedsize$removedunits")
+            end
+            print('\n')
         end
     end
+end
+
+function garbage_trim_size!(inv::Inventory=INVENTORY; dryrun::Bool=false)
+    !isnothing(inv.config.max_size) || return (SourceInfo[], 0)
+    allsources = vcat(inv.stores, inv.caches)
+    allsizes = map(f -> Int(isfile(f) && stat(f).size), storefile.(allsources))
+    if sum(allsizes) > inv.config.max_size
+        allscores = size_recency_scores(allsources, inv.config.recency_beta)
+        totalsize = sum(allsizes)
+        removed = SourceInfo[]
+        for (source, source_size) in zip(allsources[sortperm(allscores, rev=true)],
+                                         allsizes[sortperm(allscores, rev=true)])
+            totalsize > inv.config.max_size || break
+            push!(removed, source)
+            totalsize -= source_size
+            dryrun || if source isa StoreSource
+                index = findfirst(==(source), inv.stores)
+                deleteat!(inv.stores, index)
+            else # CacheSource
+                index = findfirst(==(source), inv.caches)
+                deleteat!(inv.caches, index)
+            end
+        end
+        removed, sum(allsizes) - totalsize
+    else
+        SourceInfo[], 0
+    end
+end
+
+"""
+    size_recency_scores(sources::Vector{SourceInfo}, β::Number=1)
+
+Produce a combined score for each of `sources` based on the size and (access)
+recency of the source, with small recent files scored higher than large older
+files. Files that do not exist are given a score of 0.0.
+
+The combined score is a weighted harmonic mean, inspired by the F-score. More
+specifically, the combined score is ``(1 + \\beta^2) \\cdot \\frac{t \\cdot
+s}{\\beta^2 t + s}`` where ``\\beta`` is the recency factor, ``t \\in [0, 1]``
+is the time score, and ``s \\in [0, 1]`` is the size score. When `β` is
+negative, the ``\\beta^2`` weighting is applied to ``s`` instead.
+"""
+function size_recency_scores(sources::Vector{SourceInfo}, β::Number=1)
+    sizes = Int[]
+    times = Float64[]
+    for source in sources
+        push!(times, datetime2unix(source.accessed))
+        file = storefile(source)
+        if isfile(file)
+            fstat = stat(file)
+            push!(sizes, fstat.size)
+        else
+            push!(sizes, 0)
+        end
+    end
+    largest = maximum(sizes)
+    time_min, time_max = extrema(times)
+    sscores = sizes ./ largest
+    tscores = @. (time_max - times) / (time_max - time_min)
+    map(if β >= 0
+            (s, t)::Tuple -> (1 + β^2) * (s * t) / (s + β^2 * t)
+        else
+            (s, t)::Tuple -> (1 + β^2) * (s * t) / (β^2 * s + t)
+        end,
+        zip(sscores, tscores))
 end
 
 """
@@ -326,22 +494,31 @@ The result is a named tuple giving a list of orphaned sources and the number of
 recipe checks that occured.
 """
 function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
-                                active_collections::Dict{UUID, Set{UInt64}})
+                          active_collections::Dict{UUID, Set{UInt64}},
+                          dryrun::Bool=false)
     orphan_sources = SourceInfo[]
     num_recipe_checks = 0
     for sources in (inv.stores, inv.caches)
         let i = 1; while i <= length(sources)
             source = sources[i]
             filter!(source.references) do r
-                r ∈ inactive_collections ||
-                    if haskey(active_collections, r)
-                        num_recipe_checks += 1
-                        source.recipe ∈ active_collections[r]
-                else false end
+                if haskey(active_collections, r)
+                    num_recipe_checks += 1
+                    source.recipe ∈ active_collections[r] &&
+                        if source isa StoreSource
+                            true
+                        elseif all(Base.root_module_exists, source.packages)
+                            true
+                        else
+                            all(@. rhash(typeify(first(source.types))) == last(source.types))
+                        end
+                else
+                    r ∈ inactive_collections
+                end
             end
             if isempty(source.references)
                 push!(orphan_sources, source)
-                deleteat!(sources, i)
+                dryrun || deleteat!(sources, i)
             else
                 i += 1
             end

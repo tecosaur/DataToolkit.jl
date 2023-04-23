@@ -4,7 +4,9 @@ struct InventoryFile
 end
 
 mutable struct InventoryConfig
-    max_age::Int
+    max_age::Union{Int, Nothing}  # Days
+    max_size::Union{Int, Nothing} # Bytes
+    recency_beta::Number
 end
 
 struct CollectionInfo
