@@ -4,6 +4,7 @@ struct InventoryFile
 end
 
 mutable struct InventoryConfig
+    auto_gc::Int
     max_age::Union{Int, Nothing}  # Days
     max_size::Union{Int, Nothing} # Bytes
     recency_beta::Number
@@ -34,12 +35,13 @@ struct CacheSource <: SourceInfo
     packages::Vector{Base.PkgId}
 end
 
-struct Inventory
-    file::InventoryFile
+mutable struct Inventory
+    const file::InventoryFile
     config::InventoryConfig
     collections::Vector{CollectionInfo}
     stores::Vector{StoreSource}
     caches::Vector{CacheSource}
+    last_gc::DateTime
 end
 
 ≃(a::CollectionInfo, b::CollectionInfo) = a.uuid == b.uuid

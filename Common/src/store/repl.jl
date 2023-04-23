@@ -2,7 +2,8 @@ import DataToolkitBase: allcompletions
 
 function repl_config_get(input::AbstractString)
     update_inventory!()
-    value_sets = [(:max_age, "days"),
+    value_sets = [(:auto_gc, "hours"),
+                  (:max_age, "days"),
                   (:max_size, join ∘ humansize),
                   (:recency_beta, "")]
     if !isempty(input)
@@ -41,7 +42,15 @@ function repl_config_set(input::AbstractString)
         return
     end
     param, value = split(input, limit=2)
-    if param == "max_age"
+    if param == "auto_gc"
+        if (hours = tryparse(Int, hours)) |> !isnothing
+            modify_inventory(() -> INVENTORY.config.auto_gc = hours)
+        else
+            printstyled(" ! ", color=:red, bold=true)
+            println("must be an integer")
+            return
+        end
+    elseif param == "max_age"
         if value == "-"
             modify_inventory() do
                 INVENTORY.config.max_age = nothing
@@ -99,7 +108,13 @@ function repl_config_set(input::AbstractString)
 end
 
 function repl_config_reset(input::AbstractString)
-    if input == "max_age"
+    if input == "auto_gc"
+        modify_inventory() do
+            INVENTORY.config.auto_gc = DEFAULT_INVENTORY_CONFIG.auto_gc
+        end
+        printstyled(" ✓ ", color=:green)
+        println("Set to $(ifelse(DEFAULT_INVENTORY_CONFIG.auto_gc, "on", "off"))")
+    elseif input == "max_age"
         modify_inventory() do
             INVENTORY.config.max_age = DEFAULT_INVENTORY_CONFIG.max_age
         end
@@ -128,7 +143,7 @@ function repl_config_reset(input::AbstractString)
     end
 end
 
-const REPL_CONFIG_KEYS = ["max_age", "max_size", "recency_beta"]
+const REPL_CONFIG_KEYS = ["auto_gc", "max_age", "max_size", "recency_beta"]
 allcompletions(::ReplCmd{:store_config_get}) = REPL_CONFIG_KEYS
 allcompletions(::ReplCmd{:store_config_set}) = REPL_CONFIG_KEYS
 allcompletions(::ReplCmd{:store_config_reset}) = REPL_CONFIG_KEYS

@@ -25,6 +25,12 @@ function __init__()
     @dataplugin CACHE_PLUGIN
     push!(REPL_CMDS, STORE_REPL_CMD)
     update_inventory!()
+    atexit() do
+        hours_since = (now() - INVENTORY.last_gc).value / (1000 * 60 * 60)
+        if INVENTORY.config.auto_gc > 0 && hours_since > INVENTORY.config.auto_gc
+            garbage_collect!(; log=false, trimmsg=true)
+        end
+    end
 end
 
 end
