@@ -24,7 +24,7 @@ function __init__()
     @dataplugin STORE_PLUGIN :default
     @dataplugin CACHE_PLUGIN
     push!(REPL_CMDS, STORE_REPL_CMD)
-    update_inventory()
+    update_inventory!()
 end
 
 end

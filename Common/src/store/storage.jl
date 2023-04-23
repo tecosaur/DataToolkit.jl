@@ -254,7 +254,7 @@ storesave(loader::DataLoader) =
 function update_source!(source::Union{StoreSource, CacheSource},
                         transformer::AbstractDataTransformer;
                         inventory::Inventory=INVENTORY)
-    update_inventory(inventory)
+    inventory === INVENTORY && update_inventory!()
     collection = transformer.dataset.collection
     cindex = findfirst(Base.Fix1(≃, collection), inventory.collections)
     sources = if source isa StoreSource
