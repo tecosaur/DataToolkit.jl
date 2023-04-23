@@ -2,8 +2,7 @@ const INVENTORY_VERSION = 0
 
 INVENTORY::Union{Inventory, Nothing} = nothing
 
-const DEFAULT_INVENTORY_CONFIG =
-    (max_age = 30, max_size = 50*1024^3, recency_beta = 1)
+const DEFAULT_INVENTORY_CONFIG = InventoryConfig(2, 30, 50*1024^3, 1)
 
 const MSG_LABEL_WIDTH = 10
 
@@ -15,7 +14,8 @@ function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
         elseif spec[String(key)] === "nothing"; nothing
         else getfield(DEFAULT_INVENTORY_CONFIG, key) end
     else getfield(DEFAULT_INVENTORY_CONFIG, key) end
-    InventoryConfig(getkey(:max_age, Int, true),
+    InventoryConfig(getkey(:auto_gc, Int),
+                    getkey(:max_age, Int, true),
                     getkey(:max_size, Number, true),
                     getkey(:recency_beta, Int))
 end
@@ -87,7 +87,7 @@ end
 
 function Base.convert(::Type{Dict}, conf::InventoryConfig)
     d = Dict{String, Any}()
-    for key in (:max_age, :max_size, :recency_beta)
+    for key in (:auto_gc, :max_age, :max_size, :recency_beta)
         if getfield(conf, key) != getfield(DEFAULT_INVENTORY_CONFIG, key)
             value = getfield(conf, key)
             d[String(key)] = if isnothing(value) "nothing" else value end
@@ -133,6 +133,7 @@ end
 
 function Base.convert(::Type{Dict}, inv::Inventory)
     Dict{String, Any}("inventory_version" => INVENTORY_VERSION,
+                      "inventory_last_gc" => inv.last_gc,
                       "config" => convert(Dict, inv.config),
                       "collections" => Dict{String, Any}(
                           convert(Pair, cinfo) for cinfo in inv.collections),
@@ -143,10 +144,11 @@ end
 const INVENTORY_TOML_SORT_MAPPING =
     Dict(# top level
          "inventory_version" => "\0x01",
-         "config" => "\0x02",
-         "collections" => "\0x03",
-         "store" => "\0x04",
-         "cache" => "\0x05",
+         "inventory_last_gc" => "\0x02",
+         "config" => "\0x03",
+         "collections" => "\0x04",
+         "store" => "\0x05",
+         "cache" => "\0x06",
          # store/cache item
          "recipe" => "\0x01",
          "accessed" => "\0x02",
@@ -167,14 +169,18 @@ end
 Base.write(inv::Inventory) = write(inv.file.path, inv)
 
 function load_inventory(path::String)
-    file = InventoryFile(path, mtime(path))
     data = open(io -> TOML.parse(io), path)
+    if data["inventory_version"] != INVENTORY_VERSION
+        error("Incompatable inventory version!")
+    end
+    file = InventoryFile(path, mtime(path))
+    last_gc = data["inventory_last_gc"]
     config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
     collections = [convert(CollectionInfo, key => val)
                    for (key, val) in get(data, "collections", Dict{String, Any}[])]
     stores = convert.(StoreSource, get(data, "store", Dict{String, Any}[]))
     caches = convert.(CacheSource, get(data, "cache", Dict{String, Any}[]))
-    Inventory(file, config, collections, stores, caches)
+    Inventory(file, config, collections, stores, caches, last_gc)
 end
 
 function update_inventory!()
@@ -187,9 +193,8 @@ function update_inventory!()
             INVENTORY = Inventory(
                 InventoryFile(path, time()),
                 convert(InventoryConfig, Dict{String, Any}()),
-                CollectionInfo[],
-                StoreSource[],
-                CacheSource[])
+                CollectionInfo[], StoreSource[],
+                CacheSource[], now())
             write(INVENTORY)
         end
     else
@@ -350,6 +355,10 @@ function garbage_collect!(inv::Inventory=INVENTORY; log::Bool=true, dryrun::Bool
             end
             print('\n')
         end
+    end
+    if !dryrun
+        inv.last_gc = now()
+        write(inv)
     end
 end
 
