@@ -19,7 +19,7 @@ Cache IO from data storage backends.
 
 ### Configuration
 
-System-wide configuration can be set via the `store gc set` REPL command, or
+System-wide configuration can be set via the `store config set` REPL command, or
 directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
 
 $STORE_GC_CONFIG_INFO
@@ -132,7 +132,7 @@ cache = false
 ...
 ```
 
-System-wide configuration can be set via the `store gc set` REPL command, or
+System-wide configuration can be set via the `store config set` REPL command, or
 directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
 
 $STORE_GC_CONFIG_INFO
