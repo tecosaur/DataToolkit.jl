@@ -15,9 +15,18 @@ Four (system-wide) settings determine garbage collection behaviour:
 """
 
 """
-Cache IO from data storage backends.
+Cache IO from data storage backends, by saving the contents to the disk.
 
 ### Configuration
+
+Saving of individual storage sources can be disabled by setting the "save"
+parameter to `false`, i.e.
+
+```toml
+[[somedata.storage]]
+save = false
+...
+```
 
 System-wide configuration can be set via the `store config set` REPL command, or
 directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
@@ -139,7 +148,7 @@ $STORE_GC_CONFIG_INFO
 """
 const CACHE_PLUGIN = Plugin("cache", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
-        if shouldstore(loader, as) && get(loader, "cache", true) === true
+        if shouldstore(loader, as)
             # Get any applicable cache file
             update_inventory!()
             cache = getsource(loader, as)

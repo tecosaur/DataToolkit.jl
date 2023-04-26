@@ -17,13 +17,13 @@ fileextension(s::CacheSource) = "jls"
 
 Returns `true` if `storage`/`loader` should be stored/cached, `false` otherwise.
 """
-shouldstore(::DataStorage) = true
+shouldstore(storage::DataStorage) = get(storage, "save", true) === true
 
-function shouldstore(::DataLoader, T::Type)
+function shouldstore(loader::DataLoader, T::Type)
     unstorable = T <: IO || T <: Function ||
         QualifiedType(Base.typename(T).wrapper) ==
         QualifiedType(:TranscodingStreams, :TranscodingStream)
-    !unstorable
+    get(loader, "cache", true) === true && !unstorable
 end
 
 function getsource(storage::DataStorage; inventory::Inventory=INVENTORY)
