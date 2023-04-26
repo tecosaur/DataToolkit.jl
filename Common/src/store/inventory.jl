@@ -255,8 +255,8 @@ function printstats(inv::Inventory=INVENTORY)
     printstyled(lpad("Cached", MSG_LABEL_WIDTH), bold=true, color=:green)
     println(' ', length(inv.caches), " data sets, taking up $(join(humansize(sum(cachesizes))))")
     printstyled(lpad("Largest", MSG_LABEL_WIDTH), bold=true, color=:green)
-    println(" stored file is $(join(humansize(maximum(storesizes))))",
-            ", cache file is $(join(humansize(maximum(cachesizes))))")
+    println(" stored file is $(join(humansize(maximum(storesizes, init=0))))",
+            ", cache file is $(join(humansize(maximum(cachesizes, init=0))))")
     printstyled(lpad("Total", MSG_LABEL_WIDTH), bold=true, color=:green)
     totalsize = sum(storesizes) + sum(cachesizes)
     print(' ', join(humansize(totalsize)))
@@ -334,7 +334,7 @@ function garbage_collect!(inv::Inventory=INVENTORY; log::Bool=true, dryrun::Bool
                 print(' ', length(dead_collections), " collection",
                       ifelse(length(dead_collections) == 1, "", "s"))
             length(orphan_sources) > 0 &&
-                print(ifelse(!isempty(dead_collections), ", ", ""),
+                print(ifelse(!isempty(dead_collections), ", ", " "),
                       length(orphan_sources), " cached item",
                       ifelse(length(orphan_sources) == 1, "", "s"))
             orphan_delta = length(orphan_files) - length(orphan_sources)
