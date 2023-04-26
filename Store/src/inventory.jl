@@ -50,8 +50,9 @@ function Base.convert(::Type{StoreSource}, spec::Dict{String, Any})
                         ("extension", String))
         if !haskey(spec, key)
             throw(ArgumentError("Spec dict does not contain the required key: $key"))
+        elseif type <: Vector && isempty(spec[key])
         elseif !(spec[key] isa type)
-            throw(ArgumentError("Spec dict key $key is a $(typeof(spec[key])) not a $type"))
+            throw(ArgumentError("Spec dict key '$key' is a $(typeof(spec[key])) not a $type"))
         end
     end
     checksum = if haskey(spec, "checksum")
@@ -71,6 +72,7 @@ function Base.convert(::Type{CacheSource}, spec::Dict{String, Any})
                         ("packages", Vector))
         if !haskey(spec, key)
             throw(ArgumentError("Spec dict does not contain the required key: $key"))
+        elseif type <: Vector && isempty(spec[key])
         elseif !(spec[key] isa type)
             throw(ArgumentError("Spec dict key $key is a $(typeof(spec[key])) not a $type"))
         end
