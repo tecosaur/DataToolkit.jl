@@ -80,6 +80,10 @@ const STORE_PLUGIN = Plugin("store", [
         else
             (post, f, (storer, as), (; write))
         end
+    end,
+    function (post::Function, f::typeof(rhash), storage::DataStorage, parameters::SmallDict, h::UInt)
+        delete!(parameters, "save") # Does not impact the final result
+        (post, f, (storage, parameters, h))
     end])
 
 """
@@ -176,4 +180,8 @@ const CACHE_PLUGIN = Plugin("cache", [
         else
             (post, f, (loader, source, as))
         end
+    end,
+    function (post::Function, f::typeof(rhash), loader::DataLoader, parameters::SmallDict, h::UInt)
+        delete!(parameters, "cache") # Does not impact the final result
+        (post, f, (loader, parameters, h))
     end])
