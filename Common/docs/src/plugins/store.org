@@ -1,0 +1,5 @@
+#+title: Store
+
+#+begin_src @docs
+DataToolkitCommon.Store.STORE_PLUGIN
+#+end_src
