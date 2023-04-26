@@ -157,6 +157,29 @@ end
 
 allcompletions(::ReplCmd{:store_gc}) = ["-d", "--dryrun"]
 
+function repl_expunge(input::AbstractString)
+    update_inventory!()
+    collection = nothing
+    for cltn in INVENTORY.collections
+        if cltn.name == input
+            collection = cltn
+        elseif string(cltn.uuid) == input
+            collection = cltn
+        end
+        isnothing(collection) || break
+    end
+    if isnothing(collection)
+        printstyled(" ! ", color=:red, bold=true)
+        println("could not find collection: $input")
+        return
+    end
+    removed = expunge!(collection)
+    printstyled(" i ", color=:cyan, bold=true)
+    println("removed $(length(removed)) items from the store")
+end
+
+allcompletions(::ReplCmd{:store_expunge}) = getfield.(INVENTORY.collections, :name)
+
 const STORE_SUBCMDS =
     ReplCmd[
         ReplCmd{:store_gc}(
@@ -180,7 +203,11 @@ Optionally provide the -d/--dryrun flag to prevent file deletion.",
                     repl_config_set),
                 ReplCmd{:store_config_reset}(
                     "reset", "Set a configuration parameter\n\n$STORE_GC_CONFIG_INFO",
-                    repl_config_reset)])]
+                    repl_config_reset)]),
+        ReplCmd{:store_expunge}(
+            "expunge", """Remove a data collection from the store
+                          \nUsage:\n  expunge [collection name or UUID]""",
+            repl_expunge)]
 
 const STORE_REPL_CMD =
     ReplCmd(:store,

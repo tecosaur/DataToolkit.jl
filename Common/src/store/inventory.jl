@@ -535,3 +535,29 @@ function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
     end
     (; orphan_sources, num_recipe_checks)
 end
+
+function expunge!(collection::CollectionInfo; inventory::Inventory=INVENTORY, dryrun::Bool=false)
+    cindex = findfirst(==(collection), inventory.collections)
+    isnothing(cindex) || deleteat!(inventory.collections, cindex)
+    removed_sources = SourceInfo[]
+    for sources in (inventory.stores, inventory.caches)
+        i = 1; while i <= length(sources)
+            source = sources[i]
+            if (index = findfirst(collection.uuid .== source.references)) |> !isnothing
+                dryrun || deleteat!(source.references, index)
+                if isempty(source.references)
+                    push!(removed_sources, source)
+                    dryrun || deleteat!(sources, i)
+                    file = storefile(source)
+                    dryrun || isfile(file) && rm(file, force=true)
+                else
+                    i += 1
+                end
+            else
+                i += 1
+            end
+        end
+    end
+    dryrun || write(inventory)
+    removed_sources
+end
