@@ -80,6 +80,47 @@ are determined by the loader "recipe" and the type requested.
 It is important to note that not all data types can be cached effectively, such
 as an `IOStream`.
 
+## Recipe hashing
+
+The driver, parameters, type(s), of a loader and the storage drivers of a dataset
+are all combined into the "recipe hash" of a loader.
+
+```
+╭─────────╮             ╭──────╮
+│ Storage │             │ Type │
+╰───┬─────╯             ╰───┬──╯
+    │    ╭╌╌╌╌╌╌╌╌╌╮    ╭───┴────╮ ╭────────╮
+    ├╌╌╌╌┤ DataSet ├╌╌╌╌┤ Loader ├─┤ Driver │
+    │    ╰╌╌╌╌╌╌╌╌╌╯    ╰───┬────╯ ╰────────╯
+╭───┴─────╮             ╭───┴───────╮
+│ Storage ├─╼           │ Parmeters ├─╼
+╰─────┬───╯             ╰───────┬───╯
+      ╽                         ╽
+```
+
+Since the parameters of the loader (and each storage backend) can reference
+other data sets (indicated with `╼` and `╽`), this hash is computed recursively,
+forming a Merkle Tree. In this manner the entire "recipe" leading to the final
+result is hashed.
+
+```
+                ╭───╮
+                │ E │
+        ╭───╮   ╰─┬─╯
+        │ B ├──▶──┤
+╭───╮   ╰─┬─╯   ╭─┴─╮
+│ A ├──▶──┤     │ D │
+╰───╯   ╭─┴─╮   ╰───╯
+        │ C ├──▶──┐
+        ╰───╯   ╭─┴─╮
+                │ D │
+                ╰───╯
+```
+
+In this example, the hash for a loader of data set "A" relies on the data sets
+"B" and "C", and so their hashes are calculated and included. "D" is required by
+both "B" and "C", and so is included in each. "E" is also used in "D".
+
 ## Configuration
 
 Caching of individual loaders can be disabled by setting the "cache" parameter
