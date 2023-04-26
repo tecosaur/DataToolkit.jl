@@ -26,41 +26,42 @@ include("lint.jl")
 include("make.jl")
 
 function add_repl_cmds()
-    push!(REPL_CMDS,
-          ReplCmd(:add, ADD_DOC, add),
-          ReplCmd(:delete, DELETE_DOC, delete),
-          ReplCmd(:init, INIT_DOC, init),
-          ReplCmd(:config,
-                  "Inspect and modify the current configuration",
-                  CONFIG_SUBCOMMANDS),
-          ReplCmd(:check,
-                  "Check the state for potential issues
+    pushfirst!(
+        REPL_CMDS,
+        ReplCmd(:add, ADD_DOC, add),
+        ReplCmd(:delete, DELETE_DOC, delete),
+        ReplCmd(:init, INIT_DOC, init),
+        ReplCmd(:config,
+                "Inspect and modify the current configuration",
+                CONFIG_SUBCOMMANDS),
+        ReplCmd(:check,
+                "Check the state for potential issues
 
 By default, this operates on the active collection, however it can
 also be applied to any other collection or a specific data set.",
-                  repl_lint),
-          ReplCmd(:list,
-                  "List the datasets in a certain collection
+                repl_lint),
+        ReplCmd(:list,
+                "List the datasets in a certain collection
 
 By default, the datasets of the active collection are shown.",
-                  repl_list),
-          ReplCmd(:make,
-                  MAKE_DOC,
-                  repl_make),
-          ReplCmd(:plugin,
-                  "Inspect and modify the set of plugins used
+                repl_list),
+        ReplCmd(:make,
+                MAKE_DOC,
+                repl_make),
+        ReplCmd(:plugin,
+                "Inspect and modify the set of plugins used
 
 Call without any arguments to see the availible subcommands.",
-                  PLUGIN_SUBCOMMANDS),
-          ReplCmd(:search,
-                  "Search for a particular data collection",
-                  search),
-          ReplCmd(:show,
-                  "List the dataset refered to by an identifier",
-                  repl_show),
-          ReplCmd(:stack,
-                  "Operate on the data collection stack",
-                  STACK_SUBCOMMANDS))
+                PLUGIN_SUBCOMMANDS),
+        ReplCmd(:search,
+                "Search for a particular data collection",
+                search),
+        ReplCmd(:show,
+                "List the dataset refered to by an identifier",
+                repl_show),
+        ReplCmd(:stack,
+                "Operate on the data collection stack",
+                STACK_SUBCOMMANDS))
 end
 
 end
