@@ -525,7 +525,7 @@ function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
                     r ∈ inactive_collections
                 end
             end
-            if isempty(source.references)
+            if isempty(source.references) || !isfile(storefile(source))
                 push!(orphan_sources, source)
                 dryrun || deleteat!(sources, i)
             else
