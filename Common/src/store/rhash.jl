@@ -8,7 +8,7 @@ The hash should be consistent across sessions and cosmetic changes.
 """
 function rhash(loader::DataLoader{driver}, h::UInt=zero(UInt)) where {driver}
     h = hash(driver, h)
-    h = @advise rhash(loader.dataset.collection, copy(loader.parameters), h)
+    h = @advise rhash(loader, copy(loader.parameters), h)
     # The only field of the parent data set that should affect the loaded
     # result is the storage drivers used, so let's just hash all of them.
     # This is likely over-zealous, but it's better to be overly cautions.
@@ -30,7 +30,7 @@ aspects of `storage` that could affect the result.
 """
 function rhash(storage::DataStorage{driver}, h::UInt=zero(UInt)) where {driver}
     h = hash(driver, h)
-    h = @advise rhash(storage.dataset.collection, copy(storage.parameters), h)
+    h = @advise rhash(storage, copy(storage.parameters), h)
     # The result of the storage driver should /not/ be materially affected by
     # the parent dataset, or it's priority, and so we skip those fields.
     for qtype in storage.type
@@ -63,6 +63,10 @@ final value is independant of the ordering.
 rhash(collection::DataCollection, dict::SmallDict, h::UInt=zero(UInt)) =
     reduce(xor, [rhash(collection, kv, zero(UInt)) for kv in dict],
            init=h)
+
+# For advising
+rhash(transformer::Union{DataStorage, DataLoader}, dict::SmallDict, h::UInt) =
+    rhash(transformer.dataset.collection, dict, h)
 
 rhash(collection::DataCollection, pair::Pair, h::UInt) =
     rhash(collection, pair.second, rhash(collection, pair.first, h))
