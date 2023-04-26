@@ -41,7 +41,7 @@ const STORE_PLUGIN = Plugin("store", [
                 write(INVENTORY)
             end
             (post, f, (storer, as), (; write))
-        elseif !isnothing(file)
+        elseif !isnothing(file) && isfile(file)
             # If using a cache file, ensure the parent collection is registered
             # as a reference.
             update_source!(source, storer)
@@ -113,7 +113,7 @@ const CACHE_PLUGIN = Plugin("cache", [
                     file = nothing
                 end
             end
-            if !isnothing(file)
+            if !isnothing(file) && isfile(file)
                 if should_log_event("cache", loader)
                     @info "Loading $as form of $(sprint(show, loader.dataset.name)) from the store"
                 end
