@@ -28,8 +28,8 @@ end
 
 function getsource(storage::DataStorage; inventory::Inventory=INVENTORY)
     recipe = rhash(storage)
-    checksum = get(storage, "checksum", nothing)
-    if isnothing(checksum)
+    checksum = get(storage, "checksum", false)
+    if checksum === false
         for record in inventory.stores
             if record.recipe == recipe
                 return record
@@ -115,7 +115,7 @@ function storefile(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
 end
 
 function getchecksum(storage::DataStorage, file::String)
-    checksum = get(storage, "checksum", nothing)
+    checksum = get(storage, "checksum", false)
     if checksum == "auto"
         if iswritable(storage.dataset.collection)
             @info "Calculating checksum of $(storage.dataset.name)'s source"
@@ -127,7 +127,7 @@ function getchecksum(storage::DataStorage, file::String)
         else
             @warn "Could not update checksum, data collection is not writable"
         end
-    elseif !isnothing(checksum)
+    elseif checksum !== false
         @info "Calculating checksum of $(storage.dataset.name)'s source"
         csum = open(io -> crc32c(io), file)
         actual_checksum = string("crc32c:", string(csum, base=16))
