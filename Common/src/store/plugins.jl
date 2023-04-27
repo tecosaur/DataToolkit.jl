@@ -17,7 +17,9 @@ Four (system-wide) settings determine garbage collection behaviour:
 """
 Cache IO from data storage backends, by saving the contents to the disk.
 
-### Configuration
+## Configuration
+
+#### Disabling on a per-storage basis
 
 Saving of individual storage sources can be disabled by setting the "save"
 parameter to `false`, i.e.
@@ -25,8 +27,24 @@ parameter to `false`, i.e.
 ```toml
 [[somedata.storage]]
 save = false
-...
 ```
+
+#### Checksums
+
+To ensure data integrity, a checksum can be specified, and checked when saving
+to the store. For example,
+
+```
+[[iris.storage]]
+checksum = "crc32c:f7ae7e64"
+```
+
+If you do not have a checksum, but wish for one to be calculated upon accessing
+the data, the checksum parameter can be set to the special value `"auto"`. When
+the data is first accessed, a checksum will be generated and replace the "auto"
+value.
+
+To explicitly specify no checksum, set the parameter to `false`.
 
 System-wide configuration can be set via the `store config set` REPL command, or
 directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
