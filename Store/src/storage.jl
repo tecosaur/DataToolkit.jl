@@ -190,6 +190,48 @@ end
 storesave(storage::DataStorage, as::Type) =
     result -> storesave(storage, as, result)
 
+
+function interpret_lifetime(lifetime::String)
+    period = SmallDict("years" => 0.0, "months" => 0.0, "weeks" => 0.0, "days" => 0.0,
+                       "hours" => 0.0, "minutes" => 0.0, "seconds" => 0.0)
+    iso8061_duration_1 = r"^P(?:(?P<years>\d+)Y)?(?:(?P<months>\d+)M)?(?:(?P<days>\d+)D)?(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?)?$"
+    iso8061_duration_2 = r"^P(?P<years>\d\d\d\d)-?(?P<months>\d\d)-?(?P<days>\d\d)(?:T(?P<hours>\d\d):?(?P<minutes>\d\d)?:?(?P<seconds>\d\d)?)?$"
+    iso_period = @something(match(iso8061_duration_1, lifetime),
+                            match(iso8061_duration_2, lifetime),
+                            Some(nothing))
+    if !isnothing(iso_period)
+        for unit in keys(iso_period)
+            if !isnothing(iso_period[unit])
+                period[unit] = parse(Int, iso_period[unit]) |> Float64
+            end
+        end
+    else
+        humanperiod = r"(?P<quantity>\d+(?:\.\d*)?)\s*(?P<unit>year|y|month|week|wk|w|day|d|hour|h|minute|min|second|sec|)s?,?\s*"i
+        unitmap = Dict("year" => "years", "y" => "years",
+                       "month" => "months",
+                       "week" => "weeks", "wk" => "weeks", "w" => "weeks",
+                       "day" => "days", "d" => "days",
+                       "hour" => "hours", "h" => "hours",
+                       "minute" => "minutes", "min" => "minutes",
+                       "second" => "seconds", "sec" => "seconds", "" => "seconds")
+        while (m = match(humanperiod, lifetime)) |> !isnothing
+            period[unitmap[m["unit"]]] = parse(Float64, m["quantity"])
+            lifetime = string(lifetime[1:m.match.offset],
+                              lifetime[m.match.ncodeunits+1:end])
+        end
+        if !isempty(lifetime)
+            @warn "Unmatched content in period string: $(sprint(show, lifetime))"
+        end
+    end
+    period["years"] * 365.2422 * 24 * 60 * 60 +
+        period["months"] * 30.437 * 24 * 60 * 60 +
+        period["weeks"] * 7 * 24 * 60 * 60 +
+        period["days"] * 24 * 60 * 60 +
+        period["hours"] * 60 * 60 +
+        period["minutes"] * 60 +
+        period["seconds"]
+end
+
 function pkgtypes!(types::Vector{Type}, x::T) where {T}
     M = parentmodule(T)
     if M ∉ (Base, Core) && !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
