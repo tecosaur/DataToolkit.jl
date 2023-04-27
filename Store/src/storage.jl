@@ -171,9 +171,9 @@ function storesave(storage::DataStorage, ::Type{FilePath}, file::FilePath)
         @info "Writing $(sprint(show, storage.dataset.name)) to storage"
     end
     if startswith(file.path, tempdir())
-        mv(file.path, dest)
+        mv(file.path, dest, force=true)
     else
-        cp(file.path, dest)
+        cp(file.path, dest, force=true)
     end
     chmod(dest, 0o100444 & filemode(STORE_DIR)) # Make read-only
     update_source!(newsource, storage)
