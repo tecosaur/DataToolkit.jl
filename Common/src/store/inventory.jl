@@ -247,7 +247,8 @@ end
 function printstats(inv::Inventory=INVENTORY)
     filesize = (f -> if isfile(f) stat(f).size else 0 end) ∘ storefile
     printstyled(lpad("Tracking", MSG_LABEL_WIDTH), bold=true, color=:green)
-    println(' ', length(inv.collections), " collections")
+    println(' ', length(inv.collections), " collection",
+            ifelse(length(inv.collections) == 1, "", "s"))
     storesizes = map(filesize, inv.stores)
     printstyled(lpad("Stored", MSG_LABEL_WIDTH), bold=true, color=:green)
     println(' ', length(inv.stores), " files, taking up $(join(humansize(sum(storesizes))))")
@@ -284,8 +285,9 @@ function garbage_collect!(inv::Inventory=INVENTORY; log::Bool=true, dryrun::Bool
         refresh_sources!(inv; inactive_collections, active_collections, dryrun)
     if log
         printstyled(lpad("Scanned", MSG_LABEL_WIDTH), bold=true, color=:green)
-        println(' ', length(live_collections), " collection",
-                ifelse(length(live_collections) == 1, "", "s"))
+        num_scanned_collections = length(active_collections) + length(live_collections)
+        println(' ', num_scanned_collections, " collection",
+                ifelse(num_scanned_collections == 1, "", "s"))
         if !isempty(ghost_collections) || !isempty(dead_collections)
             printstyled(lpad("Inactive", MSG_LABEL_WIDTH), bold=true, color=:green)
             print(" collections: ",
