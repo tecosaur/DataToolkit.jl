@@ -46,6 +46,38 @@ value.
 
 To explicitly specify no checksum, set the parameter to `false`.
 
+#### Expiry/lifecycle
+
+After a storage source is saved, the cache file can be made to expire after a
+certain period. This is done by setting the "lifetime" parameter of the storage, i.e.
+
+```
+[[updatingdata.storage]]
+lifetime = "3 days"
+```
+
+The lifetime parameter accepts a few formats, namely:
+
+**ISO8061 periods** (with whole numbers only), both forms
+1. `P[n]Y[n]M[n]DT[n]H[n]M[n]S`, e.g.
+   - `P3Y6M4DT12H30M5S` represents a duration of "3 years, 6 months, 4 days,
+     12 hours, 30 minutes, and 5 seconds"
+   - `P23DT23H` represents a duration of "23 days, 23 hours"
+   - `P4Y` represents a duration of "4 years"
+2. `PYYYYMMDDThhmmss` / `P[YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]`, e.g.
+   - `P0003-06-04T12:30:05`
+   - `P00030604T123005`
+
+**"Prose style" period strings**, which are a repeated pattern of `[number] [unit]`,
+where `unit` matches `year|y|month|week|wk|w|day|d|hour|h|minute|min|second|sec|`
+optionally followed by an "s", comma, or whitespace. E.g.
+
+- `3 years 6 months 4 days 12 hours 30 minutes 5 seconds`
+- `23 days, 23 hours`
+- `4d12h`
+
+#### Store management
+
 System-wide configuration can be set via the `store config set` REPL command, or
 directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
 
@@ -58,6 +90,12 @@ const STORE_PLUGIN = Plugin("store", [
         update_inventory!()
         source = getsource(storer)
         file = storefile(storer)
+        if !isnothing(file) && isfile(file) && haskey(storer.parameters, "lifetime")
+            seconds = interpret_lifetime(get(storer, "lifetime"))
+            if time() - ctime(file) > seconds
+                rm(file, force=true)
+            end
+        end
         if !shouldstore(storer) || write
             # If the store is invalid (should not be stored, or about to be
             # written to), then it should be removed before proceeding as
@@ -101,6 +139,11 @@ const STORE_PLUGIN = Plugin("store", [
     end,
     function (post::Function, f::typeof(rhash), storage::DataStorage, parameters::SmallDict, h::UInt)
         delete!(parameters, "save") # Does not impact the final result
+        if haskey(parameters, "lifetime")
+            delete!(parameters, "lifetime") # Does not impact the final result
+            parameters["__epoch"] =
+                time() ÷ interpret_lifetime(get(storage, "lifetime"))
+        end
         (post, f, (storage, parameters, h))
     end])
 
