@@ -13,6 +13,10 @@ end
 
 QualifiedType(qt::QualifiedType) = qt
 
+function Base.show(io::IO, ::MIME"text/plain", qt::QualifiedType)
+    print(io, "QualifiedType(", string(qt), ")")
+end
+
 """
     typeify(qt::QualifiedType; mod::Module=Main)
 
