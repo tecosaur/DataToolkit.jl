@@ -2,9 +2,13 @@ QualifiedType(t::AbstractString) = parse(QualifiedType, t)
 
 QualifiedType(m::Symbol, name::Symbol) = QualifiedType(m, name, ())
 
-QualifiedType(::Type{T}) where {T} = let T = Base.unwrap_unionall(T)
-    QualifiedType(Symbol(parentmodule(T)), nameof(T),
-                  if T isa DataType Tuple(T.parameters) else () end)
+function QualifiedType(::Type{T_}) where {T_}
+    T = Base.unwrap_unionall(T_)
+    params = map(p -> if p isa Type
+                     QualifiedType(p)
+                 else p end,
+                 T.parameters)
+    QualifiedType(Symbol(parentmodule(T)), nameof(T), Tuple(params))
 end
 
 QualifiedType(qt::QualifiedType) = qt
@@ -33,18 +37,17 @@ function typeify(qt::QualifiedType; mod::Module=Main)
     # For the sake of the `catch` statement:
     if !isnothing(mod) && isdefined(mod, qt.name)
         T = getfield(mod, qt.name)
-        if isempty(qt.parameters) T else
-            tparams = map(qt.parameters) do p
-                if p isa QualifiedType
-                    typeify(p; mod)
-                else p end
-            end
-            if any(@. tparams isa TypeVar)
-                UnionAll(tparams[findfirst(@. tparams isa TypeVar)],
-                         T{tparams...})
-            else
-                T{tparams...}
-            end
+        isempty(qt.parameters) && return T
+        tparams = map(qt.parameters) do p
+            if p isa QualifiedType
+                typeify(p; mod)
+            else p end
+        end
+        if any(@. tparams isa TypeVar)
+            UnionAll(tparams[findfirst(@. tparams isa TypeVar)],
+                        T{tparams...})
+        else
+            T{tparams...}
         end
     end
 end

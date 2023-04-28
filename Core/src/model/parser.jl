@@ -7,34 +7,39 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
         return QUALIFIED_TYPE_SHORTHANDS.forward[spec]
     end
     components, parameters = let cbsplit = split(spec, '{', limit=2)
+        function destruct(param)
+            if param isa Number
+                param
+            elseif param isa QuoteNode
+                param.value
+            elseif param isa Expr && param.head == :tuple
+                Tuple(destruct.(param.args))
+            elseif param isa Symbol
+                if haskey(QUALIFIED_TYPE_SHORTHANDS.forward, string(param))
+                    QUALIFIED_TYPE_SHORTHANDS.forward[string(param)]
+                else
+                    QualifiedType(Symbol(Base.binding_module(Main, param)),
+                                  param, Tuple{}())
+                end
+            elseif param isa Expr && param.head == :.
+                parse(QualifiedType, string(param))
+            elseif param isa Expr && param.head == :<: && last(param.args) isa Symbol
+                TypeVar(if length(param.args) == 2
+                            first(param.args)
+                        else :T end,
+                        getfield(Main, last(param.args)))
+            elseif param isa Expr && param.head == :curly
+                base = parse(QualifiedType, string(first(param.args)))
+                QualifiedType(base.parentmodule, base.name, Tuple(destruct.(param.args[2:end])))
+            else
+                throw(ArgumentError("Invalid QualifiedType parameter $(sprint(show, param)) in $(sprint(show, spec))"))
+            end
+        end
         if length(cbsplit) == 1
             split(cbsplit[1], '.'), Tuple{}()
         else
             split(cbsplit[1], '.'),
             let typeparams = Meta.parse(spec[1+length(cbsplit[1]):end])
-                destruct(param) = if param isa Number
-                    param
-                elseif param isa QuoteNode
-                    param.value
-                elseif param isa Expr && param.head == :tuple
-                    Tuple(destruct.(param.args))
-                elseif param isa Symbol
-                    if haskey(QUALIFIED_TYPE_SHORTHANDS.forward, string(param))
-                        QUALIFIED_TYPE_SHORTHANDS.forward[string(param)]
-                    else
-                        QualifiedType(Symbol(Base.binding_module(Main, param)),
-                                      param, Tuple{}())
-                    end
-                elseif param isa Expr && param.head == :.
-                    parse(QualifiedType, string(param))
-                elseif param isa Expr && param.head == :<: && last(param.args) isa Symbol
-                    TypeVar(if length(param.args) == 2
-                                first(param.args)
-                            else :T end,
-                            getfield(Main, last(param.args)))
-                else
-                    throw(ArgumentError("Invalid QualifiedType parameter $(sprint(show, param)) in $(sprint(show, spec))"))
-                end
                 Tuple(destruct.(typeparams.args))
             end
         end
