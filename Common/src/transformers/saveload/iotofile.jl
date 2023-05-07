@@ -4,8 +4,10 @@ function load(loader::DataLoader{Symbol("io->file")}, from::IO, ::Type{FilePath}
                               joinpath(tempdir(),
                                        string("julia_datatoolkit_iotofile_",
                                               loader.dataset.uuid))))
-    open(path, "w") do io
-        write(io, from)
+    if !isfile(path)
+        open(path, "w") do io
+            write(io, from)
+        end
     end
     FilePath(path)
 end
