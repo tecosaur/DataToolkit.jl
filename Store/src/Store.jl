@@ -23,7 +23,9 @@ include("repl.jl")
 function __init__()
     @dataplugin STORE_PLUGIN :default
     @dataplugin CACHE_PLUGIN
-    push!(REPL_CMDS, STORE_REPL_CMD)
+    let pos = searchsorted(REPL_CMDS, STORE_REPL_CMD, by=c -> DataToolkitBase.natkeygen(c.trigger))
+        splice!(REPL_CMDS, pos, (STORE_REPL_CMD,))
+    end
     update_inventory!()
     atexit() do
         hours_since = (now() - INVENTORY.last_gc).value / (1000 * 60 * 60)
