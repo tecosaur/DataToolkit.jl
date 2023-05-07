@@ -125,15 +125,19 @@ Main.datarepl("?store")
 #+end_src
 
 #+begin_src @eval
+Main.datarepl("?store config")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?store expunge")
+#+end_src
+
+#+begin_src @eval
 Main.datarepl("?store gc")
 #+end_src
 
 #+begin_src @eval
 Main.datarepl("?store stats")
-#+end_src
-
-#+begin_src @eval
-Main.datarepl("?store expunge")
 #+end_src
 
 #+begin_src @eval

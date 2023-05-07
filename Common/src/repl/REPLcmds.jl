@@ -26,8 +26,7 @@ include("lint.jl")
 include("make.jl")
 
 function add_repl_cmds()
-    pushfirst!(
-        REPL_CMDS,
+    new_cmds = [
         ReplCmd(:add, ADD_DOC, add),
         ReplCmd(:delete, DELETE_DOC, delete),
         ReplCmd(:init, INIT_DOC, init),
@@ -61,7 +60,11 @@ Call without any arguments to see the availible subcommands.",
                 repl_show),
         ReplCmd(:stack,
                 "Operate on the data collection stack",
-                STACK_SUBCOMMANDS))
+                STACK_SUBCOMMANDS)]
+    for cmd in new_cmds
+        pos = searchsorted(REPL_CMDS, cmd, by=c -> DataToolkitBase.natkeygen(c.trigger))
+        splice!(REPL_CMDS, pos, (cmd,))
+    end
 end
 
 end
