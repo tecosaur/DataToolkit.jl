@@ -117,3 +117,86 @@ julia> stringsimilarity("semi", "demi")
 """
 stringsimilarity(a::AbstractString, b::AbstractString) =
     1 - stringdist(a, b) / max(length(a), length(b))
+
+"""
+    longest_common_subsequence(a, b)
+
+Find the longest common subsequence of `b` within `a`, returning the indicies of
+`a` that comprise the subsequence.
+
+This function is intended for strings, but will work for any indexable objects
+with `==` equality defined for their elements.
+
+# Example
+
+```jldoctest; setup = :(import DataToolkitBase.longest_common_subsequence)
+julia> longest_common_subsequence("same", "same")
+4-element Vector{Int64}:
+ 1
+ 2
+ 3
+ 4
+
+julia> longest_common_subsequence("fooandbar", "foobar")
+6-element Vector{Int64}:
+ 1
+ 2
+ 3
+ 7
+ 8
+ 9
+```
+"""
+function longest_common_subsequence(a, b)
+    lengths = zeros(Int, length(a) + 1, length(b) + 1)
+    for (i, x) in enumerate(a), (j, y) in enumerate(b)
+        lengths[i+1, j+1] = if x == y
+            lengths[i, j] + 1
+        else
+            max(lengths[i+1, j], lengths[i, j+1])
+        end
+    end
+    subsequence = Int[]
+    x, y = size(lengths)
+    aind, bind = eachindex(a), eachindex(b)
+    while lengths[x,y] > 0
+        if a[x-1] == b[y-1]
+            push!(subsequence, x-1)
+            x -=1; y -= 1
+        elseif lengths[x, y-1] > lengths[x-1, y]
+            y -= 1
+        else
+            x -= 1
+        end
+    end
+    reverse(subsequence)
+end
+
+"""
+    highlight_lcs(io::IO, a::String, b::String;
+                  before::String="\\e[1m", after::String="\\e[22m",
+                  invert::Bool=false)
+
+Print `a`, highlighting the longest common subsequence between `a` and `b` by
+inserting `before` prior to each subsequence region and `after` afterwards.
+
+If `invert` is set, the `before`/`after` behaviour is switched.
+"""
+function highlight_lcs(io::IO, a::String, b::String;
+                       before::String="\e[1m", after::String="\e[22m",
+                       invert::Bool=false)
+    seq = longest_common_subsequence(collect(a), collect(b))
+    seq_pos = firstindex(seq)
+    in_lcs = invert
+    for (i, char) in enumerate(a)
+        if seq_pos < length(seq) && seq[seq_pos] < i
+            seq_pos += 1
+        end
+        if in_lcs != (i == seq[seq_pos])
+            in_lcs = !in_lcs
+            get(io, :color, false) && print(io, ifelse(in_lcs ⊻ invert, before, after))
+        end
+        print(io, char)
+    end
+    get(io, :color, false) && print(io, after)
+end

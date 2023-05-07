@@ -98,7 +98,10 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
             for (ident, collection, sim) in sort(candidates[last.(candidates) .>= threshold],
                                                 by=last, rev=true)
                 print(io, "\n    ")
-                show(io, MIME("text/plain"), ident; collection)
+                irep = IOContext(IOBuffer(), :color => true)
+                show(irep, MIME("text/plain"), ident; collection)
+                highlight_lcs(io, String(take!(irep.io)), err.identifier,
+                              before="\e[2m", invert=true)
                 printstyled(io, " (", round(Int, 100*sim), "% match)",
                             color=:light_black)
             end
@@ -119,7 +122,10 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection})
             print(io, "\n  Did you perhaps mean to refer to one of these data collections?")
             for (collection, simiarity) in candidates
                 print(io, "\n  • ")
-                show(IOContext(io, :compact => true), collection)
+                crep = IOContext(IOBuffer(), :color => true, :compact => true)
+                show(crep, MIME("text/plain"), collection)
+                highlight_lcs(io, String(take!(crep.io)), err.identifier,
+                              before="\e[2m", invert=true)
                 printstyled(io, " (", round(Int, 100*simiarity), "% similaity)",
                             color=:light_black)
             end
