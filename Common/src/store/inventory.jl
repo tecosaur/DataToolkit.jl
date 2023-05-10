@@ -565,3 +565,44 @@ function expunge!(collection::CollectionInfo; inventory::Inventory=INVENTORY, dr
     dryrun || write(inventory)
     removed_sources
 end
+
+"""
+    fetch!(storer::DataStorage; inventory::Inventory=INVENTORY)
+
+If `storer` is storable, open it, and presumably save it in the Store along the way.
+"""
+function fetch!(storer::DataStorage; inventory::Inventory=INVENTORY)
+    if shouldstore(storer)
+        for type in (FilePath, IO, IOStream)
+            if QualifiedType(type) in storer.type
+                handle = @advise storage(storer, type, write=false)
+                if handle isa IO
+                    close(handle)
+                    return true
+                elseif !isnothing(handle)
+                    return true
+                end
+            end
+        end
+    end
+    false
+end
+
+"""
+    fetch!(dataset::DataSet)
+
+Call `fetch!` on each storage backend of `dataset`.
+"""
+fetch!(dataset::DataSet) = foreach(fetch!, dataset.storage)
+
+"""
+    fetch!(collection::DataCollection)
+
+When `collection` uses the `store` plugin, call `fetch!` on all of its
+data sets.
+"""
+function fetch!(collection::DataCollection)
+    if "store" in collection.plugins
+        foreach(fetch!, collection.datasets)
+    end
+end
