@@ -180,18 +180,28 @@ end
 
 allcompletions(::ReplCmd{:store_expunge}) = getfield.(INVENTORY.collections, :name)
 
+function repl_fetch(input::AbstractString)
+    if isempty(STACK)
+        printstyled(" ! ", color=:yellow, bold=true)
+        println("The data collection stack is empty")
+    elseif isempty(input)
+        foreach(fetch!, STACK)
+    else
+        try
+            collection = DataToolkitBase.getlayer(
+                @something(tryparse(Int, input),
+                           tryparse(UUID, input),
+                           String(input)))
+            fetch!(collection)
+        catch
+            dataset = resolve(input, resolvetype=false)
+            fetch!(dataset)
+        end
+    end
+end
+
 const STORE_SUBCMDS =
     ReplCmd[
-        ReplCmd{:store_gc}(
-            "gc", "Garbage Collect
-
-Scan the inventory and perform a garbage collection sweep.
-
-Optionally provide the -d/--dryrun flag to prevent file deletion.",
-            repl_gc),
-        ReplCmd{:store_stats}(
-            "stats", "Show statistics about the data store",
-            _ -> printstats()),
         ReplCmd{:store_config}(
             "config", "Manage configuration",
             ReplCmd[
@@ -207,7 +217,25 @@ Optionally provide the -d/--dryrun flag to prevent file deletion.",
         ReplCmd{:store_expunge}(
             "expunge", """Remove a data collection from the store
                           \nUsage:\n  expunge [collection name or UUID]""",
-            repl_expunge)]
+            repl_expunge),
+        ReplCmd{:store_fetch}(
+            "fetch", """Fetch data storage sources
+
+                        A particular collection or data set can be specified with
+                            fetch [collection or data set name or UUID]
+                        Without specifying a particular target, all data sets
+                        are fetched.""",
+            repl_fetch),
+        ReplCmd{:store_gc}(
+            "gc", "Garbage Collect
+
+Scan the inventory and perform a garbage collection sweep.
+
+Optionally provide the -d/--dryrun flag to prevent file deletion.",
+            repl_gc),
+        ReplCmd{:store_stats}(
+            "stats", "Show statistics about the data store",
+            _ -> printstats())]
 
 const STORE_REPL_CMD =
     ReplCmd(:store,
