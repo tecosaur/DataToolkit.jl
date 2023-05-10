@@ -298,7 +298,7 @@ function init_repl()
     # With *heavy* inspiration from https://github.com/MasonProtter/ReplMaker.jl
     repl = Base.active_repl
     if !isdefined(repl, :interface)
-        repl.interface = repl.setup_interface(repl)
+        repl.interface = REPL.setup_interface(repl)
     end
     julia_mode = repl.interface.modes[1]
     prompt_prefix, prompt_suffix = if repl.hascolor
