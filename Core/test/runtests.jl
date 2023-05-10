@@ -40,3 +40,79 @@ import DataToolkitBase: natkeygen, stringdist, stringsimilarity,
         @test String(take!(io.io)) == "\e[1mxx\e[22mhey\e[1myy\e[22m"
     end
 end
+
+@testset "Advice" begin
+    # Some advice to use
+    sump1 = DataAdvice(
+        2, (post::Function, f::typeof(sum), i::Int) ->
+            (post, f, (i+1,)))
+    sumx2 = DataAdvice(
+        1, (post::Function, f::typeof(sum), i::Int) ->
+            (post, f, (2*i,)))
+    summ3 = DataAdvice(
+        1, (post::Function, f::typeof(sum), i::Int) ->
+            ((x -> x-3) ∘ post, f, (i,)))
+    @testset "Basic advice" begin
+        # Application of advice
+        @test sump1((identity, sum, (1,), (;))) ==
+            (identity, sum, (2,), (;))
+        # Pass-through of `post`
+        @test sump1((sqrt, sum, (1,), (;))) ==
+            (sqrt, sum, (2,), (;))
+        # Matching the argument
+        @test sump1((identity, sum, ([1],), (;))) ==
+            (identity, sum, ([1],), (;))
+        # Matching the kwargs
+        @test sump1((identity, sum, (1,), (dims=3,))) ==
+            (identity, sum, (1,), (dims = 3,))
+        # Matching the function
+        @test sump1((identity, sqrt, (1,), (;))) ==
+            (identity, sqrt, (1,), (;))
+        let # Using invokelatest on the advice function
+            thing(x) = x^2
+            h(x) = x+1
+            thing_a = DataAdvice(
+                (post::Function, f::typeof(thing), i::Int) ->
+                    (post, f, (h(i),)))
+            @test thing_a((identity, thing, (2,), (;))) ==
+                (identity, thing, (3,), (;))
+            h(x) = x+2
+            @test thing_a((identity, thing, (2,), (;))) ==
+                (identity, thing, (4,), (;))
+        end
+    end
+    @testset "Amalgamation" begin
+        amlg12 = DataAdviceAmalgamation(
+            sump1 ∘ sumx2, [sumx2, sump1], String[], String[])
+        amlg21 = DataAdviceAmalgamation(
+            sumx2 ∘ sump1, [sump1, sumx2], String[], String[])
+        amlg321 = DataAdviceAmalgamation(
+            summ3 ∘ sumx2 ∘ sump1, [sump1, sumx2, summ3], String[], String[])
+        amlg213 = DataAdviceAmalgamation(
+            sumx2 ∘ sump1 ∘ summ3, [summ3, sump1, sumx2], String[], String[])
+        @test amlg12((identity, sum, (2,), (;))) == (identity, sum, (5,), (;))
+        @test amlg12(sum, 2) == 5
+        @test amlg21(sum, 2) == 6
+        @test amlg321(sum, 2) == 3
+        @test amlg213(sum, 2) == 3
+    end
+    @testset "Plugin loading" begin
+        # Empty state
+        amlg = empty(DataAdviceAmalgamation)
+        @test amlg.adviseall == identity
+        @test amlg.advisors == DataAdvice[]
+        @test amlg.plugins_wanted == String[]
+        @test amlg.plugins_used == String[]
+        # Create a plugin
+        plg = Plugin(string(gensym()), [sump1, sumx2])
+        push!(PLUGINS, plg)
+        # Desire the plugin, then check the advice is incorperated correctly
+        push!(amlg.plugins_wanted, plg.name)
+        @test amlg.adviseall == sump1 ∘ sumx2
+        @test amlg.advisors == [sumx2, sump1]
+        @test amlg.plugins_wanted == [plg.name]
+        @test amlg.plugins_used == [plg.name]
+        # Display
+        @test sprint(show, amlg) == "DataAdviceAmalgamation($(plg.name) ✔)"
+    end
+end
