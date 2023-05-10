@@ -59,8 +59,8 @@ function stringdist(a::AbstractString, b::AbstractString)
         a, b = b, a
     end
     start = 0
-    while start < min(length(a), length(b))
-        if a[start+1] == b[start+1]
+    for (i, j) in zip(eachindex(a), eachindex(b))
+        if a[i] == b[j]
             start += 1
         else
             break
