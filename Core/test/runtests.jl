@@ -116,3 +116,55 @@ end
         @test sprint(show, amlg) == "DataAdviceAmalgamation($(plg.name) ✔)"
     end
 end
+
+import DataToolkitBase: smallify
+
+@testset "SmallDict" begin
+    @testset "Construction" begin
+        @test SmallDict() == SmallDict{Any, Any}([], [])
+        @test SmallDict{Any, Any}() == SmallDict{Any, Any}([], [])
+        @test SmallDict(:a => 1) == SmallDict{Symbol, Int}([:a], [1])
+        @test SmallDict([:a => 1]) == SmallDict{Symbol, Int}([:a], [1])
+        @test SmallDict{Symbol, Int}(:a => 1) == SmallDict{Symbol, Int}([:a], [1])
+        @test_throws MethodError SmallDict{String, Int}(:a => 1)
+        @test SmallDict(:a => 1, :b => 2) == SmallDict{Symbol, Int}([:a, :b], [1, 2])
+        @test SmallDict(:a => 1, :b => '1') == SmallDict{Symbol, Any}([:a, :b], [1, '1'])
+        @test SmallDict(:a => 1, "b" => '1') == SmallDict{Any, Any}([:a, "b"], [1, '1'])
+    end
+    @testset "Conversion" begin
+        @test convert(SmallDict, Dict(:a => 1)) == SmallDict{Symbol, Int}([:a], [1])
+        @test convert(SmallDict, Dict{Symbol, Any}(:a => 1)) == SmallDict{Symbol, Any}([:a], [1])
+        @test convert(SmallDict, Dict(:a => 1, :b => '1')) == SmallDict{Symbol, Any}([:a, :b], [1, '1'])
+        @test smallify(Dict(:a => Dict(:b => Dict(:c => 3)))) ==
+            SmallDict(:a => SmallDict(:b => SmallDict(:c => 3)))
+    end
+    @testset "AbstractDict interface" begin
+        d = SmallDict{Symbol, Int}()
+        @test length(d) == 0
+        @test haskey(d, :a) == false
+        @test get(d, :a, nothing) === nothing
+        @test iterate(d) === nothing
+        @test (d[:a] = 1) == 1
+        @test d[:a] == 1
+        @test collect(d) == [:a => 1]
+        @test length(d) == 1
+        @test haskey(d, :a) == true
+        @test get(d, :a, nothing) == 1
+        @test iterate(d) == (:a => 1, 2)
+        @test iterate(d, 2) === nothing
+        @test (d[:b] = 2) == 2
+        @test length(d) == 2
+        @test keys(d) == [:a, :b]
+        @test values(d) == [1, 2]
+        @test iterate(d, 2) === (:b => 2, 3)
+        @test Dict(d) == Dict(:a => 1, :b => 2)
+        @test (d[:a] = 3) == 3
+        @test d[:a] == 3
+        @test values(d) == [3, 2]
+        @test_throws KeyError d[:c]
+        delete!(d, :a)
+        @test keys(d) == [:b]
+        delete!(d, :b)
+        @test d == empty(d)
+    end
+end
