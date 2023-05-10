@@ -237,8 +237,8 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
         repl_cmd = find_repl_cmd(cmd_name; commands)
         complete = if !isnothing(repl_cmd) && line != cmd_name
             if repl_cmd isa ReplCmd{:help}
-                filter(ns -> startswith(ns, rest),
-                   getfield.(commands, :trigger))
+                Vector{String}(filter(ns -> startswith(ns, rest),
+                                      getfield.(commands, :trigger)))
             else
                 completions(repl_cmd, rest)
             end
