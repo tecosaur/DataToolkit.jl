@@ -6,7 +6,14 @@
 Generate a sorting key for `key` that when used with `sort` will put the
 collection in "natural order".
 
-```julia-repl
+```jldoctest; setup = :(import DataToolkitBase.natkeygen)
+julia> natkeygen.(["A1", "A10", "A02", "A1.5"])
+4-element Vector{Vector{AbstractString}}:
+ ["a", "0\x01"]
+ ["a", "0\n"]
+ ["a", "0\x02"]
+ ["a", "0\x015"]
+
 julia> sort(["A1", "A10", "A02", "A1.5"], by=natkeygen)
 4-element Vector{String}:
  "A1"
