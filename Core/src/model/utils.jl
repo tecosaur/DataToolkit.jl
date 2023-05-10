@@ -158,9 +158,9 @@ function longest_common_subsequence(a, b)
     end
     subsequence = Int[]
     x, y = size(lengths)
-    aind, bind = eachindex(a), eachindex(b)
+    aind, bind = eachindex(a) |> collect, eachindex(b) |> collect
     while lengths[x,y] > 0
-        if a[x-1] == b[y-1]
+        if a[aind[x-1]] == b[bind[y-1]]
             push!(subsequence, x-1)
             x -=1; y -= 1
         elseif lengths[x, y-1] > lengths[x-1, y]
