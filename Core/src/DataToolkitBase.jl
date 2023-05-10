@@ -42,13 +42,14 @@ include("model/parser.jl")
 include("model/writer.jl")
 include("model/usepkg.jl")
 include("model/dataplugin.jl")
-include("model/datatree.jl")
 
 include("interaction/externals.jl")
 include("interaction/display.jl")
 include("interaction/manipulation.jl")
 include("interaction/repl.jl")
 include("interaction/lint.jl")
+
+function add_datasets! end # For `ext/AbstractTreesExt.jl`
 
 function __init__()
     isinteractive() && init_repl()

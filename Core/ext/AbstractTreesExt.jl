@@ -1,3 +1,7 @@
+module AbstractTreesExt
+
+using DataToolkitBase
+import DataToolkitBase.add_datasets!
 using AbstractTrees
 
 function AbstractTrees.children(dataset::DataSet)
@@ -10,7 +14,7 @@ function AbstractTrees.children(dataset::DataSet)
              resolvetype=false)
 end
 
-printnode(io::IO, d::DataSet) = print(io, d.name)
+AbstractTrees.printnode(io::IO, d::DataSet) = print(io, d.name)
 
 add_datasets!(acc::Vector{Identifier}, adt::AbstractDataTransformer) =
     add_datasets!(acc, adt.parameters)
@@ -29,3 +33,5 @@ add_datasets!(acc::Vector{Identifier}, ident::Identifier) =
     push!(acc, ident)
 
 add_datasets!(::Vector{Identifier}, ::Any) = nothing
+
+end
