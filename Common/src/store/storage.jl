@@ -114,11 +114,21 @@ function storefile(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
     end
 end
 
+"""
+The file size threshold (in bytes) above which an info message should be printed
+when calculating the threshold, no matter what the `checksum` log setting is.
+
+`$(1024^3)` bytes = 1024³ bytes = 1 GiB
+"""
+const CHECKSUM_AUTO_LOG_SIZE = 1024^3
+
 function getchecksum(storage::DataStorage, file::String)
     checksum = get(storage, "checksum", false)
     if checksum == "auto"
         if iswritable(storage.dataset.collection)
-            @info "Calculating checksum of $(storage.dataset.name)'s source"
+            if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
+                @info "Calculating checksum of $(storage.dataset.name)'s source"
+            end
             csum = open(io -> crc32c(io), file)
             checksum = string("crc32c:", string(csum, base=16))
             storage.parameters["checksum"] = checksum
@@ -128,7 +138,9 @@ function getchecksum(storage::DataStorage, file::String)
             @warn "Could not update checksum, data collection is not writable"
         end
     elseif checksum !== false
-        @info "Calculating checksum of $(storage.dataset.name)'s source"
+        if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
+            @info "Calculating checksum of $(storage.dataset.name)'s source"
+        end
         csum = open(io -> crc32c(io), file)
         actual_checksum = string("crc32c:", string(csum, base=16))
         if checksum == actual_checksum
