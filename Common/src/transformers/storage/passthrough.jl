@@ -12,11 +12,9 @@ function create(::Type{<:DataStorage{:passthrough}}, source::String)
     end
 end
 
-# Ensure that `passthrough` storage registers dependents in the AbstractTrees
-# interface, as well as contextual hashing.
+# Ensure that `passthrough` storage registers dependents in the recursive hashing interface.
 
-DataToolkitBase.add_datasets!(acc::Vector{Identifier}, storage::DataStorage{:passthrough}) =
-    DataToolkitBase.add_datasets!(acc, parse(Identifier, get(storage, "source")))
+# interface, as well as contextual hashing.
 
 function Store.rhash(collection::DataCollection, storage::DataStorage{:passthrough}, h::UInt)
     ident = @advise collection parse(Identifier, get(storage, "source"))
