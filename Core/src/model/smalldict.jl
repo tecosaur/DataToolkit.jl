@@ -4,10 +4,15 @@ SmallDict{K, V}() where {K, V} =
     SmallDict{K, V}(Vector{K}(), Vector{V}())
 SmallDict() = SmallDict{Any, Any}()
 
+SmallDict{K, V}(kv::Vector{<:Pair}) where {K, V} =
+    SmallDict{K, V}(Vector{K}(first.(kv)), Vector{V}(last.(kv)))
+SmallDict(kv::Vector{Pair{K, V}}) where {K, V} =
+    SmallDict{K, V}(first.(kv), last.(kv))
 SmallDict{K, V}(kv::Pair...) where {K, V} =
     SmallDict{K, V}(Vector{K}(first.(kv) |> collect),
                     Vector{V}(last.(kv) |> collect))
 SmallDict(kv::Pair{K, V}...) where {K, V} = SmallDict{K, V}(kv...)
+SmallDict(kv::Pair...) = SmallDict(collect(first.(kv)), collect(last.(kv)))
 
 Base.convert(::Type{SmallDict{K, V}}, dict::Dict) where {K, V} =
     SmallDict{K, V}(Vector{K}(keys(dict) |> collect),
