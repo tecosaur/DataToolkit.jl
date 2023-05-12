@@ -3,5 +3,7 @@
 
 #+html: <a href="https://tecosaur.github.io/DataToolkitBase.jl/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
 #+html: <a href="https://tecosaur.github.io/DataToolkitBase.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
+#+html: <a href="https://github.com/tecosaur/DataToolkitBase.jl/actions?query=workflow%3ACI"><img src="https://github.com/tecosaur/DataToolkitBase.jl/workflows/CI/badge.svg"></a>
+#+html: <a href="https://coveralls.io/github/tecosaur/DataToolkitBase.jl"><img src="https://coveralls.io/repos/github/tecosaur/DataToolkitBase.jl/badge.svg"></a>
 
 Prototype foundation for a data management framework.
