@@ -115,6 +115,21 @@ end
         # Display
         @test sprint(show, amlg) == "DataAdviceAmalgamation($(plg.name) ✔)"
     end
+    @testset "Advice macro" begin
+        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func, x)) ==
+            @macroexpand @advise func(x)
+        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func, x, y, z)) ==
+            @macroexpand @advise func(x, y, z)
+        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func; a=1, b)) ==
+            @macroexpand @advise func(; a=1, b)
+        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func, x, y, z; a=1, b)) ==
+            @macroexpand @advise func(x, y, z; a=1, b)
+        @test :(($(GlobalRef(DataToolkitBase, :_dataadvise))(a))(func, x)) ==
+            @macroexpand @advise a func(x)
+        @test :(($(GlobalRef(DataToolkitBase, :_dataadvise))(source(a)))(func, x)) ==
+            @macroexpand @advise source(a) func(x)
+    end
+    deleteat!(PLUGINS, length(PLUGINS)) # remove `plg`
 end
 
 import DataToolkitBase: smallify
