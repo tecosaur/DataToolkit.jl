@@ -48,8 +48,9 @@ function typeify(qt::QualifiedType; mod::Module=Main)
             else p end
         end
         if any(@. tparams isa TypeVar)
-            UnionAll(tparams[findfirst(@. tparams isa TypeVar)],
-                        T{tparams...})
+            foldl((t, p) -> UnionAll(p, t),
+                  tparams[reverse(findall(@. tparams isa TypeVar))],
+                  init = T{tparams...})
         else
             T{tparams...}
         end
