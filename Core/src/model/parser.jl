@@ -26,7 +26,7 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
             elseif param isa Expr && param.head == :<: && last(param.args) isa Symbol
                 TypeVar(if length(param.args) == 2
                             first(param.args)
-                        else :T end,
+                        else Symbol("#s0") end,
                         getfield(Main, last(param.args)))
             elseif param isa Expr && param.head == :curly
                 base = parse(QualifiedType, string(first(param.args)))

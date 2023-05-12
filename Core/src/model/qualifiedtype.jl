@@ -2,8 +2,8 @@ QualifiedType(t::AbstractString) = parse(QualifiedType, t)
 
 QualifiedType(m::Symbol, name::Symbol) = QualifiedType(m, name, ())
 
-function QualifiedType(::Type{T_}) where {T_}
-    T = Base.unwrap_unionall(T_)
+function QualifiedType(::Type{T0}) where {T0}
+    T = Base.unwrap_unionall(T0)
     params = map(p -> if p isa Type
                      QualifiedType(p)
                  else p end,

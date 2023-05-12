@@ -34,7 +34,9 @@ function Base.string(q::QualifiedType)
             if p isa Symbol
                 string(':', p)
             elseif p isa TypeVar
-                string(p.name, "<:", string(p.ub))
+                string(ifelse(first(String(p.name)) == '#',
+                              "", String(p.name)),
+                       "<:", string(p.ub))
             else
                 string(p)
             end
