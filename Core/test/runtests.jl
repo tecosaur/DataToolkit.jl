@@ -183,3 +183,56 @@ import DataToolkitBase: smallify
         @test d == empty(d)
     end
 end
+
+@testset "QualifiedType" begin
+    @testset "Construction" begin
+        @test QualifiedType(:a, :b) == QualifiedType(:a, :b, ())
+        @test QualifiedType(Any) == QualifiedType(:Core, :Any, ())
+        @test QualifiedType(Int) == QualifiedType(:Core, nameof(Int), ())
+        @test QualifiedType(IO) == QualifiedType(:Core, :IO, ())
+        # This test currently fails due to typevar inequivalence
+        # @test QualifiedType(QualifiedType) ==
+        #     QualifiedType(:DataToolkitBase, :QualifiedType, (TypeVar(:T, Union{}, Tuple),))
+        @test QualifiedType(QualifiedType(:a, :b)) == QualifiedType(:a, :b, ())
+    end
+    @testset "Typeification" begin
+        @test typeify(QualifiedType(:a, :b)) === nothing
+        @test typeify(QualifiedType(:Core, :Int)) == Int
+        @test typeify(QualifiedType(:Core, :IO)) == IO
+        @test typeify(QualifiedType(:DataToolkitBase, :QualifiedType,
+                                    (TypeVar(:T, Union{}, Tuple),))) ==
+                                        QualifiedType
+        @test typeify(QualifiedType(:Core, :Array, (QualifiedType(:Core, :Integer, ()), 1))) ==
+            Vector{Integer}
+        # Test module expansion with unexported type
+        @test typeify(QualifiedType(:Main, :AnyDict, ())) === nothing
+        @test typeify(QualifiedType(:Main, :AnyDict, ()), mod=Base) == Base.AnyDict
+    end
+    @testset "Subtyping" begin
+        @test QualifiedType(Int) ⊆ QualifiedType(Integer)
+        @test Int ⊆ QualifiedType(Integer)
+        @test QualifiedType(Int) ⊆ Integer
+        @test !(QualifiedType(Integer) ⊆ QualifiedType(Int))
+        @test !(Integer ⊆ QualifiedType(Int))
+        @test !(QualifiedType(Integer) ⊆ Int)
+        @test !(QualifiedType(:a, :b) ⊆ Integer)
+        @test !(Integer ⊆ QualifiedType(:a, :b))
+        @test QualifiedType(:a, :b) ⊆ QualifiedType(:a, :b)
+        @test !(QualifiedType(:Main, :AnyDict, ()) ⊆ AbstractDict)
+        @test ⊆(QualifiedType(:Main, :AnyDict, ()), AbstractDict, mod = Base)
+    end
+    @testset "Parsing and stringification" begin
+        for (str, qt) in [("a.b", QualifiedType(:a, :b)),
+                          ("String", QualifiedType(String)),
+                          ("Array{Bool,2}", QualifiedType(Array{Bool, 2})),
+                          ("Array{Array{Array{<:Integer,1},1},1}",
+                           QualifiedType(Array{Array{Array{<:Integer,1},1},1})),
+                          ("Ref{I<:Integer}", QualifiedType(Ref{I} where {I <: Integer}))]
+            @test str == string(qt)
+            # Due to TypeVar comparison issues, instead of
+            # the following test, we'll do a round-trip instead.
+            # @test parse(QualifiedType, str) == qt
+            @test str == string(parse(QualifiedType, str))
+        end
+    end
+end
