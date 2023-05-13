@@ -221,20 +221,6 @@ end
         @test !(QualifiedType(:Main, :AnyDict, ()) ⊆ AbstractDict)
         @test ⊆(QualifiedType(:Main, :AnyDict, ()), AbstractDict, mod = Base)
     end
-    @testset "Parsing and stringification" begin
-        for (str, qt) in [("a.b", QualifiedType(:a, :b)),
-                          ("String", QualifiedType(String)),
-                          ("Array{Bool,2}", QualifiedType(Array{Bool, 2})),
-                          ("Array{Array{Array{<:Integer,1},1},1}",
-                           QualifiedType(Array{Array{Array{<:Integer,1},1},1})),
-                          ("Ref{I<:Integer}", QualifiedType(Ref{I} where {I <: Integer}))]
-            @test str == string(qt)
-            # Due to TypeVar comparison issues, instead of
-            # the following test, we'll do a round-trip instead.
-            # @test parse(QualifiedType, str) == qt
-            @test str == string(parse(QualifiedType, str))
-        end
-    end
 end
 
 import DataToolkitBase: get_package, addpkg
@@ -351,5 +337,31 @@ import DataToolkitBase: get_package, addpkg
             F = ($sA).E
             G = ($sA).G
         end |> nolinenum == @macroexpand @import A: B as C, D, E as F, G
+    end
+end
+
+@testset "stringification" begin
+    @testset "QualifiedType" begin
+        for (str, qt) in [("a.b", QualifiedType(:a, :b)),
+                          ("String", QualifiedType(String)),
+                          ("Array{Bool,2}", QualifiedType(Array{Bool, 2})),
+                          ("Array{Array{Array{<:Integer,1},1},1}",
+                           QualifiedType(Array{Array{Array{<:Integer,1},1},1})),
+                          ("Ref{I<:Integer}", QualifiedType(Ref{I} where {I <: Integer}))]
+            @test str == string(qt)
+            # Due to TypeVar comparison issues, instead of
+            # the following test, we'll do a round-trip instead.
+            # @test parse(QualifiedType, str) == qt
+            @test str == string(parse(QualifiedType, str))
+        end
+    end
+    @testset "Identifiers" begin
+        for (istr, ident) in [("a", Identifier(nothing, "a", nothing, SmallDict{String, Any}())),
+                              ("a:b", Identifier("a", "b", nothing, SmallDict{String, Any}())),
+                              ("a::Main.sometype", Identifier(nothing, "a", QualifiedType(:Main, :sometype), SmallDict{String, Any}())),
+                              ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), SmallDict{String, Any}()))]
+            @test parse(Identifier, istr; advised=true) == ident
+            @test istr == string(ident)
+        end
     end
 end
