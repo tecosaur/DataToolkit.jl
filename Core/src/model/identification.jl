@@ -40,6 +40,10 @@ end
 Identifier(spec::AbstractString, params::SmallDict{String, Any}) =
     Identifier(parse(Identifier, spec), params)
 
+Base.:(==)(a::Identifier, b::Identifier) =
+    getfield.(Ref(a), fieldnames(Identifier)) ==
+    getfield.(Ref(b), fieldnames(Identifier))
+
 function Base.string(ident::Identifier)
     string(if !isnothing(ident.collection)
                string(ident.collection, ':')
