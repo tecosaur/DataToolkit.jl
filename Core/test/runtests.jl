@@ -386,7 +386,6 @@ end
     data_config_version = 0
     uuid = "84068d44-24db-4e28-b693-58d2e1f59d05"
     name = "datatest"
-    plugins = []
 
     config.setting = 123
 
@@ -400,6 +399,29 @@ end
 
         [[dataset.loader]]
         driver = "passthrough"
+    """
+    datatoml_full = """
+    data_config_version = 0
+    uuid = "84068d44-24db-4e28-b693-58d2e1f59d05"
+    name = "datatest"
+
+    [config]
+    setting = 123
+
+    [[dataset]]
+    uuid = "d9826666-5049-4051-8d2e-fe306c20802c"
+    property = 456
+
+        [[dataset.storage]]
+        driver = "raw"
+        priority = 1
+        type = "Array{Int64,1}"
+        value = [1, 2, 3]
+
+        [[dataset.loader]]
+        driver = "passthrough"
+        priority = 1
+        type = "Array{Int64,1}"
     """
     collection = read(IOBuffer(datatoml), DataCollection)
     @test collection.version == 0
@@ -430,4 +452,8 @@ end
     @test read(dataset("dataset")) == [1, 2, 3]
     @test dataset("dataset") == dataset("dataset", "property" => 456)
     @test_throws UnresolveableIdentifier dataset("dataset", "property" => 321)
+    let io = IOBuffer()
+        write(io, collection)
+        @test String(take!(io)) == datatoml_full
+    end
 end
