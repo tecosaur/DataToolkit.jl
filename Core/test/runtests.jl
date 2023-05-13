@@ -199,9 +199,7 @@ end
         @test typeify(QualifiedType(:a, :b)) === nothing
         @test typeify(QualifiedType(:Core, :Int)) == Int
         @test typeify(QualifiedType(:Core, :IO)) == IO
-        @test typeify(QualifiedType(:DataToolkitBase, :QualifiedType,
-                                    (TypeVar(:T, Union{}, Tuple),))) ==
-                                        QualifiedType
+        @test typeify(QualifiedType(:DataToolkitBase, :QualifiedType, ())) == QualifiedType
         @test typeify(QualifiedType(:Core, :Array, (QualifiedType(:Core, :Integer, ()), 1))) ==
             Vector{Integer}
         # Test module expansion with unexported type

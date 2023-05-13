@@ -42,10 +42,10 @@ A QualifiedType can be expressed as a string as `"\$parentmodule.\$typename"`.
 This can be easily `parse`d as a QualifiedType, e.g. `parse(QualifiedType,
 "Core.IO")`.
 """
-struct QualifiedType{T <: Tuple}
+struct QualifiedType
     parentmodule::Symbol
     name::Symbol
-    parameters::T
+    parameters::Tuple
 end
 
 """
