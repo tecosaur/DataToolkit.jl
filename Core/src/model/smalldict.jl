@@ -32,6 +32,7 @@ function smallify(dict::Dict{K, V}) where {K, V}
         convert(SmallDict{K, V}, dict)
     end
 end
+smallify(dict::SmallDict) = dict
 
 Base.length(d::SmallDict) = length(d.keys)
 Base.keys(d::SmallDict) = d.keys
