@@ -365,3 +365,67 @@ end
         end
     end
 end
+
+# Ensure this runs at the end, it should simulate a basic workflow
+@testset "Dry run" begin
+    # Basic storage/loader implementation for testing
+    @eval begin
+        import DataToolkitBase: getstorage, load, supportedtypes
+        function getstorage(storage::DataStorage{:raw}, T::Type)
+            get(storage, "value", nothing)::Union{T, Nothing}
+        end
+        supportedtypes(::Type{DataStorage{:raw}}, spec::SmallDict{String, Any}) =
+            [QualifiedType(typeof(get(spec, "value", nothing)))]
+        function load(::DataLoader{:passthrough}, from::T, ::Type{T}) where {T <: Any}
+            from
+        end
+        supportedtypes(::Type{DataLoader{:passthrough}}, _::SmallDict{String, Any}, dataset::DataSet) =
+            reduce(vcat, getproperty.(dataset.storage, :type)) |> unique
+    end
+    datatoml = """
+    data_config_version = 0
+    uuid = "84068d44-24db-4e28-b693-58d2e1f59d05"
+    name = "datatest"
+    plugins = []
+
+    config.setting = 123
+
+    [[dataset]]
+    uuid = "d9826666-5049-4051-8d2e-fe306c20802c"
+    property = 456
+
+        [[dataset.storage]]
+        driver = "raw"
+        value = [1, 2, 3]
+
+        [[dataset.loader]]
+        driver = "passthrough"
+    """
+    collection = read(IOBuffer(datatoml), DataCollection)
+    @test collection.version == 0
+    @test collection.uuid == Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05")
+    @test collection.name == "datatest"
+    @test collection.parameters == SmallDict{String, Any}("setting" => 123)
+    @test collection.plugins == String[]
+    @test collection.path === nothing
+    @test collection.mod == Main
+    @test length(collection.datasets) == 1
+    @test_throws EmptyStackError dataset("dataset")
+    push!(STACK, collection)
+    @test_throws UnresolveableIdentifier dataset("nonexistent")
+    @test dataset("dataset") isa DataSet
+    @test dataset("dataset").name == "dataset"
+    @test dataset("dataset").uuid == Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c")
+    @test dataset("dataset").parameters == SmallDict{String, Any}("property" => 456)
+    @test length(dataset("dataset").storage) == 1
+    @test dataset("dataset").storage[1].dataset === dataset("dataset")
+    @test dataset("dataset").storage[1].parameters == SmallDict{String, Any}("value" => [1, 2, 3])
+    @test dataset("dataset").storage[1].type == [QualifiedType(Vector{Int})]
+    @test length(dataset("dataset").loaders) == 1
+    @test dataset("dataset").loaders[1].dataset === dataset("dataset")
+    @test dataset("dataset").loaders[1].parameters == SmallDict{String, Any}()
+    @test dataset("dataset").loaders[1].type == [QualifiedType(Vector{Int})]
+    @test open(dataset("dataset"), Vector{Int}) == [1, 2, 3]
+    @test read(dataset("dataset"), Vector{Int}) == [1, 2, 3]
+    @test read(dataset("dataset")) == [1, 2, 3]
+end
