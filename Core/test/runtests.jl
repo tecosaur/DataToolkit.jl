@@ -428,4 +428,6 @@ end
     @test open(dataset("dataset"), Vector{Int}) == [1, 2, 3]
     @test read(dataset("dataset"), Vector{Int}) == [1, 2, 3]
     @test read(dataset("dataset")) == [1, 2, 3]
+    @test dataset("dataset") == dataset("dataset", "property" => 456)
+    @test_throws UnresolveableIdentifier dataset("dataset", "property" => 321)
 end
