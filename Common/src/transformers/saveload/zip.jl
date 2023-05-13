@@ -102,11 +102,11 @@ createpriority(::Type{DataLoader{:zip}}) = 10
 
 function create(::Type{DataLoader{:zip}}, source::String)
     if !isnothing(match(r"\.zip$"i, source))
-        Dict("file" => (; prompt="File: ", type=String, optional=true),
-             "extract" => function (spec)
-                 if !haskey(spec, "file")
-                     (; prompt="Extract: ", type=String, optional=true)
-                 end
-             end)
+        ["file" => (; prompt="File: ", type=String, optional=true),
+         "extract" => function (spec)
+             if !haskey(spec, "file")
+                 (; prompt="Extract: ", type=String, optional=true)
+             end
+         end]
     end
 end

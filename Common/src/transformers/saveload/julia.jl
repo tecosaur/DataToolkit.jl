@@ -70,7 +70,7 @@ createpriority(::Type{DataLoader{:julia}}) = 10
 function create(::Type{DataLoader{:julia}}, source::String)
     if !isnothing(match(r"\.jl$"i, source)) &&
         isfile(abspath(dirname(dataset.collection.path), expanduser(source)))
-        Dict{String, Any}("path" => source)
+        ["path" => source]
     end
 end
 

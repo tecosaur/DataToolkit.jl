@@ -41,11 +41,8 @@ for (lib, name, ext, stream_decompress, decompress,
 
              createpriority(::Type{DataLoader{$(QuoteNode(name))}}) = 10
 
-             function create(::Type{DataLoader{$(QuoteNode(name))}}, source::String)
-                 if !isnothing(match($(Regex("\\.$ext\$", "i")), source))
-                     Dict{String, Any}()
-                 end
-             end
+             create(::Type{DataLoader{$(QuoteNode(name))}}, source::String) =
+                 !isnothing(match($(Regex("\\.$ext\$", "i")), source))
 
              function save(::DataWriter{$(QuoteNode(name))}, dest::IO, info::IOStream)
                  @import $lib

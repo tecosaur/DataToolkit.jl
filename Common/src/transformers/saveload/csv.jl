@@ -50,8 +50,5 @@ end
 
 createpriority(::Type{DataLoader{:csv}}) = 10
 
-function create(::Type{DataLoader{:csv}}, source::String)
-    if !isnothing(match(r"\.[ct]sv$"i, source))
-        Dict{String, Any}()
-    end
-end
+create(::Type{DataLoader{:csv}}, source::String) =
+    !isnothing(match(r"\.[ct]sv$"i, source))

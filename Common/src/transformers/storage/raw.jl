@@ -24,8 +24,8 @@ createpriority(::Type{<:DataStorage{:raw}}) = 90
 function create(::Type{<:DataStorage{:raw}}, source::String)
     value = try
         TOML.parse(string("value = ", source))["value"]
-    catch _ nothing end
+    catch end
     if !isnothing(value)
-        Dict{String, Any}("value" => value)
+        ["value" => value]
     end
 end

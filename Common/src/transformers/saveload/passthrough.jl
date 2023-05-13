@@ -15,8 +15,5 @@ supportedtypes(::Type{DataLoader{:passthrough}}, ::SmallDict{String, Any}, datas
 
 createpriority(::Type{DataLoader{:passthrough}}) = 20
 
-function create(::Type{DataLoader{:passthrough}}, source::String, dataset::DataSet)
-    if any(isa.(dataset.storage, DataStorage{:raw}))
-        Dict{String, Any}()
-    end
-end
+create(::Type{DataLoader{:passthrough}}, source::String, dataset::DataSet) =
+    any(isa.(dataset.storage, DataStorage{:raw}))

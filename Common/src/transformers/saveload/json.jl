@@ -17,8 +17,5 @@ end
 
 createpriority(::Type{DataLoader{:json}}) = 10
 
-function create(::Type{DataLoader{:json}}, source::String)
-    if !isnothing(match(r"\.json$"i, source))
-        Dict{String, Any}()
-    end
-end
+create(::Type{DataLoader{:json}}, source::String) =
+    !isnothing(match(r"\.json$"i, source))

@@ -89,6 +89,6 @@ createpriority(::Type{<:DataStorage{:web}}) = 30
 
 function create(::Type{<:DataStorage{:web}}, source::String)
     if !isnothing(match(r"^(?:https?|ftps?)://", source))
-        Dict{String, Any}("url" => source)
+        ["url" => source]
     end
 end

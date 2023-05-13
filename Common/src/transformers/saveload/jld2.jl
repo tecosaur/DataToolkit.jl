@@ -23,10 +23,7 @@ end
 
 createpriority(::Type{DataLoader{:jld2}}) = 10
 
-function create(::Type{DataLoader{:jld2}}, source::String)
-    if !isnothing(match(r"\.jld2$"i, source))
-        Dict{String, Any}()
-    end
-end
+create(::Type{DataLoader{:jld2}}, source::String) =
+    !isnothing(match(r"\.jld2$"i, source))
 
 Store.shouldstore(::DataLoader{:jld2}, ::Type) = false

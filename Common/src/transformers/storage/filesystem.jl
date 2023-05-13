@@ -31,7 +31,7 @@ createpriority(::Type{<:DataStorage{:filesystem}}) = 70
 
 function create(::Type{<:DataStorage{:filesystem}}, source::String, dataset::DataSet)
     if isfile(abspath(dirname(dataset.collection.path), expanduser(source)))
-        Dict{String, Any}("path" => source)
+        ["path" => source]
     end
 end
 
