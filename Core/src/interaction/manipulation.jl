@@ -365,7 +365,7 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
                 minpriority::Int=-100, maxpriority::Int=100)
     T ∈ (DataStorage, DataLoader, DataWriter) ||
         throw(ArgumentError("T=$T should be an driver-less Data{Storage,Loader,Writer}"))
-    function process_spec(spec::Dict{String, <:Any}, driver::Symbol)
+    function process_spec(spec::Vector, driver::Symbol)
         final_spec = Dict{String, Any}()
         function expand_value(key::String, value::Any)
             if value isa Function
@@ -418,7 +418,8 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
             end
         end
     else
-        spec = create(T{driver}, source, dataset)
+        spec = create(T{driver}, source, dataset)::Union{Bool, Vector, Nothing}
+        spec isa Bool && (spec = ifelse(spec, [], nothing))
         if !isnothing(spec)
             return @advise fromspec(T, dataset, process_spec(spec, driver))
         end
