@@ -382,6 +382,38 @@ end
         supportedtypes(::Type{DataLoader{:passthrough}}, _::SmallDict{String, Any}, dataset::DataSet) =
             reduce(vcat, getproperty.(dataset.storage, :type)) |> unique
     end
+    fieldeqn_parent_stack = []
+    function fieldeqn(a::T, b::T) where {T} # field equal nested
+        push!(fieldeqn_parent_stack, a)
+        if T <: Vector
+            eq = all([fieldeqn(ai, bi) for (ai, bi) in zip(a, b)])
+            pop!(fieldeqn_parent_stack)
+            eq
+        elseif isempty(fieldnames(T))
+            a == b || begin
+                @info "[fieldeqn] $T differs" a b
+                pop!(fieldeqn_parent_stack)
+                false
+            end
+        else
+            for field in fieldnames(T)
+                if getfield(a, field) in fieldeqn_parent_stack
+                elseif hasmethod(iterate, Tuple{fieldtype(T, field)}) &&
+                    !all([fieldeqn(af, bf) for (af, bf) in
+                              zip(getfield(a, field), getfield(b, field))])
+                    @info "[fieldeqn] iterable $field of $T differs" a b
+                    pop!(fieldeqn_parent_stack)
+                    return false
+                elseif getfield(a, field) !== a && !fieldeqn(getfield(a, field), getfield(b, field))
+                    @info "[fieldeqn] $field of $T differs" a b
+                    pop!(fieldeqn_parent_stack)
+                    return false
+                end
+            end
+            pop!(fieldeqn_parent_stack)
+            true
+        end
+    end
     datatoml = """
     data_config_version = 0
     uuid = "84068d44-24db-4e28-b693-58d2e1f59d05"
@@ -423,6 +455,8 @@ end
         priority = 1
         type = "Array{Int64,1}"
     """
+    @test fieldeqn(read(IOBuffer(datatoml), DataCollection),
+                  read(IOBuffer(datatoml_full), DataCollection))
     collection = read(IOBuffer(datatoml), DataCollection)
     @test collection.version == 0
     @test collection.uuid == Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05")
