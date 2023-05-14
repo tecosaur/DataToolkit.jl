@@ -60,17 +60,20 @@ end
 # ---------------
 
 function Base.parse(::Type{Identifier}, spec::AbstractString; advised::Bool=false)
-    collection, rest::SubString{String} = match(r"^(?:([^:]+):)?([^:].*)?$", spec).captures
-    collection_isuuid = !isnothing(collection) && !isnothing(match(r"^[0-9a-f]{8}-[0-9a-f]{4}$", collection))
+    collection_str, rest::SubString{String} = match(r"^(?:([^:]+):)?([^:].*)?$", spec).captures
+    collection = if !isnothing(collection_str)
+        something(tryparse(UUID, collection_str), collection_str)
+    end
     if !isnothing(collection) && !advised
         @advise getlayer(collection) parse(Identifier, spec, advised=true)
+    else
+        dataset, rest = match(r"^([^:]+)(.*)$", rest).captures
+        dtype = match(r"^(?:::([A-Za-z0-9{, }\.]+)|::)?$", rest).captures[1]
+        Identifier(collection,
+                something(tryparse(UUID, dataset), dataset),
+                if !isnothing(dtype) parse(QualifiedType, dtype) end,
+                SmallDict{String,Any}())
     end
-    dataset, rest = match(r"^([^:]+)(.*)$", rest).captures
-    dtype = match(r"^(?:::([A-Za-z0-9{, }\.]+)|::)?$", rest).captures[1]
-    Identifier(if collection_isuuid; UUID(collection) else collection end,
-               something(tryparse(UUID, dataset), dataset),
-               if !isnothing(dtype) parse(QualifiedType, dtype) end,
-               SmallDict{String,Any}())
 end
 
 # ---------------
