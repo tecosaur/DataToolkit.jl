@@ -43,8 +43,8 @@ function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier;
                    collection::Union{DataCollection, Nothing}=nothing)
     printstyled(io, if isnothing(dsi.collection)
                     '□'
-                elseif !isempty(STACK) && (dsi.collection isa UUID && dsi.collection == first(STACK).uuid) ||
-                    (dsi.collection isa AbstractString && dsi.collection == first(STACK).name)
+                elseif !isempty(STACK) && ((dsi.collection isa UUID && dsi.collection == first(STACK).uuid) ||
+                    (dsi.collection isa AbstractString && dsi.collection == first(STACK).name))
                     '■'
                 else
                     dsi.collection
