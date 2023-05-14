@@ -456,36 +456,61 @@ end
     @test fieldeqn(read(IOBuffer(datatoml), DataCollection),
                   read(IOBuffer(datatoml_full), DataCollection))
     collection = read(IOBuffer(datatoml), DataCollection)
-    @test collection.version == 0
-    @test collection.uuid == Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05")
-    @test collection.name == "datatest"
-    @test collection.parameters == SmallDict{String, Any}("setting" => 123)
-    @test collection.plugins == String[]
-    @test collection.path === nothing
-    @test collection.mod == Main
-    @test length(collection.datasets) == 1
+    @testset "Collection parsed properties" begin
+        @test collection.version == 0
+        @test collection.uuid == Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05")
+        @test collection.name == "datatest"
+        @test collection.parameters == SmallDict{String, Any}("setting" => 123)
+        @test collection.plugins == String[]
+        @test collection.path === nothing
+        @test collection.mod == Main
+        @test length(collection.datasets) == 1
+    end
     @test_throws EmptyStackError dataset("dataset")
     push!(STACK, collection)
-    @test_throws UnresolveableIdentifier dataset("nonexistent")
-    @test dataset("dataset") isa DataSet
-    @test dataset("dataset").name == "dataset"
-    @test dataset("dataset").uuid == Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c")
-    @test dataset("dataset").parameters == SmallDict{String, Any}("property" => 456)
-    @test length(dataset("dataset").storage) == 1
-    @test dataset("dataset").storage[1].dataset === dataset("dataset")
-    @test dataset("dataset").storage[1].parameters == SmallDict{String, Any}("value" => [1, 2, 3])
-    @test dataset("dataset").storage[1].type == [QualifiedType(Vector{Int})]
-    @test length(dataset("dataset").loaders) == 1
-    @test dataset("dataset").loaders[1].dataset === dataset("dataset")
-    @test dataset("dataset").loaders[1].parameters == SmallDict{String, Any}()
-    @test dataset("dataset").loaders[1].type == [QualifiedType(Vector{Int})]
-    @test open(dataset("dataset"), Vector{Int}) == [1, 2, 3]
-    @test read(dataset("dataset"), Vector{Int}) == [1, 2, 3]
-    @test read(dataset("dataset")) == [1, 2, 3]
-    @test dataset("dataset") == dataset("dataset", "property" => 456)
-    @test_throws UnresolveableIdentifier dataset("dataset", "property" => 321)
-    let io = IOBuffer()
-        write(io, collection)
-        @test String(take!(io)) == datatoml_full
+    @testset "DataSet parsed properties" begin
+        @test dataset("dataset") isa DataSet
+        @test dataset("dataset").name == "dataset"
+        @test dataset("dataset").uuid == Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c")
+        @test dataset("dataset").parameters == SmallDict{String, Any}("property" => 456)
+    end
+    @testset "Store/Load" begin
+        @test length(dataset("dataset").storage) == 1
+        @test dataset("dataset").storage[1].dataset === dataset("dataset")
+        @test dataset("dataset").storage[1].parameters == SmallDict{String, Any}("value" => [1, 2, 3])
+        @test dataset("dataset").storage[1].type == [QualifiedType(Vector{Int})]
+        @test length(dataset("dataset").loaders) == 1
+        @test dataset("dataset").loaders[1].dataset === dataset("dataset")
+        @test dataset("dataset").loaders[1].parameters == SmallDict{String, Any}()
+        @test dataset("dataset").loaders[1].type == [QualifiedType(Vector{Int})]
+        @test open(dataset("dataset"), Vector{Int}) == [1, 2, 3]
+        @test read(dataset("dataset"), Vector{Int}) == [1, 2, 3]
+        @test read(dataset("dataset")) == [1, 2, 3]
+    end
+    @testset "Identifier" begin
+        @test_throws UnresolveableIdentifier dataset("nonexistent")
+        @test_throws UnresolveableIdentifier resolve(parse(Identifier, "nonexistent"))
+        @test resolve(parse(Identifier, "dataset")) == dataset("dataset")
+        @test resolve(parse(Identifier, "datatest:dataset")) == dataset("dataset")
+        @test resolve(parse(Identifier, "dataset")) == dataset("dataset")
+        @test resolve(parse(Identifier, "dataset::Vector{Int}")) == read(dataset("dataset"))
+        @test resolve(parse(Identifier, "dataset::Vector{Int}"), resolvetype=false) == dataset("dataset")
+        for (iargs, (col, ds)) in [((), ("datatest", "dataset")),
+                                  ((:name,), ("datatest", "dataset")),
+                                  ((:uuid,), (Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05"), Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c"))),
+                                  ((:uuid, :name), (Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05"), "dataset")),
+                                  ((:name, :uuid), ("datatest", Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c")))]
+            ident = Identifier(dataset("dataset"), iargs...)
+            @test ident == Identifier(col, ds, nothing, SmallDict{String, Any}("property" => 456))
+            @test dataset("dataset") === resolve(ident)
+            @test parse(Identifier, string(ident)) == Identifier(col, ds, nothing, SmallDict{String, Any}())
+        end
+        @test_throws ArgumentError Identifier(dataset("dataset"), :err)
+        @test dataset("dataset") == dataset("dataset", "property" => 456)
+        @test_throws UnresolveableIdentifier dataset("dataset", "property" => 321)
+        let io = IOBuffer()
+            write(io, collection)
+            @test String(take!(io)) == datatoml_full
+        end
     end
 end
