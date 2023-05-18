@@ -45,7 +45,7 @@ unzip(file::String, dir::String=dirname(file); recursive::Bool=false, log::Bool=
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
     path = if !isnothing(get(loader, "extract"))
-        abspath(dirname(loader.dataset.collection.path),
+        abspath(dirof(loader.dataset.collection),
                 get(loader, "extract"))
     else
         joinpath(tempdir(), "jl_datatoolkit_zip_" * string(Store.rhash(loader), base=16))

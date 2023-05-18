@@ -11,7 +11,7 @@ function getactfn(transformer::AbstractDataTransformer)
     fnstr = get(transformer, "function", nothing)
     loadfn = if !isnothing(path)
         Base.include(transformer.dataset.collection.mod,
-                     abspath(dirname(transformer.dataset.collection.path),
+                     abspath(dirof(transformer.dataset.collection),
                              expanduser(get(transformer, "pathroot", "")),
                              expanduser(path)))
     elseif !isnothing(fnstr)
@@ -28,9 +28,7 @@ function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
         arguments = Dict{Symbol,Any}(
             Symbol(arg) => val
             for (arg, val) in get(loader, "arguments", Dict())::Dict)
-        dir = if isnothing(loader.dataset.collection.path) pwd()
-            else dirname(loader.dataset.collection.path) end
-        cd(dir) do
+        cd(dirof(loader.dataset.collection)) do
             DataToolkitBase.invokepkglatest(loadfn; arguments...)::R
         end
     end
@@ -44,9 +42,7 @@ function load(loader::DataLoader{:julia}, from::Any, R::Type)
             arguments = Dict{Symbol,Any}(
                 Symbol(arg) => val
                 for (arg, val) in get(loader, "arguments", Dict())::Dict)
-            dir = if isnothing(loader.dataset.collection.path) pwd()
-            else dirname(loader.dataset.collection.path) end
-            cd(dir) do
+            cd(dirof(loader.dataset.collection)) do
                 DataToolkitBase.invokepkglatest(loadfn, from; arguments...)::R
             end
         end
@@ -58,9 +54,7 @@ function save(writer::DataWriter{:julia}, dest, info)
     arguments = Dict{Symbol,Any}(
         Symbol(arg) => val
         for (arg, val) in get(loader, "arguments", Dict())::Dict)
-    dir = if isnothing(writer.dataset.collection.path) pwd()
-    else dirname(writer.dataset.collection.path) end
-    cd(dir) do
+    cd(dirof(writer.dataset.collection)) do
         DataToolkitBase.invokepkglatest(writefn, dest, info; arguments...)
     end
 end
@@ -69,7 +63,7 @@ createpriority(::Type{DataLoader{:julia}}) = 10
 
 function create(::Type{DataLoader{:julia}}, source::String)
     if !isnothing(match(r"\.jl$"i, source)) &&
-        isfile(abspath(dirname(dataset.collection.path), expanduser(source)))
+        isfile(abspath(dirof(dataset.collection), expanduser(source)))
         ["path" => source]
     end
 end

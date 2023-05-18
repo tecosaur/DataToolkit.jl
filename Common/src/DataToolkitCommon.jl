@@ -16,6 +16,7 @@ using TOML
 # Defined in `plugins/log.jl`, but also wanted for the store plugins.
 function should_log_event end
 
+include("misc/collectiondir.jl")
 include("store/Store.jl")
 
 include("transformers/storage/filesystem.jl")

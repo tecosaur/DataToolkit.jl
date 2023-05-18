@@ -34,7 +34,7 @@ createpriority(::Type{DataLoader{:sqlite}}) = 10
 
 function create(::Type{DataLoader{:sqlite}}, source::String)
     if !isnothing(match(r"\.sqlite$"i, source)) &&
-        isfile(abspath(dirname(dataset.collection.path), expanduser(source)))
+        isfile(abspath(dirof(dataset.collection), expanduser(source)))
         ["path" => source,
          "table" => (; prompt="Table: ", type=String,
                      default = "data", optional=true),

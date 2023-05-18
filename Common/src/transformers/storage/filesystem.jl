@@ -1,7 +1,8 @@
-getpath(storage::DataStorage{:filesystem}) =
-    abspath(dirname(storage.dataset.collection.path),
-            @something(expanduser(get(storage, "path")),
-                       error("No path")))
+function getpath(storage::DataStorage{:filesystem})
+    spath = get(storage, "path", nothing)
+    !isnothing(spath) || error("No path") # TODO improve error
+    abspath(dirof(storage.dataset.collection), expanduser(spath))
+end
 
 function storage(storage::DataStorage{:filesystem}, ::Type{IO};
                  write::Bool=false)
@@ -30,7 +31,7 @@ supportedtypes(::Type{<:DataStorage{:filesystem, <:Any}}) =
 createpriority(::Type{<:DataStorage{:filesystem}}) = 70
 
 function create(::Type{<:DataStorage{:filesystem}}, source::String, dataset::DataSet)
-    if isfile(abspath(dirname(dataset.collection.path), expanduser(source)))
+    if isfile(abspath(dirof(dataset.collection), expanduser(source)))
         ["path" => source]
     end
 end
