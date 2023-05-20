@@ -2,6 +2,7 @@ module DataToolkitBase
 
 using UUIDs, TOML, Dates
 
+using PrecompileTools
 using Compat
 
 # For general usage
@@ -48,6 +49,8 @@ include("interaction/display.jl")
 include("interaction/manipulation.jl")
 include("interaction/repl.jl")
 include("interaction/lint.jl")
+
+include("precompile.jl")
 
 function add_datasets! end # For `ext/AbstractTreesExt.jl`
 
