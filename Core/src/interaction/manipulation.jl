@@ -413,6 +413,7 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
                 minpriority <= createpriority(T{driver}) <= maxpriority, ds)
         for drv in alldrivers
             spec = create(T{drv}, source, dataset)
+            spec isa Bool && (spec = ifelse(spec, [], nothing))
             if !isnothing(spec)
                 return @advise fromspec(T, dataset, process_spec(spec, drv))
             end
