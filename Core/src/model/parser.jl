@@ -68,7 +68,7 @@ function Base.parse(::Type{Identifier}, spec::AbstractString; advised::Bool=fals
         @advise getlayer(collection) parse(Identifier, spec, advised=true)
     else
         dataset, rest = match(r"^([^:]+)(.*)$", rest).captures
-        dtype = match(r"^(?:::([A-Za-z0-9{, }\.]+)|::)?$", rest).captures[1]
+        dtype = match(r"^(?:::([A-Za-z0-9{, }<:\.]+)|::)?$", rest).captures[1]
         Identifier(collection,
                 something(tryparse(UUID, dataset), dataset),
                 if !isnothing(dtype) parse(QualifiedType, dtype) end,
