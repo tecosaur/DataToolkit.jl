@@ -25,9 +25,9 @@ end
 function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
     if isempty(get(loader, "input", ""))
         loadfn = getactfn(loader)
-        arguments = Dict{Symbol,Any}(
+        arguments = SmallDict{Symbol,Any}([
             Symbol(arg) => val
-            for (arg, val) in get(loader, "arguments", Dict())::Dict)
+            for (arg, val) in get(loader, "arguments", SmallDict())::SmallDict])
         cd(dirof(loader.dataset.collection)) do
             DataToolkitBase.invokepkglatest(loadfn; arguments...)::R
         end
