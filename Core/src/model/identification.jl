@@ -82,7 +82,7 @@ function resolve(collection::DataCollection, ident::Identifier;
     if length(matchingdatasets) == 1
         dataset = first(matchingdatasets)
         if !isnothing(ident.type) && resolvetype
-            read(dataset, typeify(ident.type, mod=collection.mod))
+            read(dataset, typeify(ident.type, mod=collection.mod, shoulderror=true))
         else
             dataset
         end
