@@ -388,3 +388,28 @@ function Base.showerror(io::IO, err::OrphanDataSet)
           " [", err.dataset.uuid, "] is no longer a child of of its parent collection.\n",
           "This should not occur, and indicates that something fundamental has gone wrong.")
 end
+
+"""
+    ImpossibleTypeException(qt::QualifiedType, mod::Union{Module, Nothing})
+
+The qualified type `qt` could not be converted to a `Type`, for some reason or
+another (`mod` is the parent module used in the attempt, should it be sucesfully
+identified, and `nothing` otherwise).
+"""
+struct ImpossibleTypeException <: Exception
+    qt::QualifiedType
+    mod::Union{Module, Nothing}
+end
+
+function Base.showerror(io::IO, err::ImpossibleTypeException)
+    print(io, "ImpossibleTypeException: Could not realise the type ", string(err.qt))
+    if isnothing(err.mod)
+        print(io, ", as the parent module ", err.qt.parentmodule,
+              " is not loaded.")
+    elseif !isdefined(err.mod, err.qt.name)
+        print(io, ", as the parent module ", err.qt.parentmodule,
+              " has no property ", err.qt.name, '.')
+    else
+        print(io, ", for unknown reasons, possibly an issue with the type parameters?")
+    end
+end

@@ -23,13 +23,13 @@ end
 Convert `qt` to a `Type` availible in `mod`, if possible.
 If this cannot be done, `nothing` is returned instead.
 """
-function typeify(qt::QualifiedType; mod::Module=Main)
+function typeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)
     mod = if qt.parentmodule === :Main
         mod
     elseif isdefined(mod, qt.parentmodule)
         getfield(mod, qt.parentmodule)
     else
-        hmod = Some(nothing)
+        hmod = nothing
         for (pkgid, pmod) in Base.loaded_modules
             if pkgid.name == String(qt.parentmodule)
                 hmod = pmod
@@ -54,6 +54,8 @@ function typeify(qt::QualifiedType; mod::Module=Main)
         else
             T{tparams...}
         end
+    elseif shoulderror
+        throw(ImpossibleTypeException(qt, mod))
     end
 end
 
