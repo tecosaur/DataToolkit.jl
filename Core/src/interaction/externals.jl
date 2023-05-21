@@ -1,9 +1,3 @@
-struct DriverUnimplementedException <: Exception
-    transform::AbstractDataTransformer
-    driver::Symbol
-    method::Symbol
-end
-
 """
     loadcollection!(source::Union{<:AbstractString, <:IO}, mod::Module=Base.Main;
                     soft::Bool=false, index::Int=1)
