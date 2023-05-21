@@ -10,7 +10,9 @@ using Serialization
 
 import ..DataToolkitCommon: should_log_event
 
-const STORE_DIR = BaseDirs.User.cache(BaseDirs.Project("Data Store"), create=true)
+const INVENTORY_FILENAME = "Inventory.toml"
+const USER_STORE = BaseDirs.User.cache(BaseDirs.Project("Data Store"), create=true)
+const USER_INVENTORY = joinpath(USER_STORE, INVENTORY_FILENAME)
 
 include("types.jl")
 include("rhash.jl")
@@ -26,11 +28,13 @@ function __init__()
     let pos = searchsorted(REPL_CMDS, STORE_REPL_CMD, by=c -> DataToolkitBase.natkeygen(c.trigger))
         splice!(REPL_CMDS, pos, (STORE_REPL_CMD,))
     end
-    update_inventory!()
+    push!(INVENTORIES, load_inventory(USER_INVENTORY))
     atexit() do
-        hours_since = (now() - INVENTORY.last_gc).value / (1000 * 60 * 60)
-        if INVENTORY.config.auto_gc > 0 && hours_since > INVENTORY.config.auto_gc
-            garbage_collect!(; log=false, trimmsg=true)
+        for inv in INVENTORIES
+            hours_since = (now() - inv.last_gc).value / (1000 * 60 * 60)
+            if inv.config.auto_gc > 0 && hours_since > inv.config.auto_gc
+                garbage_collect!(inv; log=false, trimmsg=true)
+            end
         end
     end
 end

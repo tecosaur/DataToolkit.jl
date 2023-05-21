@@ -1,9 +1,8 @@
 const INVENTORY_VERSION = 0
 
-INVENTORY::Union{Inventory, Nothing} = nothing
+const INVENTORIES = Vector{Inventory}()
 
 const DEFAULT_INVENTORY_CONFIG = InventoryConfig(2, 30, 50*1024^3, 1)
-
 const MSG_LABEL_WIDTH = 10
 
 # Reading and writing
@@ -170,39 +169,47 @@ end
 
 Base.write(inv::Inventory) = write(inv.file.path, inv)
 
-function load_inventory(path::String)
-    data = open(io -> TOML.parse(io), path)
-    if data["inventory_version"] != INVENTORY_VERSION
-        error("Incompatable inventory version!")
+# Aquiring and updating
+
+function load_inventory(path::String, create::Bool=true)
+    if isfile(path)
+        data = open(io -> TOML.parse(io), path)
+        if data["inventory_version"] != INVENTORY_VERSION
+            error("Incompatable inventory version!")
+        end
+        file = InventoryFile(path, mtime(path))
+        last_gc = data["inventory_last_gc"]
+        config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
+        collections = [convert(CollectionInfo, key => val)
+                    for (key, val) in get(data, "collections", Dict{String, Any}[])]
+        stores = convert.(StoreSource, get(data, "store", Dict{String, Any}[]))
+        caches = convert.(CacheSource, get(data, "cache", Dict{String, Any}[]))
+        Inventory(file, config, collections, stores, caches, last_gc)
+    elseif create
+        inventory = Inventory(
+            InventoryFile(path, time()),
+            convert(InventoryConfig, Dict{String, Any}()),
+            CollectionInfo[], StoreSource[],
+            CacheSource[], now())
+        isdir(dirname(path)) || mkpath(dirname(path))
+        write(inventory)
+        inventory
+    else
+        error("No inventory exists at $path")
     end
-    file = InventoryFile(path, mtime(path))
-    last_gc = data["inventory_last_gc"]
-    config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
-    collections = [convert(CollectionInfo, key => val)
-                   for (key, val) in get(data, "collections", Dict{String, Any}[])]
-    stores = convert.(StoreSource, get(data, "store", Dict{String, Any}[]))
-    caches = convert.(CacheSource, get(data, "cache", Dict{String, Any}[]))
-    Inventory(file, config, collections, stores, caches, last_gc)
 end
 
-function update_inventory!()
-    global INVENTORY
-    if isnothing(INVENTORY)
-        path = joinpath(STORE_DIR, "Inventory.toml")
-        if isfile(path)
-            INVENTORY = load_inventory(path)
-        else
-            INVENTORY = Inventory(
-                InventoryFile(path, time()),
-                convert(InventoryConfig, Dict{String, Any}()),
-                CollectionInfo[], StoreSource[],
-                CacheSource[], now())
-            write(INVENTORY)
-        end
+function update_inventory!(path::String)
+    index = findfirst(inv -> inv.file.path == path, INVENTORIES)
+    if isnothing(index)
+        push!(INVENTORIES, load_inventory(path)) |> last
     else
-        INVENTORY = update_inventory(INVENTORY)
+        update_inventory!(INVENTORIES[index], index)
     end
-    INVENTORY
+end
+
+function update_inventory!(inventory::Inventory, index::Union{Int, Nothing}=findfirst(i -> i === inventory, INVENTORIES))
+    INVENTORIES[index] = update_inventory(inventory)
 end
 
 function update_inventory(inventory::Inventory)
@@ -212,17 +219,58 @@ function update_inventory(inventory::Inventory)
     inventory
 end
 
-function modify_inventory(modify_fn::Function, inventory::Inventory=INVENTORY)
-    inventory === INVENTORY && update_inventory!()
-    modify_fn()
+function modify_inventory!(modify_fn::Function, inventory::Inventory)
+    update_inventory!(inventory)
+    modify_fn(inventory)
     write(inventory)
+end
+
+"""
+    getinventory(collection::DataCollection)
+
+Find the `Inventory` that is responsible for `collection`, creating it if
+necessary.
+"""
+function getinventory(collection::DataCollection)
+    path = let storepath = get(get(collection, "store", SmallDict{String, Any}()),
+                               "path", nothing)
+        joinpath(if !isnothing(storepath)
+                     joinpath(dirof(collection), storepath)
+                 else
+                     USER_STORE
+                 end, INVENTORY_FILENAME)
+    end
+    index = findfirst(inv -> inv.file.path == path, INVENTORIES)
+    if isnothing(index)
+        push!(INVENTORIES, load_inventory(path)) |> last
+    else
+        INVENTORIES[index]
+    end
+end
+
+"""
+    getinventory()
+
+Find the default user `Inventory`.
+"""
+function getinventory()
+    if !isempty(INVENTORIES) && first(INVENTORIES).file.path == USER_INVENTORY
+        first(INVENTORIES)
+    else
+        for inv in INVENTORIES
+            if inv.file.path == USER_INVENTORY
+                return inv
+            end
+        end
+        push!(INVENTORIES, load_inventory(USER_INVENTORY)) |> last
+    end
 end
 
 # Garbage Collection
 
-function files(inv::Inventory)
-    map(Iterators.flatten((inv.stores, inv.caches))) do source
-        storefile(source; inventory=inv)
+function files(inventory::Inventory)
+    map(Iterators.flatten((inventory.stores, inventory.caches))) do source
+        storefile(inventory, source)
     end
 end
 
@@ -244,15 +292,18 @@ function parsebytesize(size::AbstractString)
     parse(Int, num) * ifelse(isempty(ibi), 1000, 1024)^exponent
 end
 
-function printstats(inv::Inventory=INVENTORY)
-    filesize = (f -> if isfile(f) stat(f).size else 0 end) ∘ storefile
+function printstats(inv::Inventory)
+    function storesize(store)
+        file = storefile(inv, store)
+        Int(isfile(file) && filesize(file))
+    end
     printstyled(lpad("Tracking", MSG_LABEL_WIDTH), bold=true, color=:green)
     println(' ', length(inv.collections), " collection",
             ifelse(length(inv.collections) == 1, "", "s"))
-    storesizes = map(filesize, inv.stores)
+    storesizes = map(storesize, inv.stores)
     printstyled(lpad("Stored", MSG_LABEL_WIDTH), bold=true, color=:green)
     println(' ', length(inv.stores), " files, taking up $(join(humansize(sum(storesizes))))")
-    cachesizes = map(filesize, inv.caches)
+    cachesizes = map(storesize, inv.caches)
     printstyled(lpad("Cached", MSG_LABEL_WIDTH), bold=true, color=:green)
     println(' ', length(inv.caches), " data sets, taking up $(join(humansize(sum(cachesizes))))")
     printstyled(lpad("Largest", MSG_LABEL_WIDTH), bold=true, color=:green)
@@ -268,6 +319,22 @@ function printstats(inv::Inventory=INVENTORY)
     print('\n')
 end
 
+function printstats()
+    if length(INVENTORIES) == 1
+        printstats(first(INVENTORIES))
+    else
+        for inv in INVENTORIES
+            printstyled("Store: ",
+                        if dirname(inv.file.path) == USER_STORE
+                            "(user)"
+                        else
+                            dirname(inv.file.path)
+                        end, '\n', color=:magenta, bold=true)
+            printstats(inv)
+        end
+    end
+end
+
 """
     garbage_collect!(inv::Inventory, log::Bool=true)
 
@@ -276,7 +343,7 @@ Examine `inv`, and garbage collect old entries.
 If `log` is set, an informative message is printed giving an overview
 of actions taken.
 """
-function garbage_collect!(inv::Inventory=INVENTORY; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
+function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
     (; active_collections, live_collections, ghost_collections, dead_collections) =
         scan_collections(inv)
     dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
@@ -318,7 +385,7 @@ function garbage_collect!(inv::Inventory=INVENTORY; log::Bool=true, dryrun::Bool
         end
         truncated_sources, truncsource_bytes = garbage_trim_size!(inv; dryrun)
         dryrun || for source in truncated_sources
-            file = storefile(source)
+            file = storefile(inv, source)
             isfile(file) && rm(file, force=true)
         end
         if !isempty(truncated_sources) && trimmsg
@@ -366,12 +433,27 @@ function garbage_collect!(inv::Inventory=INVENTORY; log::Bool=true, dryrun::Bool
     end
 end
 
-function garbage_trim_size!(inv::Inventory=INVENTORY; dryrun::Bool=false)
+function garbage_collect!(; log::Bool=true, kwargs...)
+    if length(INVENTORIES) == 1
+        garbage_collect!(first(INVENTORIES); log, kwargs...)
+    else
+        for inv in INVENTORIES
+            log && printstyled(
+                "Store: ",
+                if dirname(inv.file.path) == USER_STORE
+                    "(user)" else dirname(inv.file.path) end,
+                '\n', color=:magenta, bold=true)
+            garbage_collect!(inv; log, kwargs)
+        end
+    end
+end
+
+function garbage_trim_size!(inv::Inventory; dryrun::Bool=false)
     !isnothing(inv.config.max_size) || return (SourceInfo[], 0)
     allsources = vcat(inv.stores, inv.caches)
     allsizes = map(f -> Int(isfile(f) && stat(f).size), storefile.(allsources))
-    if sum(allsizes) > inv.config.max_size
-        allscores = size_recency_scores(allsources, inv.config.recency_beta)
+    if sum(allsizes, init=0) > inv.config.max_size
+        allscores = size_recency_scores(inv, allsources, inv.config.recency_beta)
         totalsize = sum(allsizes)
         removed = SourceInfo[]
         for (source, source_size) in zip(allsources[sortperm(allscores, rev=true)],
@@ -394,11 +476,11 @@ function garbage_trim_size!(inv::Inventory=INVENTORY; dryrun::Bool=false)
 end
 
 """
-    size_recency_scores(sources::Vector{SourceInfo}, β::Number=1)
+    size_recency_scores(inventory::Inventory, sources::Vector{SourceInfo}, β::Number=1)
 
-Produce a combined score for each of `sources` based on the size and (access)
-recency of the source, with small recent files scored higher than large older
-files. Files that do not exist are given a score of 0.0.
+Produce a combined score for each of `sources` in `inventory` based on the size
+and (access) recency of the source, with small recent files scored higher than
+large older files. Files that do not exist are given a score of 0.0.
 
 The combined score is a weighted harmonic mean, inspired by the F-score. More
 specifically, the combined score is ``(1 + \\beta^2) \\cdot \\frac{t \\cdot
@@ -406,12 +488,12 @@ s}{\\beta^2 t + s}`` where ``\\beta`` is the recency factor, ``t \\in [0, 1]``
 is the time score, and ``s \\in [0, 1]`` is the size score. When `β` is
 negative, the ``\\beta^2`` weighting is applied to ``s`` instead.
 """
-function size_recency_scores(sources::Vector{SourceInfo}, β::Number=1)
+function size_recency_scores(inventory::Inventory, sources::Vector{SourceInfo}, β::Number=1)
     sizes = Int[]
     times = Float64[]
     for source in sources
         push!(times, datetime2unix(source.accessed))
-        file = storefile(source)
+        file = storefile(inventory, source)
         if isfile(file)
             fstat = stat(file)
             push!(sizes, fstat.size)
@@ -529,7 +611,7 @@ function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
                     r ∈ inactive_collections
                 end
             end
-            if isempty(source.references) || !isfile(storefile(source))
+            if isempty(source.references) || !isfile(storefile(inv, source))
                 push!(orphan_sources, source)
                 dryrun || deleteat!(sources, i)
             else
@@ -540,7 +622,7 @@ function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
     (; orphan_sources, num_recipe_checks)
 end
 
-function expunge!(collection::CollectionInfo; inventory::Inventory=INVENTORY, dryrun::Bool=false)
+function expunge!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool=false)
     cindex = findfirst(==(collection), inventory.collections)
     isnothing(cindex) || deleteat!(inventory.collections, cindex)
     removed_sources = SourceInfo[]
@@ -552,7 +634,7 @@ function expunge!(collection::CollectionInfo; inventory::Inventory=INVENTORY, dr
                 if isempty(source.references)
                     push!(removed_sources, source)
                     dryrun || deleteat!(sources, i)
-                    file = storefile(source)
+                    file = storefile(inventory, source)
                     dryrun || isfile(file) && rm(file, force=true)
                 else
                     i += 1
@@ -567,11 +649,11 @@ function expunge!(collection::CollectionInfo; inventory::Inventory=INVENTORY, dr
 end
 
 """
-    fetch!(storer::DataStorage; inventory::Inventory=INVENTORY)
+    fetch!(storer::DataStorage)
 
 If `storer` is storable, open it, and presumably save it in the Store along the way.
 """
-function fetch!(storer::DataStorage; inventory::Inventory=INVENTORY)
+function fetch!(storer::DataStorage)
     if shouldstore(storer)
         for type in (FilePath, IO, IOStream)
             if QualifiedType(type) in storer.type

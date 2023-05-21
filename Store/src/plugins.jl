@@ -79,17 +79,16 @@ optionally followed by an "s", comma, or whitespace. E.g.
 #### Store management
 
 System-wide configuration can be set via the `store config set` REPL command, or
-directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
+directly modifying the `$(@__MODULE__).getinventory().config` struct.
 
 $STORE_GC_CONFIG_INFO
 """
 const STORE_PLUGIN = Plugin("store", [
     function (post::Function, f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
-        global INVENTORY
+        inventory = getinventory(storer.dataset.collection) |> update_inventory!
         # Get any applicable cache file
-        update_inventory!()
-        source = getsource(storer)
-        file = storefile(storer)
+        source = getsource(inventory, storer)
+        file = storefile(inventory, storer)
         if !isnothing(file) && isfile(file) && haskey(storer.parameters, "lifetime")
             seconds = interpret_lifetime(get(storer, "lifetime"))
             if time() - ctime(file) > seconds
@@ -101,15 +100,15 @@ const STORE_PLUGIN = Plugin("store", [
             # written to), then it should be removed before proceeding as
             # normal.
             if !isnothing(source)
-                index = findfirst(==(source), INVENTORY.stores)
-                !isnothing(index) && deleteat!(INVENTORY.stores, index)
-                write(INVENTORY)
+                index = findfirst(==(source), inventory.stores)
+                !isnothing(index) && deleteat!(inventory.stores, index)
+                write(inventory)
             end
             (post, f, (storer, as), (; write))
         elseif !isnothing(file) && isfile(file)
             # If using a cache file, ensure the parent collection is registered
             # as a reference.
-            update_source!(source, storer)
+            update_source!(inventory, source, storer)
             if as === IO || as === IOStream
                 if should_log_event("store", storer)
                     @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
@@ -126,13 +125,13 @@ const STORE_PLUGIN = Plugin("store", [
             # which exceed memory limits).
             tryfile = storage(storer, FilePath; write)
             if !isnothing(tryfile)
-                io = open(storesave(storer, FilePath, tryfile), "r")
+                io = open(storesave(inventory, storer, FilePath, tryfile), "r")
                 (post, identity, (io,))
             else
-                (post ∘ storesave(storer, as), f, (storer, as), (; write))
+                (post ∘ storesave(inventory, storer, as), f, (storer, as), (; write))
             end
         elseif as === FilePath
-            (post ∘ storesave(storer, as), f, (storer, as), (; write))
+            (post ∘ storesave(inventory, storer, as), f, (storer, as), (; write))
         else
             (post, f, (storer, as), (; write))
         end
@@ -207,7 +206,7 @@ cache = false
 ```
 
 System-wide configuration can be set via the `store config set` REPL command, or
-directly modifying the `$(@__MODULE__).INVENTORY.config` struct.
+directly modifying the `$(@__MODULE__).getinventory().config` struct.
 
 $STORE_GC_CONFIG_INFO
 """
@@ -215,9 +214,9 @@ const CACHE_PLUGIN = Plugin("cache", [
     function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if shouldstore(loader, as)
             # Get any applicable cache file
-            update_inventory!()
-            cache = getsource(loader, as)
-            file = storefile(cache)
+            inventory = getinventory(loader.dataset.collection) |> update_inventory!
+            cache = getsource(inventory, loader, as)
+            file = storefile(inventory, cache)
             # Ensure all needed packages are loaded, and all relevant
             # types have the same structure, before loading.
             if !isnothing(file)
@@ -232,11 +231,11 @@ const CACHE_PLUGIN = Plugin("cache", [
                 if should_log_event("cache", loader)
                     @info "Loading $as form of $(sprint(show, loader.dataset.name)) from the store"
                 end
-                update_source!(cache, loader)
+                update_source!(inventory, cache, loader)
                 info = Base.invokelatest(deserialize, file)
                 (post, identity, (info,))
             else
-                (post ∘ storesave(loader), f, (loader, source, as))
+                (post ∘ storesave(inventory, loader), f, (loader, source, as))
             end
         else
             (post, f, (loader, source, as))

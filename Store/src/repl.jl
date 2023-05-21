@@ -1,7 +1,11 @@
 import DataToolkitBase: allcompletions
 
 function repl_config_get(input::AbstractString)
-    update_inventory!()
+    inventory = if isempty(STACK)
+        getinventory()
+    else
+        getinventory(first(STACK))
+    end |> update_inventory!
     value_sets = [(:auto_gc, "hours"),
                   (:max_age, "days"),
                   (:max_size, join ∘ humansize),
@@ -16,7 +20,7 @@ function repl_config_get(input::AbstractString)
     end
     for (param, printer) in value_sets
         printstyled("  ", param, color=:cyan)
-        value = getproperty(INVENTORY.config, param)
+        value = getproperty(inventory.config, param)
         default = getproperty(DEFAULT_INVENTORY_CONFIG, param)
         if printer isa Function
             print(' ', printer(value))
@@ -36,6 +40,11 @@ function repl_config_get(input::AbstractString)
 end
 
 function repl_config_set(input::AbstractString)
+    inventory = if isempty(STACK)
+        getinventory()
+    else
+        getinventory(first(STACK))
+    end
     if !any(isspace, input)
         printstyled(" ! ", color=:red, bold=true)
         println("must provide a \"{parameter} {value}\" form")
@@ -44,7 +53,7 @@ function repl_config_set(input::AbstractString)
     param, value = split(input, limit=2)
     if param == "auto_gc"
         if (hours = tryparse(Int, hours)) |> !isnothing
-            modify_inventory(() -> INVENTORY.config.auto_gc = hours)
+            modify_inventory!(inventory, inv -> inv.config.auto_gc = hours)
         else
             printstyled(" ! ", color=:red, bold=true)
             println("must be an integer")
@@ -52,12 +61,12 @@ function repl_config_set(input::AbstractString)
         end
     elseif param == "max_age"
         if value == "-"
-            modify_inventory() do
-                INVENTORY.config.max_age = nothing
+            modify_inventory!(inventory) do inv
+                inv.config.max_age = nothing
             end
         elseif (days = tryparse(Int, value)) |> !isnothing
-            modify_inventory() do
-                INVENTORY.config.max_age = days
+            modify_inventory!(inventory) do inv
+                inv.config.max_age = days
             end
         else
             printstyled(" ! ", color=:red, bold=true)
@@ -66,14 +75,14 @@ function repl_config_set(input::AbstractString)
         end
     elseif param == "max_size"
         if value == "-"
-            modify_inventory() do
-                INVENTORY.config.max_size = nothing
+            modify_inventory!(inventory) do inv
+                inv.config.max_size = nothing
             end
         else
             try
                 bytes = parsebytesize(value)
-                modify_inventory() do
-                    INVENTORY.config.max_size = bytes
+                modify_inventory!(inventory) do inv
+                    inv.config.max_size = bytes
                 end
             catch err
                 if err isa ArgumentError
@@ -88,8 +97,7 @@ function repl_config_set(input::AbstractString)
     elseif param == "recency_beta"
         try
             num = something(tryparse(Int, value), parse(Float64, value))
-            modify_inventory(() ->
-                INVENTORY.config.recency_beta = num)
+            modify_inventory!(inventory, inv -> inv.config.recency_beta = num)
         catch err
             if err isa ArgumentError
                 printstyled(" ! ", color=:red, bold=true)
@@ -108,31 +116,36 @@ function repl_config_set(input::AbstractString)
 end
 
 function repl_config_reset(input::AbstractString)
+    inventory = if isempty(STACK)
+        getinventory()
+    else
+        getinventory(first(STACK))
+    end
     if input == "auto_gc"
-        modify_inventory() do
-            INVENTORY.config.auto_gc = DEFAULT_INVENTORY_CONFIG.auto_gc
+        modify_inventory!(inventory) do inv
+            inv.config.auto_gc = DEFAULT_INVENTORY_CONFIG.auto_gc
         end
         printstyled(" ✓ ", color=:green)
         println("Set to $(ifelse(DEFAULT_INVENTORY_CONFIG.auto_gc, "on", "off"))")
     elseif input == "max_age"
-        modify_inventory() do
-            INVENTORY.config.max_age = DEFAULT_INVENTORY_CONFIG.max_age
+        modify_inventory!(inventory) do inv
+            inv.config.max_age = DEFAULT_INVENTORY_CONFIG.max_age
         end
         printstyled(" ✓ ", color=:green)
         println("Set to $(DEFAULT_INVENTORY_CONFIG.max_age) days")
     elseif input == "max_size"
-        modify_inventory() do
-            INVENTORY.config.max_size = DEFAULT_INVENTORY_CONFIG.max_size
+        modify_inventory!(inventory) do inv
+            inv.config.max_size = DEFAULT_INVENTORY_CONFIG.max_size
         end
         printstyled(" ✓ ", color=:green)
-        if isnothing(INVENTORY.config.max_size)
+        if isnothing(inventory.config.max_size)
             println("Set to unlimited")
         else
             println("Set to $(join(humansize(DEFAULT_INVENTORY_CONFIG.max_size)))")
         end
     elseif input == "recency_beta"
-        modify_inventory() do
-            INVENTORY.config.recency_beta = DEFAULT_INVENTORY_CONFIG.recency_beta
+        modify_inventory!(inventory) do inv
+            inv.config.recency_beta = DEFAULT_INVENTORY_CONFIG.recency_beta
         end
         printstyled(" ✓ ", color=:green)
         println("Set to $(DEFAULT_INVENTORY_CONFIG.recency_beta)")
@@ -151,16 +164,22 @@ allcompletions(::ReplCmd{:store_config_reset}) = REPL_CONFIG_KEYS
 function repl_gc(input::AbstractString)
     flags = split(input)
     dryrun = "-d" in flags || "--dryrun" in flags
-    update_inventory!()
-    garbage_collect!(; dryrun)
+    if "-a" in flags || "--all" in flags
+        garbage_collect!(; dryrun)
+    else
+        inventory = if isempty(STACK) getinventory()
+        else getinventory(first(STACK)) end |> update_inventory!
+        garbage_collect!(inventory; dryrun)
+    end
 end
 
-allcompletions(::ReplCmd{:store_gc}) = ["-d", "--dryrun"]
+allcompletions(::ReplCmd{:store_gc}) = ["-d", "--dryrun", "-a", "--all"]
 
 function repl_expunge(input::AbstractString)
-    update_inventory!()
+    inventory = if isempty(STACK) getinventory()
+    else getinventory(first(STACK)) end |> update_inventory!
     collection = nothing
-    for cltn in INVENTORY.collections
+    for cltn in inventory.collections
         if cltn.name == input
             collection = cltn
         elseif string(cltn.uuid) == input
@@ -170,15 +189,19 @@ function repl_expunge(input::AbstractString)
     end
     if isnothing(collection)
         printstyled(" ! ", color=:red, bold=true)
-        println("could not find collection: $input")
+        println("could not find collection in store: $input")
         return
     end
-    removed = expunge!(collection)
+    removed = expunge!(inventory, collection)
     printstyled(" i ", color=:cyan, bold=true)
     println("removed $(length(removed)) items from the store")
 end
 
-allcompletions(::ReplCmd{:store_expunge}) = getfield.(INVENTORY.collections, :name)
+function allcompletions(::ReplCmd{:store_expunge})
+    inventory = if isempty(STACK) getinventory()
+    else getinventory(first(STACK)) end
+    getfield.(inventory.collections, :name)
+end
 
 function repl_fetch(input::AbstractString)
     if isempty(STACK)
