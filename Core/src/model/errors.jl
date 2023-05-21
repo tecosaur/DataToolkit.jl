@@ -115,8 +115,10 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection})
     if err.identifier isa String
         candidates = Tuple{DataCollection, Float64}[]
         for collection in STACK
-            push!(candidates,
-                  (collection, stringsimilarity(err.identifier, collection.name)))
+            if !isnothing(collection.name)
+                push!(candidates,
+                      (collection, stringsimilarity(err.identifier, collection.name)))
+            end
         end
         if maximum(last.(candidates), init=0.0) >= 0.5
             print(io, "\n  Did you perhaps mean to refer to one of these data collections?")
