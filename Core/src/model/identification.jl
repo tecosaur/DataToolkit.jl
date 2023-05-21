@@ -100,7 +100,13 @@ function resolve(collection::DataCollection, ident::Identifier;
             dataset
         end
     elseif length(matchingdatasets) == 0 && requirematch
-        throw(UnsatisfyableTransformer{DataLoader}(first(pretypefilter), ident.type))
+        notypeident = Identifier(ident.collection, ident.dataset, nothing, ident.parameters)
+        notypematches = refine(collection, collection.datasets, notypeident)
+        if !isempty(notypematches)
+            throw(UnsatisfyableTransformer{DataLoader}(first(notypematches), ident.type))
+        else
+            throw(UnresolveableIdentifier{DataSet}(notypeident, collection))
+        end
     elseif length(matchingdatasets) > 1
         throw(AmbiguousIdentifier((@advise collection string(ident)),
                                   matchingdatasets, collection))
