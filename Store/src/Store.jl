@@ -22,6 +22,15 @@ include("plugins.jl")
 
 include("repl.jl")
 
+"""
+    __init__()
+
+Initialise the data store by:
+- Registering the plugins `STORE_PLUGIN` and `CACHE_PLUGIN`
+- Adding the "store" Data REPL command
+- Loading the user inventory
+- Registering the GC-on-exit hook
+"""
 function __init__()
     @dataplugin STORE_PLUGIN :default
     @dataplugin CACHE_PLUGIN
