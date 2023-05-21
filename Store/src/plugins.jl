@@ -108,7 +108,7 @@ const STORE_PLUGIN = Plugin("store", [
         elseif !isnothing(file) && isfile(file)
             # If using a cache file, ensure the parent collection is registered
             # as a reference.
-            update_source!(inventory, source, storer)
+            update_source!(inventory, source, storer.dataset.collection)
             if as === IO || as === IOStream
                 if should_log_event("store", storer)
                     @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
@@ -231,7 +231,7 @@ const CACHE_PLUGIN = Plugin("cache", [
                 if should_log_event("cache", loader)
                     @info "Loading $as form of $(sprint(show, loader.dataset.name)) from the store"
                 end
-                update_source!(inventory, cache, loader)
+                update_source!(inventory, cache, loader.dataset.collection)
                 info = Base.invokelatest(deserialize, file)
                 (post, identity, (info,))
             else

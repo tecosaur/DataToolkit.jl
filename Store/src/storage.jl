@@ -189,7 +189,7 @@ function storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath},
         cp(file.path, dest, force=true)
     end
     chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
-    update_source!(inventory, newsource, storage)
+    update_source!(inventory, newsource, storage.dataset.collection)
     dest
 end
 
@@ -303,7 +303,7 @@ function storesave(inventory::Inventory, loader::DataLoader, value::T) where {T}
     end
     Base.invokelatest(serialize, dest, value)
     chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
-    update_source!(inventory, newsource, loader)
+    update_source!(inventory, newsource, loader.dataset.collection)
     value
 end
 
@@ -312,13 +312,12 @@ storesave(inventory::Inventory, loader::DataLoader) =
 
 function update_source!(inventory::Inventory,
                         source::Union{StoreSource, CacheSource},
-                        transformer::AbstractDataTransformer;)
+                        collection::DataCollection)
     update_atime(s::StoreSource) =
         StoreSource(s.recipe, s.references, now(), s.checksum, s.extension)
     update_atime(s::CacheSource) =
         CacheSource(s.recipe, s.references, now(), s.types, s.packages)
     inventory = update_inventory!(inventory)
-    collection = transformer.dataset.collection
     cindex = findfirst(Base.Fix1(≃, collection), inventory.collections)
     sources = if source isa StoreSource
         inventory.stores
