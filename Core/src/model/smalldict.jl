@@ -79,8 +79,8 @@ end
 
 Base.empty(::SmallDict{K, V}) where {K, V} = SmallDict{K, V}()
 
-function Base.empty!(d::SmallDict{K, V}) where {K, V}
-    d.keys = Vector{K}()
-    d.values = Vector{V}()
+function Base.empty!(d::SmallDict)
+    empty!(d.keys)
+    empty!(d.values)
     d
 end
