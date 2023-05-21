@@ -1,3 +1,20 @@
+"""
+    dataset_parameters(source::Union{DataCollection, DataSet, AbstractDataTransformer},
+                       action::Val{:extract|:resolve|:encode}, value::Any)
+
+Obtain a form (depending on `action`) of `value`, a property within `source`.
+
+## Actions
+
+**`:extract`**  Look for DataSet references ("$(DATASET_REFERENCE_WRAPPER[1])...$(DATASET_REFERENCE_WRAPPER[2])") within
+  `value`, and turn them into `Identifier`s (the inverse of `:encode`).
+
+**`:resolve`**  Look for `Identifier`s in `value`, and resolve them to the
+  referenced DataSet/value.
+
+**`:encode`**  Look for `Identifier`s in `value`, and turn them into DataSet references
+  (the inverse of `:extract`).
+"""
 function dataset_parameters(collection::DataCollection, action::Val, params::SmallDict{String,Any})
     SmallDict{String, Any}(
         keys(params) |> collect,

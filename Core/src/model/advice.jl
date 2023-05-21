@@ -3,6 +3,12 @@ DataAdvice(f::Function) =
 
 Base.methods(dt::DataAdvice) = methods(dt.f)
 
+"""
+    (advice::DataAdvice)((post::Function, func::Function, args::Tuple, kwargs::NamedTuple))
+
+Apply `advice` to the function call `func(args...; kwargs...)`, and return the
+new `(post, func, args, kwargs)` tuple.
+"""
 function (dt::DataAdvice{F, C})(
     (post, func, args, kwargs)::Tuple{Function, Function, Tuple, NamedTuple}) where {F, C}
     # Abstract-y `typeof`.
@@ -26,6 +32,10 @@ end
 Base.empty(::Type{DataAdviceAmalgamation}) =
     DataAdviceAmalgamation(identity, DataAdvice[], String[], String[])
 
+# When getting a property of a `DataAdviceAmalgamation`, first check
+# if the `:plugins_wanted` field is satisfied. Should it not be,
+# regenerate the `:advisors`, `:adviseall`, and `:plugins_used` fields
+# based on the currently availible plugins and `:plugins_wanted`.
 function Base.getproperty(dta::DataAdviceAmalgamation, prop::Symbol)
     if getfield(dta, :plugins_wanted) != getfield(dta, :plugins_used)
         plugins_availible =

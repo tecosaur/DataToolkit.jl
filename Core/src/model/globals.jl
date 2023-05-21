@@ -124,6 +124,11 @@ const LINT_SEVERITY_MAPPING =
          :warning => 0x02,
          :error => 0x01)
 
+"""
+A mapping from severity numbers (see `LINT_SEVERITY_MAPPING`) to a tuple
+giving the color the message should be accented with and the severity
+title string.
+"""
 const LINT_SEVERITY_MESSAGES =
     Dict(0x01 => (:red, "Error"),
          0x02 => (:yellow, "Warning"),

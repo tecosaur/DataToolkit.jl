@@ -105,6 +105,14 @@ supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::SmallDict{String, Any}) 
 (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::String) =
     ADT(dataset, Dict{String, Any}("driver" => spec))
 
+"""
+    fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
+
+Create an `ADT` of `dataset` according to `spec`.
+
+`ADT` can either contain the driver name as a type parameter, or it will be read
+from the `"driver"` key in `spec`.
+"""
 function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
     parameters = smallify(spec)
     driver = if ADT isa DataType
@@ -165,6 +173,15 @@ function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=no
     DataAdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path, mod)
 end
 
+"""
+    fromspec(::Type{DataCollection}, spec::Dict{String, Any};
+             path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
+
+Create a `DataCollection` from `spec`.
+
+The `path` and `mod` keywords are used as the values for the correspanding
+fields in the DataCollection.
+"""
 function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                   path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
     version = get(spec, "data_config_version", LATEST_DATA_CONFIG_VERSION)
@@ -221,6 +238,11 @@ function DataSet(collection::DataCollection, name::String, spec::Dict{String, An
     @advise fromspec(DataSet, collection, name, spec)
 end
 
+"""
+    fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
+
+Create a `DataSet` for `collection` called `name`, according to `spec`.
+"""
 function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
     uuid = UUID(@something get(spec, "uuid", nothing) begin
                     @info "Data set '$name' had no UUID, one has been generated."

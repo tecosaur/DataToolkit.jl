@@ -1,3 +1,13 @@
+"""
+    displaytable(rows::Vector{<:Vector};
+                 spacing::Integer=2, maxwidth::Int=80)
+
+Return a `vector` of strings, formed from each row in `rows`.
+
+Each string is of the same `displaywidth`, and individual values
+are seperated by `spacing` spaces. Values are truncated if necessary
+to ensure the no row is no wider than `maxwidth`.
+"""
 function displaytable(rows::Vector{<:Vector};
                       spacing::Integer=2, maxwidth::Int=80)
     column_widths = min.(maxwidth,
@@ -32,6 +42,12 @@ function displaytable(rows::Vector{<:Vector};
     end
 end
 
+"""
+    displaytable(headers::Vector, rows::Vector{<:Vector};
+                 spacing::Integer=2, maxwidth::Int=80)
+
+Prepend the `displaytable` for `rows` with a header row given by `headers`.
+"""
 function displaytable(headers::Vector, rows::Vector{<:Vector};
                       spacing::Integer=2, maxwidth::Int=80)
     rows = displaytable(vcat([headers], rows); spacing, maxwidth)

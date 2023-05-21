@@ -49,6 +49,13 @@ function Base.convert(::Type{Dict}, adt::AbstractDataTransformer)
     @advise tospec(adt)
 end
 
+"""
+    tospec(thing::AbstractDataTransformer)
+    tospec(thing::DataSet)
+    tospec(thing::DataCollection)
+
+Return a `Dict` representation of `thing` for writing as TOML.
+"""
 function tospec(adt::AbstractDataTransformer)
     merge(Dict("driver" => string(first(typeof(adt).parameters)),
                "type" => if length(adt.type) == 1
@@ -64,6 +71,7 @@ function Base.convert(::Type{Dict}, ds::DataSet)
     @advise tospec(ds)
 end
 
+# Documented above
 function tospec(ds::DataSet)
     merge(Dict("uuid" => string(ds.uuid),
                "storage" => convert.(Dict, ds.storage),

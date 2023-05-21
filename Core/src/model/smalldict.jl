@@ -20,6 +20,12 @@ Base.convert(::Type{SmallDict{K, V}}, dict::Dict) where {K, V} =
 Base.convert(::Type{SmallDict}, dict::Dict{K, V}) where {K, V} =
     convert(SmallDict{K, V}, dict)
 
+"""
+    smallify(dict::Dict)
+
+Create a `SmallDict` version of `dict`, with all contained `Dict`s recursively
+converted into `SmallDict`s.
+"""
 function smallify(dict::Dict{K, V}) where {K, V}
     stype(v) = v
     stype(::Type{Dict{Kv, Vv}}) where {Kv, Vv} = SmallDict{Kv, stype(Vv)}
