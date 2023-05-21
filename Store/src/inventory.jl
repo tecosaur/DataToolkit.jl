@@ -20,7 +20,8 @@ function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
 end
 
 function Base.convert(::Type{CollectionInfo}, (uuid, spec)::Pair{String, Dict{String, Any}})
-    for (key, type) in (("path", String),)
+    for (key, type) in (("path", String),
+                        ("seen", DateTime))
         if !haskey(spec, key)
             throw(ArgumentError("Spec dict does not contain the required key: $key"))
         elseif !(spec[key] isa type)
