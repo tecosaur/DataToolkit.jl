@@ -451,7 +451,7 @@ end
 function garbage_trim_size!(inv::Inventory; dryrun::Bool=false)
     !isnothing(inv.config.max_size) || return (SourceInfo[], 0)
     allsources = vcat(inv.stores, inv.caches)
-    allsizes = map(f -> Int(isfile(f) && stat(f).size), storefile.(allsources))
+    allsizes = map(f -> Int(isfile(f) && stat(f).size), storefile.(Ref(inv), allsources))
     if sum(allsizes, init=0) > inv.config.max_size
         allscores = size_recency_scores(inv, allsources, inv.config.recency_beta)
         totalsize = sum(allsizes)
@@ -541,7 +541,7 @@ function scan_collections(inv::Inventory)
     dead_collections = Vector{UUID}()
     days_since(t::DateTime) = convert(Millisecond, now() - t).value / (1000*60*60*24)
     for collection in inv.collections
-        if isfile(collection.path)
+        if !isnothing(collection.path) && isfile(collection.path)
             cdata = open(io -> TOML.parse(io), collection.path)
             if haskey(cdata, "uuid") && parse(UUID, cdata["uuid"]) == collection.uuid
                 if collection.uuid ∈ getfield.(STACK, :uuid)
@@ -558,7 +558,7 @@ function scan_collections(inv::Inventory)
                 else
                     push!(live_collections, collection.uuid)
                 end
-            elseif days_since(collection.seen) <= inv.config.max_age
+            elseif isnothing(inv.config.max_age) || days_since(collection.seen) <= inv.config.max_age
                 push!(ghost_collections, collection.uuid)
             else
                 push!(dead_collections, collection.uuid)
