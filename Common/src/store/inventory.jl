@@ -31,6 +31,21 @@ function Base.convert(::Type{CollectionInfo}, (uuid, spec)::Pair{String, Dict{St
                    get(spec, "name", nothing), spec["seen"])
 end
 
+"""
+    parsechecksum(checksum::String)
+
+Parse a string representation of a checksum in the format `"type:value"`.
+
+A tuple giving the checksum type (as a `Symbol`) and value (as an `Unsigned`) is
+returned.
+
+### Example
+
+```jldoctest; setup = :(import DataToolkitCommon.Store.parsechecksum)
+julia> parsechecksum("crc32c:9c0188ee")
+(:crc32c, 0x9c0188ee)
+```
+"""
 function parsechecksum(checksum::String)
     typestr, valstr = split(checksum, ':')
     type = Symbol(typestr)
@@ -142,6 +157,10 @@ function Base.convert(::Type{Dict}, inv::Inventory)
                       "cache" => convert.(Dict, inv.caches))
 end
 
+"""
+A set of associations between keys that appear in the $INVENTORY_FILENAME
+and alternative strings they will be sorted as.
+"""
 const INVENTORY_TOML_SORT_MAPPING =
     Dict(# top level
          "inventory_version" => "\0x01",
@@ -171,6 +190,12 @@ Base.write(inv::Inventory) = write(inv.file.path, inv)
 
 # Aquiring and updating
 
+"""
+    load_inventory(path::String, create::Bool=true)
+
+Load the inventory at `path`. If it does not exist, it will be created
+so long as `create` is set to `true`.
+"""
 function load_inventory(path::String, create::Bool=true)
     if isfile(path)
         data = open(io -> TOML.parse(io), path)
@@ -199,6 +224,16 @@ function load_inventory(path::String, create::Bool=true)
     end
 end
 
+"""
+    update_inventory!(path::String)
+    update_inventory(inventory::Inventory)
+
+Find the inventory specified by `path`/`inventory` in the `INVENTORIES` collection,
+and update it in-place if appropriate. Should the inventory specified not be
+part of `INVENTORIES`, it is added.
+
+Returns the up-to-date `Inventory`.
+"""
 function update_inventory!(path::String)
     index = findfirst(inv -> inv.file.path == path, INVENTORIES)
     if isnothing(index)
@@ -219,6 +254,12 @@ function update_inventory(inventory::Inventory)
     inventory
 end
 
+"""
+    modify_inventory!(modify_fn::Function (::Inventory) -> ::Any, inventory::Inventory)
+
+Update `inventory`, modify it in-place with `modify_fn`, and the save the
+modified `inventory`.
+"""
 function modify_inventory!(modify_fn::Function, inventory::Inventory)
     update_inventory!(inventory)
     modify_fn(inventory)
@@ -268,12 +309,39 @@ end
 
 # Garbage Collection
 
+"""
+    files(inventory::Inventory)
+
+Return all files referenced by `inventory`.
+"""
 function files(inventory::Inventory)
     map(Iterators.flatten((inventory.stores, inventory.caches))) do source
         storefile(inventory, source)
     end
 end
 
+"""
+    humansize(bytes::Integer; digits::Int=1)
+
+Determine the SI prefix for `bytes`, then give a tuple of the number of bytes
+with that prefix (rounded to `digits`), and the units as a string.
+
+## Examples
+
+```jldoctest; setup = :(import DataToolkitCommon.Store.humansize)
+julia> humasize(123)
+(123, "B")
+
+julia> humasize(1234)
+(1.2, "KiB")
+
+julia> DataToolkit.Common.Store.humansize(1000^3)
+(954, "MiB")
+
+julia> DataToolkit.Common.Store.humansize(1024^3)
+(1.0, "GiB")
+```
+"""
 function humansize(bytes::Integer; digits::Int=1)
     units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
     magnitude = floor(Int, log(1024, 1 + bytes))
@@ -284,6 +352,31 @@ function humansize(bytes::Integer; digits::Int=1)
     end, units[1+magnitude]
 end
 
+"""
+    parsebytesize(size::AbstractString)
+
+Parse a string representation of `size` bytes into an integer.
+
+This accepts any decimal value before an SI-prefixed "B" / "iB" unit
+(case-insensitive) with the "B" optionally omitted, seperated and surrounded by
+any amount of whitespace.
+
+Note that the SI prefixes are case sensitive, e.g. "kiB" and "MiB" are
+recognised, but "KiB" and "miB" are not.
+
+## Examples
+
+```jldoctest; setup = :(import DataToolkitCommon.Store.parsebytesize)
+julia> parsebytesize("123B")
+123
+
+julia> parsebytesize("44 kiB")
+45056
+
+julia> parsebytesize("1.2 Mb")
+1200000
+```
+"""
 function parsebytesize(size::AbstractString)
     m = match(r"^\s*(\d+(?:\.\d*)?)\s*(|k|M|G|T|P)(|i|I)[bB]?\s*$", size)
     !isnothing(m) || throw(ArgumentError("Invalid byte size $(sprint(show, size))"))
@@ -296,6 +389,14 @@ function parsebytesize(size::AbstractString)
     end
 end
 
+"""
+    printstats(inv::Inventory)
+    printstats() # All inventories
+
+Print statistics about `inv`.
+
+TODO elaborate
+"""
 function printstats(inv::Inventory)
     function storesize(store)
         file = storefile(inv, store)
@@ -340,12 +441,16 @@ function printstats()
 end
 
 """
-    garbage_collect!(inv::Inventory, log::Bool=true)
+    garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
 
 Examine `inv`, and garbage collect old entries.
 
 If `log` is set, an informative message is printed giving an overview
 of actions taken.
+
+If `dryrun` is set, no actions are taken.
+
+If `trimmsg` is set, a message about any sources removed by trimming is emitted.
 """
 function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
     (; active_collections, live_collections, ghost_collections, dead_collections) =
@@ -437,6 +542,11 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
     end
 end
 
+"""
+    garbage_collect!(; log::Bool=true, kwargs...)
+
+Garbage collect all inventories.
+"""
 function garbage_collect!(; log::Bool=true, kwargs...)
     if length(INVENTORIES) == 1
         garbage_collect!(first(INVENTORIES); log, kwargs...)
@@ -452,6 +562,14 @@ function garbage_collect!(; log::Bool=true, kwargs...)
     end
 end
 
+"""
+    garbage_trim_size!(inv::Inventory; dryrun::Bool=false)
+
+If the sources in `inv` exceed the maximum size, remove sources in order of
+their `size_recency_scores` until `inv` returns below its maximum size.
+
+If `dryrun` is set, no action is taken.
+"""
 function garbage_trim_size!(inv::Inventory; dryrun::Bool=false)
     !isnothing(inv.config.max_size) || return (SourceInfo[], 0)
     allsources = vcat(inv.stores, inv.caches)
@@ -626,6 +744,13 @@ function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
     (; orphan_sources, num_recipe_checks)
 end
 
+"""
+    expunge!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool=false)
+
+Remove `collection` and all sources only used by `collection` from `inventory`.
+
+If `dryrun` is set, no action is taken.
+"""
 function expunge!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool=false)
     cindex = findfirst(==(collection), inventory.collections)
     isnothing(cindex) || deleteat!(inventory.collections, cindex)

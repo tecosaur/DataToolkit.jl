@@ -26,6 +26,12 @@ function shouldstore(loader::DataLoader, T::Type)
     get(loader, "cache", true) === true && !unstorable
 end
 
+"""
+    getsource(inventory::Inventory, storage::DataStorage)
+
+Look for the source in `inventory` that backs `storage`,
+returning the source or `nothing` if none could be found.
+"""
 function getsource(inventory::Inventory, storage::DataStorage)
     recipe = rhash(storage)
     checksum = get(storage, "checksum", false)
@@ -48,6 +54,12 @@ function getsource(inventory::Inventory, storage::DataStorage)
     end
 end
 
+"""
+    getsource(inventory::Inventory, loader::DataLoader, as::Type)
+
+Look for the source in `inventory` that backs the `as` form of `loader`,
+returning the source or `nothing` if none could be found.
+"""
 function getsource(inventory::Inventory, loader::DataLoader, as::Type)
     recipe = rhash(loader)
     for record in inventory.caches
@@ -61,6 +73,12 @@ function getsource(inventory::Inventory, loader::DataLoader, as::Type)
     end
 end
 
+"""
+    storefile(inventory::Inventory, source::SourceInfo)
+
+Returns the full path for `source` in `inventory`, regardless of whether the
+path exists or not.
+"""
 function storefile(inventory::Inventory, source::StoreSource)
     joinpath(dirname(inventory.file.path),
              string(if isnothing(source.checksum)
@@ -82,6 +100,15 @@ end
 # For convenient chaning with `getsource`
 storefile(::Inventory, ::Nothing) = nothing
 
+"""
+    storefile(inventory::Inventory, storage::DataStorage)
+    storefile(inventory, loader::DataLoader, as::Type)
+
+Returns a path for the source of `storage`/`loader`, or `nothing` if either the
+source or the path does not exist.
+
+Should a source exist, but the file not, the source is removed from `inventory`.
+"""
 function storefile(inventory::Inventory, storage::DataStorage)
     source = getsource(inventory, storage)
     if !isnothing(source)
@@ -123,6 +150,15 @@ when calculating the threshold, no matter what the `checksum` log setting is.
 """
 const CHECKSUM_AUTO_LOG_SIZE = 1024^3
 
+"""
+    getchecksum(storage::DataStorage, file::String)
+
+Returns the checksum tuple for the `file` backing `storage`, or `nothing` if
+there is no checksum.
+
+The checksum of `file` is checked against the recorded checksum in `storage`, if
+it exists.
+"""
 function getchecksum(storage::DataStorage, file::String)
     checksum = get(storage, "checksum", false)
     if checksum == "auto"
@@ -170,6 +206,11 @@ function getchecksum(storage::DataStorage, file::String)
     end
 end
 
+"""
+    storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath}, file::FilePath)
+
+Save the `file` representing `storage` into `inventory`.
+"""
 function storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath}, file::FilePath)
     # The checksum must be calculated first because it will likely affect the
     # `rhash` result, should the checksum property be modified and included
@@ -193,6 +234,11 @@ function storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath},
     dest
 end
 
+"""
+    storesave(inventory::Inventory, storage::DataStorage, ::Union{Type{IO}, Type{IOStream}}, from::IO)
+
+Save the IO in `from` representing `storage` into `inventory`.
+"""
 function storesave(inventory::Inventory, storage::DataStorage, ::Union{Type{IO}, Type{IOStream}}, from::IO)
     dumpfile, dumpio = mktemp()
     write(dumpio, from)
@@ -200,10 +246,38 @@ function storesave(inventory::Inventory, storage::DataStorage, ::Union{Type{IO},
     open(storesave(inventory, storage, FilePath, FilePath(dumpfile)), "r")
 end
 
+"""
+    storesave(inventory::Inventory, storage::DataStorage, as::Type)
+
+Partially apply the first three arguments of `storesave`.
+"""
 storesave(inventory::Inventory, storage::DataStorage, as::Type) =
     result -> storesave(inventory, storage, as, result)
 
+"""
+    interpret_lifetime(lifetime::String)
 
+Return the number of seconds in the interval specified by `lifetime`, which is
+in one of two formats:
+
+**ISO8061 periods** (with whole numbers only), both forms
+1. `P[n]Y[n]M[n]DT[n]H[n]M[n]S`, e.g.
+   - `P3Y6M4DT12H30M5S` represents a duration of "3 years, 6 months, 4 days,
+     12 hours, 30 minutes, and 5 seconds"
+   - `P23DT23H` represents a duration of "23 days, 23 hours"
+   - `P4Y` represents a duration of "4 years"
+2. `PYYYYMMDDThhmmss` / `P[YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]`, e.g.
+   - `P0003-06-04T12:30:05`
+   - `P00030604T123005`
+
+**"Prose style" period strings**, which are a repeated pattern of `[number] [unit]`,
+where `unit` matches `year|y|month|week|wk|w|day|d|hour|h|minute|min|second|sec|`
+optionally followed by an "s", comma, or whitespace. E.g.
+
+- `3 years 6 months 4 days 12 hours 30 minutes 5 seconds`
+- `23 days, 23 hours`
+- `4d12h`
+"""
 function interpret_lifetime(lifetime::String)
     period = SmallDict("years" => 0.0, "months" => 0.0, "weeks" => 0.0, "days" => 0.0,
                        "hours" => 0.0, "minutes" => 0.0, "seconds" => 0.0)
@@ -285,6 +359,11 @@ function pkgtypes(x)
     types
 end
 
+"""
+    storesave(inventory::Inventory, loader::DataLoader, value::T)
+
+Save the `value` produced by `loader` into `inventory`.
+"""
 function storesave(inventory::Inventory, loader::DataLoader, value::T) where {T}
     ptypes = pkgtypes(value)
     modules = unique(parentmodule.(ptypes))
@@ -307,9 +386,25 @@ function storesave(inventory::Inventory, loader::DataLoader, value::T) where {T}
     value
 end
 
+"""
+    storesave(inventory::Inventory, loader::DataLoader)
+
+Partially apply the first two arguments of `storesave`.
+"""
 storesave(inventory::Inventory, loader::DataLoader) =
     value -> storesave(inventory, loader, value)
 
+"""
+    update_source!(inventory::Inventory,
+                   source::Union{StoreSource, CacheSource},
+                   collection::DataCollection)
+
+Update the record for `source` in `inventory`, based on it having just been used
+by `collection`.
+
+This will update the atime of the source, and add `collection` as a reference if
+it is not already listed.
+"""
 function update_source!(inventory::Inventory,
                         source::Union{StoreSource, CacheSource},
                         collection::DataCollection)
