@@ -138,7 +138,7 @@ function refine(collection::DataCollection, datasets::Vector{DataSet}, ident::Id
     filter_parameters(datasets, ignore) =
         filter(datasets) do d
             all((param, value)::Pair ->
-                param in ignore || d.parameters[param] == value,
+                param in ignore || get(d, param) == value,
                 ident.parameters)
         end
     matchingdatasets = datasets |> filter_nameid |> filter_type
