@@ -72,7 +72,7 @@ function storefile(inventory::Inventory, source::StoreSource)
                     '.', fileextension(source)))
 end
 
-function storefile(inventory::Inventory, source::SourceInfo)
+function storefile(inventory::Inventory, source::CacheSource)
     joinpath(dirname(inventory.file.path),
              string(string("R-", string(source.recipe, base=16)),
                     '-', string(last(first(source.types)), base=16),
@@ -99,7 +99,7 @@ function storefile(inventory::Inventory, storage::DataStorage)
     end
 end
 
-function storefile(inventory, loader::DataLoader, as::Type)
+function storefile(inventory::Inventory, loader::DataLoader, as::Type)
     source = getsource(inventory, loader, as)
     if !isnothing(source)
         file = storefile(inventory, source)
