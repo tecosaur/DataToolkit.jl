@@ -274,22 +274,26 @@ function files(inventory::Inventory)
     end
 end
 
-function humansize(bytes::Integer)
+function humansize(bytes::Integer; digits::Int=1)
     units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
     magnitude = floor(Int, log(1024, 1 + bytes))
     if 10 < bytes < 10*1024^magnitude
-        round(bytes / 1024^magnitude, digits=1)
+        round(bytes / 1024^magnitude; digits)
     else
         round(Int, bytes / 1024^magnitude)
     end, units[1+magnitude]
 end
 
 function parsebytesize(size::AbstractString)
-    m = match(r"^\s*(\d+)\s*(|k|M|G|T|P)(|i|I)[bB]?\s*$", size)
+    m = match(r"^\s*(\d+(?:\.\d*)?)\s*(|k|M|G|T|P)(|i|I)[bB]?\s*$", size)
     !isnothing(m) || throw(ArgumentError("Invalid byte size $(sprint(show, size))"))
     num, multiplier, ibi = m.captures
     exponent = findfirst(==(multiplier), ("", "k", "M", "G", "T", "P")) - 1
-    parse(Int, num) * ifelse(isempty(ibi), 1000, 1024)^exponent
+    if '.' in size
+        round(Int, parse(Float64, num) * ifelse(isempty(ibi), 1000, 1024)^exponent)
+    else
+        parse(Int, num) * ifelse(isempty(ibi), 1000, 1024)^exponent
+    end
 end
 
 function printstats(inv::Inventory)
