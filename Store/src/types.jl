@@ -50,7 +50,7 @@ end
 
 ≃(a::SourceInfo, b::SourceInfo) = false
 ≃(a::StoreSource, b::StoreSource) =
-    a.recipe == b.recipe && a.checksum == b.checksum &&
+    a.recipe == b.recipe && a.checksum === b.checksum &&
     a.extension == b.extension
 ≃(a::CacheSource, b::CacheSource) =
     a.recipe == b.recipe && a.types == b.types

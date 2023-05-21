@@ -8,7 +8,7 @@ using TOML
 using UUIDs
 using Serialization
 
-import ..DataToolkitCommon: should_log_event
+using ..DataToolkitCommon: should_log_event, dirof
 
 const INVENTORY_FILENAME = "Inventory.toml"
 const USER_STORE = BaseDirs.User.cache(BaseDirs.Project("Data Store"), create=true)
