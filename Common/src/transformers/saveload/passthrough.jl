@@ -17,3 +17,5 @@ createpriority(::Type{DataLoader{:passthrough}}) = 20
 
 create(::Type{DataLoader{:passthrough}}, source::String, dataset::DataSet) =
     any(isa.(dataset.storage, DataStorage{:raw}))
+
+Store.shouldstore(::DataLoader{:passthrough}, ::Type) = false

@@ -23,4 +23,6 @@ function Store.rhash(collection::DataCollection, storage::DataStorage{:passthrou
            collection, storage, sourceh)
 end
 
+Store.shouldstore(::DataStorage{:passthrough}) = false
+
 # TODO putstorage
