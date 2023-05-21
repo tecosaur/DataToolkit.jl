@@ -26,7 +26,7 @@ function shouldstore(loader::DataLoader, T::Type)
     get(loader, "cache", true) === true && !unstorable
 end
 
-function getsource(storage::DataStorage; inventory::Inventory=INVENTORY)
+function getsource(inventory::Inventory, storage::DataStorage)
     recipe = rhash(storage)
     checksum = get(storage, "checksum", false)
     if checksum === false
@@ -48,7 +48,7 @@ function getsource(storage::DataStorage; inventory::Inventory=INVENTORY)
     end
 end
 
-function getsource(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
+function getsource(inventory::Inventory, loader::DataLoader, as::Type)
     recipe = rhash(loader)
     for record in inventory.caches
         if record.recipe == recipe
@@ -61,7 +61,7 @@ function getsource(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
     end
 end
 
-function storefile(source::StoreSource; inventory::Inventory=INVENTORY)
+function storefile(inventory::Inventory, source::StoreSource)
     joinpath(dirname(inventory.file.path),
              string(if isnothing(source.checksum)
                         string("R-", string(source.recipe, base=16))
@@ -72,19 +72,20 @@ function storefile(source::StoreSource; inventory::Inventory=INVENTORY)
                     '.', fileextension(source)))
 end
 
-function storefile(source::SourceInfo; inventory::Inventory=INVENTORY)
+function storefile(inventory::Inventory, source::SourceInfo)
     joinpath(dirname(inventory.file.path),
              string(string("R-", string(source.recipe, base=16)),
                     '-', string(last(first(source.types)), base=16),
                     '.', fileextension(source)))
 end
 
-storefile(::Nothing) = nothing # For convenient chaning with `getsource`
+# For convenient chaning with `getsource`
+storefile(::Inventory, ::Nothing) = nothing
 
-function storefile(storage::DataStorage; inventory::Inventory=INVENTORY)
-    source = getsource(storage; inventory)
+function storefile(inventory::Inventory, storage::DataStorage)
+    source = getsource(inventory, storage)
     if !isnothing(source)
-        file = storefile(source; inventory)
+        file = storefile(inventory, source)
         if isfile(file)
             file
         else
@@ -98,10 +99,10 @@ function storefile(storage::DataStorage; inventory::Inventory=INVENTORY)
     end
 end
 
-function storefile(loader::DataLoader, as::Type; inventory::Inventory=INVENTORY)
-    source = getsource(loader, as; inventory)
+function storefile(inventory, loader::DataLoader, as::Type)
+    source = getsource(inventory, loader, as)
     if !isnothing(source)
-        file = storefile(source; inventory)
+        file = storefile(inventory, source)
         if isfile(file)
             file
         else
@@ -169,7 +170,7 @@ function getchecksum(storage::DataStorage, file::String)
     end
 end
 
-function storesave(storage::DataStorage, ::Type{FilePath}, file::FilePath)
+function storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath}, file::FilePath)
     # The checksum must be calculated first because it will likely affect the
     # `rhash` result, should the checksum property be modified and included
     # in the hashing.
@@ -178,7 +179,7 @@ function storesave(storage::DataStorage, ::Type{FilePath}, file::FilePath)
         rhash(storage),
         [storage.dataset.collection.uuid],
         now(), checksum, fileextension(storage))
-    dest = storefile(newsource)
+    dest = storefile(inventory, newsource)
     if should_log_event("store", storage)
         @info "Writing $(sprint(show, storage.dataset.name)) to storage"
     end
@@ -187,20 +188,20 @@ function storesave(storage::DataStorage, ::Type{FilePath}, file::FilePath)
     else
         cp(file.path, dest, force=true)
     end
-    chmod(dest, 0o100444 & filemode(STORE_DIR)) # Make read-only
-    update_source!(newsource, storage)
+    chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
+    update_source!(inventory, newsource, storage)
     dest
 end
 
-function storesave(storage::DataStorage, ::Union{Type{IO}, Type{IOStream}}, from::IO)
+function storesave(inventory::Inventory, storage::DataStorage, ::Union{Type{IO}, Type{IOStream}}, from::IO)
     dumpfile, dumpio = mktemp()
     write(dumpio, from)
     close(dumpio)
-    open(storesave(storage, FilePath, FilePath(dumpfile)), "r")
+    open(storesave(inventory, storage, FilePath, FilePath(dumpfile)), "r")
 end
 
-storesave(storage::DataStorage, as::Type) =
-    result -> storesave(storage, as, result)
+storesave(inventory::Inventory, storage::DataStorage, as::Type) =
+    result -> storesave(inventory, storage, as, result)
 
 
 function interpret_lifetime(lifetime::String)
@@ -246,7 +247,8 @@ end
 
 function pkgtypes!(types::Vector{Type}, x::T) where {T}
     M = parentmodule(T)
-    if M ∉ (Base, Core) && !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
+    if M ∉ (Base, Core) && !isnothing(pkgdir(M)) &&
+        !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
         push!(types, T)
     end
     if isconcretetype(T)
@@ -258,11 +260,13 @@ end
 
 function pkgtypes!(types::Vector{Type}, x::T) where {T <: AbstractArray}
     M = parentmodule(T)
-    if M ∉ (Base, Core) && !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
+    if M ∉ (Base, Core) && !isnothing(pkgdir(M)) &&
+        !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
         push!(types, T)
     end
     if isconcretetype(eltype(T))
         if parentmodule(eltype(T)) ∈ (Base, Core)
+        elseif isnothing(pkgdir(parentmodule(eltype(T))))
         elseif startswith(pkgdir(parentmodule(eltype(T))), Sys.STDLIB)
         elseif eltype(T) ∈ types
         elseif !isempty(x) && isassigned(x, firstindex(x))
@@ -281,7 +285,7 @@ function pkgtypes(x)
     types
 end
 
-function storesave(loader::DataLoader, value::T) where {T}
+function storesave(inventory::Inventory, loader::DataLoader, value::T) where {T}
     ptypes = pkgtypes(value)
     modules = unique(parentmodule.(ptypes))
     pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], modules)
@@ -292,23 +296,28 @@ function storesave(loader::DataLoader, value::T) where {T}
         [loader.dataset.collection.uuid],
         now(), QualifiedType.(ptypes) .=> rhash.(ptypes),
         pkgs)
-    dest = storefile(newsource)
+    dest = storefile(inventory, newsource)
+    isfile(dest) && rm(dest, force=true)
     if should_log_event("cache", loader)
         @info "Saving $T form of $(sprint(show, loader.dataset.name)) to the store"
     end
     Base.invokelatest(serialize, dest, value)
-    chmod(dest, 0o100444 & filemode(STORE_DIR)) # Make read-only
-    update_source!(newsource, loader)
+    chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
+    update_source!(inventory, newsource, loader)
     value
 end
 
-storesave(loader::DataLoader) =
-    value -> storesave(loader, value)
+storesave(inventory::Inventory, loader::DataLoader) =
+    value -> storesave(inventory, loader, value)
 
-function update_source!(source::Union{StoreSource, CacheSource},
-                        transformer::AbstractDataTransformer;
-                        inventory::Inventory=INVENTORY)
-    inventory === INVENTORY && update_inventory!()
+function update_source!(inventory::Inventory,
+                        source::Union{StoreSource, CacheSource},
+                        transformer::AbstractDataTransformer;)
+    update_atime(s::StoreSource) =
+        StoreSource(s.recipe, s.references, now(), s.checksum, s.extension)
+    update_atime(s::CacheSource) =
+        CacheSource(s.recipe, s.references, now(), s.types, s.packages)
+    inventory = update_inventory!(inventory)
     collection = transformer.dataset.collection
     cindex = findfirst(Base.Fix1(≃, collection), inventory.collections)
     sources = if source isa StoreSource
@@ -336,8 +345,3 @@ function update_source!(source::Union{StoreSource, CacheSource},
     write(inventory)
 end
 
-update_atime(s::StoreSource) =
-    StoreSource(s.recipe, s.references, now(), s.checksum, s.extension)
-
-update_atime(s::CacheSource) =
-    CacheSource(s.recipe, s.references, now(), s.types, s.packages)
