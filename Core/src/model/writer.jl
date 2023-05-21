@@ -64,7 +64,7 @@ function tospec(adt::AbstractDataTransformer)
                    string.(adt.type)
                end,
                "priority" => adt.priority),
-        dataset_parameters(adt.dataset, Val(:encode), adt.parameters))
+          dataset_parameters(adt.dataset, Val(:encode), adt.parameters))
 end
 
 function Base.convert(::Type{Dict}, ds::DataSet)
