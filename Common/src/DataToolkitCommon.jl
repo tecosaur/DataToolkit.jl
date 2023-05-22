@@ -5,6 +5,7 @@ import DataToolkitBase: load, save, storage,
     getstorage, putstorage, supportedtypes,
     create, createpriority, lint
 
+using PrecompileTools
 using Compat
 
 using Dates
@@ -74,5 +75,7 @@ function __init__()
     @dataplugin VERSIONS_PLUGIN
     @dataplugin MEMORISE_PLUGIN :default
 end
+
+include("precompile.jl")
 
 end
