@@ -558,7 +558,7 @@ function garbage_collect!(; log::Bool=true, kwargs...)
                 if dirname(inv.file.path) == USER_STORE
                     "(user)" else dirname(inv.file.path) end,
                 '\n', color=:magenta, bold=true)
-            garbage_collect!(inv; log, kwargs)
+            garbage_collect!(inv; log, kwargs...)
         end
     end
 end
