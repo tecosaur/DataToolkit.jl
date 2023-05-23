@@ -3,15 +3,19 @@ function repl_show(input::AbstractString)
         printstyled(" ! ", color=:yellow, bold=true)
         println("Provide a dataset to be shown")
     else
-        ds = resolve(input)
-        show(ds)
+        dataset = try resolve(input) catch _
+            printstyled(" ! ", color=:red, bold=true)
+            println("Could not resolve identifier: $input")
+            return nothing
+        end
+        show(dataset)
         print('\n')
-        if ds isa DataSet
+        if dataset isa DataSet
             print("  UUID:    ")
-            printstyled(ds.uuid, '\n', color=:light_magenta)
-            if !isnothing(get(ds, "description"))
+            printstyled(dataset.uuid, '\n', color=:light_magenta)
+            if !isnothing(get(dataset, "description"))
                 indented_desclines =
-                    join(split(strip(get(ds, "description")),
+                    join(split(strip(get(dataset, "description")),
                                 '\n'), "\n   ")
                 println("\n  “\e[3m", indented_desclines, "\e[m”")
             end
