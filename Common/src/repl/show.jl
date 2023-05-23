@@ -4,7 +4,8 @@ function repl_show(input::AbstractString)
         println("Provide a dataset to be shown")
     else
         ds = resolve(input)
-        display(ds)
+        show(ds)
+        print('\n')
         if ds isa DataSet
             print("  UUID:    ")
             printstyled(ds.uuid, '\n', color=:light_magenta)
