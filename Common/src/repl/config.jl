@@ -24,9 +24,9 @@ function config_get(input::AbstractString)
         println("Trailing garbage ignored in get command: \"$rest\"")
     end
     value = DataToolkitBase.config_get(segments)
-    if value isa Dict && isempty(value)
+    if value isa SmallDict && isempty(value)
         printstyled(" empty\n", color=:light_black)
-    elseif value isa Dict
+    elseif value isa SmallDict
         TOML.print(value)
     else
         value
@@ -118,10 +118,10 @@ function config_complete(sofar::AbstractString; collection::DataCollection=first
             return String[]
         end
     end
-    if haskey(config, last(segments)) && config[last(segments)] isa Dict
+    if haskey(config, last(segments)) && config[last(segments)] isa SmallDict
         ('.' .* sort(keys(config[last(segments)]) |> collect, by=natkeygen),
          "", true)
-    elseif config isa Dict
+    elseif config isa SmallDict
         options = sort(keys(config) |> collect, by=natkeygen)
         (filter(o -> startswith(o, last(segments)),
                 options),
