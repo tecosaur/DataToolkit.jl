@@ -623,10 +623,10 @@ If `cmd` refers to a command in `commands`, show its help (via `help`).
 If `cmd` is empty, list `commands` via `help_cmd_table`.
 """
 function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
-    if isempty(cmd)
+    if all(isspace, cmd)
         help_cmd_table(; commands)
     else
-        repl_cmd = find_repl_cmd(cmd; commands, warn=true)
+        repl_cmd = find_repl_cmd(strip(cmd); commands, warn=true)
         if !isnothing(repl_cmd)
             help(repl_cmd)
         end
