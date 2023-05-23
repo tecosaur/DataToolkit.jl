@@ -59,9 +59,9 @@ Print the help string for `r`.
 
 Print the help string and subcommand table for `r`.
 """
-help(r::ReplCmd) = println(' ', r.description)
+help(r::ReplCmd) = println(' ', rstrip(r.description))
 function help(r::ReplCmd{<:Any, Vector{ReplCmd}})
-    print(' ', r.description, "\n\n")
+    print(' ', rstrip(r.description), "\n\n")
     help_cmd_table(commands = r.execute, sub=true)
 end
 
