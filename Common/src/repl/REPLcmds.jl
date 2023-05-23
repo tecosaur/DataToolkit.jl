@@ -24,6 +24,7 @@ include("show.jl")
 include("search.jl")
 include("lint.jl")
 include("make.jl")
+include("edit.jl")
 
 function add_repl_cmds()
     new_cmds = [
@@ -39,6 +40,9 @@ function add_repl_cmds()
 By default, this operates on the active collection, however it can
 also be applied to any other collection or a specific data set.",
                 repl_lint),
+        ReplCmd(:edit,
+                "Edit the specification of a dataset",
+                repl_edit),
         ReplCmd(:list,
                 "List the datasets in a certain collection
 
