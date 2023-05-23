@@ -1,5 +1,15 @@
 import InteractiveUtils.edit
 
+const EDIT_DOC = """
+Edit the specification of a dataset
+
+Open the specified dataset as a TOML file for editing,
+and reload the dataset from the edited contents.
+
+Usage:
+  edit IDENTIFIER
+"""
+
 function deep_diff(old::Dict, new::Dict, parents::Vector{String}=String[])
     new_keys = setdiff(keys(new), keys(old))
     for key in sort(new_keys |> collect)

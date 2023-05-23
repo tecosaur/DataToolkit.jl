@@ -1,3 +1,15 @@
+const CHECK_DOC = """
+Check the state for potential issues
+
+By default, this operates on the active collection, however it can
+also be applied to any other collection or a specific data set.
+
+Usage:
+  check (runs on the active collection)
+  check COLLECTION
+  check IDENTIFIER
+"""
+
 function repl_lint(input::AbstractString)
     function dolint(thing)
         report = LintReport(thing)

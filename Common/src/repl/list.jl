@@ -1,3 +1,13 @@
+const LIST_DOC = """
+List the datasets in a certain collection
+
+By default, the datasets of the active collection are shown.
+
+Usage:
+  list (lists dataset of the active collection)
+  list COLLECTION
+"""
+
 function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(stdout)[2])
     if isempty(STACK)
         printstyled(" ! ", color=:yellow, bold=true)

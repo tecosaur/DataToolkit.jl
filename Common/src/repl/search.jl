@@ -1,3 +1,10 @@
+const SEARCH_DOC = """
+Search for a particular data collection
+
+Usage:
+  search TEXT...
+"""
+
 function search(input::AbstractString)
     if isempty(input)
         printstyled(" ! ", color=:yellow, bold=true)

@@ -35,32 +35,25 @@ function add_repl_cmds()
                 "Inspect and modify the current configuration",
                 CONFIG_SUBCOMMANDS),
         ReplCmd(:check,
-                "Check the state for potential issues
-
-By default, this operates on the active collection, however it can
-also be applied to any other collection or a specific data set.",
+                CHECK_DOC,
                 repl_lint),
         ReplCmd(:edit,
-                "Edit the specification of a dataset",
+                EDIT_DOC,
                 repl_edit),
         ReplCmd(:list,
-                "List the datasets in a certain collection
-
-By default, the datasets of the active collection are shown.",
+                LIST_DOC,
                 repl_list),
         ReplCmd(:make,
                 MAKE_DOC,
                 repl_make),
         ReplCmd(:plugin,
-                "Inspect and modify the set of plugins used
-
-Call without any arguments to see the availible subcommands.",
+                "Inspect and modify the set of plugins used",
                 PLUGIN_SUBCOMMANDS),
         ReplCmd(:search,
-                "Search for a particular data collection",
+                SEARCH_DOC,
                 search),
         ReplCmd(:show,
-                "List the dataset refered to by an identifier",
+                SHOW_DOC,
                 repl_show),
         ReplCmd(:stack,
                 "Operate on the data collection stack",

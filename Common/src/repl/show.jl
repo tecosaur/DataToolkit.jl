@@ -1,3 +1,10 @@
+const SHOW_DOC = """
+Show the dataset refered to by an identifier
+
+Usage:
+  show IDENTIFIER
+"""
+
 function repl_show(input::AbstractString)
     if isempty(input)
         printstyled(" ! ", color=:yellow, bold=true)
