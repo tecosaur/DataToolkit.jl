@@ -37,10 +37,6 @@ Main.datarepl("?add")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?delete")
-#+end_src
-
-#+begin_src @eval
 Main.datarepl("?config")
 #+end_src
 
@@ -58,6 +54,18 @@ Main.datarepl("?config set")
 
 #+begin_src @eval
 Main.datarepl("?config unset")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?delete")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?edit")
+#+end_src
+
+#+begin_src @eval
+Main.datarepl("?init")
 #+end_src
 
 #+begin_src @eval
