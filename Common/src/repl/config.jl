@@ -47,7 +47,8 @@ function config_set(input::AbstractString)
             rest = string('"', rest, '"')
         end
         value = TOML.parse(string("value = ", rest))
-        DataToolkitBase.config_set!(segments, value["value"])
+        DataToolkitBase.config_set(segments, value["value"])
+        nothing
     end
 end
 
@@ -61,7 +62,8 @@ function config_unset(input::AbstractString)
         printstyled(" ! ", color=:yellow, bold=true)
         println("Trailing garbage ignored in unset command: \"$rest\"")
     end
-    DataToolkitBase.config_unset!(segments)
+    DataToolkitBase.config_unset(segments)
+    nothing
 end
 
 const CONFIG_SUBCOMMANDS = ReplCmd[

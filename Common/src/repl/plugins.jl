@@ -16,6 +16,7 @@ function plugin_add(input::AbstractString)
         end
     end
     DataToolkitBase.plugin_add(plugins)
+    nothing
 end
 
 """
@@ -27,12 +28,8 @@ Parse and call the repl-format plugin removal command `input`.
 function plugin_remove(input::AbstractString)
     confirm_stack_first_writable() || return nothing
     plugins = split(input, r", *| +")
-    notpresent = setdiff(plugins, first(STACK).plugins)
-    if !isempty(notpresent)
-        printstyled(" ! ", color=:yellow)
-        println("The plugins $(join(notpresent, ", ", ", and ")) were not used to begin with")
-    end
     DataToolkitBase.plugin_remove(plugins)
+    nothing
 end
 
 """
@@ -60,9 +57,16 @@ function plugin_edit(::AbstractString)
         menu) |> collect]
     added_plugins = setdiff(selected_plugins, original_plugins)
     removed_plugins = setdiff(original_plugins, selected_plugins)
-    deleteat!(first(STACK).plugins, indexin(removed_plugins, original_plugins))
-    append!(first(STACK).plugins, added_plugins)
-    write(first(STACK))
+    # See commentary in `DataToolkitBase.add_plugin` for why
+    # we edit the plugin list via a Dict conversion.
+    let collection = first(STACK)
+        snapshot = convert(Dict, collection)
+        snapshot["plugins"] = sort(selected_plugins)
+        newcollection =
+            DataCollection(snapshot; path=collection.path, mod=collection.mod)
+        STACK[begin] = newcollection
+        iswritable(newcollection) && write(newcollection)
+    end
     if isempty(added_plugins) && isempty(removed_plugins)
         printstyled(" No change to plugins\n", color=:green)
     else
