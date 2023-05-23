@@ -7,6 +7,8 @@
 
     [[dataset]]
     uuid = "d9826666-5049-4051-8d2e-fe306c20802c"
+    self = "$(DATASET_REFERENCE_WRAPPER[1])dataset$(DATASET_REFERENCE_WRAPPER[2])"
+    other = {a = [1, 2], b = [3, 4]}
 
         [[dataset.storage]]
             driver = "raw"
@@ -33,6 +35,7 @@
         sprint(show, STACK[1], context = :color => true)
         sprint(show, dataset("dataset"), context = :color => true)
         lint(STACK[1])
+        @advise STACK[1] sum(1:3)
         # REPL
         init_repl()
         redirect_stdio(stdout=devnull, stderr=devnull) do
@@ -41,6 +44,9 @@
             toplevel_execute_repl_cmd("help help")
         end
         complete_repl_cmd("help ")
+        # Other stuff
+        get(dataset("dataset"), "self")
+        get(dataset("dataset"), "other")
     end
     # Base.delete_method(first(methods(getstorage, Tuple{DataStorage{:raw}, Type}).ms))
     # Base.delete_method(first(methods(load, Tuple{DataLoader{:passthrough}, Any, Any}).ms))
