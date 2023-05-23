@@ -139,44 +139,110 @@ end
 # ------------------
 
 """
-    plugin_add(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+    plugin_add([collection::DataCollection=first(STACK)], plugins::Vector{<:AbstractString};
                quiet::Bool=false)
 
-Add `plugins` not currently used in `collection` to `collection`'s plugins, and
-write the collection.
+Return a variation of `collection` with all `plugins` not currently used added
+to the plugin list.
 
-Unless `quiet` is a set a sucess message is printed.
+Unless `quiet` is a set an informative message is printed.
+
+!!! warning "Side effects"
+    The new `collection` is written, if possible.
+
+    Should `collection` be part of `STACK`, the stack entry is updated in-place.
 """
-function plugin_add(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+function plugin_add(collection::DataCollection, plugins::Vector{<:AbstractString};
                     quiet::Bool=false)
     new_plugins = setdiff(plugins, collection.plugins)
-    append!(collection.plugins, new_plugins)
-    write(collection)
-    if !quiet && !isempty(new_plugins)
-        printstyled(" +", color=:light_green, bold=true)
-        print(" Added plugins: ")
-        printstyled(join(new_plugins, ", "), '\n', color=:green)
+    if isempty(new_plugins)
+        if !quiet
+            printstyled(" i", color=:cyan, bold=true)
+            println(" No new plugins added")
+        end
+    else
+        # It may seem overcomplicated to:
+        # 1. Convert `collection` to a Dict
+        # 2. Modify the "plugin" list there
+        # 3. Convert back
+        # instead of simply `push!`-ing to the `plugins` field
+        # of `collection`, however this is necessary to avoid
+        # asymetric advice trigerring by the plugins in question.
+        snapshot = convert(Dict, collection)
+        snapshot["plugins"] =
+            append!(get(snapshot, "plugins", String[]), new_plugins)
+        sort!(snapshot["plugins"])
+        newcollection =
+            DataCollection(snapshot; path=collection.path, mod=collection.mod)
+        if (sindex = findfirst(c -> c === collection, STACK)) |> !isnothing
+            STACK[sindex] = newcollection
+        end
+        iswritable(newcollection) && write(newcollection)
+        if !quiet
+            printstyled(" +", color=:light_green, bold=true)
+            print(" Added plugins: ")
+            printstyled(join(new_plugins, ", "), '\n', color=:green)
+        end
     end
+    newcollection
+end
+
+function plugin_add(plugins::Vector{<:AbstractString}; quiet::Bool=false)
+    !isempty(STACK) || throw(EmptyStackError())
+    plugin_add(first(STACK), plugins; quiet)
 end
 
 """
-    plugin_remove(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+    plugin_remove([collection::DataCollection=first(STACK)], plugins::Vector{<:AbstractString};
                   quiet::Bool=false)
 
-Remove all `plugins` currently used in `collection`, and write the collection.
+Return a variation of `collection` with all `plugins` currently used removed
+from the plugin list.
 
-Unless `quiet` is a set a sucess message is printed.
+Unless `quiet` is a set an informative message is printed.
+
+!!! warning "Side effects"
+    The new `collection` is written, if possible.
+
+    Should `collection` be part of `STACK`, the stack entry is updated in-place.
 """
-function plugin_remove(plugins::Vector{<:AbstractString}, collection::DataCollection=first(STACK);
+function plugin_remove(collection::DataCollection, plugins::Vector{<:AbstractString};
                        quiet::Bool=false)
     rem_plugins = intersect(plugins, collection.plugins)
-    deleteat!(collection.plugins, indexin(rem_plugins, collection.plugins))
-    write(collection)
-    if !quiet && !isempty(rem_plugins)
-        printstyled(" -", color=:light_red, bold=true)
-        print(" Removed plugins: ")
-        printstyled(join(rem_plugins, ", "), '\n', color=:green)
+    if isempty(rem_plugins)
+        if !quiet
+            printstyled(" ! ", color=:yellow, bold=true)
+            println("No plugins removed, as $(join(plugins, ", ", ", and ")) were never used to begin with")
+        end
+    else
+        # It may seem overcomplicated to:
+        # 1. Convert `collection` to a Dict
+        # 2. Modify the "plugin" list there
+        # 3. Convert back
+        # instead of simply modifying the `plugins` field
+        # of `collection`, however this is necessary to avoid
+        # asymetric advice trigerring by the plugins in question.
+        snapshot = convert(Dict, collection)
+        snapshot["plugins"] =
+            setdiff(get(snapshot, "plugins", String[]), rem_plugins)
+        newcollection =
+            DataCollection(snapshot; path=collection.path, mod=collection.mod)
+        if (sindex = findfirst(c -> c === collection, STACK)) |> !isnothing
+            STACK[sindex] = newcollection
+        end
+        iswritable(newcollection) && write(newcollection)
+        if !quiet
+            printstyled(" -", color=:light_red, bold=true)
+            print(" Removed plugins: ")
+            printstyled(join(rem_plugins, ", "), '\n', color=:green)
+        end
     end
+    newcollection
+end
+
+function plugin_remove(plugins::Vector{<:AbstractString}; quiet::Bool=false)
+    !isempty(STACK) || throw(EmptyStackError())
+    plugin_remove(first(STACK), plugins; quiet)
 end
 
 """
@@ -245,47 +311,95 @@ function config_get(propertypath::Vector{String};
 end
 
 """
-    config_set!(propertypath::Vector{String}, value::Any;
-                collection::DataCollection=first(STACK), quiet::Bool=false)
+    config_set([collection::DataCollection=first(STACK)], propertypath::Vector{String}, value::Any;
+               quiet::Bool=false)
 
-Set the configuration at `propertypath` in `collection` to `value`.
+Return a variation of `collection` with the configuration at `propertypath` set
+to `value`.
 
 Unless `quiet` is set, a success message is printed.
+
+!!! warning "Side effects"
+    The new `collection` is written, if possible.
+
+    Should `collection` be part of `STACK`, the stack entry is updated in-place.
 """
-function config_set!(propertypath::Vector{String}, value::Any;
-                     collection::DataCollection=first(STACK), quiet::Bool=false)
-    config = collection.parameters
+function config_set(collection::DataCollection, propertypath::Vector{String}, value::Any;
+                     quiet::Bool=false)
+    # It may seem like an unecessary layer of inderection to set
+    # the configuration via a Dict conversion of `collection`,
+    # however this way any plugin-processing of the configuration
+    # will be symmetric (i.e. applied at load and write).
+    snapshot = convert(Dict, collection)
+    config = get(snapshot, "config", SmallDict{String, Any}())
+    window = config
     for segment in propertypath[1:end-1]
-        if !haskey(config, segment)
-            config[segment] = Dict{String, Any}()
+        if !haskey(window, segment)
+            window[segment] = SmallDict{String, Any}()
         end
-        config = config[segment]
+        window = window[segment]
     end
-    config[propertypath[end]] = value
-    write(collection)
+    window[propertypath[end]] = value
+    snapshot["config"] = config
+    newcollection =
+        DataCollection(snapshot; path=collection.path, mod=collection.mod)
+    if (sindex = findfirst(c -> c === collection, STACK)) |> !isnothing
+        STACK[sindex] = newcollection
+    end
+    iswritable(newcollection) && write(newcollection)
     quiet || printstyled(" ✓ Set $(join(propertypath, '.'))\n", color=:green)
+    newcollection
+end
+
+function config_set(propertypath::Vector{String}, value::Any; quiet::Bool=false)
+    !isempty(STACK) || throw(EmptyStackError())
+    config_set(first(STACK), propertypath, value; quiet)
 end
 
 """
-    config_unset!(propertypath::Vector{String};
-                  collection::DataCollection=first(STACK), quiet::Bool=false)
+    config_unset([collection::DataCollection=first(STACK)], propertypath::Vector{String};
+                  quiet::Bool=false)
 
-Unset the configuration at `propertypath` in `collection`.
+Return a variation of `collection` with the configuration at `propertypath`
+removed.
 
 Unless `quiet` is set, a success message is printed.
+
+!!! warning "Side effects"
+    The new `collection` is written, if possible.
+
+    Should `collection` be part of `STACK`, the stack entry is updated in-place.
 """
-function config_unset!(propertypath::Vector{String};
-                       collection::DataCollection=first(STACK), quiet::Bool=false)
-    config = collection.parameters
+function config_unset(collection::DataCollection, propertypath::Vector{String};
+                       quiet::Bool=false)
+    # It may seem like an unecessary layer of inderection to set
+    # the configuration via a Dict conversion of `collection`,
+    # however this way any plugin-processing of the configuration
+    # will be symmetric (i.e. applied at load and write).
+    snapshot = convert(Dict, collection)
+    config = get(snapshot, "config", SmallDict{String, Any}())
+    window = config
     for segment in propertypath[1:end-1]
-        if !haskey(config, segment)
-            config[segment] = Dict{String, Any}()
+        if !haskey(window, segment)
+            window[segment] = Dict{String, Any}()
         end
-        config = config[segment]
+        window = window[segment]
     end
-    delete!(config, propertypath[end])
-    write(collection)
+    delete!(window, propertypath[end])
+    snapshot["config"] = config
+    newcollection =
+        DataCollection(snapshot; path=collection.path, mod=collection.mod)
+    if (sindex = findfirst(c -> c === collection, STACK)) |> !isnothing
+        STACK[sindex] = newcollection
+    end
+    iswritable(newcollection) && write(newcollection)
     quiet || printstyled(" ✓ Unset $(join(propertypath, '.'))\n", color=:green)
+    newcollection
+end
+
+function config_unset(propertypath::Vector{String}; quiet::Bool=false)
+    !isempty(STACK) || throw(EmptyStackError())
+    config_unset(first(STACK), propertypath; quiet)
 end
 
 # ------------------
@@ -325,7 +439,7 @@ function add(::Type{DataSet}, name::String, spec::Dict{String, Any}, source::Str
         end
     end
     push!(collection.datasets, dataset)
-    write(collection)
+    iswritable(collection) && write(collection)
     quiet || printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
     dataset
 end
