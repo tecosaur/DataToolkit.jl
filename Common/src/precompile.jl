@@ -59,6 +59,21 @@
         pop!(Store.INVENTORIES)
         # Plugins
         loadcollection!(IOBuffer(datatoml))
+        redirect_stdio(stdout=devnull, stderr=devnull) do
+            REPLcmds.config_set("defaults.something 1")
+            REPLcmds.config_get("defaults")
+            REPLcmds.config_unset("defaults")
+            REPLcmds.repl_list("")
+            REPLcmds.search("data")
+            REPLcmds.plugin_remove("defaults")
+            REPLcmds.plugin_add("defaults")
+            REPLcmds.plugin_list("")
+            REPLcmds.repl_show("dataset")
+            REPLcmds.stack_list("")
+            REPLcmds.stack_promote("")
+            REPLcmds.stack_demote("")
+            DataToolkitBase.toplevel_execute_repl_cmd("?")
+        end
     end
     # Cleanup
     empty!(STACK)
