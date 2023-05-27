@@ -25,8 +25,10 @@
     # function load(::DataLoader{:passthrough}, from::T, ::Type{T}) where {T <: Any}
     #     from
     # end
-    Base.active_repl =
-        REPL.LineEditREPL(REPL.Terminals.TTYTerminal("", stdin, stdout, stderr), true)
+    if VERSION >= v"1.9"
+        Base.active_repl =
+            REPL.LineEditREPL(REPL.Terminals.TTYTerminal("", stdin, stdout, stderr), true)
+    end
     @compile_workload begin
         loadcollection!(IOBuffer(datatoml))
         write(devnull, STACK[1])
@@ -37,11 +39,13 @@
         lint(STACK[1])
         @advise STACK[1] sum(1:3)
         # REPL
-        init_repl()
-        redirect_stdio(stdout=devnull, stderr=devnull) do
-            toplevel_execute_repl_cmd("?")
-            toplevel_execute_repl_cmd("?help")
-            toplevel_execute_repl_cmd("help help")
+        if VERSION >= v"1.9"
+            init_repl()
+            redirect_stdio(stdout=devnull, stderr=devnull) do
+                toplevel_execute_repl_cmd("?")
+                toplevel_execute_repl_cmd("?help")
+                toplevel_execute_repl_cmd("help help")
+            end
         end
         complete_repl_cmd("help ")
         # Other stuff
