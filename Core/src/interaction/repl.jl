@@ -132,7 +132,8 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
         replcmds[findfirst("" .== all_cmd_names)]
     elseif length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd)) || length(cmd) == 0
         ReplCmd{:help}("help",
-                       "Display help information on the availible $scope commands",
+                       "Display help information on the availible $scope commands\n\n\
+                        For convenience, help information can also be accessed via '?', e.g. '?help'.",
                        cmd -> help_show(cmd; commands))
     elseif length(replcmds) == 1
         first(replcmds)
