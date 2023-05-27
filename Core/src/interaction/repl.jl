@@ -142,9 +142,13 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
         replcmds[findfirst(c -> c.trigger == cmd, replcmds)]
     elseif warn && length(replcmds) > 1
         printstyled(" ! ", color=:red, bold=true)
-        println("Multiple matching $scope commands: ",
-                join(filter(!=(""), getproperty.(replcmds, :trigger)), ", "),
-                ".")
+        print("Multiple matching $scope commands: ")
+        candidates = filter(!=(""), getproperty.(replcmds, :trigger))
+        for cand in candidates
+            highlight_lcs(stdout, cand, String(cmd), before="\e[4m", after="\e[24m")
+            cand === last(candidates) || print(", ")
+        end
+        print('\n')
     elseif warn # no matching commands
         printstyled(" ! ", color=:red, bold=true)
         println("The $scope command '$cmd' is not defined.")
