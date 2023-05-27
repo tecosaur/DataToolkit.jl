@@ -115,7 +115,18 @@ those commands are printed as suggestions.
 function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                        commands::Vector{ReplCmd}=REPL_CMDS,
                        scope::String="Data REPL")
-    replcmds = filter(c -> startswith(c.trigger, cmd), commands)
+    replcmds = let candidates = filter(c -> startswith(c.trigger, cmd), commands)
+        if isempty(candidates)
+            candidates = filter(c -> issubseq(cmd, c.trigger), commands)
+            if !isempty(candidates)
+                char_filtered = filter(c -> startswith(c.trigger, first(cmd)), candidates)
+                if !isempty(char_filtered)
+                    candidates = char_filtered
+                end
+            end
+        end
+        candidates
+    end
     all_cmd_names = getproperty.(commands, :trigger)
     if cmd == "" && "" in all_cmd_names
         replcmds[findfirst("" .== all_cmd_names)]
@@ -625,6 +636,7 @@ If `cmd` is empty, list `commands` via `help_cmd_table`.
 function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if all(isspace, cmd)
         help_cmd_table(; commands)
+        println("\n \e[2;3mCommands can also be triggered by unique prefixes or substrings.\e[22;23m")
     else
         repl_cmd = find_repl_cmd(strip(cmd); commands, warn=true)
         if !isnothing(repl_cmd)

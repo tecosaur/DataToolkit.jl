@@ -180,6 +180,26 @@ function longest_common_subsequence(a, b)
 end
 
 """
+    issubseq(a, b)
+
+Return `true` if `a` is a subsequence of `b`, `false` otherwise.
+
+## Examples
+
+```jldoctest; setup = :(import DataToolkitBase.longest_common_subsequence)
+julia> issubseq("abc", "abc")
+true
+
+julia> issubseq("adg", "abcdefg")
+true
+
+julia> issubseq("gda", "abcdefg")
+false
+```
+"""
+issubseq(a, b) = length(longest_common_subsequence(a, b)) == length(a)
+
+"""
     highlight_lcs(io::IO, a::String, b::String;
                   before::String="\\e[1m", after::String="\\e[22m",
                   invert::Bool=false)
