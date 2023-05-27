@@ -1,13 +1,16 @@
-const DELETE_DOC = "Delete a data set
+const REMOVE_DOC = """
+Remove a data set
 
-Examples:
-  delete mydata"
+Usage:
+  remove IDENTIFIER
+"""
 
 """
-    delete(input::AbstractString)
-Parse and call the repl-format delete command `input`.
+    remove(input::AbstractString)
+
+Parse and call the repl-format remove command `input`.
 """
-function delete(input::AbstractString)
+function remove(input::AbstractString)
     ident = try parse(Identifier, input) catch _
         printstyled(" ! ", color=:red, bold=true)
         println("Could not parse '$input' as an identifier")
@@ -17,10 +20,10 @@ function delete(input::AbstractString)
         println("Could not resolve identifier: $input")
         return nothing
     end
-    confirm_yn(" Are you sure you want to delete $(dataset.name)?") || return nothing
-    delete!(dataset)
+    confirm_yn(" Are you sure you want to remove $(dataset.name)?") || return nothing
+    remove!(dataset)
     printstyled(" ✓ Done\n", color=:green)
 end
 
-completions(::ReplCmd{:delete}, sofar::AbstractString) =
+completions(::ReplCmd{:remove}, sofar::AbstractString) =
     complete_dataset(sofar)

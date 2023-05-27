@@ -18,7 +18,7 @@ include("stack.jl")
 include("plugins.jl")
 include("config.jl")
 include("add.jl")
-include("delete.jl")
+include("remove.jl")
 include("list.jl")
 include("show.jl")
 include("search.jl")
@@ -29,7 +29,6 @@ include("edit.jl")
 function add_repl_cmds()
     new_cmds = [
         ReplCmd(:add, ADD_DOC, add),
-        ReplCmd(:delete, DELETE_DOC, delete),
         ReplCmd(:init, INIT_DOC, init),
         ReplCmd(:config,
                 "Inspect and modify the current configuration",
@@ -49,6 +48,7 @@ function add_repl_cmds()
         ReplCmd(:plugin,
                 "Inspect and modify the set of plugins used",
                 PLUGIN_SUBCOMMANDS),
+        ReplCmd(:remove, REMOVE_DOC, remove),
         ReplCmd(:search,
                 SEARCH_DOC,
                 search),
