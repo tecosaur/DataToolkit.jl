@@ -64,6 +64,7 @@ content = Any[]
 const AdviseRecord = NamedTuple{(:location, :parent, :invocation), Tuple{LineNumberNode, <:Union{Expr, Symbol}, Expr}}
 function findadvice!(acc::Vector{AdviseRecord}, expr::Expr; parent=nothing)
     if expr.head == :macrocall && first(expr.args) == Symbol("@advise")
+        !isnothing(parent) || @warn "Macro @$(expr.args[2]) has no parent function"
         push!(acc, (; location=expr.args[2], parent, invocation=expr.args[end]))
     else
         if isnothing(parent) && expr.head == :function
@@ -84,6 +85,7 @@ findadvice!(acc, ::Any; parent=nothing) = nothing
 alladvice = Vector{AdviseRecord}()
 for (root, dirs, files) in walkdir("../../src")
     for file in files
+        file == "precompile.jl" || continue
         @info "Analysing $file for advise"
         path = joinpath(root, file)
         expr = Meta.parseall(read(path, String); filename=path)
