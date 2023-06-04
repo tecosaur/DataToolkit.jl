@@ -84,7 +84,7 @@ directly modifying the `$(@__MODULE__).getinventory().config` struct.
 $STORE_GC_CONFIG_INFO
 """
 const STORE_PLUGIN = Plugin("store", [
-    function (post::Function, f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
+    function (f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
         inventory = getinventory(storer.dataset.collection) |> update_inventory!
         # Get any applicable cache file
         source = getsource(inventory, storer)
@@ -104,7 +104,7 @@ const STORE_PLUGIN = Plugin("store", [
                 !isnothing(index) && deleteat!(inventory.stores, index)
                 write(inventory)
             end
-            (post, f, (storer, as), (; write))
+            (f, (storer, as), (; write))
         elseif !isnothing(file) && isfile(file)
             # If using a cache file, ensure the parent collection is registered
             # as a reference.
@@ -113,11 +113,11 @@ const STORE_PLUGIN = Plugin("store", [
                 if should_log_event("store", storer)
                     @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
                 end
-                (post, identity, (open(file, "r"),))
+                (identity, (open(file, "r"),))
             elseif as === FilePath
-                (post, identity, (FilePath(file),))
+                (identity, (FilePath(file),))
             else
-                (post, f, (storer, as), (; write))
+                (f, (storer, as), (; write))
             end
         elseif as == IO || as == IOStream
             # Try to get it as a file, because that avoids
@@ -126,24 +126,24 @@ const STORE_PLUGIN = Plugin("store", [
             tryfile = storage(storer, FilePath; write)
             if !isnothing(tryfile)
                 io = open(storesave(inventory, storer, FilePath, tryfile), "r")
-                (post, identity, (io,))
+                (identity, (io,))
             else
-                (post ∘ storesave(inventory, storer, as), f, (storer, as), (; write))
+                (storesave(inventory, storer, as), f, (storer, as), (; write))
             end
         elseif as === FilePath
-            (post ∘ storesave(inventory, storer, as), f, (storer, as), (; write))
+            (storesave(inventory, storer, as), f, (storer, as), (; write))
         else
-            (post, f, (storer, as), (; write))
+            (f, (storer, as), (; write))
         end
     end,
-    function (post::Function, f::typeof(rhash), storage::DataStorage, parameters::SmallDict, h::UInt)
+    function (f::typeof(rhash), storage::DataStorage, parameters::SmallDict, h::UInt)
         delete!(parameters, "save") # Does not impact the final result
         if haskey(parameters, "lifetime")
             delete!(parameters, "lifetime") # Does not impact the final result
             parameters["__epoch"] =
                 time() ÷ interpret_lifetime(get(storage, "lifetime"))
         end
-        (post, f, (storage, parameters, h))
+        (f, (storage, parameters, h))
     end])
 
 """
@@ -211,7 +211,7 @@ directly modifying the `$(@__MODULE__).getinventory().config` struct.
 $STORE_GC_CONFIG_INFO
 """
 const CACHE_PLUGIN = Plugin("cache", [
-    function (post::Function, f::typeof(load), loader::DataLoader, source::Any, as::Type)
+    function (f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if shouldstore(loader, as)
             # Get any applicable cache file
             inventory = getinventory(loader.dataset.collection) |> update_inventory!
@@ -233,15 +233,15 @@ const CACHE_PLUGIN = Plugin("cache", [
                 end
                 update_source!(inventory, cache, loader.dataset.collection)
                 info = Base.invokelatest(deserialize, file)
-                (post, identity, (info,))
+                (identity, (info,))
             else
-                (post ∘ storesave(inventory, loader), f, (loader, source, as))
+                (storesave(inventory, loader), f, (loader, source, as))
             end
         else
-            (post, f, (loader, source, as))
+            (f, (loader, source, as))
         end
     end,
-    function (post::Function, f::typeof(rhash), loader::DataLoader, parameters::SmallDict, h::UInt)
+    function (f::typeof(rhash), loader::DataLoader, parameters::SmallDict, h::UInt)
         delete!(parameters, "cache") # Does not impact the final result
-        (post, f, (loader, parameters, h))
+        (f, (loader, parameters, h))
     end])
