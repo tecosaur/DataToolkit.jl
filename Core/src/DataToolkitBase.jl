@@ -24,7 +24,7 @@ export @import, @addpkg, @dataplugin, @advise
 
 # For plugin packages
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
-    fromspec, tospec, DataAdvice, DataAdviceAmalgamation
+    fromspec, tospec, Advice, AdviceAmalgamation
 export ReplCmd, REPL_CMDS, help, completions, allcompletions,
     prompt, prompt_char, confirm_yn, peelword
 

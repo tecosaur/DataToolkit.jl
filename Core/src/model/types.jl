@@ -149,12 +149,12 @@ struct DataWriter{driver} <: AbstractDataTransformer{driver}
 end
 
 """
-    DataAdvice{func, context} <: Function
-DataAdvices allow for composable, highly flexible modifications of data by
+    Advice{func, context} <: Function
+Advices allow for composable, highly flexible modifications of data by
 encapsulating a function call. They are inspired by elisp's advice system,
 namely the most versitile form — `:around` advice, and Clojure's advisors.
 
-A `DataAdvice` is esentially a function wrapper, with a `priority::Int`
+A `Advice` is esentially a function wrapper, with a `priority::Int`
 attribute. The wrapped functions should be of the form:
 ```julia
 (action::Function, args...; kargs...) ->
@@ -179,12 +179,12 @@ be automatically substituted in.
 action(args; kargs) ━━━━▶ post╺━━▶ result
 ```
 
-To specify which transforms a DataAdvice should be applied to, ensure you
+To specify which transforms a Advice should be applied to, ensure you
 add the relevant type parameters to your transducing function. In cases where
-the transducing function is not applicable, the DataAdvice will simply act
+the transducing function is not applicable, the Advice will simply act
 as the identity function.
 
-After all applicable `DataAdvice`s have been applied, `action(args...;
+After all applicable `Advice`s have been applied, `action(args...;
 kargs...) |> post` is called to produce the final result.
 
 The final `post` function is created by rightwards-composition with every `post`
@@ -204,8 +204,8 @@ input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
 # Constructors
 
 ```julia
-DataAdvice(priority::Int, f::Function)
-DataAdvice(f::Function) # priority is set to 1
+Advice(priority::Int, f::Function)
+Advice(f::Function) # priority is set to 1
 ```
 
 # Examples
@@ -213,7 +213,7 @@ DataAdvice(f::Function) # priority is set to 1
 **1. Logging every time a DataSet is loaded.**
 
 ```julia
-loggingadvisor = DataAdvice(
+loggingadvisor = Advice(
     function(post::Function, f::typeof(load), loader::DataLoader, input, outtype)
         @info "Loading \$(loader.data.name)"
         (post, f, (loader, input, outtype))
@@ -223,7 +223,7 @@ loggingadvisor = DataAdvice(
 **2. Automatically committing each data file write.**
 
 ```julia
-writecommitadvisor = DataAdvice(
+writecommitadvisor = Advice(
     function(post::Function, f::typeof(write), writer::DataWriter{:filesystem}, output, info)
         function writecommit(result)
             run(`git add \$output`)
@@ -234,10 +234,10 @@ writecommitadvisor = DataAdvice(
     end)
 ```
 """
-struct DataAdvice{func, context} <: Function
+struct Advice{func, context} <: Function
     priority::Int # REVIEW should this be an Int?
     f::Function
-    function DataAdvice(priority::Int, f::Function)
+    function Advice(priority::Int, f::Function)
         validmethods = methods(f, Tuple{Function, Any, Vararg{Any}})
         if length(validmethods) === 0
             throw(ArgumentError("Transducing function $f had no valid methods."))
@@ -249,14 +249,14 @@ end
 
 struct Plugin
     name::String
-    advisors::Vector{DataAdvice}
+    advisors::Vector{Advice}
 end
 
 Plugin(name::String, advisors::Vector{<:Function}) =
-    Plugin(name, DataAdvice.(advisors))
+    Plugin(name, Advice.(advisors))
 
-Plugin(name::String, advisors::Vector{<:DataAdvice}) =
-    Plugin(name, Vector{DataAdvice}(advisors))
+Plugin(name::String, advisors::Vector{<:Advice}) =
+    Plugin(name, Vector{Advice}(advisors))
 
 struct DataSet
     collection
@@ -269,26 +269,26 @@ struct DataSet
 end
 
 """
-A collection of `DataAdvices` sourced from availible Plugins.
+A collection of `Advices` sourced from availible Plugins.
 
-Like individual `DataAdvices`, a `DataAdviceAmalgamation` can be called
+Like individual `Advices`, a `AdviceAmalgamation` can be called
 as a function. However, it also supports the following convenience syntax:
 ```
-(::DataAdviceAmalgamation)(f::Function, args...; kargs...) # -> result
+(::AdviceAmalgamation)(f::Function, args...; kargs...) # -> result
 ```
 
 # Constructors
 
 ```
-DataAdviceAmalgamation(adviseall::Function, advisors::Vector{DataAdvice},
-                       plugins_wanted::Vector{String}, plugins_used::Vector{String})
-DataAdviceAmalgamation(plugins::Vector{String})
-DataAdviceAmalgamation(collection::DataCollection)
+AdviceAmalgamation(adviseall::Function, advisors::Vector{Advice},
+                   plugins_wanted::Vector{String}, plugins_used::Vector{String})
+AdviceAmalgamation(plugins::Vector{String})
+AdviceAmalgamation(collection::DataCollection)
 ```
 """
-mutable struct DataAdviceAmalgamation
+mutable struct AdviceAmalgamation
     adviseall::Function
-    advisors::Vector{DataAdvice}
+    advisors::Vector{Advice}
     plugins_wanted::Vector{String}
     plugins_used::Vector{String}
 end
@@ -301,7 +301,7 @@ struct DataCollection
     parameters::SmallDict{String, Any}
     datasets::Vector{DataSet}
     path::Union{String, Nothing}
-    advise::DataAdviceAmalgamation
+    advise::AdviceAmalgamation
     mod::Module
 end
 

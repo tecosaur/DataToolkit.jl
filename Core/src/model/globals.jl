@@ -42,7 +42,7 @@ The default `priority` field value for instances of `AbstractDataTransformer`.
 const DEFAULT_DATATRANSFORMER_PRIORITY = 1
 
 """
-The default `priority` field value for `DataAdvice`s.
+The default `priority` field value for `Advice`s.
 """
 const DEFAULT_DATA_ADVISOR_PRIORITY = 1
 

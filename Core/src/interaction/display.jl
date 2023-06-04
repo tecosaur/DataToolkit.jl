@@ -107,21 +107,21 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     print(io, ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", ::DataAdvice{F, C}) where {F, C}
-    print(io, "DataAdvice{$F, $C}")
+function Base.show(io::IO, ::MIME"text/plain", ::Advice{F, C}) where {F, C}
+    print(io, "Advice{$F, $C}")
 end
 
 function Base.show(io::IO, p::Plugin)
     print(io, "Plugin(")
     show(io, p.name)
     print(io, ", [")
-    context(::DataAdvice{F, C}) where {F, C} = (F, C)
+    context(::Advice{F, C}) where {F, C} = (F, C)
     print(io, join(string.(context.(p.advisors)), ", "))
     print(io, "])")
 end
 
-function Base.show(io::IO, dta::DataAdviceAmalgamation)
-    get(io, :omittype, false) || print(io, "DataAdviceAmalgamation(")
+function Base.show(io::IO, dta::AdviceAmalgamation)
+    get(io, :omittype, false) || print(io, "AdviceAmalgamation(")
     for plugin in dta.plugins_wanted
         if plugin in dta.plugins_used
             print(io, plugin, ' ')

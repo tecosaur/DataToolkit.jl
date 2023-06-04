@@ -3,7 +3,7 @@
 * Advice
 
 #+begin_src @docs
-DataAdvice
+Advice
 #+end_src
 
 * Advisement points

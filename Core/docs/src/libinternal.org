@@ -9,7 +9,7 @@ AbstractDataTransformer
 * Advice Amalgamation
 
 #+begin_src @docs
-DataAdviceAmalgamation
+AdviceAmalgamation
 #+end_src
 
 * Qualified Types

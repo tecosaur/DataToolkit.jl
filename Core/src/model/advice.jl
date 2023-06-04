@@ -1,15 +1,14 @@
-DataAdvice(f::Function) =
-    DataAdvice(DEFAULT_DATA_ADVISOR_PRIORITY, f)
+Advice(f::Function) = Advice(DEFAULT_DATA_ADVISOR_PRIORITY, f)
 
-Base.methods(dt::DataAdvice) = methods(dt.f)
+Base.methods(dt::Advice) = methods(dt.f)
 
 """
-    (advice::DataAdvice)((post::Function, func::Function, args::Tuple, kwargs::NamedTuple))
+    (advice::Advice)((post::Function, func::Function, args::Tuple, kwargs::NamedTuple))
 
 Apply `advice` to the function call `func(args...; kwargs...)`, and return the
 new `(post, func, args, kwargs)` tuple.
 """
-function (dt::DataAdvice{F, C})(
+function (dt::Advice{F, C})(
     (post, func, args, kwargs)::Tuple{Function, Function, Tuple, NamedTuple}) where {F, C}
     # Abstract-y `typeof`.
     atypeof(val::Any) = typeof(val)
@@ -39,7 +38,7 @@ function (dt::DataAdvice{F, C})(
     end
 end
 
-function (dt::DataAdvice)(func::Function, args...; kwargs...)
+function (dt::Advice)(func::Function, args...; kwargs...)
     atypeof(val::Any) = typeof(val)
     atypeof(val::Type) = Type{val}
     if hasmethod(dt.f, Tuple{typeof(func), atypeof.(args)...}, keys(kwargs))
@@ -51,20 +50,21 @@ function (dt::DataAdvice)(func::Function, args...; kwargs...)
     end
 end
 
-Base.empty(::Type{DataAdviceAmalgamation}) =
-    DataAdviceAmalgamation(identity, DataAdvice[], String[], String[])
 
-# When getting a property of a `DataAdviceAmalgamation`, first check
+Base.empty(::Type{AdviceAmalgamation}) =
+    AdviceAmalgamation(identity, Advice[], String[], String[])
+
+# When getting a property of a `AdviceAmalgamation`, first check
 # if the `:plugins_wanted` field is satisfied. Should it not be,
 # regenerate the `:advisors`, `:adviseall`, and `:plugins_used` fields
 # based on the currently availible plugins and `:plugins_wanted`.
-function Base.getproperty(dta::DataAdviceAmalgamation, prop::Symbol)
+function Base.getproperty(dta::AdviceAmalgamation, prop::Symbol)
     if getfield(dta, :plugins_wanted) != getfield(dta, :plugins_used)
         plugins_availible =
             filter(plugin -> plugin.name in getfield(dta, :plugins_wanted), PLUGINS)
         if getfield.(plugins_availible, :name) != getfield(dta, :plugins_used)
             advisors = getfield.(plugins_availible, :advisors) |>
-                Iterators.flatten |> collect |> Vector{DataAdvice}
+                Iterators.flatten |> collect |> Vector{Advice}
             sort!(advisors, by = t -> t.priority)
             setfield!(dta, :advisors, advisors)
             setfield!(dta, :adviseall, ∘(reverse(advisors)...))
@@ -74,26 +74,26 @@ function Base.getproperty(dta::DataAdviceAmalgamation, prop::Symbol)
     getfield(dta, prop)
 end
 
-DataAdviceAmalgamation(plugins::Vector{String}) =
-    DataAdviceAmalgamation(identity, DataAdvice[], plugins, String[])
+AdviceAmalgamation(plugins::Vector{String}) =
+    AdviceAmalgamation(identity, Advice[], plugins, String[])
 
-DataAdviceAmalgamation(collection::DataCollection) =
-    DataAdviceAmalgamation(collection.plugins)
+AdviceAmalgamation(collection::DataCollection) =
+    AdviceAmalgamation(collection.plugins)
 
-DataAdviceAmalgamation(dta::DataAdviceAmalgamation) = # for re-building
-    DataAdviceAmalgamation(dta.plugins_wanted)
+AdviceAmalgamation(dta::AdviceAmalgamation) = # for re-building
+    AdviceAmalgamation(dta.plugins_wanted)
 
-function DataAdviceAmalgamation(advisors::Vector{<:DataAdvice})
+function AdviceAmalgamation(advisors::Vector{<:Advice})
     advisors = sort(advisors, by = t -> t.priority)
-    DataAdviceAmalgamation(∘(reverse(advisors)...), advisors, String[], String[])
+    AdviceAmalgamation(∘(reverse(advisors)...), advisors, String[], String[])
 end
 
-function (dta::DataAdviceAmalgamation)(
+function (dta::AdviceAmalgamation)(
     annotated_func_call::Tuple{Function, Function, Tuple, NamedTuple})
     dta.adviseall(annotated_func_call)
 end
 
-function (dta::DataAdviceAmalgamation)(func::Function, args...; kwargs...)
+function (dta::AdviceAmalgamation)(func::Function, args...; kwargs...)
     post::Function, func2::Function, args2::Tuple, kwargs2::NamedTuple =
         dta((identity, func, args, merge(NamedTuple(), kwargs)))
     invokepkglatest(func2, args2...; kwargs2...) |> post
@@ -102,18 +102,18 @@ end
 # Utility functions/macros
 
 """
-    _dataadvise(thing::DataAdviceAmalgamation)
-    _dataadvise(thing::Vector{DataAdvice})
-    _dataadvise(thing::DataAdvice)
+    _dataadvise(thing::AdviceAmalgamation)
+    _dataadvise(thing::Vector{Advice})
+    _dataadvise(thing::Advice)
     _dataadvise(thing::DataCollection)
     _dataadvise(thing::DataSet)
     _dataadvise(thing::AbstractDataTransformer)
 
-Obtain the relevant `DataAdviceAmalgamation` for `thing`.
+Obtain the relevant `AdviceAmalgamation` for `thing`.
 """
-_dataadvise(amalg::DataAdviceAmalgamation) = amalg
-_dataadvise(advs::Vector{<:DataAdvice}) = DataAdviceAmalgamation(advs)
-_dataadvise(adv::DataAdvice) = DataAdviceAmalgamation([adv])
+_dataadvise(amalg::AdviceAmalgamation) = amalg
+_dataadvise(advs::Vector{<:Advice}) = AdviceAmalgamation(advs)
+_dataadvise(adv::Advice) = AdviceAmalgamation([adv])
 _dataadvise(col::DataCollection) = col.advise
 _dataadvise(ds::DataSet) = _dataadvise(ds.collection)
 _dataadvise(adt::AbstractDataTransformer) = _dataadvise(adt.dataset)

@@ -43,12 +43,9 @@ end
 
 @testset "Advice" begin
     # Some advice to use
-    sump1 = DataAdvice(
-        2, (f::typeof(sum), i::Int) -> (f, (i+1,)))
-    sumx2 = DataAdvice(
-        1, (f::typeof(sum), i::Int) -> (f, (2*i,)))
-    summ3 = DataAdvice(
-        1, (f::typeof(sum), i::Int) -> (x -> x-3, f, (i,)))
+    sump1 = Advice(2, (f::typeof(sum), i::Int) -> (f, (i+1,)))
+    sumx2 = Advice(1, (f::typeof(sum), i::Int) -> (f, (2*i,)))
+    summ3 = Advice(1, (f::typeof(sum), i::Int) -> (x -> x-3, f, (i,)))
     @testset "Basic advice" begin
         # Application of advice
         @test sump1((identity, sum, (1,), (;))) ==
@@ -68,8 +65,7 @@ end
         let # Using invokelatest on the advice function
             thing(x) = x^2
             h(x) = x+1
-            thing_a = DataAdvice(
-                (f::typeof(thing), i::Int) -> (f, (h(i),)))
+            thing_a = Advice((f::typeof(thing), i::Int) -> (f, (h(i),)))
             @test thing_a((identity, thing, (2,), (;))) ==
                 (identity, thing, (3,), (;))
             h(x) = x+2
@@ -78,13 +74,13 @@ end
         end
     end
     @testset "Amalgamation" begin
-        amlg12 = DataAdviceAmalgamation(
+        amlg12 = AdviceAmalgamation(
             sump1 ∘ sumx2, [sumx2, sump1], String[], String[])
-        amlg21 = DataAdviceAmalgamation(
+        amlg21 = AdviceAmalgamation(
             sumx2 ∘ sump1, [sump1, sumx2], String[], String[])
-        amlg321 = DataAdviceAmalgamation(
+        amlg321 = AdviceAmalgamation(
             summ3 ∘ sumx2 ∘ sump1, [sump1, sumx2, summ3], String[], String[])
-        amlg213 = DataAdviceAmalgamation(
+        amlg213 = AdviceAmalgamation(
             sumx2 ∘ sump1 ∘ summ3, [summ3, sump1, sumx2], String[], String[])
         @test amlg12((identity, sum, (2,), (;))) == (identity, sum, (5,), (;))
         @test amlg12(sum, 2) == 5
@@ -94,9 +90,9 @@ end
     end
     @testset "Plugin loading" begin
         # Empty state
-        amlg = empty(DataAdviceAmalgamation)
+        amlg = empty(AdviceAmalgamation)
         @test amlg.adviseall == identity
-        @test amlg.advisors == DataAdvice[]
+        @test amlg.advisors == Advice[]
         @test amlg.plugins_wanted == String[]
         @test amlg.plugins_used == String[]
         # Create a plugin
@@ -109,7 +105,7 @@ end
         @test amlg.plugins_wanted == [plg.name]
         @test amlg.plugins_used == [plg.name]
         # Display
-        @test sprint(show, amlg) == "DataAdviceAmalgamation($(plg.name) ✔)"
+        @test sprint(show, amlg) == "AdviceAmalgamation($(plg.name) ✔)"
     end
     @testset "Advice macro" begin
         @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func, x)) ==

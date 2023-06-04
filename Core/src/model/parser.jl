@@ -166,11 +166,11 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
 DataCollection(name::Union{String, Nothing}=nothing; path::Union{String, Nothing}=nothing) =
     DataCollection(LATEST_DATA_CONFIG_VERSION, name, uuid4(), String[],
                    SmallDict{String, Any}(), DataSet[], path,
-                   DataAdviceAmalgamation(String[]), Main)
+                   AdviceAmalgamation(String[]), Main)
 
 function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
     plugins::Vector{String} = get(get(spec, "config", Dict("config" => Dict())), "plugins", String[])
-    DataAdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path, mod)
+    AdviceAmalgamation(plugins)(fromspec, DataCollection, spec; path, mod)
 end
 
 """
@@ -215,7 +215,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
     end
     collection = DataCollection(version, name, uuid, plugins,
                                 parameters, DataSet[], path,
-                                DataAdviceAmalgamation(plugins),
+                                AdviceAmalgamation(plugins),
                                 mod)
     # Construct the data sets
     datasets = copy(spec)

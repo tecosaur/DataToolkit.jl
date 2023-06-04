@@ -47,7 +47,7 @@ function init(name::Union{AbstractString, Missing},
     end
     newcollection = DataCollection(LATEST_DATA_CONFIG_VERSION, name, uuid,
                                    plugins, Dict{String, Any}(), DataSet[],
-                                   path, DataAdviceAmalgamation(plugins),
+                                   path, AdviceAmalgamation(plugins),
                                    Main)
     !isnothing(path) && write && Base.write(newcollection)
     addtostack && pushfirst!(STACK, newcollection)
