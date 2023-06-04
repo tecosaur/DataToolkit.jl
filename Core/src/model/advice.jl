@@ -14,16 +14,26 @@ function (dt::DataAdvice{F, C})(
     # Abstract-y `typeof`.
     atypeof(val::Any) = typeof(val)
     atypeof(val::Type) = Type{val}
-    # @info "Testing $dt"
-    if hasmethod(dt.f, Tuple{typeof(post), typeof(func), atypeof.(args)...}, keys(kwargs))
-        # @info "Applying $dt"
-        result = invokepkglatest(dt.f, post, func, args...; kwargs...)
-        if result isa Tuple{Function, Function, Tuple}
-            post, func, args = result
-            (post, func, args, NamedTuple())
+    if hasmethod(dt.f, Tuple{typeof(func), atypeof.(args)...}, keys(kwargs))
+        result = invokepkglatest(dt.f, func, args...; kwargs...)
+        after, func, args, kwargs = if result isa Tuple{Function, Function, Tuple, NamedTuple}
+            result # Fully specified form
+        elseif result isa Tuple{Function, Function, Tuple}
+            # Default kwargs
+            result[1], result[2], result[3], NamedTuple()
+        elseif result isa Tuple{Function, Tuple, NamedTuple}
+            # Default post function
+            identity, result[1], result[2], result[3]
+        elseif result isa Tuple{Function, Tuple}
+            # Default post function and kwargs
+            identity, result[1], result[2], NamedTuple()
         else
-            result
+            throw(ErrorException("Advice function produced invalid result: $(typeof(result))"))
         end
+        if after !== identity
+            post = post ∘ after
+        end
+        (post, func, args, kwargs)
     else
         (post, func, args, kwargs) # act as the identity fuction
     end

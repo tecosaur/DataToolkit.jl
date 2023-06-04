@@ -44,14 +44,11 @@ end
 @testset "Advice" begin
     # Some advice to use
     sump1 = DataAdvice(
-        2, (post::Function, f::typeof(sum), i::Int) ->
-            (post, f, (i+1,)))
+        2, (f::typeof(sum), i::Int) -> (f, (i+1,)))
     sumx2 = DataAdvice(
-        1, (post::Function, f::typeof(sum), i::Int) ->
-            (post, f, (2*i,)))
+        1, (f::typeof(sum), i::Int) -> (f, (2*i,)))
     summ3 = DataAdvice(
-        1, (post::Function, f::typeof(sum), i::Int) ->
-            ((x -> x-3) ∘ post, f, (i,)))
+        1, (f::typeof(sum), i::Int) -> (x -> x-3, f, (i,)))
     @testset "Basic advice" begin
         # Application of advice
         @test sump1((identity, sum, (1,), (;))) ==
@@ -72,8 +69,7 @@ end
             thing(x) = x^2
             h(x) = x+1
             thing_a = DataAdvice(
-                (post::Function, f::typeof(thing), i::Int) ->
-                    (post, f, (h(i),)))
+                (f::typeof(thing), i::Int) -> (f, (h(i),)))
             @test thing_a((identity, thing, (2,), (;))) ==
                 (identity, thing, (3,), (;))
             h(x) = x+2

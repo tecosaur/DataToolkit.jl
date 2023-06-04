@@ -157,12 +157,13 @@ namely the most versitile form — `:around` advice, and Clojure's advisors.
 A `DataAdvice` is esentially a function wrapper, with a `priority::Int`
 attribute. The wrapped functions should be of the form:
 ```julia
-(post::Function, action::Function, args...; kargs...) ->
-  (post::Function, action::Function, args, kargs)
+(action::Function, args...; kargs...) ->
+  ([post::Function], action::Function, args::Tuple, [kargs::NamedTuple])
 ```
 
-A three-tuple result with `kargs` ommited is also accepted, in which case the an
-empty kargs value will be automatically substituted as the fourth value.
+Short-hand return values with `post` or `kargs` omitted are also accepted, in
+which case default values (the `identity` function and `(;)` respectivly) will
+be automatically substituted in.
 
 ```
     input=(action args kwargs)
@@ -186,8 +187,10 @@ as the identity function.
 After all applicable `DataAdvice`s have been applied, `action(args...;
 kargs...) |> post` is called to produce the final result.
 
-By modifying `post` via rightwards-composition (i.e. `post -> post ∘ extra`) the
-transdurers compose quite nicely.
+The final `post` function is created by rightwards-composition with every `post`
+entry of the advice forms (i.e. at each stage `post = post ∘ extra` is run).
+
+The overall behaviour can be thought of as *shells* of advice.
 
 ```
         ╭╌ advisor 1 ╌╌╌╌╌╌╌╌─╮
@@ -196,19 +199,6 @@ transdurers compose quite nicely.
 input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
         ┆ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ ┆
         ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
-```
-
-Without a *very, very good reason* all advisors should behave this way.
-Otherwise, when post is left-composed (i.e. `post -> extra ∘ post`), advisors
-compose like so:
-
-```
-        ╭╌ advisor 1 ╌╌╌╌╌╌─╮
-        ┆ ╭╌ advisor 2 ╌╌╌╌╌┼╌╮
-        ┆ ┆                 ┆ ┆
-input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
-        ╰╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ ┆
-          ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
 ```
 
 # Constructors
@@ -248,11 +238,11 @@ struct DataAdvice{func, context} <: Function
     priority::Int # REVIEW should this be an Int?
     f::Function
     function DataAdvice(priority::Int, f::Function)
-        validmethods = methods(f, Tuple{Function, Function, Any, Vararg{Any}})
+        validmethods = methods(f, Tuple{Function, Any, Vararg{Any}})
         if length(validmethods) === 0
             throw(ArgumentError("Transducing function $f had no valid methods."))
         end
-        functype, context = first(validmethods).sig.types[[3, 4]]
+        functype, context = first(validmethods).sig.types[[2, 3]]
         new{functype, context}(priority, f)
     end
 end
