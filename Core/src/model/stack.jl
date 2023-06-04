@@ -30,9 +30,11 @@ end
 function getlayer(uuid::UUID)
     length(STACK) == 0 && throw(EmptyStackError())
     matchinglayers = filter(c -> c.uuid == uuid, STACK)
-    if length(matchinglayers) == 0
-        throw(AmbiguousIdentifier(uuid, matchinglayers))
-    else
+    if length(matchinglayers) == 1
         first(matchinglayers)
+    elseif length(matchinglayers) == 0
+        throw(UnresolveableIdentifier{DataCollection}(uuid))
+    else
+        throw(AmbiguousIdentifier(uuid, matchinglayers))
     end
 end
