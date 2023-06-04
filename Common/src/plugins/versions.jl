@@ -42,7 +42,7 @@ When multiple data sets match the version specification, the one with the
 highest matching version is used.
 """
 const VERSIONS_PLUGIN = Plugin("versions", [
-    function (post::Function, f::typeof(parse), ::Type{Identifier}, ident::AbstractString)
+    function (f::typeof(parse), ::Type{Identifier}, ident::AbstractString)
         function extractversion!(ident::Identifier)
             if ident.dataset isa AbstractString && count('@', ident.dataset) == 1
                 name, version = split(ident.dataset, '@')
@@ -52,10 +52,9 @@ const VERSIONS_PLUGIN = Plugin("versions", [
                 ident
             end
         end
-        (post ∘ extractversion!, f, (Identifier, ident))
+        (extractversion!, f, (Identifier, ident))
     end,
-    function (post::Function, f::typeof(refine),
-              datasets::Vector{DataSet}, ident::Identifier, ignoreparams::Vector{String})
+    function (f::typeof(refine), datasets::Vector{DataSet}, ident::Identifier, ignoreparams::Vector{String})
         @import Pkg.Versions.semver_spec
         if haskey(ident.parameters, "version")
             versions = map(
@@ -79,9 +78,9 @@ const VERSIONS_PLUGIN = Plugin("versions", [
             end
             push!(ignoreparams, "version")
         end
-        (post, f, (datasets, ident, ignoreparams))
+        (f, (datasets, ident, ignoreparams))
     end,
-    function (post::Function, f::typeof(string), ident::Identifier)
+    function (f::typeof(string), ident::Identifier)
         if haskey(ident.parameters, "version")
             ident = Identifier(
                 ident.collection,
@@ -90,11 +89,11 @@ const VERSIONS_PLUGIN = Plugin("versions", [
                 ident.type,
                 delete!(copy(ident.parameters), "version"))
         end
-        (post, f, (ident,))
+        (f, (ident,))
     end,
-    function (post::Function, f::typeof(lint), obj::DataSet, linters::Vector{Method})
+    function (f::typeof(lint), obj::DataSet, linters::Vector{Method})
         append!(linters, methods(lint_versions, Tuple{DataSet, Val}).ms)
-        (post, f, (obj, linters))
+        (f, (obj, linters))
     end
 ])
 

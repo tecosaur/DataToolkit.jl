@@ -91,28 +91,28 @@ priority=2
 ```
 """
 const DEFAULTS_PLUGIN = Plugin("defaults", [
-    function (post::Function, f::typeof(fromspec), D::Type{DataSet},
+    function (f::typeof(fromspec), D::Type{DataSet},
               collection::DataCollection, name::String, spec::Dict{String, Any})
-        (post, f, (D, collection, name, merge(getdefaults(collection), spec)))
+        (f, (D, collection, name, merge(getdefaults(collection), spec)))
     end,
-    function (post::Function, f::typeof(fromspec), ADT::Type{<:AbstractDataTransformer},
+    function (f::typeof(fromspec), ADT::Type{<:AbstractDataTransformer},
              dataset::DataSet, spec::Dict{String, Any})
-        (post, f, (ADT, dataset,
-                   merge(getdefaults(dataset, ADT; spec, resolvetype=false),
-                         spec)))
+        (f, (ADT, dataset,
+             merge(getdefaults(dataset, ADT; spec, resolvetype=false),
+                   spec)))
     end,
-    function (post::Function, f::typeof(tospec), ds::DataSet)
+    function (f::typeof(tospec), ds::DataSet)
         defaults = getdefaults(ds)
         removedefaults(dict) =
             filter(((key, val),) -> !(haskey(defaults, key) && defaults[key] == val),
                    dict)
-        (post ∘ removedefaults, f, (ds,))
+        (removedefaults, f, (ds,))
     end,
-    function (post::Function, f::typeof(tospec), adt::AbstractDataTransformer)
+    function (f::typeof(tospec), adt::AbstractDataTransformer)
         defaults = getdefaults(adt)
         removedefaults(dict) =
             filter(((key, val),) -> !(haskey(defaults, key) && defaults[key] == val),
                    dict)
-        (post ∘ removedefaults, f, (adt,))
+        (removedefaults, f, (adt,))
     end,
 ])

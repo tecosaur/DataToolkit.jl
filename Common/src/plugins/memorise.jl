@@ -18,7 +18,7 @@ types to be memorised.
 const MEMORISE_PLUGIN = Plugin("memorise", [
     DataAdvice(
         0,
-        function (post::Function, f::typeof(DataToolkitBase._read), dataset::DataSet, as::Type)
+        function (f::typeof(DataToolkitBase._read), dataset::DataSet, as::Type)
             memorise = @something(get(dataset, "memorise"), get(dataset, "memorize", false))
             should_memorise = if memorise isa Bool
                 memorise
@@ -43,15 +43,15 @@ const MEMORISE_PLUGIN = Plugin("memorise", [
                         @info "Loading '$(dataset.name)' (as $as) from memory copy"
                     end
                     cache = MEMORISE_CACHE[dskey]
-                    (post, identity, (cache,))
+                    (identity, (cache,))
                 else
                     docache = function (info)
                         MEMORISE_CACHE[dskey] = info
                         info
                     end
-                    (post ∘ docache, f, (dataset, as))
+                    (docache, f, (dataset, as))
                 end
             else
-                (post, f, (dataset, as))
+                (f, (dataset, as))
             end
         end)])
