@@ -29,6 +29,18 @@ function (dt::DataAdvice{F, C})(
     end
 end
 
+function (dt::DataAdvice)(func::Function, args...; kwargs...)
+    atypeof(val::Any) = typeof(val)
+    atypeof(val::Type) = Type{val}
+    if hasmethod(dt.f, Tuple{typeof(func), atypeof.(args)...}, keys(kwargs))
+        post, func, args, kwargs = dt((identity, func, args, merge(NamedTuple(), kwargs)))
+        result = func(args...; kwargs...)
+        post(result)
+    else
+        func(args...; kwargs...)
+    end
+end
+
 Base.empty(::Type{DataAdviceAmalgamation}) =
     DataAdviceAmalgamation(identity, DataAdvice[], String[], String[])
 
@@ -61,6 +73,11 @@ DataAdviceAmalgamation(collection::DataCollection) =
 DataAdviceAmalgamation(dta::DataAdviceAmalgamation) = # for re-building
     DataAdviceAmalgamation(dta.plugins_wanted)
 
+function DataAdviceAmalgamation(advisors::Vector{<:DataAdvice})
+    advisors = sort(advisors, by = t -> t.priority)
+    DataAdviceAmalgamation(∘(reverse(advisors)...), advisors, String[], String[])
+end
+
 function (dta::DataAdviceAmalgamation)(
     annotated_func_call::Tuple{Function, Function, Tuple, NamedTuple})
     dta.adviseall(annotated_func_call)
@@ -75,15 +92,21 @@ end
 # Utility functions/macros
 
 """
+    _dataadvise(thing::DataAdviceAmalgamation)
+    _dataadvise(thing::Vector{DataAdvice})
+    _dataadvise(thing::DataAdvice)
     _dataadvise(thing::DataCollection)
     _dataadvise(thing::DataSet)
     _dataadvise(thing::AbstractDataTransformer)
 
 Obtain the relevant `DataAdviceAmalgamation` for `thing`.
 """
-_dataadvise(c::DataCollection) = c.advise
-_dataadvise(d::DataSet) = _dataadvise(d.collection)
-_dataadvise(a::AbstractDataTransformer) = _dataadvise(a.dataset)
+_dataadvise(amalg::DataAdviceAmalgamation) = amalg
+_dataadvise(advs::Vector{<:DataAdvice}) = DataAdviceAmalgamation(advs)
+_dataadvise(adv::DataAdvice) = DataAdviceAmalgamation([adv])
+_dataadvise(col::DataCollection) = col.advise
+_dataadvise(ds::DataSet) = _dataadvise(ds.collection)
+_dataadvise(adt::AbstractDataTransformer) = _dataadvise(adt.dataset)
 
 """
     _dataadvisecall(func::Function, args...; kwargs...)
