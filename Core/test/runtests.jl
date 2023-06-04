@@ -44,18 +44,30 @@ end
 @testset "Advice" begin
     # Some advice to use
     sump1 = Advice(2, (f::typeof(sum), i::Int) -> (f, (i+1,)))
+    sump1a = Advice(2, (f::typeof(sum), i::Int) -> (f, (i+1,), (;)))
+    sump1b = Advice(2, (f::typeof(sum), i::Int) -> (identity, f, (i+1,)))
+    sump1c = Advice(2, (f::typeof(sum), i::Int) -> (identity, f, (i+1,), (;)))
+    sump1x = Advice(2, (f::typeof(sum), i::Int) -> ())
     sumx2 = Advice(1, (f::typeof(sum), i::Int) -> (f, (2*i,)))
     summ3 = Advice(1, (f::typeof(sum), i::Int) -> (x -> x-3, f, (i,)))
     @testset "Basic advice" begin
         # Application of advice
         @test sump1((identity, sum, (1,), (;))) ==
             (identity, sum, (2,), (;))
+        @test sump1(sum, 1) == 2
+        @test sump1a(sum, 1) == 2
+        @test sump1b(sum, 1) == 2
+        @test sump1c(sum, 1) == 2
+        @test_throws ErrorException sump1x(sum, 1) == 2
+        # Invalid advice function
+        @test_throws ArgumentError Advice(() -> ())
         # Pass-through of `post`
         @test sump1((sqrt, sum, (1,), (;))) ==
             (sqrt, sum, (2,), (;))
         # Matching the argument
         @test sump1((identity, sum, ([1],), (;))) ==
             (identity, sum, ([1],), (;))
+        @test sump1(sum, [1]) == 1
         # Matching the kwargs
         @test sump1((identity, sum, (1,), (dims=3,))) ==
             (identity, sum, (1,), (dims = 3,))
@@ -76,6 +88,8 @@ end
     @testset "Amalgamation" begin
         amlg12 = AdviceAmalgamation(
             sump1 ∘ sumx2, [sumx2, sump1], String[], String[])
+        @test amlg12.advisors == AdviceAmalgamation([sumx2, sump1]).advisors
+        @test AdviceAmalgamation(amlg12).advisors == Advice[] # no plugins
         amlg21 = AdviceAmalgamation(
             sumx2 ∘ sump1, [sump1, sumx2], String[], String[])
         amlg321 = AdviceAmalgamation(
@@ -98,12 +112,18 @@ end
         # Create a plugin
         plg = Plugin(string(gensym()), [sump1, sumx2])
         push!(PLUGINS, plg)
+        @test Plugin("", [sumx2.f]).advisors == Plugin("", [sumx2]).advisors
         # Desire the plugin, then check the advice is incorperated correctly
         push!(amlg.plugins_wanted, plg.name)
         @test amlg.adviseall == sump1 ∘ sumx2
         @test amlg.advisors == [sumx2, sump1]
         @test amlg.plugins_wanted == [plg.name]
         @test amlg.plugins_used == [plg.name]
+        @test AdviceAmalgamation(amlg).advisors == amlg.advisors
+        let cltn = DataCollection()
+            push!(cltn.plugins, plg.name)
+            @test AdviceAmalgamation(cltn).advisors == amlg.advisors
+        end
         # Display
         @test sprint(show, amlg) == "AdviceAmalgamation($(plg.name) ✔)"
     end
@@ -120,6 +140,11 @@ end
             @macroexpand @advise a func(x)
         @test :(($(GlobalRef(DataToolkitBase, :_dataadvise))(source(a)))(func, x)) ==
             @macroexpand @advise source(a) func(x)
+        @test_throws LoadError eval(:(@advise (1, 2)))
+        @test_throws LoadError eval(:(@advise f()))
+        @test 2 == @advise sump1 sum(1)
+        @test 2 == @advise [sump1] sum(1)
+        @test 2 == @advise AdviceAmalgamation([sump1]) sum(1)
     end
     deleteat!(PLUGINS, length(PLUGINS)) # remove `plg`
 end
