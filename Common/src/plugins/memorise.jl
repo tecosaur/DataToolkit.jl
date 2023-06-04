@@ -16,7 +16,7 @@ memorise = true
 types to be memorised.
 """
 const MEMORISE_PLUGIN = Plugin("memorise", [
-    DataAdvice(
+    Advice(
         0,
         function (f::typeof(DataToolkitBase._read), dataset::DataSet, as::Type)
             memorise = @something(get(dataset, "memorise"), get(dataset, "memorize", false))
