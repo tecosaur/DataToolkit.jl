@@ -249,7 +249,7 @@ abstract type DataOperationException <: Exception end
 """
     CollectionVersionMismatch(version::Int)
 
-The version of the collection currently being acted on is not supported
+The `version` of the collection currently being acted on is not supported
 by the current version of $(@__MODULE__).
 
 # Example occurance

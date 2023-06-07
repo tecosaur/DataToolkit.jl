@@ -141,7 +141,7 @@ an advised call of `func(args...; kwargs...)`.
 end
 
 """
-    @advice [source] f(args...; kwargs...)
+    @advise [source] f(args...; kwargs...)
 
 Convert a function call `f(args...; kwargs...)` to an *advised* function call,
 where the advise collection is obtained from `source` or the first data-like\\*
