@@ -150,8 +150,13 @@ such as the command history.
 const REPL_NAME = :data_toolkit
 
 """
-An ANSI control sequence string that sets the style of the "data>"
-REPL indicator.
+The REPL prompt shown.
+"""
+const REPL_PROMPT = "data>"
+
+"""
+An ANSI control sequence string that sets the style of the "$REPL_PROMPT"
+REPL prompt.
 """
 const REPL_PROMPTSTYLE = Base.text_colors[:magenta]
 

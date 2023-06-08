@@ -1,11 +1,11 @@
 using REPL, REPL.LineEdit
 
 # ------------------
-# Setting up the 'data>' REPL and framework
+# Setting up the Data REPL and framework
 # ------------------
 
 @doc """
-A command that can be used in the `data>` REPL (accessible through '$REPL_KEY').
+A command that can be used in the Data REPL (accessible through '$REPL_KEY').
 
 A `ReplCmd` must have a:
 - `name`, a symbol designating the command keyword.
@@ -373,9 +373,9 @@ function init_repl()
 
     data_mode = LineEdit.Prompt(
         () -> if isempty(STACK)
-            "(⋅) data> "
+            "(⋅) $REPL_PROMPT "
         else
-            "($(first(STACK).name)) data> "
+            "($(first(STACK).name)) $REPL_PROMPT "
         end;
         prompt_prefix,
         prompt_suffix,
