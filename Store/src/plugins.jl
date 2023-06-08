@@ -1,4 +1,4 @@
-const STORE_GC_CONFIG_INFO = """
+const STORE_GC_CONFIG_INFO = md"""
 Four (system-wide) settings determine garbage collection behaviour:
 1. `auto_gc` (default $(DEFAULT_INVENTORY_CONFIG.auto_gc)): How often to
    automatically run garbage collection (in hours). Set to a non-positive value
