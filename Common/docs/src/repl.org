@@ -19,8 +19,25 @@ Core.eval(Main, quote
                   result = read(pipe, String)
                   wait(writer)
                   Markdown.MD([
-                      Markdown.Header{3}([Markdown.Code("$cmd")]),
-                      Markdown.Code("ansi", replace(result, r"\e\[\d+m" => ""))])
+                      Markdown.Header{2}([Markdown.Code("$cmd")]),
+                      Markdown.Code("ansi", replace(result, r"\e\[\d+m" => "")),
+                      Markdown.HorizontalRule()])
+              end
+              function datareplhelp(cmd::String; postrule::Bool=true)
+                  Markdown = $Markdown
+                  repl_cmd = DataToolkitCommon.DataToolkitBase.find_repl_cmd(first(eachsplit(cmd, ' ')))
+                  for subcmd in last(Iterators.peel(eachsplit(cmd, ' ')))
+                      repl_cmd = DataToolkitCommon.DataToolkitBase.find_repl_cmd(subcmd, commands = repl_cmd.execute)
+                  end
+                  header = Markdown.Header{2}([Markdown.Code("?$cmd")])
+                  desc = if repl_cmd.description isa Markdown.MD
+                      mdreformat(h::$Markdown.Header{n}) where {n} = $Markdown.Header{n+2}(h.text)
+                      mdreformat(md::Any) = md
+                      Markdown.MD(map(mdreformat, repl_cmd.description.content))
+                  else
+                      Markdown.Code("ansi", string(repl_cmd.description))
+                  end
+                  Markdown.MD(vcat([header, desc], ifelse(postrule, [Markdown.HorizontalRule()], [])))
               end
           end)
 nothing
@@ -30,10 +47,12 @@ nothing
 Main.datarepl("help")
 #+end_src
 
------
+#+begin_src @eval
+Main.datareplhelp("add")
+#+end_src
 
 #+begin_src @eval
-Main.datarepl("?add")
+Main.datareplhelp("check")
 #+end_src
 
 #+begin_src @eval
@@ -41,39 +60,31 @@ Main.datarepl("?config")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?check")
+Main.datareplhelp("config get")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?config get")
+Main.datareplhelp("config set")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?config set")
+Main.datareplhelp("config unset")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?config unset")
+Main.datareplhelp("edit")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?delete")
+Main.datareplhelp("init")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?edit")
+Main.datareplhelp("list")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?init")
-#+end_src
-
-#+begin_src @eval
-Main.datarepl("?list")
-#+end_src
-
-#+begin_src @eval
-Main.datarepl("?make")
+Main.datareplhelp("make")
 #+end_src
 
 #+begin_src @eval
@@ -81,31 +92,35 @@ Main.datarepl("?plugin")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?plugin add")
+Main.datareplhelp("plugin add")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?plugin remove")
+Main.datareplhelp("plugin remove")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?plugin edit")
+Main.datareplhelp("plugin edit")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?plugin info")
+Main.datareplhelp("plugin info")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?plugin list")
+Main.datareplhelp("plugin list")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?search")
+Main.datareplhelp("remove")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?show")
+Main.datareplhelp("search")
+#+end_src
+
+#+begin_src @eval
+Main.datareplhelp("show")
 #+end_src
 
 #+begin_src @eval
@@ -113,19 +128,19 @@ Main.datarepl("?stack")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?stack promote")
+Main.datareplhelp("stack promote")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?stack demote")
+Main.datareplhelp("stack demote")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?stack load")
+Main.datareplhelp("stack load")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?stack remove")
+Main.datareplhelp("stack remove")
 #+end_src
 
 #+begin_src @eval
@@ -133,21 +148,21 @@ Main.datarepl("?store")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?store config")
+Main.datareplhelp("store config")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?store expunge")
+Main.datareplhelp("store expunge")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?store gc")
+Main.datareplhelp("store gc")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?store stats")
+Main.datareplhelp("store stats")
 #+end_src
 
 #+begin_src @eval
-Main.datarepl("?help")
+Main.datareplhelp("help", postrule=false)
 #+end_src

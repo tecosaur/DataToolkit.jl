@@ -124,75 +124,88 @@ const STACK_SUBCOMMANDS = ReplCmd[
     ReplCmd{:stack_list}(
         "", "List the data collections of the data stack", stack_list),
     ReplCmd{:stack_promote}(
-        "promote", "Move an entry up the stack
+        "promote",
+        md"""Move an entry up the stack
 
-An entry can be identified using any of the following:
-- the current position in the stack
-- the name of the data collection
-- the UUID of the data collection
+          An entry can be identified using any of the following:
+          - The current position in the stack
+          - The name of the data collection
+          - The UUID of the data collection
 
-The number of positions the entry should be promoted by defaults to 1, but can
-optionally be specified by putting either an integer or the character '*' after
-the identifier. When '*' is given, the entry will be promoted to the top of the
-data stack.
+          The number of positions the entry should be promoted by defaults to 1,
+          but can optionally be specified by putting either an integer or the
+          character `*` after the identifier. When `*` is given, the entry will
+          be promoted to the top of the data stack.
 
-Examples with different identifier forms:
-  promote 2
-  promote mydata
-  promote 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48
+          ## Examples with different identifier forms
 
-Examples with different promotion degrees:
-  promote mydata
-  promote mydata 3
-  promote mydata *", stack_promote),
+              data> promote 2
+              data> promote mydata
+              data> promote 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48
+
+          ## Examples with different promotion degrees
+
+              data> promote mydata
+              data> promote mydata 3
+              data> promote mydata *""",
+        stack_promote),
     ReplCmd{:stack_demote}(
-        "demote", "Move an entry down the stack
+        "demote",
+        md"""Move an entry down the stack
 
-An entry can be identified using any of the following:
-- the current position in the stack
-- the name of the data collection
-- the UUID of the data collection
+          An entry can be identified using any of the following:
+          - The current position in the stack
+          - The name of the data collection
+          - The UUID of the data collection
 
-The number of positions the entry should be demoted by defaults to 1, but can
-optionally be specified by putting either an integer or the character '*' after
-the identifier. When '*' is given, the entry will be demoted to the bottom of the
-data stack.
+          The number of positions the entry should be demoted by defaults to 1,
+          but can optionally be specified by putting either an integer or the
+          character `*` after the identifier. When `*` is given, the entry will
+          be demoted to the bottom of the data stack.
 
-Examples with different identifier forms:
-  demote 2
-  demote mydata
-  demote 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48
+          ## Examples with different identifier forms
 
-Examples with different demotion degrees:
-  demote mydata
-  demote mydata 3
-  demote mydata *", stack_demote),
+              data> demote 2
+              data> demote mydata
+              data> demote 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48
+
+          ## Examples with different demotion degrees
+
+              data> demote mydata
+              data> demote mydata 3
+              data> demote mydata *""",
+        stack_demote),
     ReplCmd{:stack_load}(
-        "load", "Load a data collection onto the top of the stack
+        "load",
+        md"""Load a data collection onto the top of the stack
 
-The data collection should be given by a path to either:
-- a Data TOML file
-- a folder containing a 'Data.toml' file
+          The data collection should be given by a path to either:
+          - A Data TOML file
+          - A folder containing a 'Data.toml' file
 
-The path can be optionally preceeded by an position to insert the loaded
-collection into the stack at. The default behaviour is to put the new collection
-at the top of the stack.
+          The path can be optionally preceeded by an position to insert the
+          loaded collection into the stack at. The default behaviour is to put
+          the new collection at the top of the stack.
 
-Examples:
-  load path/to/mydata.toml
-  load 2 somefolder/", stack_load),
+          ## Examples
+              data> load path/to/mydata.toml
+              data> load 2 somefolder/""",
+        stack_load),
     ReplCmd{:stack_remove}(
-        "remove", "Remove an entry from the stack
+        "remove",
+        md"""Remove an entry from the stack
 
-An entry can be identified using any of the following:
-- the current position in the stack
-- the name of the data collection
-- the UUID of the data collection
+          An entry can be identified using any of the following:
+          - The current position in the stack
+          - The name of the data collection
+          - The UUID of the data collection
 
-Examples:
-  remove 2
-  remove mydata
-  remove 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48", stack_remove),
+          ## Examples
+
+              data> remove 2
+              data> remove mydata
+              data> remove 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48""",
+        stack_remove),
 ]
 
 function completions(::ReplCmd{:stack_load}, sofar::AbstractString)

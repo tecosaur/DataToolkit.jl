@@ -1,8 +1,9 @@
-const SEARCH_DOC = """
+const SEARCH_DOC = md"""
 Search for a particular data collection
 
-Usage:
-  search TEXT...
+## Usage
+
+    data> search TEXT...
 """
 
 function search(input::AbstractString)

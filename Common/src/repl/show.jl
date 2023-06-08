@@ -1,8 +1,9 @@
-const SHOW_DOC = """
+const SHOW_DOC = md"""
 Show the dataset refered to by an identifier
 
-Usage:
-  show IDENTIFIER
+## Usage
+
+    data> show IDENTIFIER
 """
 
 function repl_show(input::AbstractString)

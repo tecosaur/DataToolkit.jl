@@ -1,21 +1,28 @@
-const INIT_DOC = "Initialise a new data collection
+const INIT_DOC = md"""
+Initialise a new data collection
 
 Optionally, a data collection name and path can be specified with the forms:
-  init [NAME]
-  init [PATH]
-  init [NAME] [PATH]
-  init [NAME] at [PATH]
 
-Plugins can also be specified by adding a \"with\" argument,
-  init [...] with PLUGINS...
-To omit the default set of plugins, put \"with -n\" instead, i.e.
-  init [...] with -n PLUGINS...
+    data> init [NAME]
+    data> init [PATH]
+    data> init [NAME] [PATH]
+    data> init [NAME] at [PATH]
 
-Example usages:
-  init
-  init /tmp/test
-  init test at /tmp/test
-  init test at /tmp/test with plugin1 plugin2"
+Plugins can also be specified by adding a `with` argument,
+
+    data> init [...] with PLUGINS...
+
+To omit the default set of plugins, put `with -n` instead, i.e.
+
+    data> init [...] with -n PLUGINS...
+
+# Usage
+
+    data> init
+    data> init /tmp/test
+    data> init test at /tmp/test
+    data> init test at /tmp/test with plugin1 plugin2
+"""
 
 """
     init(input::AbstractString)

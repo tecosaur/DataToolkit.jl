@@ -68,33 +68,42 @@ end
 
 const CONFIG_SUBCOMMANDS = ReplCmd[
     ReplCmd{:config_get}(
-        "get", "Get the current configuration
+        "get",
+        md"""Get the current configuration
 
-The parameter to get the configuration of should be given using TOML-style dot
-seperation.
+          The parameter to get the configuration of should be given using TOML-style
+          dot seperation.
 
-Examples:
-  get defaults.memorise
-  get my.\"special thing\".extra", config_get),
+          ## Examples
+
+              data> get defaults.memorise
+              data> get my.\"special thing\".extra""",
+        config_get),
     ReplCmd{:config_set}(
-        "set", "Set a configuration property
+        "set",
+        md"""Set a configuration property
 
-The parameter to set the configuration of should be given using TOML-style dot
-seperation.
+           The parameter to set the configuration of should be given using TOML-style
+           dot seperation.
 
-Similarly, the new value should be expressed using TOML syntax.
+           Similarly, the new value should be expressed using TOML syntax.
 
-Examples:
-  set defaults.memorise true
-  set my.\"special thing\".extra {a=1, b=2}", config_set),
+           ##Examples
+
+               data> set defaults.memorise true
+               data> set my.\"special thing\".extra {a=1, b=2}""",
+        config_set),
     ReplCmd{:config_unset}(
-        "unset", "Remove a configuration property
+        "unset",
+        md"""Remove a configuration property
 
-The parameter to be removed should be given using TOML-style dot seperation.
+        The parameter to be removed should be given using TOML-style dot seperation.
 
-Examples:
-  unset defaults.memorise
-  unset my.\"special thing\".extra", config_unset),
+        ## Examples
+
+            data> unset defaults.memorise
+            data> unset my.\"special thing\".extra""",
+        config_unset),
 ]
 
 """

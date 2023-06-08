@@ -1,13 +1,14 @@
-const CHECK_DOC = """
+const CHECK_DOC = md"""
 Check the state for potential issues
 
 By default, this operates on the active collection, however it can
 also be applied to any other collection or a specific data set.
 
-Usage:
-  check (runs on the active collection)
-  check COLLECTION
-  check IDENTIFIER
+## Usage
+
+    data> check (runs on the active collection)
+    data> check COLLECTION
+    data> check IDENTIFIER
 """
 
 function repl_lint(input::AbstractString)

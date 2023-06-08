@@ -8,12 +8,12 @@ import DataToolkitBase: load, save, storage,
 using PrecompileTools
 using Compat
 
-using Dates
 using Tables
 using CRC32c: crc32c
-using UUIDs
-using TOML
+using Dates
 using Markdown: @md_str
+using TOML
+using UUIDs
 
 # Defined in `plugins/log.jl`, but also wanted for the store plugins.
 function should_log_event end

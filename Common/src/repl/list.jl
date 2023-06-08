@@ -1,11 +1,12 @@
-const LIST_DOC = """
+const LIST_DOC = md"""
 List the datasets in a certain collection
 
 By default, the datasets of the active collection are shown.
 
-Usage:
-  list (lists dataset of the active collection)
-  list COLLECTION
+## Usage
+
+    data> list (lists dataset of the active collection)
+    data> list COLLECTION
 """
 
 function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(stdout)[2])

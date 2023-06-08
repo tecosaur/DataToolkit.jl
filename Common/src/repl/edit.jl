@@ -1,13 +1,14 @@
 import InteractiveUtils.edit
 
-const EDIT_DOC = """
+const EDIT_DOC = md"""
 Edit the specification of a dataset
 
 Open the specified dataset as a TOML file for editing,
 and reload the dataset from the edited contents.
 
-Usage:
-  edit IDENTIFIER
+## Usage
+
+    data> edit IDENTIFIER
 """
 
 function deep_diff(old::Dict, new::Dict, parents::Vector{String}=String[])

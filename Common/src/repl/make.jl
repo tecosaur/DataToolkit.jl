@@ -1,14 +1,15 @@
 import InteractiveUtils.edit
 
-const MAKE_DOC = """
+const MAKE_DOC = md"""
 Create a new data set from existing information
 
 This drops you into a sandbox where you can interactively develop
 a script to produce a new data set.
 
-Usage:
-  make
-  make new_dataset_name
+## Usage
+
+    data> make
+    data> make new_dataset_name
 """
 
 const MAKE_INFO_BANNER = "\

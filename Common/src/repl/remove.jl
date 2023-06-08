@@ -1,8 +1,9 @@
-const REMOVE_DOC = """
+const REMOVE_DOC = md"""
 Remove a data set
 
-Usage:
-  remove IDENTIFIER
+## Usage
+
+    data> remove IDENTIFIER
 """
 
 """

@@ -229,32 +229,43 @@ const STORE_SUBCMDS =
             "config", "Manage configuration",
             ReplCmd[
                 ReplCmd{:store_config_get}(
-                    "get", "Get the current configuration\n\n$STORE_GC_CONFIG_INFO",
+                    "get", MD(md"Get the current configuration",
+                              STORE_GC_CONFIG_INFO),
                     repl_config_get),
                 ReplCmd{:store_config_set}(
-                    "set", "Set a configuration parameter\n\n$STORE_GC_CONFIG_INFO",
+                    "set", MD(md"Set a configuration parameter",
+                              STORE_GC_CONFIG_INFO),
                     repl_config_set),
                 ReplCmd{:store_config_reset}(
-                    "reset", "Set a configuration parameter\n\n$STORE_GC_CONFIG_INFO",
+                    "reset", MD(md"Set a configuration parameter",
+                                STORE_GC_CONFIG_INFO),
                     repl_config_reset)]),
         ReplCmd{:store_expunge}(
-            "expunge", """Remove a data collection from the store
-                          \nUsage:\n  expunge [collection name or UUID]""",
+            "expunge",
+            md"""Remove a data collection from the store
+                 ## Usage
+
+                     data> expunge [collection name or UUID]""",
             repl_expunge),
         ReplCmd{:store_fetch}(
-            "fetch", """Fetch data storage sources
+            "fetch",
+            md"""Fetch data storage sources
 
-                        A particular collection or data set can be specified with
-                            fetch [collection or data set name or UUID]
-                        Without specifying a particular target, all data sets
-                        are fetched.""",
+               A particular collection or data set can be specified with
+
+                   data> fetch [collection or data set name or UUID]
+
+               Without specifying a particular target, all data sets
+               are fetched.""",
             repl_fetch),
         ReplCmd{:store_gc}(
-            "gc", "Garbage Collect
+            "gc",
+            md"""Garbage Collect
 
-Scan the inventory and perform a garbage collection sweep.
+                 Scan the inventory and perform a garbage collection sweep.
 
-Optionally provide the -d/--dryrun flag to prevent file deletion.",
+                 Optionally provide the `-d`/`--dryrun` flag to prevent
+                 file deletion.""",
             repl_gc),
         ReplCmd{:store_stats}(
             "stats", "Show statistics about the data store",

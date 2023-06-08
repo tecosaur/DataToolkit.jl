@@ -1,31 +1,44 @@
-const ADD_DOC = "Add a data set to the current collection
+const ADD_DOC = md"""
+Add a data set to the current collection
+
+## Usage
 
 This will interactively ask for all required information.
 
-Optionally, the name and source can be specified using the following forms:
-  add NAME
-  add NAME from SOURCE
-  add from SOURCE
-As a shorthand, 'f' can be used instead of 'from'.
+Optionally, the *name* and *source* can be specified using the following forms:
 
-The transformers drivers used can also be specified by using a 'via' argument
-before 'from', with a form like so:
-  add via TRANSFORMERS...
-  add NAME via TRANSFORMERS... from SOURCE
-The type of transformer can also be specified using flags. Namely storage (-s),
-loader (-l), and writer (-w). For example:
-  add via -s web -l csv
+    data> add NAME
+    data> add NAME from SOURCE
+    data> add from SOURCE
+
+As a shorthand, `f` can be used instead of `from`.
+
+The transformers drivers used can also be specified by using a `via` argument
+before `from`, with a form like so:
+
+    data> add via TRANSFORMERS...
+    data> add NAME via TRANSFORMERS... from SOURCE
+
+The *type* of transformer can also be specified using flags. Namely storage (`-s`),
+loader (`-l`), and writer (`-w`). For example:
+
+    data> add via -s web -l csv
+
 Invalid transformer drivers are automatically skipped, so one could use:
-  add via -sl web csv
-which would be equivalent to `add via -s web csv -l web csv`, but only 'web'
-will be reccognised as a valid storage backend and 'csv' as a valid loader.
-This works well in most cases, which is why '-sl' are the default flags.
 
-Full examples:
-  add iris from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
-  add iris via web csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
-  add iris via -s web -l csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
-  add \"from\" from.txt # add a data set with the name from"
+    data> add via -sl web csv
+
+which would be equivalent to `add via -s web csv -l web csv`, but only `web`
+will be reccognised as a valid storage backend and `csv` as a valid loader.
+This works well in most cases, which is why `-sl` are the default flags.
+
+## Examples
+
+    data> add iris from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+    data> add iris via web csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+    data> add iris via -s web -l csv from https://github.com/mwaskom/seaborn-data/blob/master/iris.csv
+    data> add \"from\" from.txt # add a data set with the name from
+"""
 
 function add(input::AbstractString)
     confirm_stack_nonempty() || begin
