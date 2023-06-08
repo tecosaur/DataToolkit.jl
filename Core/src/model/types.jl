@@ -242,8 +242,8 @@ struct Advice{func, context} <: Function
         if length(validmethods) === 0
             throw(ArgumentError("Transducing function $f had no valid methods."))
         end
-        functype, context = first(validmethods).sig.types[[2, 3]]
-        new{functype, context}(priority, f)
+        functype, context = first(validmethods).sig.types[[2, 3:end]]
+        new{functype, Tuple{context...}}(priority, f)
     end
 end
 
