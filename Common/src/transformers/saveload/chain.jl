@@ -135,3 +135,38 @@ function create(::Type{DataLoader{:chain}}, source::String, dataset::DataSet)
         end
     end
 end
+
+const CHAIN_DOC = md"""
+Chain multiple transformers together
+
+# Input/Output
+
+The `chain` loader can accept any form of input, and produce any form of output.
+
+Writing is not currently supported.
+
+# Usage examples
+
+```toml
+[[iris.loader]]
+driver = "chain"
+loader = ["gzip", "csv"]
+```
+
+```toml
+[[chained.loader]]
+driver = "chain"
+
+    [[chained.loader.loaders]]
+    driver = "gzip"
+
+    [[chained.loader.loaders]]
+    driver = "csv"
+
+    [[chained.loader.loaders]]
+    driver = "julia"
+    input = "DataFrame"
+    path = "scripts/custom_postprocessing.jl"
+    type = "DataFrame"
+```
+"""

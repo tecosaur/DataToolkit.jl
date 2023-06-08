@@ -1,5 +1,5 @@
 #+title: Log
 
-#+begin_src @docs
-DataToolkitCommon.LOG_PLUGIN
+#+begin_src @eval
+Main.DataToolkitCommon.DataToolkitBase.plugin_info("log")
 #+end_src

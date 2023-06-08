@@ -1,39 +1,5 @@
 #+title: Chain
 
-* Description
-
-The =chain= loader enables the chaining of multiple loading transformers.
-
-* Input/output
-
-The =chain= loader can accept any form of input, and produce any form of output.
-Writing is not currently supported.
-
-* Required packages
-
-None
-
-* Usage examples
-
-#+begin_src toml
-[[iris.loader]]
-driver = "chain"
-loader = ["gzip", "csv"]
-#+end_src
-
-#+begin_src toml
-[[chained.loader]]
-driver = "chain"
-
-    [[chained.loader.loaders]]
-    driver = "gzip"
-
-    [[chained.loader.loaders]]
-    driver = "csv"
-
-    [[chained.loader.loaders]]
-    driver = "julia"
-    input = "DataFrame"
-    path = "scripts/custom_postprocessing.jl"
-    type = "DataFrame"
+#+begin_src @eval
+Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:chain)
 #+end_src

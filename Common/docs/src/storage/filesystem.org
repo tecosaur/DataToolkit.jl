@@ -1,28 +1,5 @@
 #+title: Filesystem
 
-* Description
-
-The =filesystem= storage driver provides *read* and *write* access to local files.
-
-* Required packages
-
-None
-
-* Parameters
-
-- path :: The path to the file in question, relative to the =Data.toml= if
-  applicable, otherwise relative to the current working directory.
-
-* Usage examples
-
-#+begin_src toml
-[[iris.loader]]
-driver = "filesystem"
-path = "iris.csv"
-#+end_src
-
-#+begin_src toml
-[[iris.loader]]
-driver = "filesystem"
-path = "~/data/iris.csv"
+#+begin_src @eval
+Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:filesystem)
 #+end_src

@@ -1,5 +1,5 @@
 #+title: Versions
 
-#+begin_src @docs
-DataToolkitCommon.VERSIONS_PLUGIN
+#+begin_src @eval
+Main.DataToolkitCommon.DataToolkitBase.plugin_info("versions")
 #+end_src

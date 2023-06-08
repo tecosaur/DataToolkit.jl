@@ -1,5 +1,5 @@
 #+title: Cache
 
-#+begin_src @docs
-DataToolkitCommon.Store.CACHE_PLUGIN
+#+begin_src @eval
+Main.DataToolkitCommon.DataToolkitBase.plugin_info("cache")
 #+end_src

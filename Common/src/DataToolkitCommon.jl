@@ -13,6 +13,7 @@ using Tables
 using CRC32c: crc32c
 using UUIDs
 using TOML
+using Markdown: @md_str
 
 # Defined in `plugins/log.jl`, but also wanted for the store plugins.
 function should_log_event end
@@ -74,6 +75,42 @@ function __init__()
     @dataplugin LOG_PLUGIN
     @dataplugin VERSIONS_PLUGIN
     @dataplugin MEMORISE_PLUGIN :default
+
+    append!(DataToolkitBase.TRANSFORMER_DOCUMENTATION,
+            [(:storage, :filesystem) => FILESYSTEM_DOC,
+             (:storage, :null) => NULL_S_DOC,
+             (:storage, :passthrough) => PASSTHROUGH_S_DOC,
+             (:storage, :raw) => RAW_DOC,
+             (:storage, :web) => WEB_DOC,
+             (:loader, :chain) => CHAIN_DOC,
+             (:loader, :gzip) => COMPRESSION_DOC,
+             (:loader, :zlib) => COMPRESSION_DOC,
+             (:loader, :deflate) => COMPRESSION_DOC,
+             (:loader, :bzip2) => COMPRESSION_DOC,
+             (:loader, :xz) => COMPRESSION_DOC,
+             (:loader, :zstd) => COMPRESSION_DOC,
+             (:loader, :csv) => CSV_DOC,
+             (:loader, :delim) => DELIM_DOC,
+             (:loader, Symbol("io->file")) => IOTOFILE_DOC,
+             (:loader, :jld2) => JLD2_DOC,
+             (:loader, :json) => JSON_DOC,
+             (:loader, :julia) => JULIA_DOC,
+             (:loader, :passthrough) => PASSTHROUGH_L_DOC,
+             (:loader, :sqlite) => SQLITE_DOC,
+             (:loader, :xlsx) => XLSX_DOC,
+             (:loader, :zip) => ZIP_DOC,
+             (:writer, :gzip) => COMPRESSION_DOC,
+             (:writer, :zlib) => COMPRESSION_DOC,
+             (:writer, :deflate) => COMPRESSION_DOC,
+             (:writer, :bzip2) => COMPRESSION_DOC,
+             (:writer, :xz) => COMPRESSION_DOC,
+             (:writer, :zstd) => COMPRESSION_DOC,
+             (:writer, :csv) => CSV_DOC,
+             (:writer, :delim) => DELIM_DOC,
+             (:writer, :json) => JSON_DOC,
+             (:writer, :julia) => JULIA_DOC,
+             (:writer, :sqlite) => SQLITE_DOC,
+             ])
 end
 
 include("precompile.jl")
