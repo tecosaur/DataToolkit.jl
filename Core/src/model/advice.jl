@@ -1,4 +1,4 @@
-Advice(f::Function) = Advice(DEFAULT_DATA_ADVISOR_PRIORITY, f)
+Advice(@nospecialize(f::Function)) = Advice(DEFAULT_DATA_ADVISOR_PRIORITY, f)
 
 Base.methods(dt::Advice) = methods(dt.f)
 
@@ -8,8 +8,9 @@ Base.methods(dt::Advice) = methods(dt.f)
 Apply `advice` to the function call `func(args...; kwargs...)`, and return the
 new `(post, func, args, kwargs)` tuple.
 """
-function (dt::Advice{F, C})(
-    (post, func, args, kwargs)::Tuple{Function, Function, Tuple, NamedTuple}) where {F, C}
+function (dt::Advice{F, C})(callform::Tuple{Function, Function, Tuple, NamedTuple}) where {F, C}
+    @nospecialize callform
+    post, func, args, kwargs = callform
     # Abstract-y `typeof`.
     atypeof(val::Any) = typeof(val)
     atypeof(val::Type) = Type{val}
@@ -39,6 +40,7 @@ function (dt::Advice{F, C})(
 end
 
 function (dt::Advice)(func::Function, args...; kwargs...)
+    @nospecialize func args kwargs
     atypeof(val::Any) = typeof(val)
     atypeof(val::Type) = Type{val}
     if hasmethod(dt.f, Tuple{typeof(func), atypeof.(args)...}, keys(kwargs))
@@ -88,12 +90,13 @@ function AdviceAmalgamation(advisors::Vector{<:Advice})
     AdviceAmalgamation(∘(reverse(advisors)...), advisors, String[], String[])
 end
 
-function (dta::AdviceAmalgamation)(
-    annotated_func_call::Tuple{Function, Function, Tuple, NamedTuple})
+function (dta::AdviceAmalgamation)(@nospecialize(
+    annotated_func_call::Tuple{Function, Function, Tuple, NamedTuple}))
     dta.adviseall(annotated_func_call)
 end
 
 function (dta::AdviceAmalgamation)(func::Function, args...; kwargs...)
+    @nospecialize func args kwargs
     post::Function, func2::Function, args2::Tuple, kwargs2::NamedTuple =
         dta((identity, func, args, merge(NamedTuple(), kwargs)))
     invokepkglatest(func2, args2...; kwargs2...) |> post
