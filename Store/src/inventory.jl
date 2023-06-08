@@ -330,16 +330,16 @@ with that prefix (rounded to `digits`), and the units as a string.
 ## Examples
 
 ```jldoctest; setup = :(import DataToolkitCommon.Store.humansize)
-julia> humasize(123)
+julia> humansize(123)
 (123, "B")
 
-julia> humasize(1234)
+julia> humansize(1234)
 (1.2, "KiB")
 
-julia> DataToolkit.Common.Store.humansize(1000^3)
+julia> humansize(1000^3)
 (954, "MiB")
 
-julia> DataToolkit.Common.Store.humansize(1024^3)
+julia> humansize(1024^3)
 (1.0, "GiB")
 ```
 """
