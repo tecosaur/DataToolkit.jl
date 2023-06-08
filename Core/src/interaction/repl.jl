@@ -10,7 +10,7 @@ A command that can be used in the `data>` REPL (accessible through '$REPL_KEY').
 A `ReplCmd` must have a:
 - `name`, a symbol designating the command keyword.
 - `trigger`, a string used as the command trigger (defaults to `String(name)`).
-- `description`, a string giving a short overview of the functionality.
+- `description`, a short overview of the functionality as a `string` or `display`able object.
 - `execute`, either a list of sub-ReplCmds, or a function which will perform the
   command's action. The function must take a single argument, the rest of the
   command as an `AbstractString` (for example, 'cmd arg1 arg2' will call the
@@ -19,10 +19,10 @@ A `ReplCmd` must have a:
 # Constructors
 
 ```julia
-ReplCmd{name::Symbol}(trigger::String, description::String, execute::Function)
-ReplCmd{name::Symbol}(description::String, execute::Function)
-ReplCmd(name::Union{Symbol, String}, trigger::String, description::String, execute::Function)
-ReplCmd(name::Union{Symbol, String}, description::String, execute::Function)
+ReplCmd{name::Symbol}(trigger::String, description::Any, execute::Function)
+ReplCmd{name::Symbol}(description::Any, execute::Function)
+ReplCmd(name::Union{Symbol, String}, trigger::String, description::Any, execute::Function)
+ReplCmd(name::Union{Symbol, String}, description::Any, execute::Function)
 ```
 
 # Examples
@@ -44,7 +44,7 @@ completions(::ReplCmd, sofar::AbstractString) # -> list relevant candidates
 ```
 """ ReplCmd
 
-ReplCmd{name}(description::String, execute::Union{Function, Vector{ReplCmd}}) where {name} =
+ReplCmd{name}(description::Any, execute::Union{Function, Vector{ReplCmd}}) where {name} =
     ReplCmd{name}(String(name), description, execute)
 
 ReplCmd(name::Union{Symbol, String}, args...) =
@@ -59,9 +59,24 @@ Print the help string for `r`.
 
 Print the help string and subcommand table for `r`.
 """
-help(r::ReplCmd) = println(' ', rstrip(r.description))
+function help(r::ReplCmd)
+    if r.description isa AbstractString
+        for line in eachsplit(rstrip(r.description), '\n')
+            println("  ", line)
+        end
+    else
+        display(r.description)
+    end
+end
 function help(r::ReplCmd{<:Any, Vector{ReplCmd}})
-    print(' ', rstrip(r.description), "\n\n")
+    if r.description isa AbstractString
+        for line in eachsplit(rstrip(r.description), '\n')
+            println("  ", line)
+        end
+    else
+        display(r.description)
+    end
+    print('\n')
     help_cmd_table(commands = r.execute, sub=true)
 end
 
@@ -108,13 +123,15 @@ const HELP_CMD_HELP =
        transformer name prefixed by ':' (i.e. ':transformer'), and a list of documented
        transformers can be pulled up with just ':'.
 
-       Usage:
-           help
-           help CMD
-           help PARENT CMD
-           PARENT help CMD
-           help :
-           help :TRANSFORMER
+       Usage
+       =====
+
+       $REPL_PROMPT help
+       $REPL_PROMPT help CMD
+       $REPL_PROMPT help PARENT CMD
+       $REPL_PROMPT PARENT help CMD
+       $REPL_PROMPT help :
+       $REPL_PROMPT help :TRANSFORMER
        """
 
 """
@@ -649,17 +666,17 @@ of `commands`, under the headers "Command" and "Action" (or "Subcommand" if
 `sub` is set). The table is truncated if necessary so it is no wider than
 `maxwidth`.
 """
-function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
+function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2]-2,
                         commands::Vector{ReplCmd}=REPL_CMDS,
                         sub::Bool=false)
     help_headings = [if sub "Subcommand" else "Command" end, "Action"]
     help_lines = map(commands) do replcmd
-        [replcmd.trigger,
-         first(split(replcmd.description, '\n'))]
+        String[replcmd.trigger,
+               first(split(string(replcmd.description), '\n'))]
     end
     push!(help_lines, ["help", "Display help text for commands and transformers"])
     map(displaytable(help_headings, help_lines; maxwidth)) do row
-        print(stderr, ' ', row, '\n')
+        print(stderr, "  ", row, '\n')
     end
 end
 
@@ -672,7 +689,7 @@ If `cmd` is empty, list `commands` via `help_cmd_table`.
 function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if all(isspace, cmd)
         help_cmd_table(; commands)
-        println("\n \e[2;3mCommands can also be triggered by unique prefixes or substrings.\e[22;23m")
+        println("\n  \e[2;3mCommands can also be triggered by unique prefixes or substrings.\e[22;23m")
     else
         repl_cmd = find_repl_cmd(strip(cmd); commands, warn=true)
         if !isnothing(repl_cmd)
