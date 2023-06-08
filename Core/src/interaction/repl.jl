@@ -95,6 +95,29 @@ not implemented.
 allcompletions(::ReplCmd) = String[]
 
 """
+The help-string for the help command itself.
+This contains the template string \"<SCOPE>\", which
+is replaced with the relevant scope at runtime.
+"""
+const HELP_CMD_HELP =
+    """Display help information on the availible <SCOPE> commands
+
+       For convenience, help information can also be accessed via '?', e.g. '?help'.
+
+       Help for data transformers can also be accessed by asking for the help of the
+       transformer name prefixed by ':' (i.e. ':transformer'), and a list of documented
+       transformers can be pulled up with just ':'.
+
+       Usage:
+           help
+           help CMD
+           help PARENT CMD
+           PARENT help CMD
+           help :
+           help :TRANSFORMER
+       """
+
+"""
     find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                   commands::Vector{ReplCmd}=REPL_CMDS,
                   scope::String="Data REPL")
@@ -131,9 +154,7 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
     if cmd == "" && "" in all_cmd_names
         replcmds[findfirst("" .== all_cmd_names)]
     elseif length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd)) || length(cmd) == 0
-        ReplCmd{:help}("help",
-                       "Display help information on the availible $scope commands\n\n\
-                        For convenience, help information can also be accessed via '?', e.g. '?help'.",
+        ReplCmd{:help}("help", replace(HELP_CMD_HELP, "<SCOPE>" => scope),
                        cmd -> help_show(cmd; commands))
     elseif length(replcmds) == 1
         first(replcmds)
@@ -189,7 +210,9 @@ function execute_repl_cmd(line::AbstractString;
         execute_repl_cmd(string("help ", line[2:end]); commands, scope)
     elseif startswith("help", cmd) && !isempty(cmd) # help is special
         rest_parts = split(rest, limit=2)
-        if length(rest_parts) <= 1
+        if length(rest_parts) == 1 && startswith(first(rest_parts), ':')
+            help_show(Symbol(first(rest_parts)[2:end]))
+        elseif length(rest_parts) <= 1
             help_show(rest; commands)
         elseif find_repl_cmd(rest_parts[1]; commands) isa ReplCmd{<:Any, Vector{ReplCmd}}
             execute_repl_cmd(string(rest_parts[1], " help ", rest_parts[2]);
@@ -253,8 +276,16 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
         repl_cmd = find_repl_cmd(cmd_name; commands)
         complete = if !isnothing(repl_cmd) && line != cmd_name
             if repl_cmd isa ReplCmd{:help}
-                Vector{String}(filter(ns -> startswith(ns, rest),
-                                      getfield.(commands, :trigger)))
+                # This can't be a `completions(...)` call because we
+                # need to access `commands`.
+                if startswith(rest, ':') # transformer help
+                    filter(t -> startswith(t, rest),
+                           string.(':', TRANSFORMER_DOCUMENTATION .|>
+                               first .|> last |> unique))
+                else # command help
+                    Vector{String}(filter(ns -> startswith(ns, rest),
+                                          getfield.(commands, :trigger)))
+                end
             else
                 completions(repl_cmd, rest)
             end
@@ -626,7 +657,7 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
         [replcmd.trigger,
          first(split(replcmd.description, '\n'))]
     end
-    push!(help_lines, ["help", "Display help information on the available commands"])
+    push!(help_lines, ["help", "Display help text for commands and transformers"])
     map(displaytable(help_headings, help_lines; maxwidth)) do row
         print(stderr, ' ', row, '\n')
     end
@@ -649,4 +680,70 @@ function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
         end
     end
     nothing
+end
+
+"""
+    transformer_docs(name::Symbol, type::Symbol=:any)
+
+Retur the documentation for the transformer identified by `name`,
+or `nothing` if no documentation entry could be found.
+"""
+function transformer_docs(name::Symbol, type::Symbol=:any)
+    tindex = findfirst(
+        t -> first(t)[2] === name && (type === :any || first(t)[1] === type),
+        TRANSFORMER_DOCUMENTATION)
+    if !isnothing(tindex)
+        last(TRANSFORMER_DOCUMENTATION[tindex])
+    end
+end
+
+"""
+    transformers_printall()
+
+Print a list of all documented data transformers, by category.
+"""
+function transformers_printall()
+    docs = (storage = Pair{Symbol, Any}[],
+            loader = Pair{Symbol, Any}[],
+            writer = Pair{Symbol, Any}[])
+    for ((type, name), doc) in TRANSFORMER_DOCUMENTATION
+        if type ∈ (:storage, :loader, :writer)
+            push!(getfield(docs, type), name => doc)
+        else
+            @warn "Documentation entry for $name gives invalid transformer type $type (should be 'storage', 'loader', or 'writer')"
+        end
+    end
+    sort!.(values(docs), by = first)
+    for type in (:storage, :loader, :writer)
+        entries = getfield(docs, type)
+        printstyled(" $type transformers ($(length(entries)))\n",
+                    color=:blue, bold=true)
+        for (name, doc) in entries
+            printstyled("   • ", color=:blue)
+            println(name)
+        end
+        type === :writer || print('\n')
+    end
+end
+
+"""
+    help_show(transformer::Symbol)
+
+Show documentation of a particular data `transformer` (should it exist).
+
+In the special case that `transformer` is `Symbol("")`, a list of all documented
+transformers is printed.
+"""
+function help_show(transformer::Symbol)
+    if transformer === Symbol("") # List all documented transformers
+        transformers_printall()
+    else
+        tdocs = transformer_docs(transformer)
+        if isnothing(tdocs)
+            printstyled(" ! ", color=:red, bold=true)
+            println("There is no documentation for the '$transformer' transformer")
+        else
+            display(tdocs)
+        end
+    end
 end

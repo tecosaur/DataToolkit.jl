@@ -45,6 +45,7 @@
                 toplevel_execute_repl_cmd("?")
                 toplevel_execute_repl_cmd("?help")
                 toplevel_execute_repl_cmd("help help")
+                toplevel_execute_repl_cmd("help :")
             end
         end
         complete_repl_cmd("help ")

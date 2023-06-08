@@ -171,3 +171,10 @@ const REPL_USER_INPUT_COLOUR = :light_yellow
 The set of commands availible directly in the Data REPL.
 """
 const REPL_CMDS = ReplCmd[]
+
+"""
+List of `(category::Symbol, named::Symbol) => docs::Any` forms.
+
+`category` can be `:storage`, `:loader`, or `:writer`.
+"""
+const TRANSFORMER_DOCUMENTATION = Pair{Tuple{Symbol, Symbol}, Any}[]
