@@ -38,19 +38,23 @@ set:
 2. The transformation of /data/ into /information/, termed a =loader=
 3. The transformation of /information/ into /data/, termed a =writer=
 
+#+begin_center
 [[file:assets/data-flow-horizontal.svg]]
+#+end_center
 
 ** Transformers, Data Sets, and Data Collections
 
 Each =DataSet= can have any number of =storage=, =loader=, and =writer= transformers.
-All =DataSet=​s must be part of a =DataCollection= which essentially provides a
+All data sets must be part of a =DataCollection= which essentially provides a
 context for the existence of a particular data set (e.g. you might store
-Fisher's iris data under a "Flower measurements" data collection). The
-=DataCollection=​s loaded at any one time form the data collection /stack/. The stack
+Fisher's iris data under a "Flower measurements" data collection). The data
+collections loaded at any one time form the data collection /stack/. The stack
 essentially acts as a load-path, if you just ask for the =iris= data set, it will
 be fetched from the top collection on the stack that can satisfy it.
 
+#+begin_center
 [[file:assets/data-collection-structure.svg]]
+#+end_center
 
 It is also worth noting that "child" elements of this structure (data sets and
 transformers) contain a link back to their parent, and so from any part of a
