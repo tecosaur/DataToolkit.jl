@@ -9,7 +9,7 @@ on the transformers and plugins available see the [[https://tecosaur.github.io/D
 
 Poor data management approaches are rampant. This is well-recognised, and so
 people have created tools that attempt to tackle subsets of the problem --- such
-as [[https://www.datalad.org/][DataLad]], the [[https://docs.kedro.org/en/stable/data/data_catalog.html][Kedro data catalogue]], [[https://snakemake.github.io/][Snakemake]], [[https://www.nextflow.io/][Nextflow]], [[https://intake.readthedocs.io/en/latest/][Intake]], [[https://pkgdocs.julialang.org/v1/artifacts/][Pkg.jl's
+as [[https://www.datalad.org/][DataLad]], [[https://dvc.org/][DVC]], the [[https://docs.kedro.org/en/stable/data/data_catalog.html][Kedro data catalogue]], [[https://snakemake.github.io/][Snakemake]], [[https://www.nextflow.io/][Nextflow]], [[https://intake.readthedocs.io/en/latest/][Intake]], [[https://pkgdocs.julialang.org/v1/artifacts/][Pkg.jl's
 Artifacts]], and [[https://github.com/JuliaComputing/DataSets.jl][DataSets.jl]]. These tools contain many good ideas, but all fall
 short of the combination of /convenience/ and /robustness/ that is possible.
 
