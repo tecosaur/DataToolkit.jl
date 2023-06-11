@@ -56,9 +56,9 @@ the command (e.g.  =it=).
  ✓ Created new data collection 'datatoolkit_tutorial' at /home/tec/Documents/datatoolkit_tutorial/Data.toml
 #+end_example
 
-#+begin_note
+#+begin_tip
 There are a few other ways =init= can be used, see the full docs with =help init=.
-#+end_note
+#+end_tip
 
 If we look at the =~/Documents/datatoolkit_tutorial= folder, we should now see
 three files.
