@@ -1,0 +1,97 @@
+#+title: Tutorial
+
+In this tutorial... TODO
+
+* Initialising the data collection
+
+First, we will create a new environment to run through the tutorial in, and load
+the =DataToolkit= package.
+
+#+begin_src julia-repl
+julia> using Pkg
+
+julia> expanduser("~/Documents/datatoolkit_tutorial") |> mkpath |> cd
+
+julia> Pkg.activate(".")
+  Activating new project at `~/Documents/datatoolkit_tutorial`
+
+julia> Pkg.add("DataToolkit")
+   Resolving package versions...
+    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+  [dc83c90b] + DataToolkit
+  ...
+Precompiling project...
+
+julia> using DataToolkit
+#+end_src
+
+Notice that by typing =}= at an empty =julia>= prompt, the REPL prompt will change
+to =(⋅) data>= (in the same way that typing =]= enters the =pkg>= REPL). This is the
+"Data REPL", and the =(⋅)= prefix indicates the current project. There is no
+current project, and so the dot is shown.
+
+In the data REPL, we can see a list of all the available commands by typing =help=
+or =?=, which will pull up a command list like so:
+
+#+begin_example
+(⋅) data> help
+ Command  Action
+ ───────────────────────────────────────────────────────────
+ <cmd>    <brief description of what cmd does>
+ ...      ...
+ help     Display help information on the available commands
+#+end_example
+
+We will initialise a new data collection with the =init= command.
+
+#+begin_note
+We can use the full command (=init=), or any substring that uniquely identifies
+the command (e.g.  =it=).
+#+end_note
+
+#+begin_example
+(⋅) data> init
+ Create Data.toml for current project? [Y/n]: y
+ Name: tutorial
+ ✓ Created new data collection 'datatoolkit_tutorial' at /home/tec/Documents/datatoolkit_tutorial/Data.toml
+#+end_example
+
+#+begin_note
+There are a few other ways =init= can be used, see the full docs with =help init=.
+#+end_note
+
+If we look at the =~/Documents/datatoolkit_tutorial= folder, we should now see
+three files.
+
+#+begin_example
+shell> tree
+.
+├── Data.toml
+├── Manifest.toml
+└── Project.toml
+#+end_example
+
+Looking inside the =Data.toml=, we can see what a data collection with no data
+sets looks like:
+
+#+begin_src toml
+data_config_version = 0
+uuid = "f20a77d0-0dc9-41bb-875b-ad0bf42c90bd"
+name = "tutorial"
+plugins = ["store", "defaults", "memorise"]
+#+end_src
+
+At this point, we have created a new data collection, and seen what is created.
+If we close the Julia session and re-open a REPL in the =datatoolkit_test=
+project, loading =DataToolkit= will automatically cause the data collection we
+just created to be loaded as well, as can be seen in the prompt prefix.
+
+#+begin_src julia-repl
+julia> using DataToolkit
+
+(tutorial) data> # after typing '}'
+#+end_src
+
+* Adding a data set
+
+TODO
