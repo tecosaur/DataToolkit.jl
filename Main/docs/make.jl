@@ -30,6 +30,7 @@ makedocs(;
     format=Documenter.HTML(),
     pages=[
         "Introduction" => "index.md",
+        "Tutorial" => "tutorial.md",
         "Reference" => "reference.md",
     ],
     repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
