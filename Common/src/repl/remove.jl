@@ -22,7 +22,7 @@ function remove(input::AbstractString)
         return nothing
     end
     confirm_yn(" Are you sure you want to remove $(dataset.name)?") || return nothing
-    remove!(dataset)
+    delete!(dataset)
     printstyled(" ✓ Done\n", color=:green)
 end
 
