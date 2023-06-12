@@ -34,7 +34,7 @@ save = false
 To ensure data integrity, a checksum can be specified, and checked when saving
 to the store. For example,
 
-```
+```toml
 [[iris.storage]]
 checksum = "crc32c:f7ae7e64"
 ```
@@ -51,7 +51,7 @@ To explicitly specify no checksum, set the parameter to `false`.
 After a storage source is saved, the cache file can be made to expire after a
 certain period. This is done by setting the "lifetime" parameter of the storage, i.e.
 
-```
+```toml
 [[updatingdata.storage]]
 lifetime = "3 days"
 ```
