@@ -45,7 +45,7 @@ The `jld2` driver expects data to be provided via a `FilePath`.
 
 # Usage examples
 
-``` toml
+```toml
 [[sample.loader]]
 driver = "jld2"
 ```

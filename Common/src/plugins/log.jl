@@ -20,7 +20,7 @@ Log major data set events.
 
 ### Settings
 
-```
+```toml
 config.log.events = ["load", "save", "storage"] # the default
 ```
 
