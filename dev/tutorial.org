@@ -1,8 +1,10 @@
 #+title: Tutorial
 
-In this tutorial... TODO
+In this tutorial you will be taken through some of the main usage patterns
+involving =DataToolkit=. After doing the first step (/Initialising a Data
+Collection/), all other sections can be treated as self-contained exercises.
 
-* Initialising the data collection
+* Initialising a Data Collection
 
 First, we will create a new environment to run through the tutorial in, and load
 the =DataToolkit= package.
@@ -97,7 +99,7 @@ julia> using DataToolkit
 (tutorial) data> # after typing '}'
 #+end_src
 
-* Adding the Iris data set
+* Adding and loading the Iris data set
 
 Now we have a data collection, we can add data sets too it. Fisher's /Iris/ data
 set is part of the =scikit-learn= repository, which makes it fairly easy to find a
@@ -114,6 +116,17 @@ We can easily add this as a =DataSet= using the =add= Data REPL command,
   Storage: web(IO, Vector{UInt8}, String, FilePath)
   Loaders: csv(DataFrame, Matrix, File)
 #+end_example
+
+#+begin_note
+Say halfway through we decide we don't want to proceed with this Data REPL
+command, at any point we can interrupt it with =^C= (Control + =C=) and abort the
+action. This works with other Data REPL commands in the same way.
+
+#+begin_example
+(tutorial) data> add iris https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+ Description:  ! Aborted
+#+end_example
+#+end_note
 
 The =add= command tries to be a bit clever and guess how the data should be
 acquired and loaded. In this case it (correctly) guessed that this file should
@@ -182,8 +195,8 @@ Precompiling project...
 #+end_example
 
 #+begin_note
-We haven't installed the =CSV= package, but with the lazy-loading system, when
-using the CSV loaded we are presented with the option to install it on-the-fly.
+We haven't installed the =CSV= package, but thanks to the lazy-loading system we
+are presented with the option to install it on-the-fly.
 #+end_note
 
 Because ~read(dataset("iris"))~ is a fairly common pattern, for convenience there
@@ -343,7 +356,61 @@ The second, is that by setting =iris='s =web= storage driver's =checksum= proper
 future the =web= storage driver produces different data, this will now be caught
 and raised.
 
-# The /Boston Housing/
-# data set is part of the =RDatasets= package, and we can obtain a link to the raw
-# data file in the repository:
-# https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+* Multi-step analysis with the Boston Housing data set
+
+The /Boston Housing/ data set is part of the =RDatasets= package, and we can obtain
+a link to the raw data file in the repository:
+https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+
+As with the Iris data, we will use the =add= Data REPL command to conveniently
+create a new data set.
+
+#+begin_example
+(tutorial) data> add boston https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+ Description: The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass.
+ ✓ Created 'boston' (02968c42-828e-4f22-86b8-ec67ac629a03)
+ DataSet tutorial:boston
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: chain(DataFrame, Matrix, File)
+#+end_example
+
+This example is a bit more complicated because we have a gzipped CSV. There is a
+gzip-decompressing loader, and a CSV loader, but no single loader that does
+both. Thankfully, there is a special loader called =chain= that allows for
+multiple loaders to be /chained/ together. We can see it's automatically been used
+here, and if we inspect the =Data.toml= we an see the following generated
+representation of the boston housing data, in which the =gzip= and =csv= loaders are
+both used.
+
+#+begin_src toml
+[[boston]]
+uuid = "02968c42-828e-4f22-86b8-ec67ac629a03"
+description = "The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass."
+
+    [[boston.storage]]
+    driver = "web"
+    url = "https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz"
+
+    [[boston.loader]]
+    driver = "chain"
+    loaders = ["gzip", "csv"]
+    type = ["DataFrame", "Matrix", "CSV.File"]
+#+end_src
+
+Thanks to this cleverness, obtaining the Boston Housing data as a nice
+~DataFrame~ is as simple as ~d"boston"~.
+
+#+begin_src julia-repl
+julia> d"boston"
+506×14 DataFrame
+ Row │ Crim     Zn       Indus    Chas   NOx      Rm       Age      Dis      Rad   ⋯
+     │ Float64  Float64  Float64  Int64  Float64  Float64  Float64  Float64  Int64 ⋯
+─────┼──────────────────────────────────────────────────────────────────────────────
+   1 │ 0.00632     18.0     2.31      0    0.538    6.575     65.2   4.09        1 ⋯
+   2 │ 0.02731      0.0     7.07      0    0.469    6.421     78.9   4.9671      2
+   3 │ 0.02729      0.0     7.07      0    0.469    7.185     61.1   4.9671      2
+  ⋮  │    ⋮        ⋮        ⋮       ⋮       ⋮        ⋮        ⋮        ⋮       ⋮   ⋱
+ 504 │ 0.06076      0.0    11.93      0    0.573    6.976     91.0   2.1675      1
+ 505 │ 0.10959      0.0    11.93      0    0.573    6.794     89.3   2.3889      1
+ 506 │ 0.04741      0.0    11.93      0    0.573    6.03      80.8   2.505       1 ⋯
+#+end_src
