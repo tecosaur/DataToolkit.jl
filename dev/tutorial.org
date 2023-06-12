@@ -119,9 +119,9 @@ The =add= command tries to be a bit clever and guess how the data should be
 acquired and loaded. In this case it (correctly) guessed that this file should
 be downloaded from the web, and loaded as a CSV.
 
-This is how all =DataSet=​s are displayed, using the ~dataset~ function we can obtain
-any data set easily by name, and so ~dataset("iris")~ will show the same
-information.
+The =DataSet tutorial:iris= and =Storage:=​/​=Loaders:= lines are how all =DataSet=​s are
+displayed. Using the ~dataset~ function we can obtain any data set easily by name,
+and so ~dataset("iris")~ will show the same information.
 
 #+begin_src julia-repl
 julia> dataset("iris")
@@ -158,7 +158,7 @@ function. For instance, ~read(dataset("iris"), DataFrame)~ or
 ~read(dataset("iris"), Matrix)~. We can also omit the second argument, in which
 case the first form that /can/ be loaded will be (e.g. in this case since
 =DataFrames= is not loaded, =iris= can not be loaded as a ~DataFrame~, but it can be
-loaded as a ~Matrix~).
+loaded as a ~Matrix~, and so it will be).
 
 #+begin_example
 julia> read(dataset("iris"))
