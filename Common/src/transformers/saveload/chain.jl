@@ -123,8 +123,8 @@ function create(::Type{DataLoader{:chain}}, source::String, dataset::DataSet)
             if !isnothing(innerloader)
                 minimalspec(template) = Dict{String, Any}(
                     "driver" => template["driver"])
-                ospec = DataToolkitBase.@advise collection tospec(outerloader)
-                ispec = DataToolkitBase.@advise collection tospec(innerloader)
+                ospec = DataToolkitBase.@advise dataset tospec(outerloader)
+                ispec = DataToolkitBase.@advise dataset tospec(innerloader)
                 ["loaders" =>
                     if ospec == minimalspec(ospec) && ispec == minimalspec(ispec)
                         [ospec["driver"], ispec["driver"]]
