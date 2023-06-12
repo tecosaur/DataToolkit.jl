@@ -304,6 +304,45 @@ The headers are correct, but now the first line is being counted as part of the
 data. This can be fixed by editing =iris= again and setting =args.skipto= to =2= in
 the =csv= loader settings.
 
+The final =iris= entry in the =Data.toml= should look like so:
+
+#+begin_src toml
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+
+        [iris.loader.args]
+        header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+        skipto = 2
+#+end_src
+
+Now, you have a =Project.toml=, =Manifest.toml=, and =Data.toml= that can be relocated
+to other systems and ~d"iris"~ will consistently produce the exact same ~DataFrame~.
+
+** Bonus: ensuring the integrity of the downloaded data
+
+One of the three plugins used by default is the =store= plugin. It is responsible
+for caching IO data and checking data validity. For a more complete description
+of what it does, see the web docs or the Data REPL (sub)command =plugin info
+store=.
+
+There are two immediate impacts of this plugin we can easily observe. The first
+is that we can load the =iris= data set offline in a fresh Julia session, and in
+fact if we copy the =iris= specification into a separate data set it will re-use
+the /same/ downloaded data.
+
+The second, is that by setting =iris='s =web= storage driver's =checksum= property to
+="auto"=, the next time we load =iris= a checksum will be generated and saved. If in
+future the =web= storage driver produces different data, this will now be caught
+and raised.
+
 # The /Boston Housing/
 # data set is part of the =RDatasets= package, and we can obtain a link to the raw
 # data file in the repository:
