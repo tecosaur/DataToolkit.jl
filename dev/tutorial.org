@@ -36,10 +36,10 @@ or =?=, which will pull up a command list like so:
 #+begin_example
 (⋅) data> help
  Command  Action
- ───────────────────────────────────────────────────────────
+ ────────────────────────────────────────────────────────
  <cmd>    <brief description of what cmd does>
  ...      ...
- help     Display help information on the available commands
+ help     Display help text for commands and transformers
 #+end_example
 
 We will initialise a new data collection with the =init= command.
@@ -53,7 +53,7 @@ the command (e.g.  =it=).
 (⋅) data> init
  Create Data.toml for current project? [Y/n]: y
  Name: tutorial
- ✓ Created new data collection 'datatoolkit_tutorial' at /home/tec/Documents/datatoolkit_tutorial/Data.toml
+ ✓ Created new data collection 'tutorial' at /home/tec/Documents/datatoolkit_tutorial/Data.toml
 #+end_example
 
 #+begin_tip
@@ -81,6 +81,11 @@ name = "tutorial"
 plugins = ["store", "defaults", "memorise"]
 #+end_src
 
+#+begin_note
+The plugins =store=, =defaults=, and =memorise= are the default set of plugins, which
+is why we see them here. A minimal =Data.toml= would have ~plugins = []~.
+#+end_note
+
 At this point, we have created a new data collection, and seen what is created.
 If we close the Julia session and re-open a REPL in the =datatoolkit_test=
 project, loading =DataToolkit= will automatically cause the data collection we
@@ -92,6 +97,173 @@ julia> using DataToolkit
 (tutorial) data> # after typing '}'
 #+end_src
 
-* Adding a data set
+* Adding the Iris data set
 
-TODO
+Now we have a data collection, we can add data sets too it. Fisher's /Iris/ data
+set is part of the =scikit-learn= repository, which makes it fairly easy to find a
+link to it:
+https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+
+We can easily add this as a =DataSet= using the =add= Data REPL command,
+
+#+begin_example
+(tutorial) data> add iris https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+ Description: Fisher's famous Iris flower measurements
+ ✓ Created 'iris' (3f3d7714-22aa-4555-a950-78f43b74b81c)
+ DataSet tutorial:iris
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: csv(DataFrame, Matrix, File)
+#+end_example
+
+The =add= command tries to be a bit clever and guess how the data should be
+acquired and loaded. In this case it (correctly) guessed that this file should
+be downloaded from the web, and loaded as a CSV.
+
+This is how all =DataSet=​s are displayed, using the ~dataset~ function we can obtain
+any data set easily by name, and so ~dataset("iris")~ will show the same
+information.
+
+#+begin_src julia-repl
+julia> dataset("iris")
+DataSet tutorial:iris
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: csv(DataFrame, Matrix, File)
+#+end_src
+
+We can see from the =Storage: web(IO, Vector{UInt8}, String, FilePath)= line that
+the =web= storage driver is being used, and it can make the content available as
+an ~IO~, ~Vector{UInt8}~, ~String~, or ~FilePath~ (a string wrapper type provided by
+=DataToolkitBase= for dispatch purposes). Similarly, the =Loaders: csv(DataFrame,
+Matrix, File)= tells us that the =csv= loader is being used, and it can provide a
+~DataFrame~, ~Matrix~, or ~CSV.File~.
+
+If we look at the =Data.toml= again, we can see how the =iris= data set is
+represented:
+
+#+begin_src toml
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+#+end_src
+
+To obtain a particular loaded form of the data set, we can use the ~read~
+function. For instance, ~read(dataset("iris"), DataFrame)~ or
+~read(dataset("iris"), Matrix)~. We can also omit the second argument, in which
+case the first form that /can/ be loaded will be (e.g. in this case since
+=DataFrames= is not loaded, =iris= can not be loaded as a ~DataFrame~, but it can be
+loaded as a ~Matrix~).
+
+#+begin_example
+julia> read(dataset("iris"))
+[ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
+ │ Package CSV not found, but a package named CSV is available from a registry.
+ │ Install package?
+ │   (datatoolkit_tutorial) pkg> add CSV
+ └ (y/n/o) [y]:
+   Resolving package versions...
+    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+  [336ed68f] + CSV v0.10.11
+    Updating `~/Documents/datatoolkit_tutorial/Manifest.toml`
+Precompiling project...
+[ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
+150×5 Matrix{Float64}:
+ 5.1  3.5  1.4  0.2  0.0
+ 4.9  3.0  1.4  0.2  0.0
+ ...
+ 6.2  3.4  5.4  2.3  2.0
+ 5.9  3.0  5.1  1.8  2.0
+#+end_example
+
+#+begin_note
+We haven't installed the =CSV= package, but with the lazy-loading system, when
+using the CSV loaded we are presented with the option to install it on-the-fly.
+#+end_note
+
+Because ~read(dataset("iris"))~ is a fairly common pattern, for convenience there
+is a ~d""~ 'data set in loaded form' macro. ~d"iris"~ is equivalent to
+~read(dataset("iris"))~.
+
+Having the =iris= data as a ~Matrix~ is fine, but it would be nicer to have it as a
+~DataFrame~. Since that is the first format listed, if we just install =DataFrames=
+and ask for =iris= again (but this time using the ~d""~ macro).
+
+#+begin_src julia-repl
+julia> using DataFrames
+ │ Package DataFrames not found, but a package named DataFrames is available from a registry.
+ │ Install package?
+ │   (datatoolkit_tutorial) pkg> add DataFrames
+ └ (y/n/o) [y]:
+   Resolving package versions...
+    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+  [a93c6f00] + DataFrames v1.5.0
+  ...
+  1 dependency successfully precompiled in 25 seconds. 41 already precompiled.
+
+julia> d"iris"
+150×5 DataFrame
+ Row │ 150      4        setosa   versicolor  virginica
+     │ Float64  Float64  Float64  Float64     Int64
+─────┼──────────────────────────────────────────────────
+   1 │     5.1      3.5      1.4         0.2          0
+   2 │     4.9      3.0      1.4         0.2          0
+   3 │     4.7      3.2      1.3         0.2          0
+  ⋮  │    ⋮        ⋮        ⋮         ⋮           ⋮
+ 149 │     6.2      3.4      5.4         2.3          2
+ 150 │     5.9      3.0      5.1         1.8          2
+#+end_src
+
+That's nicer, but wait, those column names aren't right! The first line appears
+to be describing the size of the data (150\times4) and the three category names, when
+the columns should be:
++ =sepal_length=,
++ =sepal_width=,
++ =petal_length=,
++ =petal_width=, and
++ =species_class=
+
+Perhaps there's a way we can specify the correct column names? We could check
+the online docs for the CSV loader, but we can also look at them with the =help=
+Data REPL command.
+
+#+begin_example
+(tutorial) data> help :csv
+  Parse and serialize CSV data
+
+  ...
+
+  Parameters
+  ≡≡≡≡≡≡≡≡≡≡≡≡
+
+    •  args: keyword arguments to be provided to CSV.File, see
+       https://csv.juliadata.org/stable/reading.html#CSV.File.
+
+  As a quick-reference, some arguments of particular interest are:
+
+    •  header: Either,
+       • the row number to parse for column names
+       • the list of column names
+
+  ...
+#+end_example
+
+Perfect! Looks like we can just set the =args.header= parameter of the =csv= loader,
+and we'll get the right column names. To easily do so, we can make use of the
+=edit= Data REPL command, which opens up a TOML file with just a single data set
+in =$JULIA_EDITOR= (which defaults to =$VISUAL=​/​=$EDITOR=) and records the changes
+upon exit.
+
+#+begin_example
+(tutorial) data> edit iris
+#+end_example
+
+# The /Boston Housing/
+# data set is part of the =RDatasets= package, and we can obtain a link to the raw
+# data file in the repository:
+# https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
