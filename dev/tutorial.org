@@ -261,6 +261,11 @@ upon exit.
 
 #+begin_example
 (tutorial) data> edit iris
+ ~ Modified loader:
+   ~ Modified [1]:
+     + Added args
+ Does this look correct? [y/N]: y
+ ✓ Edited 'iris' (3f3d7714-22aa-4555-a950-78f43b74b81c)
 #+end_example
 
 # The /Boston Housing/
