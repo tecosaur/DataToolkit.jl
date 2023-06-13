@@ -36,6 +36,7 @@ makedocs(;
             "loaders/julia.md",
             "loaders/passthrough.md",
             "loaders/sqlite.md",
+            "loaders/tar.md",
             "loaders/xlsx.md",
             "loaders/zip.md",
         ],

@@ -37,6 +37,7 @@ include("transformers/saveload/json.jl")
 include("transformers/saveload/julia.jl")
 include("transformers/saveload/passthrough.jl")
 include("transformers/saveload/sqlite.jl")
+include("transformers/saveload/tar.jl")
 include("transformers/saveload/xlsx.jl")
 include("transformers/saveload/zip.jl")
 
@@ -65,6 +66,7 @@ function __init__()
     @addpkg DBInterface    "a10d1c49-ce27-4219-8d33-6db1a4562965"
     @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
     @addpkg SQLite         "0aa819cd-b072-5ff4-a722-6bc24af294d9"
+    @addpkg Tar            "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
     @addpkg XLSX           "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
     @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
     # Plugins
@@ -97,6 +99,7 @@ function __init__()
              (:loader, :julia) => JULIA_DOC,
              (:loader, :passthrough) => PASSTHROUGH_L_DOC,
              (:loader, :sqlite) => SQLITE_DOC,
+             (:loader, :tar) => TAR_DOC,
              (:loader, :xlsx) => XLSX_DOC,
              (:loader, :zip) => ZIP_DOC,
              (:writer, :gzip) => COMPRESSION_DOC,
