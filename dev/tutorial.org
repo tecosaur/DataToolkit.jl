@@ -130,7 +130,9 @@ action. This works with other Data REPL commands in the same way.
 
 The =add= command tries to be a bit clever and guess how the data should be
 acquired and loaded. In this case it (correctly) guessed that this file should
-be downloaded from the web, and loaded as a CSV.
+be downloaded from the web, and loaded as a CSV. It is worth noting that
+downloading will occur when =iris= is first accessed or the =store fetch= Data REPL
+command is run.
 
 The =DataSet tutorial:iris= and =Storage:=​/​=Loaders:= lines are how all =DataSet=​s are
 displayed. Using the ~dataset~ function we can obtain any data set easily by name,
@@ -196,7 +198,9 @@ Precompiling project...
 
 #+begin_note
 We haven't installed the =CSV= package, but thanks to the lazy-loading system we
-are presented with the option to install it on-the-fly.
+are presented with the option to install it on-the-fly. Of course, you can
+always just load the =CSV= package yourself trying to access information that uses
+the =csv= loader.
 #+end_note
 
 Because ~read(dataset("iris"))~ is a fairly common pattern, for convenience there
@@ -398,7 +402,7 @@ description = "The Boston Housing data set. This contains information collected 
 #+end_src
 
 Thanks to this cleverness, obtaining the Boston Housing data as a nice
-~DataFrame~ is as simple as ~d"boston"~.
+~DataFrame~ is as simple as ~d"boston"~ (when =DataFrames= is loaded).
 
 #+begin_src julia-repl
 julia> d"boston"
