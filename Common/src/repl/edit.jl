@@ -11,7 +11,7 @@ and reload the dataset from the edited contents.
     data> edit IDENTIFIER
 """
 
-function deep_diff(old::Dict, new::Dict, parents::Vector{String}=String[])
+function deep_diff(old::AbstractDict, new::AbstractDict, parents::Vector{String}=String[])
     new_keys = setdiff(keys(new), keys(old))
     for key in sort(new_keys |> collect)
         print("  "^length(parents))
