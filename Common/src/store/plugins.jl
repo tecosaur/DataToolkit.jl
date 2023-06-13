@@ -49,7 +49,8 @@ To explicitly specify no checksum, set the parameter to `false`.
 #### Expiry/lifecycle
 
 After a storage source is saved, the cache file can be made to expire after a
-certain period. This is done by setting the "lifetime" parameter of the storage, i.e.
+certain period. This is done by setting the "`lifetime`" parameter of the storage,
+i.e.
 
 ```toml
 [[updatingdata.storage]]
@@ -76,6 +77,29 @@ optionally followed by an "s", comma, or whitespace. E.g.
 - `23 days, 23 hours`
 - `4d12h`
 
+By default, the first lifetime period begins at the Unix epoch. This means a
+daily lifetime will tick over at `00:00 UTC`. The "`lifetime_offset`" parameter
+can be used to shift this. It can be set to a lifetime string, date/time-stamp,
+or number of seconds.
+
+For example, to have the lifetime expire at `03:00 UTC` instead, the lifetime
+offset could be set to three hours.
+
+```toml
+[[updatingdata.storage]]
+lifetime = "1 day"
+lifetime_offset = "3h"
+```
+
+We can produce the same effect by specifying a different reference point for the
+lifetime.
+
+```toml
+[[updatingdata.storage]]
+lifetime = "1 day"
+lifetime_offset = 1970-01-01T03:00:00
+```
+
 #### Store management
 
 System-wide configuration can be set via the `store config set` REPL command, or
@@ -90,8 +114,7 @@ const STORE_PLUGIN = Plugin("store", [
         source = getsource(inventory, storer)
         file = storefile(inventory, storer)
         if !isnothing(file) && isfile(file) && haskey(storer.parameters, "lifetime")
-            seconds = interpret_lifetime(get(storer, "lifetime"))
-            if time() - ctime(file) > seconds
+            if epoch(storer) > epoch(storer, ctime(file))
                 rm(file, force=true)
             end
         end
@@ -140,8 +163,7 @@ const STORE_PLUGIN = Plugin("store", [
         delete!(parameters, "save") # Does not impact the final result
         if haskey(parameters, "lifetime")
             delete!(parameters, "lifetime") # Does not impact the final result
-            parameters["__epoch"] =
-                time() ÷ interpret_lifetime(get(storage, "lifetime"))
+            parameters["__epoch"] = epoch(storage)
         end
         (f, (storage, parameters, h))
     end])

@@ -255,6 +255,39 @@ storesave(inventory::Inventory, storage::DataStorage, as::Type) =
     result -> storesave(inventory, storage, as, result)
 
 """
+    epoch(storage::DataStorage, seconds::Real)
+
+Return the epoch that `seconds` lies in, according to the lifetime
+specification of `storage`.
+"""
+function epoch(storage::DataStorage, seconds::Real)
+    if haskey(storage.parameters, "lifetime")
+        span = interpret_lifetime(get(storage, "lifetime"))
+        offset = get(storage, "lifetime_offset", 0)
+        offset_seconds = if offset isa Union{Int, Float64}
+            offset
+        elseif offset isa String
+            interpret_lifetime(offset)
+        elseif offset isa Time
+            DateTime(Date(1970, 1, 1), offset) |> datetime2unix
+        elseif offset isa DateTime
+            offset |> datetime2unix
+        else
+            @warn "Invalid lifetime_offset, ignoring" offset
+            0
+        end
+        (seconds - offset) ÷ span
+    end
+end
+
+"""
+    epoch(storage::DataStorage)
+
+Return the current epoch, according to the lifetime specification of `storage`.
+"""
+epoch(storage::DataStorage) = epoch(storage, time())
+
+"""
     interpret_lifetime(lifetime::String)
 
 Return the number of seconds in the interval specified by `lifetime`, which is
