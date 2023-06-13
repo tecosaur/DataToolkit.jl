@@ -114,7 +114,11 @@ function repl_edit(input::AbstractString)
         end
         rm(tomlfile)
         newspec isa Dict || return nothing
-        newspec != dataspec || return nothing
+        newspec isa Dict || return
+        if newspec == dataspec
+            printstyled("  No changes made\n", color=:light_black)
+            return
+        end
         deep_diff(dataspec, newspec)
         if !confirm_yn(" Does this look correct?")
             printstyled(" ! ", color=:red, bold=true)
