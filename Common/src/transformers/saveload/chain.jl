@@ -30,7 +30,8 @@ supportedtypes(::Type{DataLoader{:chain}}, spec::SmallDict{String, Any}) =
             elseif explicit_type isa Vector
                 parse.(QualifiedType, explicit_type)
             else
-                supportedtypes(DataLoader{Symbol(lastloader["driver"])}, lastloader)
+                supportedtypes(DataLoader{Symbol(lastloader["driver"])},
+                               DataToolkitBase.smallify(lastloader))
             end
         elseif lastloader isa String # "X" shorthand form
             supportedtypes(DataLoader{Symbol(lastloader)})
