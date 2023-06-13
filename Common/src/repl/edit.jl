@@ -110,7 +110,7 @@ function repl_edit(input::AbstractString)
             write(io, take!(DataToolkitBase.tomlreformat!(intermediate)))
         end
         edit(tomlfile, 8)
-        isfile(tomlfile) || return nothing
+        isfile(tomlfile) || return
         newspec = let tomldata = open(TOML.parse, tomlfile)
             dspecs = get(tomldata, dataset.name, Dict{String, Any}())
             if dspecs isa Vector && !isempty(dspecs) && first(dspecs) isa Dict
@@ -118,7 +118,6 @@ function repl_edit(input::AbstractString)
             end
         end
         rm(tomlfile)
-        newspec isa Dict || return nothing
         newspec isa Dict || return
         if newspec == dataspec
             printstyled("  No changes made\n", color=:light_black)
@@ -128,7 +127,7 @@ function repl_edit(input::AbstractString)
         if !confirm_yn(" Does this look correct?")
             printstyled(" ! ", color=:red, bold=true)
             println("Cancelled")
-            return nothing
+            return
         end
         index = findfirst(==(dataset), dataset.collection.datasets)
         newdata = DataSet(dataset.collection, dataset.name, newspec)
