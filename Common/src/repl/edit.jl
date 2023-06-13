@@ -89,7 +89,12 @@ function repl_edit(input::AbstractString)
         dataset = try resolve(input) catch _
             printstyled(" ! ", color=:red, bold=true)
             println("Could not resolve identifier: $input")
-            return nothing
+            return
+        end
+        if !iswritable(dataset.collection)
+            printstyled(" ! ", color=:red, bold=true)
+            println("The data collection $(dataset.name) belongs to is read-only")
+            return
         end
         dataspec = convert(Dict, dataset)
         tomlfile = tempname(cleanup=false) * ".toml"
