@@ -21,7 +21,8 @@ Get the default parameters of an AbstractDataTransformer of type `ADT` using
 `resolvetype` is set.
 """
 function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
-                     driver::Symbol; resolvetype::Bool=true)
+                     driver::Symbol, spec::SmallDict{String, Any};
+                     resolvetype::Bool=true)
     adt_type = SmallDict(:DataStorage => "storage",
                          :DataLoader => "loader",
                          :DataWriter => "writer")[nameof(ADT)]
@@ -34,7 +35,7 @@ function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
     implicit_defaults = SmallDict{String, Any}(
         "priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY)
     if resolvetype
-        types = string.(supportedtypes(concrete_adt, SmallDict{String, Any}(), dataset))
+        types = string.(supportedtypes(concrete_adt, spec, dataset))
         implicit_defaults["type"] =
             if length(types) == 1 first(types) else types end
     end
@@ -55,7 +56,8 @@ getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
     getdefaults(dataset, ADT,
                 if ADT isa DataType
                     first(ADT.parameters)
-                else Symbol(get(spec, "driver", "MISSING")) end;
+                else Symbol(get(spec, "driver", "MISSING")) end,
+                DataToolkitBase.smallify(spec);
                 resolvetype)
 
 """
@@ -63,7 +65,7 @@ getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
 Get the default parameters of `adt`.
 """
 getdefaults(adt::AbstractDataTransformer) =
-    getdefaults(adt.dataset, typeof(adt), first(typeof(adt).parameters))
+    getdefaults(adt.dataset, typeof(adt), first(typeof(adt).parameters), adt.parameters)
 
 """
 Apply default values from the "defaults" data collection property.
