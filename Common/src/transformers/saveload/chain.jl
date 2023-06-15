@@ -144,6 +144,11 @@ Chain multiple transformers together
 
 The `chain` loader can accept any form of input, and produce any form of output.
 
+In passes the initial input through a *chain* of other loaders, via the `loader`
+property. A list of loader driver names can be given to chain together those
+loaders with no properties. To provide properties, use a TOML array of tables
+and specify the full (`driver = "name", ...`) form.
+
 Writing is not currently supported.
 
 # Usage examples
@@ -151,7 +156,13 @@ Writing is not currently supported.
 ```toml
 [[iris.loader]]
 driver = "chain"
-loader = ["gzip", "csv"]
+loaders = ["gzip", "csv"]
+```
+
+```toml
+[[iris.loader]]
+driver = "chain"
+loaders = ["gzip", { driver = "tar", file = "iris.csv" }, "csv"]
 ```
 
 ```toml
