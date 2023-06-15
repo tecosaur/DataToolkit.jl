@@ -401,6 +401,12 @@ description = "The Boston Housing data set. This contains information collected 
     type = ["DataFrame", "Matrix", "CSV.File"]
 #+end_src
 
+#+begin_note
+We can see the loaders =chain= passes the =data= through are given by ~loaders =
+["gzip", "csv"]~. For more information on the =chain= loader see =help :chain= in the
+Data REPL or see the online documentation.
+#+end_note
+
 Thanks to this cleverness, obtaining the Boston Housing data as a nice
 ~DataFrame~ is as simple as ~d"boston"~ (when =DataFrames= is loaded).
 
