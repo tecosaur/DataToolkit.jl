@@ -491,7 +491,7 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
                 type = get(value, :type, String)
                 vprompt = " $(string(nameof(T))[5])($driver) " *
                     get(value, :prompt, "$key: ")
-                if type == Bool
+                result = if type == Bool
                     confirm_yn(vprompt, get(value, :default, false))
                 elseif type == String
                     res = prompt(vprompt, get(value, :default, "");
@@ -500,6 +500,10 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
                 elseif type <: Number
                     parse(type, prompt(vprompt, string(get(value, :default, zero(type)))))
                 end |> get(value, :post, identity)
+                if get(value, :optional, false) && get(value, :skipvalue, nothing) === true && result
+                else
+                    result
+                end
             end
             if !isnothing(final_value)
                 final_spec[key] = final_value
