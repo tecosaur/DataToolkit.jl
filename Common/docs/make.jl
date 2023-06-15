@@ -21,6 +21,7 @@ makedocs(;
         "Introduction" => "index.md",
         "Storage" => Any[
             "storage/filesystem.md",
+            "storage/git.md",
             "storage/null.md",
             "storage/passthrough.md",
             "storage/raw.md",

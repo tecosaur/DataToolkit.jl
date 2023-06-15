@@ -97,7 +97,8 @@ end
 createpriority(::Type{DataLoader{:tar}}) = 10
 
 function create(::Type{DataLoader{:tar}}, source::String)
-    if !isnothing(match(r"\.tar$"i, source))
+    if !isnothing(match(r"\.tar$"i, source)) ||
+        !isnothing(match(r"^git://|^git(?:ea)?@|\w+@git\.|\.git$", source))
         ["file" => (; prompt="File: ", type=String, optional=true)]
     end
 end

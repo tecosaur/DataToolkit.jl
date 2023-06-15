@@ -115,7 +115,7 @@ createpriority(::Type{DataLoader{:chain}}) = 5
 
 function create(::Type{DataLoader{:chain}}, source::String, dataset::DataSet)
     # Prompted by compressed file types, e.g. ".csv.gz"
-    if !isnothing(match(r"\.\w+\.\w+$", source))
+    if !isnothing(match(r"\.\w+\.\w+$", source)) && isnothing(match(r"\.git$", source))
         base, inner, outer = match(r"^(.*)\.(\w+)\.(\w+)$", source).captures
         outerloader = create(DataLoader, :*, source, dataset;
                              minpriority=1+createpriority(DataLoader{:chain}))
