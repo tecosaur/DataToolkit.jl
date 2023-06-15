@@ -48,6 +48,7 @@ rhash(::DataCollection, adt::AbstractDataTransformer, h::UInt=zero(UInt)) =
 Hash `x` with respect to `collection`, with special behaviour for
 the following types:
 - `SmallDict`
+- `Dict`
 - `Vector`
 - `Pair`
 - `Type`
@@ -61,7 +62,11 @@ Individually hash each entry in `dict`, and then `xor` the results so the
 final value is independant of the ordering.
 """
 rhash(collection::DataCollection, dict::SmallDict, h::UInt=zero(UInt)) =
-    reduce(xor, [rhash(collection, kv, zero(UInt)) for kv in dict],
+    reduce(xor, (rhash(collection, kv, zero(UInt)) for kv in dict),
+           init=h)
+
+rhash(collection::DataCollection, dict::Dict, h::UInt=zero(UInt)) =
+    reduce(xor, (rhash(collection, kv, zero(UInt)) for kv in dict),
            init=h)
 
 # For advising
