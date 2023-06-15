@@ -489,7 +489,7 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
                 value
             elseif value isa NamedTuple
                 type = get(value, :type, String)
-                vprompt = " [$driver $(lowercase(string(nameof(T))[5:end]))] " *
+                vprompt = " $(string(nameof(T))[5])($driver) " *
                     get(value, :prompt, "$key: ")
                 if type == Bool
                     confirm_yn(vprompt, get(value, :default, false))
