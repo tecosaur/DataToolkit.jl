@@ -3,6 +3,8 @@ module DataToolkit
 using DataToolkitBase
 using DataToolkitCommon
 
+using PrecompileTools
+
 export loadcollection!, dataset, DataSet, @d_str, @data_cmd, @import
 
 const Base = DataToolkitBase
@@ -92,5 +94,7 @@ function __init__()
         init()
     end
 end
+
+@compile_workload init()
 
 end
