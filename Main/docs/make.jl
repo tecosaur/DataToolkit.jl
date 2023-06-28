@@ -32,6 +32,7 @@ makedocs(;
         "Introduction" => "index.md",
         "Tutorial" => "tutorial.md",
         "Reference" => "reference.md",
+        "Quick Reference Guide" => "quickref.md",
     ],
     repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkit.jl",
