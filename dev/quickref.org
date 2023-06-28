@@ -1,5 +1,8 @@
 #+title: Quick Reference Guide
 
+This gives the bare essentials, as the relevant Data REPL command (enter the
+Data REPL with =}=) and Julia function when sensible.
+
 * Accessing a dataset
 ** In the default form
 
