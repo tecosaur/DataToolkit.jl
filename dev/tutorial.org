@@ -1,6 +1,6 @@
 #+title: Tutorial
 
-In this tutorial you will be taken through some of the main usage patterns
+In this tutorial you will be guided through some of the main usage patterns
 involving =DataToolkit=. After doing the first step (/Initialising a Data
 Collection/), all other sections can be treated as self-contained exercises.
 
@@ -29,8 +29,8 @@ julia> using DataToolkit
 
 Notice that by typing =}= at an empty =julia>= prompt, the REPL prompt will change
 to =(⋅) data>= (in the same way that typing =]= enters the =pkg>= REPL). This is the
-"Data REPL", and the =(⋅)= prefix indicates the current project. There is no
-current project, and so the dot is shown.
+"Data REPL", and the =(⋅)= prefix indicates the current project. When there is no
+current project, the dot is shown.
 
 In the data REPL, we can see a list of all the available commands by typing =help=
 or =?=, which will pull up a command list like so:
@@ -43,6 +43,11 @@ or =?=, which will pull up a command list like so:
  ...      ...
  help     Display help text for commands and transformers
 #+end_example
+
+#+begin_tip
+Get more information on a particular command with =help <cmd>=, you can even get
+more information on what =help= does with =help help= 😉.
+#+end_tip
 
 We will initialise a new data collection with the =init= command.
 
@@ -91,7 +96,7 @@ is why we see them here. A minimal =Data.toml= would have ~plugins = []~.
 At this point, we have created a new data collection, and seen what is created.
 If we close the Julia session and re-open a REPL in the =datatoolkit_test=
 project, loading =DataToolkit= will automatically cause the data collection we
-just created to be loaded as well, as can be seen in the prompt prefix.
+just created to be loaded as well, as seen in the prompt prefix.
 
 #+begin_src julia-repl
 julia> using DataToolkit
@@ -204,7 +209,7 @@ the =csv= loader.
 #+end_note
 
 Because ~read(dataset("iris"))~ is a fairly common pattern, for convenience there
-is a ~d""~ 'data set in loaded form' macro. ~d"iris"~ is equivalent to
+is a ~d""~ "data set in loaded form" macro. ~d"iris"~ is equivalent to
 ~read(dataset("iris"))~.
 
 Having the =iris= data as a ~Matrix~ is fine, but it would be nicer to have it as a
@@ -317,9 +322,9 @@ julia> d"iris"
  151 │          5.9          3.0  5.1           1.8          2
 #+end_src
 
-The headers are correct, but now the first line is being counted as part of the
-data. This can be fixed by editing =iris= again and setting =args.skipto= to =2= in
-the =csv= loader settings.
+The headers are correct, but now the first line is counted as part of the data.
+This can be fixed by editing =iris= again and setting =args.skipto= to =2= in the =csv=
+loader settings.
 
 The final =iris= entry in the =Data.toml= should look like so:
 
@@ -404,7 +409,7 @@ description = "The Boston Housing data set. This contains information collected 
 #+begin_note
 We can see the loaders =chain= passes the =data= through are given by ~loaders =
 ["gzip", "csv"]~. For more information on the =chain= loader see =help :chain= in the
-Data REPL or see the online documentation.
+Data REPL or the online documentation.
 #+end_note
 
 Thanks to this cleverness, obtaining the Boston Housing data as a nice
