@@ -44,28 +44,34 @@ function repl_make(input::AbstractString)
     println("\e[2m\n", join("  " .* split(MAKE_INFO_BANNER, '\n'), '\n'), "\e[0m\n")
 
     # Drop the user into the REPL
-    REPL.run_repl(sandbox.repl)
+    previous_repl_module = REPL.active_module()
+    try
+        REPL.activate(sandbox.mod)
+        run_sandbox_repl(sandbox)
 
-    print("\e[F\e[2K") # Remove the last "julia>" prompt line
+        print("\e[F\e[2K") # Remove the last "julia>" prompt line
 
-    (; scriptfn, datavars) = sandbox_to_function(sandbox)
-    scriptfile = string(tempname(), ".jl")
-    write(scriptfile, string(scriptfn))
+        (; scriptfn, datavars) = sandbox_to_function(sandbox)
+        scriptfile = string(tempname(), ".jl")
+        write(scriptfile, string(scriptfn))
 
-    if confirm_yn(" Would you like to edit the final script?", true)
-        edit(scriptfile)
+        if confirm_yn(" Would you like to edit the final script?", true)
+            edit(scriptfile)
+        end
+
+        returntype = prompt(" What is the type of the returned value? ",
+                            string(QualifiedType(sandbox.lasttype[]))) |> String
+
+        collection = first(STACK)
+        dataset = sandbox_dataset(; collection, name, returntype, datavars,
+                                scriptfn=read(scriptfile, String))
+
+        push!(collection.datasets, dataset)
+        write(collection)
+        printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
+    finally
+        REPL.activate(previous_repl_module)
     end
-
-    returntype = prompt(" What is the type of the returned value? ",
-                        string(QualifiedType(sandbox.lasttype[]))) |> String
-
-    collection = first(STACK)
-    dataset = sandbox_dataset(; collection, name, returntype, datavars,
-                              scriptfn=read(scriptfile, String))
-
-    push!(collection.datasets, dataset)
-    write(collection)
-    printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
 end
 
 function create_sandbox()
@@ -137,6 +143,51 @@ function create_sandbox()
 
     (; repl, hist_ignore, lasttype, mod,
      modes = ( julia=julia_mode, shell=shell_mode, help=help_mode, hist=hist_mode))
+end
+
+@static if VERSION >= v"1.9" # when `MIState.active_module` was added
+    # Because `REPL.LineEdit.init_state` is hardcoded to set the module
+    # to `Main` we have to copy+tweak `run_repl`, `run_frontend`, and `init_state`.
+    # This is horibly icky and I don't like it one bit.
+    function run_sandbox_repl(sandbox)
+        function run_frontend(repl::REPL.LineEditREPL, backend::REPL.REPLBackendRef)
+            repl.frontend_task = current_task()
+            d = REPL.REPLDisplay(repl)
+            dopushdisplay = repl.specialdisplay === nothing && !in(d, Base.Multimedia.displays)
+            dopushdisplay && pushdisplay(d)
+            if !isdefined(repl, :interface)
+                interface = repl.interface = REPL.setup_interface(repl)
+            else
+                interface = repl.interface
+            end
+            repl.backendref = backend
+            repl.mistate = REPL.LineEdit.init_state(REPL.terminal(repl), interface)
+            # NOTE this is the key line that necessitates all this copypasta
+            repl.mistate.active_module = sandbox.mod
+            # ^^^ key line
+            REPL.run_interface(REPL.terminal(repl), interface, repl.mistate)
+            put!(backend.repl_channel, (nothing, -1))
+            dopushdisplay && popdisplay(d)
+            nothing
+        end
+        backend = REPL.REPLBackend()
+        backend_ref = REPL.REPLBackendRef(backend)
+        cleanup = @task try
+            REPL.destroy(backend_ref, t)
+        catch e
+            Core.print(Core.stderr, "\nINTERNAL ERROR: ")
+            Core.println(Core.stderr, e)
+            Core.println(Core.stderr, catch_backtrace())
+        end
+        get_module = () -> sandbox.mod
+        t = @async run_frontend(sandbox.repl, backend_ref)
+        errormonitor(t)
+        Base._wait2(t, cleanup)
+        REPL.start_repl_backend(backend, _ -> nothing; get_module)
+        return backend
+    end
+else
+    const run_sandbox_repl = REPL.run_repl
 end
 
 function sandbox_to_function(sandbox)
