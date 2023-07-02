@@ -34,7 +34,14 @@ Shorthand for loading a dataset in the default format,
 `d"iris"` is equivalent to `read(dataset("iris"))`.
 """
 macro d_str(ident::String)
-    :(read(dataset($ident)))
+    quote
+        ref = parse(Identifier, $ident)
+        if !isnothing(ref.type)
+            resolve(ref)
+        else
+            read(resolve(ref, resolvetype=false))
+        end
+    end
 end
 
 """
