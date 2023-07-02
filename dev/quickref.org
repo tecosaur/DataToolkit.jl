@@ -3,6 +3,14 @@
 This gives the bare essentials, as the relevant Data REPL command (enter the
 Data REPL with =}=) and Julia function when sensible.
 
+* Data REPL help
+
+Look at the REPL =help= docs, accessible within the Data REPL.
+
+#+begin_src julia-repl
+(demo) data> help help
+#+end_src
+
 * Accessing a dataset
 ** In the default form
 
