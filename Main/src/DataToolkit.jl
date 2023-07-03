@@ -66,6 +66,13 @@ every toml file within it will be read. Mixing `Data.d/*.toml` and `Data.toml`
 is discouraged.
 """
 function init(mod::Module=Main.Base.Main; force::Bool=false)
+    function tryloadcollection!(path::String, m::Module; soft::Bool)
+        try
+            loadcollection!(path, m; soft)
+        catch err
+            @error "Failed to load $path" err
+        end
+    end
     project_paths = if isnothing(pathof(mod))
         Main.Base.load_path()
     else
@@ -81,17 +88,17 @@ function init(mod::Module=Main.Base.Main; force::Bool=false)
             dfiles = filter(f -> endswith(f, ".toml"),
                             readdir(data_dir, join=true))
             for dfile in filter(f -> basename(f) != "Data.toml", dfiles)
-                loadcollection!(dfile, mod, soft=!force)
+                tryloadcollection!(dfile, mod, soft=!force)
             end
             # Load Data.toml last so that is is first in the stack.
             joinpath(data_dir, "Data.toml") in dfiles &&
-                loadcollection!("Data.d/Data.toml", mod, soft=!force)
+                tryloadcollection!("Data.d/Data.toml", mod, soft=!force)
         end
         # Load Data.toml
         data_file = joinpath(project_path, "Data.toml")
         if isfile(data_file)
             isdir(data_dir) && @warn "($mod) consider placing Data.toml file inside Data.d directory"
-            loadcollection!(data_file, mod, soft=!force)
+            tryloadcollection!(data_file, mod, soft=!force)
         end
     end
 end
