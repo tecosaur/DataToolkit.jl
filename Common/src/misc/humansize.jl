@@ -24,9 +24,10 @@ julia> humansize(1024^3)
 """
 function humansize(bytes::Integer; digits::Int=1)
     units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
-    magnitude = floor(Int, log(1024, 1 + bytes))
-    if 10 < bytes < 10*1024^magnitude
-        round(bytes / 1024^magnitude; digits)
+    magnitude = floor(Int, log(1024, max(1, bytes)))
+    if 1024 <= bytes < 10.0^(digits-1) * 1024^magnitude
+        magdigits = floor(Int, log10(bytes / 1024^magnitude)) + 1
+        round(bytes / 1024^magnitude; digits = digits - magdigits)
     else
         round(Int, bytes / 1024^magnitude)
     end, units[1+magnitude]
