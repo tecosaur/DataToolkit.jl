@@ -9,13 +9,13 @@ No `T` (opionally from `collection`) could be found that matches `identifier`.
 
 ```julia-repl
 julia> d"iirs"
-ERROR: UnresolveableIdentifier: "iirs" does not match any known data sets
+ERROR: UnresolveableIdentifier: "iirs" does not match any availible data sets
   Did you perhaps mean to refer to one of these data sets?
     ■:iris (75% match)
 Stacktrace: [...]
 
 julia> d"iris::Int"
-ERROR: UnresolveableIdentifier: "iris::Int" does not match any known data sets
+ERROR: UnresolveableIdentifier: "iris::Int" does not match any availible data sets
   Without the type restriction, however, the following data sets match:
     datatest:iris, which is availible as a DataFrame, Matrix, CSV.File
 Stacktrace: [...]
@@ -31,7 +31,7 @@ UnresolveableIdentifier{T}(ident::I, collection::Union{DataCollection, Nothing}=
 
 function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
     print(io, "UnresolveableIdentifier: ", sprint(show, err.identifier),
-          " does not match any known data sets")
+          " does not match any availible data sets")
     if !isnothing(err.collection)
         print(io, " in ", sprint(show, err.collection.name))
     end
@@ -415,4 +415,17 @@ function Base.showerror(io::IO, err::ImpossibleTypeException)
     else
         print(io, ", for unknown reasons, possibly an issue with the type parameters?")
     end
+end
+
+struct InvalidParameterType{T <: Union{<:AbstractDataTransformer, DataSet, DataCollection}}
+    thing::T
+    parameter::String
+    type::Type
+end
+
+function Base.showerror(io::IO, err::InvalidParameterType)
+    print(io, "InvalidParameterType: '", err.parameter, "' parameter of ",
+          string(err.thing), " must be a ", string(err.type), " not a ",
+          string(typeof(get(err.thing, err.parameter))), ".")
+    # More info about `err.transformer` / parent dataset?
 end
