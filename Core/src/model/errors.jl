@@ -75,14 +75,15 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
         end
     else
         candidates = Tuple{Identifier, DataCollection, Float64}[]
-        let collection = @something(err.collection, first(STACK))
-            for ident in Identifier.(collection.datasets, nothing)
-                istr = @advise collection string(ident)
-                push!(candidates,
-                    (ident, collection, stringsimilarity(err.identifier, istr)))
+        if !isnothing(err.collection) || !isempty(STACK)
+            let collection = @something(err.collection, first(STACK))
+                for ident in Identifier.(collection.datasets, nothing)
+                    istr = @advise collection string(ident)
+                    push!(candidates,
+                        (ident, collection, stringsimilarity(err.identifier, istr)))
+                end
             end
-        end
-        if isnothing(err.collection) && !isempty(STACK)
+        elseif isnothing(err.collection) && !isempty(STACK)
             for collection in last(Iterators.peel(STACK))
                 for ident in Identifier.(collection.datasets)
                     istr = @advise collection string(ident)
