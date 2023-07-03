@@ -2,7 +2,7 @@ import REPL.TerminalMenus: request, RadioMenu
 
 function download_progress(filename::AbstractString)
     start_time = time()
-    min_seconds_before_eta = 5
+    min_seconds_before_eta = 3
     last_print = 0
     itercount = 0
     aprint(io::IO, val) = print(io, ' ', "\e[90m", val, "\e[m")
@@ -10,6 +10,7 @@ function download_progress(filename::AbstractString)
     spinners = ['◐', '◓', '◑', '◒']
     println(stderr, " \e[90mDownloading $filename...\e[m")
     function (total::Integer, now::Integer)
+        total_size, now_size = join.(humansize.((total, now)), ' ')
         if time() - start_time > 2 && time() - last_print > 0.1
             last_print = time()
             itercount += 1
@@ -17,9 +18,9 @@ function download_progress(filename::AbstractString)
             out = IOBuffer()
             print(out, "\e[G\e[2K")
             if 0 < now == total
-                aprint(out, "✔ $filename downloaded ($total bytes)")
+                aprint(out, "✔ $filename downloaded ($total_size)")
             elseif total == 0
-                aprint(out, "$spinner $now bytes")
+                aprint(out, "$spinner $now_size")
             else
                 eta_segment = if time() - start_time >= min_seconds_before_eta
                     eta_seconds = round(Int, (total-now)/(now+1)*(time() - start_time))
@@ -32,7 +33,7 @@ function download_progress(filename::AbstractString)
                     spinner, " \e[34m", '━'^floor(Int, complete),
                     partialbars[round(Int, 1+(length(partialbars)-1)*(complete%1))],
                     '━'^floor(Int, 30 - complete),
-                    "  $now/$total bytes ($(round(100*now/total, digits=1))%)",
+                    "  $now_size/$total_size ($(round(100*now/total, digits=1))%)",
                     eta_segment))
             end
             print(stderr, String(take!(out)))

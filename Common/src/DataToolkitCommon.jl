@@ -19,6 +19,7 @@ using UUIDs
 function should_log_event end
 
 include("misc/collectiondir.jl")
+include("misc/humansize.jl")
 include("store/Store.jl")
 
 include("transformers/storage/filesystem.jl")
