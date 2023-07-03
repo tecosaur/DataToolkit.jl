@@ -665,7 +665,12 @@ function scan_collections(inv::Inventory)
     days_since(t::DateTime) = convert(Millisecond, now() - t).value / (1000*60*60*24)
     for collection in inv.collections
         if !isnothing(collection.path) && isfile(collection.path)
-            cdata = open(io -> TOML.parse(io), collection.path)
+            cdata = try
+                open(TOML.parse, collection.path)
+            catch err
+                @warn "Unable to parse $(collection.path)" err
+                continue
+            end
             if haskey(cdata, "uuid") && parse(UUID, cdata["uuid"]) == collection.uuid
                 if collection.uuid ∈ getfield.(STACK, :uuid)
                     ids = Set{UInt64}()
