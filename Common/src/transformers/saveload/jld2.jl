@@ -9,7 +9,7 @@ function load(loader::DataLoader{:jld2}, from::FilePath, R::Type)
     elseif key isa Vector
         JLD2.load(from.path, key...)::R
     else
-        error("JLD2 key is of unsupported form: $(typeof(key)).")
+        throw(InvalidParameterType(loader, "key", Union{String, Vector, Nothing}))
     end
 end
 

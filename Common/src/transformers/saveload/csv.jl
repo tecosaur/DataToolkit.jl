@@ -1,7 +1,7 @@
 function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     @import CSV
-    kwargs = Dict{Symbol, Any}(
-        Symbol(k) => v for (k, v) in get(loader, "args", Dict{String, Any}()))
+    args = @getparam loader."args"::Dict{String, Any}
+    kwargs = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in args)
     if haskey(kwargs, :types)
         kwargs[:types] = typeify.(QualifiedType.(kwargs[:types]))
     end
@@ -39,7 +39,7 @@ supportedtypes(::Type{DataLoader{:csv}}) =
 function save(writer::DataWriter{:csv}, dest::IO, info)
     @import CSV
     kwargs = Dict(Symbol(k) => v for (k, v) in
-                      get(writer, "args", Dict{String, Any}()))
+                      @getparam(writer."args"::Dict{String, Any}()))
     for charkey in (:quotechar, :openquotechar, :escapechar)
         if haskey(kwargs, charkey)
             kwargs[charkey] = first(kwargs[charkey])

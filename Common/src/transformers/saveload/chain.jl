@@ -12,7 +12,7 @@
 
 function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     subloaders = map(spec -> DataLoader(loader.dataset, spec),
-                     get(loader, "loaders", Dict{String, Any}[]))
+                     @getparam(loader."loaders"::Vector, Dict{String, Any}[]))
     types = loadtypepath(subloaders, typeof(from), T)
     if !isnothing(types)
         reduce((value, (subloader, as)) ->
@@ -22,9 +22,9 @@ function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
 end
 
 supportedtypes(::Type{DataLoader{:chain}}, spec::SmallDict{String, Any}) =
-    let lastloader = last(get(spec, "loaders", [nothing]))
+    let lastloader = last(@getparam spec."loaders"::Vector [nothing])
         if lastloader isa Dict # { driver="X", ... } form
-            explicit_type = get(lastloader, "type", nothing)
+            explicit_type = @getparam lastloader."type"
             if explicit_type isa String
                 [parse(QualifiedType, explicit_type)]
             elseif explicit_type isa Vector
@@ -58,7 +58,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
             # Nothing. Really though, only the input variety of loaders
             # makes sense in a chain loader. We may as well be
             # exhaustive though.
-            if isempty(get(toploader, "input", ""))
+            if isempty(@getparam toploader."input"::String "")
                 [Nothing]
             else
                 iqtype = QualifiedType(get(toploader, "input"))

@@ -1,6 +1,6 @@
 function load(loader::DataLoader{Symbol("io->file")}, from::IO, ::Type{FilePath})
     path = abspath(dirof(loader.dataset.collection),
-                   @something(expanduser(get(loader, "path")),
+                   @something(expanduser(@getparam loader."path"::Union{String, Nothing}),
                               joinpath(tempdir(),
                                        string("julia_datatoolkit_iotofile_",
                                               loader.dataset.uuid))))

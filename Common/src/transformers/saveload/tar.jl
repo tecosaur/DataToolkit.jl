@@ -1,6 +1,6 @@
 function load(loader::DataLoader{:tar}, from::IO, ::Type{IO})
     @import Tar
-    filepath = get(loader, "file")
+    filepath = @getparam loader."file"::Union{String, Nothing}
     !isnothing(filepath) || error("Cannot load entire tarball to IO, must specify a particular file.")
     buf = Vector{UInt8}(undef, Tar.DEFAULT_BUFFER_SIZE)
     io = IOBuffer()

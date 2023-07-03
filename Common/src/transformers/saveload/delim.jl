@@ -1,13 +1,13 @@
 function load(loader::DataLoader{:delim}, from::IO, ::Type{Matrix})
     @import DelimitedFiles
-    dtype::Type = something(typeify(QualifiedType(get(loader, "type", "Any"))), Any)
-    delim::Char = first(get(loader, "delim", ","))
-    eol::Char = first(get(loader, "eol", "\n"))
-    header::Bool = get(loader, "header", false)
-    skipstart::Int = get(loader, "skipstart", 0)
-    skipblanks::Bool = get(loader, "skipblanks", false)
-    quotes::Bool = get(loader, "quotes", true)
-    comment_char::Char = first(get(loader, "comment_char", "#"))
+    dtype::Type = something(typeify(QualifiedType(@getparam loader."type"::String "Any")), Any)
+    delim::Char = first(@getparam loader."delim"::String ",")
+    eol::Char = first(@getparam loader."eol"::String "\n")
+    header::Bool = @getparam loader."header"::Bool false
+    skipstart::Int = @getparam loader."skipstart"::Int 0
+    skipblanks::Bool = @getparam loader."skipblanks"::Bool false
+    quotes::Bool = @getparam loader."quotes"::Bool true
+    comment_char::Char = first(@getparam loader."comment_char"::String "#")
     result = DelimitedFiles.readdlm(
         from, delim, dtype, eol;
         header, skipstart, skipblanks,
@@ -18,7 +18,7 @@ end
 
 function save(writer::DataWriter{:delim}, dest::IO, info::Union{Vector, Matrix})
     @import DelimitedFiles
-    delim::Char = first(get(writer, "delim", ","))
+    delim::Char = first(@getparam writer."delim"::String ",")
     DelimitedFiles.writedlm(dest, info; delim)
     close(dest)
 end

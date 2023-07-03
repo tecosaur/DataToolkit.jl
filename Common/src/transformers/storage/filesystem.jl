@@ -1,6 +1,5 @@
 function getpath(storage::DataStorage{:filesystem})
-    spath = get(storage, "path", nothing)
-    !isnothing(spath) || error("No path") # TODO improve error
+    spath = @getparam storage."path"::String
     abspath(dirof(storage.dataset.collection), expanduser(spath))
 end
 

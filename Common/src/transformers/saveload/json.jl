@@ -8,7 +8,7 @@ supportedtypes(::Type{DataLoader{:json}}) =
 
 function save(writer::DataWriter{:json}, dest::IO, info)
     @import JSON3
-    if get(writer, "pretty", false)
+    if @getparam writer."pretty"::Bool false
         JSON3.pretty(dest, info)
     else
         JSON3.write(dest, info)

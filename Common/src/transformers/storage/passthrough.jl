@@ -1,6 +1,6 @@
 function getstorage(storage::DataStorage{:passthrough}, T::Type)
     collection = storage.dataset.collection
-    ident = @advise collection parse(Identifier, get(storage, "source"))
+    ident = @advise collection parse(Identifier, @getparam storage."source"::String)
     read(resolve(collection, ident), T)
 end
 
@@ -17,7 +17,7 @@ end
 # interface, as well as contextual hashing.
 
 function Store.rhash(collection::DataCollection, storage::DataStorage{:passthrough}, h::UInt)
-    ident = @advise collection parse(Identifier, get(storage, "source"))
+    ident = @advise collection parse(Identifier, @getparam storage."source"::String)
     sourceh = Store.rhash(collection, ident, h)
     invoke(Store.rhash, Tuple{DataCollection, AbstractDataTransformer, UInt},
            collection, storage, sourceh)

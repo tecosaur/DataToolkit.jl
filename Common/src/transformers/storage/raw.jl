@@ -2,7 +2,7 @@ const TOMLValue = TOML.Internals.Printer.TOMLValue
 # TOML_TYPES = Base.uniontypes(TOMLValue)
 
 function getstorage(storage::DataStorage{:raw}, T::Type{<:TOMLValue})
-    get(storage, "value", nothing)::Union{T, Nothing}
+    @getparam storage."value"::Union{T, Nothing} nothing
 end
 
 function putstorage(storage::DataStorage{:raw}, ::Type{<:TOMLValue})

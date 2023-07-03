@@ -7,12 +7,12 @@
 # arguments = { inp = "📇DATASET<<somelist::Vector>>" }
 
 function getactfn(transformer::AbstractDataTransformer)
-    path = get(transformer, "path", nothing)
-    fnstr = get(transformer, "function", nothing)
+    path = @getparam transformer."path"::Union{String, Nothing}
+    fnstr = @getparam transformer."function"::Union{String, Nothing}
     loadfn = if !isnothing(path)
         Base.include(transformer.dataset.collection.mod,
                      abspath(dirof(transformer.dataset.collection),
-                             expanduser(get(transformer, "pathroot", "")),
+                             expanduser(@getparam transformer."pathroot"::String ""),
                              expanduser(path)))
     elseif !isnothing(fnstr)
         Base.eval(transformer.dataset.collection.mod,
@@ -23,11 +23,11 @@ function getactfn(transformer::AbstractDataTransformer)
 end
 
 function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
-    if isempty(get(loader, "input", ""))
+    if isempty(@getparam loader."input"::String "")
         loadfn = getactfn(loader)
         arguments = SmallDict{Symbol,Any}([
             Symbol(arg) => val
-            for (arg, val) in get(loader, "arguments", SmallDict())::SmallDict])
+            for (arg, val) in @getparam(loader."arguments"::SmallDict)])
         cd(dirof(loader.dataset.collection)) do
             DataToolkitBase.invokepkglatest(loadfn; arguments...)::R
         end
@@ -35,13 +35,13 @@ function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
 end
 
 function load(loader::DataLoader{:julia}, from::Any, R::Type)
-    if !isempty(get(loader, "input", ""))
-        desired_type = typeify(QualifiedType(get(loader, "input", "")))
+    if !isempty(@getparam loader."input"::String "")
+        desired_type = typeify(QualifiedType(@getparam loader."input"::String ""))
         if from isa desired_type
             loadfn = getactfn(loader)
             arguments = Dict{Symbol,Any}(
                 Symbol(arg) => val
-                for (arg, val) in get(loader, "arguments", Dict())::Dict)
+                for (arg, val) in @getparam(loader."arguments"::Dict))
             cd(dirof(loader.dataset.collection)) do
                 DataToolkitBase.invokepkglatest(loadfn, from; arguments...)::R
             end
@@ -53,7 +53,7 @@ function save(writer::DataWriter{:julia}, dest, info)
     writefn = getactfn(writer)
     arguments = Dict{Symbol,Any}(
         Symbol(arg) => val
-        for (arg, val) in get(loader, "arguments", Dict())::Dict)
+        for (arg, val) in @getparam(loader."arguments"::Dict))
     cd(dirof(writer.dataset.collection)) do
         DataToolkitBase.invokepkglatest(writefn, dest, info; arguments...)
     end

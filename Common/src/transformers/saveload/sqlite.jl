@@ -8,11 +8,11 @@ function load(loader::DataLoader{:sqlite}, from::FilePath, as::Type)
         db
     else
         @import DBInterface
-        query = @something(get(loader, "query"),
+        query = @something(@getparam(loader."query"::Union{String, Nothing}),
                            string("SELECT ",
-                                  get(loader, "columns", "*"),
+                                  @getparam(loader."columns"::String, "*"),
                                   " FROM ",
-                                  get(loader, "table", "data")))
+                                  @getparam(loader."table"::String, "data")))
         DBInterface.execute(db, query) |> as
     end
 end
@@ -24,9 +24,9 @@ supportedtypes(::Type{DataLoader{:sqlite}}) =
 
 function save(writer::DataWriter{:sqlite}, dest::FilePath, info::Any)
     @import SQLite
-    SQLite.load!(info, SQLite.DB(string(dest)), get(writer, "table", "data");
-                 ifnotexists = get(writer, "ifnotexists", false),
-                 analyze = get(writer, "analyze", false))
+    SQLite.load!(info, SQLite.DB(string(dest)), @getparam(writer."table"::String, "data");
+                 ifnotexists = @getparam(writer."ifnotexists"::Bool, false),
+                 analyze = @getparam(writer."analyze"::Bool, false))
     true
 end
 

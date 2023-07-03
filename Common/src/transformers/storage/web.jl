@@ -44,9 +44,9 @@ end
 function download_to(storage::DataStorage{:web}, target::Union{IO, String})
     @import Downloads
     Downloads.download(
-        get(storage, "url"), target;
-        headers = get(storage, "headers", Dict{String, String}()),
-        timeout = get(storage, "timeout", Inf),
+        @getparam(storage."url"::String), target;
+        headers = @getparam(storage."headers"::Dict{String, String}),
+        timeout = @getparam(storage."timeout"::Real, Inf),
         progress = download_progress(storage.dataset.name))
     print(stderr, "\e[G\e[2K\e[A\e[2K")
     target isa IO && seekstart(target)
@@ -58,7 +58,7 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
         download_to(storage, io)
         io
     catch err
-        url = get(storage, "url")
+        url = @getparam(storage."url"::String)
         @error "Download failed" url err
         Some(nothing)
     end
@@ -72,7 +72,7 @@ end
 
 function Store.fileextension(storage::DataStorage{:web})
     something(match(r"\.\w+(?:\.[bgzx]z|\.[bg]?zip|\.zstd)?$",
-                    get(storage, "url")),
+                    @getparam(storage."url"::String)),
               (; match=".cache")).match[2:end]
 end
 

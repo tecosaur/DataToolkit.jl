@@ -7,11 +7,11 @@ function getstorage(storage::DataStorage{:git}, ::Type{IO})
         @import Git_jll
         Git_jll.git()
     end
-    remote = get(storage, "remote", "")
+    remote = @getparam storage."remote"::String ""
     !isempty(remote) || throw(ArgumentError("Git storage must specify a remote"))
-    tree = get(storage, "revision", "HEAD")
-    path = get(storage, "path", ".")
-    clone = get(storage, "clone", false)
+    tree = @getparam storage."revision"::String "HEAD"
+    path = @getparam storage."path"::String "."
+    clone = @getparam storage."clone"::Bool false
     if clone !== true
         # Try `git archive --remote`
         cmd = open(`$git archive --format=tar --remote=$remote $tree $path`)
