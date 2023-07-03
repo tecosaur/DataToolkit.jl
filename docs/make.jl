@@ -31,6 +31,7 @@ makedocs(;
     pages=[
         "Introduction" => "index.md",
         "Tutorial" => "tutorial.md",
+        "Data.toml format" => "datatoml.md",
         "Reference" => "reference.md",
         "Quick Reference Guide" => "quickref.md",
     ],
