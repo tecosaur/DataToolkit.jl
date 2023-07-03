@@ -423,9 +423,43 @@ struct InvalidParameterType{T <: Union{<:AbstractDataTransformer, DataSet, DataC
     type::Type
 end
 
+function Base.showerror(io::IO, err::InvalidParameterType{<:AbstractDataTransformer})
+    print(io, "InvalidParameterType: '", err.parameter, "' parameter of ",
+          err.thing.dataset.name, "'s ", nameof(typeof(err.thing)),
+          "{:", string(first(typeof(err.thing).parameters)), "} must be a ",
+          string(err.type), " not a ",
+          string(typeof(get(err.thing, err.parameter))), ".")
+end
+
 function Base.showerror(io::IO, err::InvalidParameterType)
     print(io, "InvalidParameterType: '", err.parameter, "' parameter of ",
           string(err.thing), " must be a ", string(err.type), " not a ",
           string(typeof(get(err.thing, err.parameter))), ".")
-    # More info about `err.transformer` / parent dataset?
+end
+
+macro getparam(expr::Expr, default=nothing)
+    thing, type = if Meta.isexpr(expr, :(::)) expr.args else (expr, :Any) end
+    Meta.isexpr(thing, :.) || error("Malformed expression passed to @getparam")
+    root, param = thing.args
+    if isnothing(default)
+        typename = if type isa Symbol type
+        elseif Meta.isexpr(type, :curly) first(type.args)
+        else :Any end
+        default = if typename ∈ (:Vector, :Dict, :SmallDict)
+            :($type())
+        else :nothing end
+    end
+    if type == :Any
+        :(get($(esc(root)), $(esc(param)), $(esc(default))))
+    else
+        quote
+            let value = get($(esc(root)), $(esc(param)), $(esc(default)))
+                if !(value isa $(esc(type)))
+                    throw(InvalidParameterType(
+                        $(esc(root)), $(esc(param)), $(esc(type))))
+                end
+                value
+            end
+        end
+    end
 end
