@@ -4,6 +4,15 @@ function getstorage(storage::DataStorage{:passthrough}, T::Type)
     read(resolve(collection, ident), T)
 end
 
+function supportedtypes(::Type{DataStorage{:passthrough}}, params::SmallDict{String, Any}, dataset::DataSet)
+    ident = @advise dataset parse(Identifier, get(params, "source", "")::String)
+    if !isnothing(ident.type)
+        [ident.type]
+    else
+        [QualifiedType(Any)]
+    end
+end
+
 createpriority(::Type{<:DataStorage{:passthrough}}) = 60
 
 function create(::Type{<:DataStorage{:passthrough}}, source::String)
