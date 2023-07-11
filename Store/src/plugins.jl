@@ -108,7 +108,7 @@ directly modifying the `$(@__MODULE__).getinventory().config` struct.
 $STORE_GC_CONFIG_INFO
 """
 const STORE_PLUGIN = Plugin("store", [
-    function (f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
+    function (f::typeof(storage), @nospecialize(storer::DataStorage), as::Type; write::Bool)
         inventory = getinventory(storer.dataset.collection) |> update_inventory!
         # Get any applicable cache file
         source = getsource(inventory, storer)
@@ -159,7 +159,7 @@ const STORE_PLUGIN = Plugin("store", [
             (f, (storer, as), (; write))
         end
     end,
-    function (f::typeof(rhash), storage::DataStorage, parameters::SmallDict, h::UInt)
+    function (f::typeof(rhash), @nospecialize(storage::DataStorage), parameters::SmallDict, h::UInt)
         delete!(parameters, "save") # Does not impact the final result
         if haskey(parameters, "lifetime")
             delete!(parameters, "lifetime") # Does not impact the final result
@@ -233,8 +233,8 @@ directly modifying the `$(@__MODULE__).getinventory().config` struct.
 $STORE_GC_CONFIG_INFO
 """
 const CACHE_PLUGIN = Plugin("cache", [
-    function (f::typeof(load), loader::DataLoader, source::Any, as::Type)
         if shouldstore(loader, as)
+    function (f::typeof(load), @nospecialize(loader::DataLoader), source::Any, as::Type)
             # Get any applicable cache file
             inventory = getinventory(loader.dataset.collection) |> update_inventory!
             cache = getsource(inventory, loader, as)
@@ -263,7 +263,7 @@ const CACHE_PLUGIN = Plugin("cache", [
             (f, (loader, source, as))
         end
     end,
-    function (f::typeof(rhash), loader::DataLoader, parameters::SmallDict, h::UInt)
+    function (f::typeof(rhash), @nospecialize(loader::DataLoader), parameters::SmallDict, h::UInt)
         delete!(parameters, "cache") # Does not impact the final result
         (f, (loader, parameters, h))
     end])

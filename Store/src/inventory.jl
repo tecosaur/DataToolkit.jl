@@ -758,10 +758,11 @@ end
 """
     fetch!(storer::DataStorage)
 
-If `storer` is storable, open it, and presumably save it in the Store along the way.
+If `storer` is storable (either by default, or explicitly enabled), open it, and
+presumably save it in the Store along the way.
 """
-function fetch!(storer::DataStorage)
-    if shouldstore(storer)
+function fetch!(@nospecialize(storer::DataStorage))
+    if shouldstore(storer) || @getparam(storage."save"::Bool, false) === true
         for type in (FilePath, IO, IOStream)
             if QualifiedType(type) in storer.type
                 handle = @advise storage(storer, type, write=false)

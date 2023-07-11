@@ -6,7 +6,7 @@ aspects of `storage` that could affect the loaded result.
 
 The hash should be consistent across sessions and cosmetic changes.
 """
-function rhash(loader::DataLoader{driver}, h::UInt=zero(UInt)) where {driver}
+function rhash(@nospecialize(loader::DataLoader{driver}), h::UInt=zero(UInt)) where {driver}
     h = hash(driver, h)
     h = @advise rhash(loader, copy(loader.parameters), h)
     # The only field of the parent data set that should affect the loaded
@@ -28,7 +28,7 @@ end
 Hash the *recipe* specified by `storage`, or more specifically the various
 aspects of `storage` that could affect the result.
 """
-function rhash(storage::DataStorage{driver}, h::UInt=zero(UInt)) where {driver}
+function rhash(@nospecialize(storage::DataStorage{driver}), h::UInt=zero(UInt)) where {driver}
     h = hash(driver, h)
     h = @advise rhash(storage, copy(storage.parameters), h)
     # The result of the storage driver should /not/ be materially affected by
@@ -70,7 +70,9 @@ rhash(collection::DataCollection, dict::Dict, h::UInt=zero(UInt)) =
            init=h)
 
 # For advising
-rhash(transformer::Union{DataStorage, DataLoader}, dict::SmallDict, h::UInt) =
+rhash(@nospecialize(transformer::DataStorage), @nospecialize(dict::SmallDict), h::UInt) =
+    rhash(transformer.dataset.collection, dict, h)
+rhash(@nospecialize(transformer::DataLoader), @nospecialize(dict::SmallDict), h::UInt) =
     rhash(transformer.dataset.collection, dict, h)
 
 rhash(collection::DataCollection, pair::Pair, h::UInt) =
