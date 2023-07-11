@@ -46,7 +46,7 @@ function download_to(storage::DataStorage{:web}, target::Union{IO, String})
     @import Downloads
     Downloads.download(
         @getparam(storage."url"::String), target;
-        headers = @getparam(storage."headers"::Dict{String, String}),
+        headers = @getparam(storage."headers"::SmallDict{String, Any}),
         timeout = @getparam(storage."timeout"::Real, Inf),
         progress = download_progress(storage.dataset.name))
     print(stderr, "\e[G\e[2K\e[A\e[2K")

@@ -41,7 +41,7 @@ function load(loader::DataLoader{:julia}, from::Any, R::Type)
             loadfn = getactfn(loader)
             arguments = Dict{Symbol,Any}(
                 Symbol(arg) => val
-                for (arg, val) in @getparam(loader."arguments"::Dict))
+                for (arg, val) in @getparam(loader."arguments"::SmallDict{String, Any}))
             cd(dirof(loader.dataset.collection)) do
                 DataToolkitBase.invokepkglatest(loadfn, from; arguments...)::R
             end
@@ -53,7 +53,7 @@ function save(writer::DataWriter{:julia}, dest, info)
     writefn = getactfn(writer)
     arguments = Dict{Symbol,Any}(
         Symbol(arg) => val
-        for (arg, val) in @getparam(loader."arguments"::Dict))
+        for (arg, val) in @getparam(loader."arguments"::SmallDict{String, Any}))
     cd(dirof(writer.dataset.collection)) do
         DataToolkitBase.invokepkglatest(writefn, dest, info; arguments...)
     end
