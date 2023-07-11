@@ -118,7 +118,7 @@ const STORE_PLUGIN = Plugin("store", [
                 rm(file, force=true)
             end
         end
-        if !shouldstore(storer) || write
+        if !(shouldstore(storer) || @getparam(storer."save"::Bool, false) === true) || write
             # If the store is invalid (should not be stored, or about to be
             # written to), then it should be removed before proceeding as
             # normal.
@@ -233,8 +233,8 @@ directly modifying the `$(@__MODULE__).getinventory().config` struct.
 $STORE_GC_CONFIG_INFO
 """
 const CACHE_PLUGIN = Plugin("cache", [
-        if shouldstore(loader, as)
     function (f::typeof(load), @nospecialize(loader::DataLoader), source::Any, as::Type)
+        if shouldstore(loader, as) || @getparam(loader."cache"::Bool, false) === true
             # Get any applicable cache file
             inventory = getinventory(loader.dataset.collection) |> update_inventory!
             cache = getsource(inventory, loader, as)
