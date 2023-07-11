@@ -201,7 +201,14 @@ function _read(dataset::DataSet, as::Type)
                 valid_storage_types =
                     filter(stype -> let accept = load_fn_sig.types[3]
                                if accept isa TypeVar
-                                   accept.lb <: stype <: accept.ub
+                                   # We can't really handle complex `TypeVar` situations,
+                                   # but we'll give the very most basic a shot, and cross
+                                   # our fingers with the rest.
+                                   if load_fn_sig.types[4] == Type{load_fn_sig.types[3]}
+                                       stype == as
+                                   else
+                                       accept.lb <: stype <: accept.ub
+                                   end
                                else # must be a Type
                                    stype <: accept
                                end
