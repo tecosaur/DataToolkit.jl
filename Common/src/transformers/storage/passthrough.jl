@@ -1,7 +1,7 @@
 function getstorage(storage::DataStorage{:passthrough}, T::Type)
     collection = storage.dataset.collection
     ident = @advise collection parse(Identifier, @getparam storage."source"::String)
-    read(resolve(collection, ident), T)
+    read(resolve(collection, ident, resolvetype=false), T)
 end
 
 function supportedtypes(::Type{DataStorage{:passthrough}}, params::SmallDict{String, Any}, dataset::DataSet)
