@@ -16,11 +16,10 @@ end
 
 # interface, as well as contextual hashing.
 
-function Store.rhash(collection::DataCollection, storage::DataStorage{:passthrough}, h::UInt)
-    ident = @advise collection parse(Identifier, @getparam storage."source"::String)
-    sourceh = Store.rhash(collection, ident, h)
-    invoke(Store.rhash, Tuple{DataCollection, AbstractDataTransformer, UInt},
-           collection, storage, sourceh)
+function Store.rhash(storage::DataStorage{:passthrough}, h::UInt)
+    ident = @advise storage parse(Identifier, @getparam storage."source"::String)
+    sourceh = Store.rhash(storage.dataset.collection, ident, h)
+    invoke(Store.rhash, Tuple{AbstractDataTransformer, UInt}, storage, sourceh)
 end
 
 Store.shouldstore(::DataStorage{:passthrough}) = false
