@@ -148,7 +148,7 @@ const STORE_PLUGIN = Plugin("store", [
             # which exceed memory limits).
             tryfile = storage(storer, FilePath; write)
             if !isnothing(tryfile)
-                io = open(storesave(inventory, storer, FilePath, tryfile), "r")
+                io = open(storesave(inventory, storer, FilePath, tryfile).path, "r")
                 (identity, (io,))
             else
                 (storesave(inventory, storer, as), f, (storer, as), (; write))

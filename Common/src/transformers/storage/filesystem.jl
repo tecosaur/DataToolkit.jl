@@ -65,7 +65,7 @@ function Store.storesave(inventory::Store.Inventory, storage::DataStorage{:files
     isfile(linkfile) && rm(linkfile)
     symlink(file.path, linkfile)
     Store.update_source!(inventory, newsource, storage.dataset.collection)
-    linkfile
+    FilePath(linkfile)
 end
 
 # Similarly, we need a variant on the generic `storefile` implementation to check

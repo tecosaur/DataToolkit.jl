@@ -232,7 +232,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     end
     chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
     update_source!(inventory, newsource, storage.dataset.collection)
-    dest
+    FilePath(dest)
 end
 
 """
@@ -244,7 +244,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     dumpfile, dumpio = mktemp()
     write(dumpio, from)
     close(dumpio)
-    open(storesave(inventory, storage, FilePath, FilePath(dumpfile)), "r")
+    open(storesave(inventory, storage, FilePath, FilePath(dumpfile)).path, "r")
 end
 
 """
