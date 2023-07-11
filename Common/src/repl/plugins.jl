@@ -98,7 +98,11 @@ function plugin_list(input::AbstractString)
         used_plugins
     end
     for plugin in plugins
-        printstyled(" • ", color=ifelse(plugin in used_plugins, :blue, :light_black))
+        if plugin in used_plugins
+            printstyled(" • ", color=:blue)
+        else
+            printstyled(" ∘ ", color=:light_black)
+        end
         println(plugin)
     end
 end
