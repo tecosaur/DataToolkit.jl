@@ -6,7 +6,7 @@ import REPL.TerminalMenus: request, RadioMenu
 Determine the apropriate file extension for a file caching the contents of
 `storage`, "cache" by default.
 """
-fileextension(::DataStorage) = "cache"
+fileextension(@nospecialize(::DataStorage)) = "cache"
 
 fileextension(s::StoreSource) = s.extension
 fileextension(s::CacheSource) = "jls"
@@ -17,13 +17,14 @@ fileextension(s::CacheSource) = "jls"
 
 Returns `true` if `storage`/`loader` should be stored/cached, `false` otherwise.
 """
-shouldstore(storage::DataStorage) = get(storage, "save", true) === true
+shouldstore(@nospecialize(storage::DataStorage)) =
+    @getparam(storage."save"::Bool, true) === true
 
-function shouldstore(loader::DataLoader, T::Type)
+function shouldstore(@nospecialize(loader::DataLoader), T::Type)
     unstorable = T <: IO || T <: Function ||
         QualifiedType(Base.typename(T).wrapper) ==
         QualifiedType(:TranscodingStreams, :TranscodingStream)
-    get(loader, "cache", true) === true && !unstorable
+    @getparam(loader."cache"::Bool, true) === true && !unstorable
 end
 
 """
@@ -32,9 +33,9 @@ end
 Look for the source in `inventory` that backs `storage`,
 returning the source or `nothing` if none could be found.
 """
-function getsource(inventory::Inventory, storage::DataStorage)
+function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
     recipe = rhash(storage)
-    checksum = get(storage, "checksum", false)
+    checksum = @getparam storage."checksum"::Union{Bool, String} false
     if checksum === false
         for record in inventory.stores
             if record.recipe == recipe
@@ -60,7 +61,7 @@ end
 Look for the source in `inventory` that backs the `as` form of `loader`,
 returning the source or `nothing` if none could be found.
 """
-function getsource(inventory::Inventory, loader::DataLoader, as::Type)
+function getsource(inventory::Inventory, @nospecialize(loader::DataLoader), as::Type)
     recipe = rhash(loader)
     for record in inventory.caches
         if record.recipe == recipe
@@ -109,7 +110,7 @@ source or the path does not exist.
 
 Should a source exist, but the file not, the source is removed from `inventory`.
 """
-function storefile(inventory::Inventory, storage::DataStorage)
+function storefile(inventory::Inventory, @nospecialize(storage::DataStorage))
     source = getsource(inventory, storage)
     if !isnothing(source)
         file = storefile(inventory, source)
@@ -126,7 +127,7 @@ function storefile(inventory::Inventory, storage::DataStorage)
     end
 end
 
-function storefile(inventory::Inventory, loader::DataLoader, as::Type)
+function storefile(inventory::Inventory, @nospecialize(loader::DataLoader), as::Type)
     source = getsource(inventory, loader, as)
     if !isnothing(source)
         file = storefile(inventory, source)
@@ -159,7 +160,7 @@ there is no checksum.
 The checksum of `file` is checked against the recorded checksum in `storage`, if
 it exists.
 """
-function getchecksum(storage::DataStorage, file::String)
+function getchecksum(@nospecialize(storage::DataStorage), file::String)
     checksum = get(storage, "checksum", false)
     if checksum == "auto"
         if iswritable(storage.dataset.collection)
@@ -211,7 +212,7 @@ end
 
 Save the `file` representing `storage` into `inventory`.
 """
-function storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath}, file::FilePath)
+function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::Type{FilePath}, file::FilePath)
     # The checksum must be calculated first because it will likely affect the
     # `rhash` result, should the checksum property be modified and included
     # in the hashing.
@@ -239,7 +240,7 @@ end
 
 Save the IO in `from` representing `storage` into `inventory`.
 """
-function storesave(inventory::Inventory, storage::DataStorage, ::Union{Type{IO}, Type{IOStream}}, from::IO)
+function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::Union{Type{IO}, Type{IOStream}}, from::IO)
     dumpfile, dumpio = mktemp()
     write(dumpio, from)
     close(dumpio)
@@ -251,7 +252,7 @@ end
 
 Partially apply the first three arguments of `storesave`.
 """
-storesave(inventory::Inventory, storage::DataStorage, as::Type) =
+storesave(inventory::Inventory, @nospecialize(storage::DataStorage), as::Type) =
     result -> storesave(inventory, storage, as, result)
 
 """
@@ -260,7 +261,7 @@ storesave(inventory::Inventory, storage::DataStorage, as::Type) =
 Return the epoch that `seconds` lies in, according to the lifetime
 specification of `storage`.
 """
-function epoch(storage::DataStorage, seconds::Real)
+function epoch(@nospecialize(storage::DataStorage), seconds::Real)
     if haskey(storage.parameters, "lifetime")
         span = interpret_lifetime(get(storage, "lifetime"))
         offset = get(storage, "lifetime_offset", 0)
@@ -285,7 +286,7 @@ end
 
 Return the current epoch, according to the lifetime specification of `storage`.
 """
-epoch(storage::DataStorage) = epoch(storage, time())
+epoch(@nospecialize(storage::DataStorage)) = epoch(storage, time())
 
 """
     interpret_lifetime(lifetime::String)
@@ -397,7 +398,7 @@ end
 
 Save the `value` produced by `loader` into `inventory`.
 """
-function storesave(inventory::Inventory, loader::DataLoader, value::T) where {T}
+function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), value::T) where {T}
     ptypes = pkgtypes(value)
     modules = unique(parentmodule.(ptypes))
     pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], modules)
@@ -424,7 +425,7 @@ end
 
 Partially apply the first two arguments of `storesave`.
 """
-storesave(inventory::Inventory, loader::DataLoader) =
+storesave(inventory::Inventory, @nospecialize(loader::DataLoader)) =
     value -> storesave(inventory, loader, value)
 
 """
