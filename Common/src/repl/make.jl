@@ -116,7 +116,9 @@ function create_sandbox()
                 expr = expr.args[2]
             end
             result = if expr isa Symbol
-                Expr(:quote, Core.eval(mod, expr))
+                res = Core.eval(mod, expr)
+                lasttype[] = typeof(res)
+                Expr(:quote, res)
             elseif expr.head ∈ (:const, :global)
                 printstyled("ERROR: ", color=:light_red, bold=true)
                 println("Disallowed: Global assignment is not permitted")
@@ -192,6 +194,10 @@ end
 
 function sandbox_to_function(sandbox)
     validhist = setdiff(axes(sandbox.modes.julia.hist.history, 1), sandbox.hist_ignore)
+    # Ensure the last value (i.e. return value) is part of the record.
+    if validhist[end] != length(sandbox.modes.julia.hist.history)
+        push!(validhist, length(sandbox.modes.julia.hist.history))
+    end
     histlines = sandbox.modes.julia.hist.history[validhist]
     histmodes = sandbox.modes.julia.hist.modes[validhist]
 
