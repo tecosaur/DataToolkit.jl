@@ -99,8 +99,12 @@ function repl_edit(input::AbstractString)
         dataspec = convert(Dict, dataset)
         tomlfile = tempname(cleanup=false) * ".toml"
         open(tomlfile, "w") do io
+            datakeygen(key) = if haskey(DataToolkitBase.DATA_CONFIG_KEY_SORT_MAPPING, key)
+                [DataToolkitBase.DATA_CONFIG_KEY_SORT_MAPPING[key]]
+            else natkeygen(key) end
             intermediate = IOBuffer()
-            TOML.print(intermediate, Dict(dataset.name => [dataspec]))
+            TOML.print(intermediate, Dict(dataset.name => [dataspec]),
+                       sorted = true, by = datakeygen)
             write(io, "data_config_version = ",
                   string(dataset.collection.version), '\n',
                   "#     ╭─[extracted from '$(dataset.collection.name)' for modification]\n",
