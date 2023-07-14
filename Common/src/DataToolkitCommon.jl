@@ -35,11 +35,16 @@ include("transformers/saveload/csv.jl")
 include("transformers/saveload/delim.jl")
 include("transformers/saveload/iotofile.jl")
 include("transformers/saveload/jld2.jl")
+include("transformers/saveload/jpeg.jl")
 include("transformers/saveload/json.jl")
 include("transformers/saveload/julia.jl")
+include("transformers/saveload/netpbm.jl")
 include("transformers/saveload/passthrough.jl")
+include("transformers/saveload/png.jl")
+include("transformers/saveload/qoi.jl")
 include("transformers/saveload/sqlite.jl")
 include("transformers/saveload/tar.jl")
+include("transformers/saveload/tiff.jl")
 include("transformers/saveload/xlsx.jl")
 include("transformers/saveload/zip.jl")
 
@@ -64,12 +69,18 @@ function __init__()
     @addpkg CodecXz        "ba30903b-d9e8-5048-a5ec-d1f5b0d4b47b"
     @addpkg CodecZlib      "944b1d66-785c-5afd-91f1-9de20f533193"
     @addpkg CodecZstd      "6b39b394-51ab-5f42-8807-6242bab2b4c2"
+    @addpkg ColorTypes     "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
     @addpkg DBInterface    "a10d1c49-ce27-4219-8d33-6db1a4562965"
     @addpkg DelimitedFiles "8bb1440f-4735-579b-a4ab-409b98df4dab"
     @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
     @addpkg JSON3          "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+    @addpkg JpegTurbo      "b835a17e-a41a-41e7-81f0-2f016b05efe0"
+    @addpkg Netpbm         "f09324ee-3d7c-5217-9330-fc30815ba969"
+    @addpkg PNGFiles       "f57f5aa1-a3ce-4bc8-8ab9-96f992907883"
+    @addpkg QOI            "4b34888f-f399-49d4-9bb3-47ed5cae4e65"
     @addpkg SQLite         "0aa819cd-b072-5ff4-a722-6bc24af294d9"
     @addpkg Tar            "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
+    @addpkg TiffImages     "731e570b-9d59-4bfa-96dc-6df516fadf69"
     @addpkg XLSX           "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
     @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
     # Plugins
@@ -98,11 +109,16 @@ function __init__()
              (:loader, :delim) => DELIM_DOC,
              (:loader, Symbol("io->file")) => IOTOFILE_DOC,
              (:loader, :jld2) => JLD2_DOC,
+             (:loader, :jpeg) => JPEG_DOC,
              (:loader, :json) => JSON_DOC,
              (:loader, :julia) => JULIA_DOC,
+             (:loader, :netpbm) => NETPBM_DOC,
              (:loader, :passthrough) => PASSTHROUGH_L_DOC,
+             (:loader, :png) => PNG_DOC,
+             (:loader, :qoi) => QOI_DOC,
              (:loader, :sqlite) => SQLITE_DOC,
              (:loader, :tar) => TAR_DOC,
+             (:loader, :tiff) => TIFF_DOC,
              (:loader, :xlsx) => XLSX_DOC,
              (:loader, :zip) => ZIP_DOC,
              (:writer, :gzip) => COMPRESSION_DOC,
@@ -113,9 +129,14 @@ function __init__()
              (:writer, :zstd) => COMPRESSION_DOC,
              (:writer, :csv) => CSV_DOC,
              (:writer, :delim) => DELIM_DOC,
+             (:writer, :jpeg) => JPEG_DOC,
              (:writer, :json) => JSON_DOC,
+             (:writer, :netpbm) => NETPBM_DOC,
              (:writer, :julia) => JULIA_DOC,
+             (:writer, :png) => PNG_DOC,
+             (:writer, :qoi) => QOI_DOC,
              (:writer, :sqlite) => SQLITE_DOC,
+             (:writer, :tiff) => TIFF_DOC,
              ])
 end
 
