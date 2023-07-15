@@ -1,0 +1,5 @@
+#+title: JPEG
+
+#+begin_src @eval
+Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:jpeg)
+#+end_src
