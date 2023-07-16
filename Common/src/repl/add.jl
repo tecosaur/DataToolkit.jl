@@ -85,7 +85,7 @@ function add(input::AbstractString)
         rest
     else
         prompt(" From: ", allowempty=true)
-    end
+    end |> String
     spec = prompt_attributes()
     DataToolkitBase.add(DataSet, name, spec, from; via...)
 end
