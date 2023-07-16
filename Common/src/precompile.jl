@@ -46,6 +46,7 @@
     """
     @compile_workload begin
         Store.__init__()
+        empty!(Store.INVENTORIES)
         __init__()
         # Store
         tempfile, tempio = mktemp()
