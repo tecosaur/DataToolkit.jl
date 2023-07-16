@@ -1,17 +1,23 @@
 const STORE_GC_CONFIG_INFO = md"""
-Four (system-wide) settings determine garbage collection behaviour:
-1. `auto_gc` (default $(DEFAULT_INVENTORY_CONFIG.auto_gc)): How often to
-   automatically run garbage collection (in hours). Set to a non-positive value
-   to disable.
-2. `max_age` (default $(DEFAULT_INVENTORY_CONFIG.max_age)): The maximum number
-   of days since a collection was last seen before it is removed from
-   consideration.
-3. `max_size` (default $(DEFAULT_INVENTORY_CONFIG.max_size)): The maximum
-   (total) size of the store.
-4. `recency_beta` (default $(DEFAULT_INVENTORY_CONFIG.recency_beta)): When
-   removing items to avoid going over `max_size`, how much recency should be
-   valued. Can be set to any value in (-∞, ∞). Larger (positive) values weight
-   recency more, and negative values weight size more. -1 and 1 are equivalent.
+A few (system-wide) settings determine garbage collection behaviour:
+- `auto_gc` (default $(DEFAULT_INVENTORY_CONFIG.auto_gc)): How often to
+  automatically run garbage collection (in hours). Set to a non-positive value
+  to disable.
+- `max_age` (default $(DEFAULT_INVENTORY_CONFIG.max_age)): The maximum number
+  of days since a collection was last seen before it is removed from
+  consideration.
+- `max_size` (default $(DEFAULT_INVENTORY_CONFIG.max_size)): The maximum
+  (total) size of the store.
+- `recency_beta` (default $(DEFAULT_INVENTORY_CONFIG.recency_beta)): When
+  removing items to avoid going over `max_size`, how much recency should be
+  valued. Can be set to any value in (-∞, ∞). Larger (positive) values weight
+  recency more, and negative values weight size more. -1 and 1 are equivalent.
+- `store_dir` (default $(DEFAULT_INVENTORY_CONFIG.store_dir)): The directory
+  (either as an absolute path, or relative to the inventory file) that should be
+  used for storage (IO) cache files.
+- `cache_dir` (default $(DEFAULT_INVENTORY_CONFIG.cache_dir)): The directory
+  (either as an absolute path, or relative to the inventory file) that should be
+  used for Julia cache files.
 """
 
 """

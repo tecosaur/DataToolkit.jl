@@ -63,6 +63,7 @@ function Store.storesave(inventory::Store.Inventory, storage::DataStorage{:files
         now(), checksum, last(splitext(file.path))[2:end])
     linkfile = Store.storefile(inventory, newsource)
     isfile(linkfile) && rm(linkfile)
+    isdir(dirname(linkfile)) || mkpath(dirname(linkfile))
     symlink(file.path, linkfile)
     Store.update_source!(inventory, newsource, storage.dataset.collection)
     FilePath(linkfile)

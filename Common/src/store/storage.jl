@@ -81,7 +81,7 @@ Returns the full path for `source` in `inventory`, regardless of whether the
 path exists or not.
 """
 function storefile(inventory::Inventory, source::StoreSource)
-    joinpath(dirname(inventory.file.path),
+    joinpath(dirname(inventory.file.path), inventory.config.store_dir,
              string(if isnothing(source.checksum)
                         string("R-", string(source.recipe, base=16))
                     else
@@ -92,7 +92,7 @@ function storefile(inventory::Inventory, source::StoreSource)
 end
 
 function storefile(inventory::Inventory, source::CacheSource)
-    joinpath(dirname(inventory.file.path),
+    joinpath(dirname(inventory.file.path), inventory.config.cache_dir,
              string(string("R-", string(source.recipe, base=16)),
                     '-', string(last(first(source.types)), base=16),
                     '.', fileextension(source)))
@@ -225,6 +225,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     if should_log_event("store", storage)
         @info "Writing $(sprint(show, storage.dataset.name)) to storage"
     end
+    isdir(dirname(dest)) || mkpath(dirname(dest))
     if startswith(file.path, tempdir())
         mv(file.path, dest, force=true)
     else
