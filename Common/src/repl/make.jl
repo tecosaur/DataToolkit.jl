@@ -51,6 +51,11 @@ function repl_make(input::AbstractString)
 
         print("\e[F\e[2K") # Remove the last "julia>" prompt line
 
+        if isempty(sandbox.modes.julia.hist.history)
+            printstyled("Did nothing\n", color=:light_black)
+            return
+        end
+
         (; scriptfn, datavars) = sandbox_to_function(sandbox)
         scriptfile = string(tempname(), ".jl")
         write(scriptfile, string(scriptfn))
@@ -195,7 +200,7 @@ end
 function sandbox_to_function(sandbox)
     validhist = setdiff(axes(sandbox.modes.julia.hist.history, 1), sandbox.hist_ignore)
     # Ensure the last value (i.e. return value) is part of the record.
-    if validhist[end] != length(sandbox.modes.julia.hist.history)
+    if !isempty(validhist) && validhist[end] != length(sandbox.modes.julia.hist.history)
         push!(validhist, length(sandbox.modes.julia.hist.history))
     end
     histlines = sandbox.modes.julia.hist.history[validhist]
