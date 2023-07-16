@@ -1,5 +1,7 @@
 import DataToolkitBase: allcompletions
 
+const REPL_CONFIG_KEYS = ["auto_gc", "max_age", "max_size", "recency_beta", "store_dir", "cache_dir"]
+
 function repl_config_get(input::AbstractString)
     inventory = if isempty(STACK)
         getinventory()
@@ -24,6 +26,8 @@ function repl_config_get(input::AbstractString)
         default = getproperty(DEFAULT_INVENTORY_CONFIG, param)
         if printer isa Function
             print(' ', printer(value))
+        elseif isempty(printer)
+            print(' ', value)
         else
             print(" $value $printer")
         end
@@ -50,69 +54,50 @@ function repl_config_set(input::AbstractString)
         println("must provide a \"{parameter} {value}\" form")
         return
     end
+    setters = Dict(
+        "auto_gc" => (field = :auto_gc, type = Int, noval = "-"),
+        "max_age" => (field = :max_age, type = Int, noval = "-"),
+        "max_size" => (field = :max_size, type = Int, subtype = :bytes, noval = "-"),
+        "recency_beta" => (field = :recency_beta, type = Number))
     param, value = split(input, limit=2)
-    if param == "auto_gc"
-        if (hours = tryparse(Int, hours)) |> !isnothing
-            modify_inventory!(inventory, inv -> inv.config.auto_gc = hours)
-        else
-            printstyled(" ! ", color=:red, bold=true)
-            println("must be an integer")
-            return
-        end
-    elseif param == "max_age"
-        if value == "-"
-            modify_inventory!(inventory) do inv
-                inv.config.max_age = nothing
-            end
-        elseif (days = tryparse(Int, value)) |> !isnothing
-            modify_inventory!(inventory) do inv
-                inv.config.max_age = days
-            end
-        else
-            printstyled(" ! ", color=:red, bold=true)
-            println("must be a integer")
-            return
-        end
-    elseif param == "max_size"
-        if value == "-"
-            modify_inventory!(inventory) do inv
-                inv.config.max_size = nothing
-            end
-        else
+    if haskey(setters, param)
+        setter = setters[param]
+        setval = if hasproperty(setter, :noval) && value == setter.noval
+            Some(nothing)
+        elseif setter.type == String
+            value
+        elseif setter.type == Int
+            tryparse(Int, value)
+        elseif setter.type == Number
+            something(tryparse(Int, value), parse(Float64, value))
+        elseif setter.type == :bytes
             try
-                bytes = parsebytesize(value)
-                modify_inventory!(inventory) do inv
-                    inv.config.max_size = bytes
-                end
+                parsebytesize(value)
             catch err
-                if err isa ArgumentError
-                    printstyled(" ! ", color=:red, bold=true)
-                    println("must be a byte size (e.g. '5GiB', '100kB')")
-                    return
-                else
+                if !(err isa ArgumentError)
                     rethrow(err)
                 end
             end
         end
-    elseif param == "recency_beta"
-        try
-            num = something(tryparse(Int, value), parse(Float64, value))
-            modify_inventory!(inventory, inv -> inv.config.recency_beta = num)
-        catch err
-            if err isa ArgumentError
-                printstyled(" ! ", color=:red, bold=true)
-                println("must be a (positive) number")
-                return
-            else
-                rethrow(err)
-            end
+        if !isnothing(setval)
+            update_inventory!(inventory)
+            setproperty!(inventory.config, setter.field, something(setval))
+            write(inventory)
+            printstyled(" ✓ Done\n", color=:green)
+        else
+            printstyled(" ! ", color=:red, bold=true)
+            println(if setter.type == :bytes
+                        "must be a byte size (e.g. '5GiB', '100kB')"
+                    elseif setter.type == Int
+                        "must be an integer"
+                    elseif setter.type == Number
+                        "must be a number"
+                    end)
         end
     else
         printstyled(" ! ", color=:red, bold=true)
         println("unrecognised parameter: $param")
-        return
     end
-    printstyled(" ✓ Done\n", color=:green)
 end
 
 function repl_config_reset(input::AbstractString)
@@ -121,34 +106,18 @@ function repl_config_reset(input::AbstractString)
     else
         getinventory(first(STACK))
     end
-    if input == "auto_gc"
-        modify_inventory!(inventory) do inv
-            inv.config.auto_gc = DEFAULT_INVENTORY_CONFIG.auto_gc
-        end
+    printers = Dict(
+        "auto_gc" => v -> if v <= 0 "off" else string(v, " hours") end,
+        "max_age" => v -> string(v, " days"),
+        "max_size" => v -> if isnothing(v) "unlimited" else join(humansize(v)) end)
+    if input in REPL_CONFIG_KEYS
+        printer = get(printers, input, identity)
+        update_inventory!(inventory)
+        default_value = getproperty(DEFAULT_INVENTORY_CONFIG, Symbol(input))
+        setproperty!(inventory.config, Symbol(input), default_value)
+        write(inventory)
         printstyled(" ✓ ", color=:green)
-        println("Set to $(ifelse(DEFAULT_INVENTORY_CONFIG.auto_gc, "on", "off"))")
-    elseif input == "max_age"
-        modify_inventory!(inventory) do inv
-            inv.config.max_age = DEFAULT_INVENTORY_CONFIG.max_age
-        end
-        printstyled(" ✓ ", color=:green)
-        println("Set to $(DEFAULT_INVENTORY_CONFIG.max_age) days")
-    elseif input == "max_size"
-        modify_inventory!(inventory) do inv
-            inv.config.max_size = DEFAULT_INVENTORY_CONFIG.max_size
-        end
-        printstyled(" ✓ ", color=:green)
-        if isnothing(inventory.config.max_size)
-            println("Set to unlimited")
-        else
-            println("Set to $(join(humansize(DEFAULT_INVENTORY_CONFIG.max_size)))")
-        end
-    elseif input == "recency_beta"
-        modify_inventory!(inventory) do inv
-            inv.config.recency_beta = DEFAULT_INVENTORY_CONFIG.recency_beta
-        end
-        printstyled(" ✓ ", color=:green)
-        println("Set to $(DEFAULT_INVENTORY_CONFIG.recency_beta)")
+        println("Set to ", printer(default_value))
     else
         printstyled(" ! ", color=:red, bold=true)
         println("unrecognised parameter: $input")
@@ -156,7 +125,6 @@ function repl_config_reset(input::AbstractString)
     end
 end
 
-const REPL_CONFIG_KEYS = ["auto_gc", "max_age", "max_size", "recency_beta"]
 allcompletions(::ReplCmd{:store_config_get}) = REPL_CONFIG_KEYS
 allcompletions(::ReplCmd{:store_config_set}) = REPL_CONFIG_KEYS
 allcompletions(::ReplCmd{:store_config_reset}) = REPL_CONFIG_KEYS
