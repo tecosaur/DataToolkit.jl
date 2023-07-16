@@ -128,6 +128,14 @@ function addimport!(pkg::Union{Expr, Symbol}, property::Expr,
         as = something(alias, last(property.args).value)
         push!(imports, (; pkg, property, as))
         as
+    elseif property.head == :macrocall
+        if length(property.args) == 2
+            as = something(alias, first(property.args))
+            push!(imports, (; pkg, property=first(property.args), as))
+            as
+        else
+            throw(InvalidImportForm("invalid macro import from $pkg: $property"))
+        end
     else
         throw(InvalidImportForm("$property is not valid property of $pkg"))
     end
