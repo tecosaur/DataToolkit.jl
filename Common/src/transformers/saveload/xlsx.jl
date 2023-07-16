@@ -1,9 +1,9 @@
-function load(loader::DataLoader{:xlsx}, from::FilePath, as::Type{Matrix})
+function load(loader::DataLoader{:xlsx}, from::IO, ::Type{Matrix})
     @import XLSX
     if !isnothing(get(loader, "range"))
-        XLSX.readdata(string(from), get(loader, "sheet", 1), get(loader, "range"))
+        XLSX.readdata(from, get(loader, "sheet", 1), get(loader, "range"))
     else
-        XLSX.readdata(string(from), get(loader, "sheet", 1))
+        XLSX.readdata(from, get(loader, "sheet", 1))
     end
 end
 
