@@ -2,7 +2,8 @@ const INVENTORY_VERSION = 0
 
 const INVENTORIES = Vector{Inventory}()
 
-const DEFAULT_INVENTORY_CONFIG = InventoryConfig(2, 30, 50*1024^3, 1)
+const DEFAULT_INVENTORY_CONFIG =
+    InventoryConfig(2, 30, 50*1024^3, 1, "store", "cache")
 const MSG_LABEL_WIDTH = 10
 
 # Reading and writing
@@ -15,8 +16,10 @@ function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
     else getfield(DEFAULT_INVENTORY_CONFIG, key) end
     InventoryConfig(getkey(:auto_gc, Int),
                     getkey(:max_age, Int, true),
-                    getkey(:max_size, Number, true),
-                    getkey(:recency_beta, Int))
+                    getkey(:max_size, Int, true),
+                    getkey(:recency_beta, Number),
+                    getkey(:store_dir, String),
+                    getkey(:cache_dir, String))
 end
 
 function Base.convert(::Type{CollectionInfo}, (uuid, spec)::Pair{String, Dict{String, Any}})
@@ -104,7 +107,7 @@ end
 
 function Base.convert(::Type{Dict}, conf::InventoryConfig)
     d = Dict{String, Any}()
-    for key in (:auto_gc, :max_age, :max_size, :recency_beta)
+    for key in (:auto_gc, :max_age, :max_size, :recency_beta, :store_dir, :cache_dir)
         if getfield(conf, key) != getfield(DEFAULT_INVENTORY_CONFIG, key)
             value = getfield(conf, key)
             d[String(key)] = if isnothing(value) "nothing" else value end

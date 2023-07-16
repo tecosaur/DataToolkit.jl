@@ -8,6 +8,8 @@ mutable struct InventoryConfig
     max_age::Union{Int, Nothing}  # Days
     max_size::Union{Int, Nothing} # Bytes
     recency_beta::Number
+    store_dir::String
+    cache_dir::String
 end
 
 struct CollectionInfo

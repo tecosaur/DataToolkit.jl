@@ -11,7 +11,9 @@ function repl_config_get(input::AbstractString)
     value_sets = [(:auto_gc, "hours"),
                   (:max_age, "days"),
                   (:max_size, join ∘ humansize),
-                  (:recency_beta, "")]
+                  (:recency_beta, ""),
+                  (:store_dir, ""),
+                  (:cache_dir, "")]
     if !isempty(input)
         filter!((v, _)::Tuple -> String(v) == input, value_sets)
         if isempty(value_sets)
@@ -57,8 +59,10 @@ function repl_config_set(input::AbstractString)
     setters = Dict(
         "auto_gc" => (field = :auto_gc, type = Int, noval = "-"),
         "max_age" => (field = :max_age, type = Int, noval = "-"),
-        "max_size" => (field = :max_size, type = Int, subtype = :bytes, noval = "-"),
-        "recency_beta" => (field = :recency_beta, type = Number))
+        "max_size" => (field = :max_size, type = :bytes, noval = "-"),
+        "recency_beta" => (field = :recency_beta, type = Number),
+        "store_dir" => (field = :store_dir, type = String),
+        "cache_dir" => (field = :cache_dir, type = String))
     param, value = split(input, limit=2)
     if haskey(setters, param)
         setter = setters[param]
