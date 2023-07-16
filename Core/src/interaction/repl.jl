@@ -643,12 +643,17 @@ function peelword(input::AbstractString; allowdot::Bool=true)
     else # Starts with " and at least two " in `input`.
         start = findfirst(!isspace, input)::Int
         stop = nextind(input, start)
+        maxstop = lastindex(input)
         word = Char[]
-        while input[stop] != '"' && stop <= lastindex(input)
+        while input[stop] != '"' && stop <= maxstop
             push!(word, input[stop + Int(input[stop] == '\\')])
             stop = nextind(input, stop, 1 + Int(input[stop] == '\\'))
         end
-        (String(word), input[stop+1:end])
+        stop = nextind(input, stop)
+        if stop <= maxstop && isspace(input[stop])
+            stop = nextind(input, stop)
+        end
+        (String(word), input[stop:end])
     end
 end
 
