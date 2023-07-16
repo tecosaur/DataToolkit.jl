@@ -366,6 +366,7 @@ future the =web= storage driver produces different data, this will now be caught
 and raised.
 
 * Multi-step analysis with the Boston Housing data set
+** Loading the data
 
 The /Boston Housing/ data set is part of the =RDatasets= package, and we can obtain
 a link to the raw data file in the repository:
@@ -430,4 +431,248 @@ julia> d"boston"
  506 │ 0.04741      0.0    11.93      0    0.573    6.03      80.8   2.505       1 ⋯
 #+end_src
 
-WIP
+** Cleaning the data
+
+Say the data needs some massaging, such as imputation, outlier removal, or
+restructuring. We can cleanly handle this by creating a /second/ dataset that uses
+the value of the /initial/ dataset. Say we consider this initial data unclean, and
+that to "clean" this dataset we filter out the entries where the we only keep
+entries where the =MedV= value is within the 90% quantile. We can easily do this
+with the =make= Data REPL command.
+
+For this, we'll want to use the =StatsBase= package, so we'll add it and then make
+it available to use with ~DataToolkit.@addpkgs~.
+
+#+begin_src julia-repl
+(datatoolkit_tutorial) pkg> add StatsBase
+
+julia> DataToolkit.@addpkgs StatsBase
+#+end_src
+
+#+begin_notes
+The ~DataToolkit.@addpkgs StatsBase~ line will need to be executed in every fresh
+Julia session, when creating a data /package/ it makes sense to put this within
+the ~__init__~ function.
+#+end_notes
+
+Now we can create the =boston (clean)= dataset with the =make= command.
+
+#+begin_src julia-repl
+(tutorial) data> make boston (clean)
+
+(data) julia> @import StatsBase.quantile
+std (generic function with 5 methods)
+
+(data) julia> proportion = 0.8
+0.8
+
+(data) julia> column = "MedV"
+
+(data) julia> vals = d"boston"[!, column]
+506-element Vector{Float64}:
+
+(data) julia> minval, maxval = quantile(vals, [0.5 - proportion/2, 0.5 + proportion/2])
+2-element Vector{Float64}:
+ 10.2
+ 43.4
+
+
+(data) julia> mask = minval .<= vals .<= maxval
+506-element BitVector:
+
+(data) julia> d"boston"[mask, :]
+456×14 DataFrame...
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? DataFrame
+ Description: Cleaned Boston Housing data
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
+
+(tutorial) data>
+#+end_src
+
+We can look inside the =Data.toml= to see the new entry.
+
+#+begin_src toml
+[["boston (clean)"]]
+uuid = "5162814a-120f-4cdc-9958-620189295330"
+description = "Cleaned Boston Housing data"
+
+    [["boston (clean)".loader]]
+    driver = "julia"
+    function = '''
+function (; var"data#boston")
+    @import StatsBase.quantile
+    proportion = 0.8
+    column = "MedV"
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .<= vals .<= maxval
+    var"data#boston"[mask, :]
+end
+'''
+    type = "DataFrame"
+
+        ["boston (clean)".loader.arguments]
+        "data#boston" = "📇DATASET<<boston::DataFrame>>"
+#+end_src
+
+** Fitting a linear model
+
+Now let's say we want to fit a linear model for the relationship between =MedV=
+and =Rm=. We could do this in a script ... or create another derived dataset.
+
+Let's do this with =GLM=, so first run ~] add GLM~, then ~DataToolkit.@addpkgs GLM~.
+Now we'll create another derived data set with =make=.
+
+#+begin_src julia-repl
+(tutorial) data> make boston Rm ~ MedV
+
+(data) julia> @import GLM: @formula, lm
+
+(data) julia> lm(@formula(Rm ~ MedV), d"boston (clean)")
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? Any
+ Description: A linear model for the relation between Rm and MedV
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created 'boston Rm ~ MedV' (e720acb2-5ed1-417f-bfd0-668c21134c87)
+
+(tutorial) data>
+#+end_src
+
+#+begin_info
+For now, manually specify ~Any~ as the return type instead of the default
+~StatsModels.TableRegressionModel{GLM.LinearModel{GLM.LmResp{Array{Float64,1}},GLM.DensePredChol{Float64,LinearAlgebra.CholeskyPivoted{Float64,Array{Float64,2},Array{Int64,1}}}},Array{Float64,2}}~.
+It's currently difficult for =DataToolkitBase= to represent types that rely on
+nested modules, which occurs here.
+#+end_info
+
+Obtaining the linear regression result is as easy as fetching any other dataset.
+
+#+begin_src julia-repl
+julia> d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.95241     0.0753342  65.74    <1e-99  4.80436    5.10045
+MedV         0.0588453   0.0033047  17.81    <1e-53  0.0523509  0.0653397
+─────────────────────────────────────────────────────────────────────────
+#+end_src
+
+** A more easily tunable cleaner
+
+In the current implementation of =boston (clean)=, we hardcoded a ~proportion~
+value of ~0.8~, and set the ~column~ to ~"MedV"~. It could be nice if we made those
+more easily tunable. We can do this by turning them into keyword arguments of
+the function.
+
+To make this change, we will use the =edit= Data REPL command.
+
+#+begin_src julia-repl
+(tutorial) data> edit boston (clean)
+#+end_src
+
+This will open up a temporary TOML file containing the =boston (clean)= dataset in
+your text editor of choice. In this file, change the function to:
+
+#+begin_src julia
+function (; var"data#boston", proportion, column)
+    @import StatsBase.quantile
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .<= vals .<= maxval
+    var"data#boston"[mask, :]
+end
+#+end_src
+
+We will then move the ~proportion = 0.8~ and ~column = "MedV"~ lines to the
+arguments table.
+
+#+begin_src toml
+["boston (clean)".loader.arguments]
+"data#boston" = "📇DATASET<<boston::DataFrame>>"
+proportion = 0.8
+column = "MedV"
+#+end_src
+
+Aftre making these changes and closing the file, we'll be asked if we want to
+make this change (we do).
+
+#+begin_src julia-repl
+(tutorial) data> edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       + Added column
+       + Added proportion
+     ~ Modified function:
+       "function (; var\"data#boston\")\n    @import StatsBase.quantile\n    proportion = 0.9\n    column = \"MedV\"\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n" ~> "function (; var\"data#boston\", proportion, column)\n    @import StatsBase.quantile\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n"
+ Does this look correct? [y/N]: y
+ ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
+#+end_src
+
+** Propagating changes
+
+With our new parameterisation of the cleaning step, we can now easily tune the
+cleaning step. We can see the results of this propagating through in the =boston
+Rm ~ MedV= dataset.
+
+First, see that the ~d"boston Rm ~ MedV"~ result is the same as it was before.
+
+#+begin_src julia-repl
+julia> d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.98609     0.0978742  50.94    <1e-99  4.79369    5.1785
+MedV         0.0563562   0.0044222  12.74    <1e-30  0.0476627  0.0650497
+─────────────────────────────────────────────────────────────────────────
+#+end_src
+
+Now, =edit= the =boston (clean)= dataset again and change the ~proportion~ to ~0.95~.
+
+#+begin_src julia-repl
+(tutorial) data> edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       ~ Modified proportion:
+         0.8 ~> 0.95
+ Does this look correct? [y/N]: y
+ ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
+#+end_src
+
+Since =boston (clean)= is an input of =boston Rm ~ MedV=, and all inputs are
+recursively hashed (like in a [[https://en.wikipedia.org/wiki/Merkle_tree][Merkle tree]]), we can immediately see the (small)
+change simply by fetching it again --- it is automatically recomputed.
+
+#+begin_src julia-repl
+julia> d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  5.05849    0.0618848   81.74    <1e-99   4.9369    5.18008
+MedV         0.0541727  0.00251511  21.54    <1e-72   0.049231  0.0591144
+─────────────────────────────────────────────────────────────────────────
+#+end_src
