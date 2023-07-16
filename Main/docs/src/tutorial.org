@@ -676,3 +676,81 @@ Coefficients:
 MedV         0.0541727  0.00251511  21.54    <1e-72   0.049231  0.0591144
 ─────────────────────────────────────────────────────────────────────────
 #+end_src
+
+* The final =Data.toml=
+
+At the end of this tutorial (or should you wish to just poke at the results),
+you should end up with a =Data.toml= that looks like this:
+
+#+begin_src toml
+data_config_version = 0
+uuid = "f20a77d0-0dc9-41bb-875b-ad0bf42c90bd"
+name = "tutorial"
+plugins = ["defaults", "store"]
+
+[[boston]]
+uuid = "02968c42-828e-4f22-86b8-ec67ac629a03"
+description = "The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass."
+
+    [[boston.storage]]
+    driver = "web"
+    url = "https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz"
+
+    [[boston.loader]]
+    driver = "chain"
+    loaders = ["gzip", "csv"]
+
+[["boston (clean)"]]
+uuid = "5162814a-120f-4cdc-9958-620189295330"
+description = "Cleaned Boston Housing data"
+
+    [["boston (clean)".loader]]
+    driver = "julia"
+    function = '''
+function (; var"data#boston", proportion, column)
+    @import StatsBase.quantile
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .<= vals .<= maxval
+    var"data#boston"[mask, :]
+end
+'''
+    type = "DataFrame"
+
+        ["boston (clean)".loader.arguments]
+        column = "MedV"
+        "data#boston" = "📇DATASET<<boston::DataFrame>>"
+        proportion = 0.95
+
+[["boston Rm ~ MedV"]]
+uuid = "e720acb2-5ed1-417f-bfd0-668c21134c87"
+description = "A linear model for the relation between Rm and MedV"
+
+    [["boston Rm ~ MedV".loader]]
+    driver = "julia"
+    function = """
+function (; var\"data#boston (clean)\")
+    @import GLM
+    GLM.lm(GLM.@formula(Rm ~ MedV), var\"data#boston (clean)\")
+end
+"""
+
+        ["boston Rm ~ MedV".loader.arguments]
+        "data#boston (clean)" = "📇DATASET<<boston (clean)::DataFrame>>"
+
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "crc32c:d5c06b86"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+
+        [iris.loader.args]
+        header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+        skipto = 2
+#+end_src
