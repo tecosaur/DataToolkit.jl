@@ -133,7 +133,7 @@ description = &quot;Fisher&#39;s famous Iris flower measurements&quot;
 
         [iris.loader.args]
         header = [&quot;sepal_length&quot;, &quot;sepal_width&quot;, &quot;petal_length&quot;, &quot;petal_width&quot;, &quot;species_class&quot;]
-        skipto = 2</code></pre><p>Now, you have a <code>Project.toml</code>, <code>Manifest.toml</code>, and <code>Data.toml</code> that can be relocated to other systems and <code>d&quot;iris&quot;</code> will consistently produce the exact same <code>DataFrame</code>.</p><h3 id="Bonus:-ensuring-the-integrity-of-the-downloaded-data"><a class="docs-heading-anchor" href="#Bonus:-ensuring-the-integrity-of-the-downloaded-data">Bonus: ensuring the integrity of the downloaded data</a><a id="Bonus:-ensuring-the-integrity-of-the-downloaded-data-1"></a><a class="docs-heading-anchor-permalink" href="#Bonus:-ensuring-the-integrity-of-the-downloaded-data" title="Permalink"></a></h3><p>One of the three plugins used by default is the <code>store</code> plugin. It is responsible for caching IO data and checking data validity. For a more complete description of what it does, see the web docs or the Data REPL (sub)command <code>plugin info store</code>.</p><p>There are two immediate impacts of this plugin we can easily observe. The first is that we can load the <code>iris</code> data set offline in a fresh Julia session, and in fact if we copy the <code>iris</code> specification into a separate data set it will re-use the <em>same</em> downloaded data.</p><p>The second, is that by setting <code>iris</code>&#39;s <code>web</code> storage driver&#39;s <code>checksum</code> property to <code>&quot;auto&quot;</code>, the next time we load <code>iris</code> a checksum will be generated and saved. If in future the <code>web</code> storage driver produces different data, this will now be caught and raised.</p><h2 id="Multi-step-analysis-with-the-Boston-Housing-data-set"><a class="docs-heading-anchor" href="#Multi-step-analysis-with-the-Boston-Housing-data-set">Multi-step analysis with the Boston Housing data set</a><a id="Multi-step-analysis-with-the-Boston-Housing-data-set-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-step-analysis-with-the-Boston-Housing-data-set" title="Permalink"></a></h2><p>The <em>Boston Housing</em> data set is part of the <code>RDatasets</code> package, and we can obtain a link to the raw data file in the repository: <a href="https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz">https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz</a></p><p>As with the Iris data, we will use the <code>add</code> Data REPL command to conveniently create a new data set.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; add boston https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+        skipto = 2</code></pre><p>Now, you have a <code>Project.toml</code>, <code>Manifest.toml</code>, and <code>Data.toml</code> that can be relocated to other systems and <code>d&quot;iris&quot;</code> will consistently produce the exact same <code>DataFrame</code>.</p><h3 id="Bonus:-ensuring-the-integrity-of-the-downloaded-data"><a class="docs-heading-anchor" href="#Bonus:-ensuring-the-integrity-of-the-downloaded-data">Bonus: ensuring the integrity of the downloaded data</a><a id="Bonus:-ensuring-the-integrity-of-the-downloaded-data-1"></a><a class="docs-heading-anchor-permalink" href="#Bonus:-ensuring-the-integrity-of-the-downloaded-data" title="Permalink"></a></h3><p>One of the three plugins used by default is the <code>store</code> plugin. It is responsible for caching IO data and checking data validity. For a more complete description of what it does, see the web docs or the Data REPL (sub)command <code>plugin info store</code>.</p><p>There are two immediate impacts of this plugin we can easily observe. The first is that we can load the <code>iris</code> data set offline in a fresh Julia session, and in fact if we copy the <code>iris</code> specification into a separate data set it will re-use the <em>same</em> downloaded data.</p><p>The second, is that by setting <code>iris</code>&#39;s <code>web</code> storage driver&#39;s <code>checksum</code> property to <code>&quot;auto&quot;</code>, the next time we load <code>iris</code> a checksum will be generated and saved. If in future the <code>web</code> storage driver produces different data, this will now be caught and raised.</p><h2 id="Multi-step-analysis-with-the-Boston-Housing-data-set"><a class="docs-heading-anchor" href="#Multi-step-analysis-with-the-Boston-Housing-data-set">Multi-step analysis with the Boston Housing data set</a><a id="Multi-step-analysis-with-the-Boston-Housing-data-set-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-step-analysis-with-the-Boston-Housing-data-set" title="Permalink"></a></h2><h3 id="Loading-the-data"><a class="docs-heading-anchor" href="#Loading-the-data">Loading the data</a><a id="Loading-the-data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-the-data" title="Permalink"></a></h3><p>The <em>Boston Housing</em> data set is part of the <code>RDatasets</code> package, and we can obtain a link to the raw data file in the repository: <a href="https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz">https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz</a></p><p>As with the Iris data, we will use the <code>add</code> Data REPL command to conveniently create a new data set.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; add boston https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
  Description: The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass.
  ✓ Created &#39;boston&#39; (02968c42-828e-4f22-86b8-ec67ac629a03)
  DataSet tutorial:boston
@@ -160,4 +160,131 @@ description = &quot;The Boston Housing data set. This contains information colle
   ⋮  │    ⋮        ⋮        ⋮       ⋮       ⋮        ⋮        ⋮        ⋮       ⋮   ⋱
  504 │ 0.06076      0.0    11.93      0    0.573    6.976     91.0   2.1675      1
  505 │ 0.10959      0.0    11.93      0    0.573    6.794     89.3   2.3889      1
- 506 │ 0.04741      0.0    11.93      0    0.573    6.03      80.8   2.505       1 ⋯</code></pre><p>WIP</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../datatoml/">Data.toml format »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 11 July 2023 18:23">Tuesday 11 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ 506 │ 0.04741      0.0    11.93      0    0.573    6.03      80.8   2.505       1 ⋯</code></pre><h3 id="Cleaning-the-data"><a class="docs-heading-anchor" href="#Cleaning-the-data">Cleaning the data</a><a id="Cleaning-the-data-1"></a><a class="docs-heading-anchor-permalink" href="#Cleaning-the-data" title="Permalink"></a></h3><p>Say the data needs some massaging, such as imputation, outlier removal, or restructuring. We can cleanly handle this by creating a <em>second</em> dataset that uses the value of the <em>initial</em> dataset. Say we consider this initial data unclean, and that to &quot;clean&quot; this dataset we filter out the entries where the we only keep entries where the <code>MedV</code> value is within the 90% quantile. We can easily do this with the <code>make</code> Data REPL command.</p><p>For this, we&#39;ll want to use the <code>StatsBase</code> package, so we&#39;ll add it and then make it available to use with <code>DataToolkit.@addpkgs</code>.</p><pre><code class="language-julia-repl hljs">(datatoolkit_tutorial) pkg&gt; add StatsBase
+
+julia&gt; DataToolkit.@addpkgs StatsBase</code></pre><div class="admonition is-category-notes"><header class="admonition-header">Notes</header><div class="admonition-body"><p>The <code>DataToolkit.@addpkgs StatsBase</code> line will need to be executed in every fresh Julia session, when creating a data <em>package</em> it makes sense to put this within the <code>__init__</code> function.</p></div></div><p>Now we can create the <code>boston (clean)</code> dataset with the <code>make</code> command.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; make boston (clean)
+
+(data) julia&gt; @import StatsBase.quantile
+std (generic function with 5 methods)
+
+(data) julia&gt; proportion = 0.9
+0.9
+
+(data) julia&gt; column = &quot;MedV&quot;
+
+(data) julia&gt; vals = d&quot;boston&quot;[!, column]
+506-element Vector{Float64}:
+
+(data) julia&gt; minval, maxval = quantile(vals, [0.5 - proportion/2, 0.5 + proportion/2])
+2-element Vector{Float64}:
+ 10.2
+ 43.4
+
+
+(data) julia&gt; mask = minval .&lt;= vals .&lt;= maxval
+506-element BitVector:
+
+(data) julia&gt; d&quot;boston&quot;[mask, :]
+456×14 DataFrame...
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? DataFrame
+ Description: Cleaned Boston Housing data
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created &#39;boston (clean)&#39; (5162814a-120f-4cdc-9958-620189295330)
+
+(tutorial) data&gt;</code></pre><p>We can look inside the <code>Data.toml</code> to see the new entry.</p><pre><code class="language-toml hljs">[[&quot;boston (clean)&quot;]]
+uuid = &quot;5162814a-120f-4cdc-9958-620189295330&quot;
+description = &quot;Cleaned Boston Housing data&quot;
+
+    [[&quot;boston (clean)&quot;.loader]]
+    driver = &quot;julia&quot;
+    function = &#39;&#39;&#39;
+function (; var&quot;data#boston&quot;)
+    @import StatsBase.quantile
+    proportion = 0.9
+    column = &quot;MedV&quot;
+    vals = var&quot;data#boston&quot;[!, column]
+    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .&lt;= vals .&lt;= maxval
+    var&quot;data#boston&quot;[mask, :]
+end
+&#39;&#39;&#39;
+    type = &quot;DataFrame&quot;
+
+        [&quot;boston (clean)&quot;.loader.arguments]
+        &quot;data#boston&quot; = &quot;📇DATASET&lt;&lt;boston::DataFrame&gt;&gt;&quot;</code></pre><h3 id="Fitting-a-linear-model"><a class="docs-heading-anchor" href="#Fitting-a-linear-model">Fitting a linear model</a><a id="Fitting-a-linear-model-1"></a><a class="docs-heading-anchor-permalink" href="#Fitting-a-linear-model" title="Permalink"></a></h3><p>Now let&#39;s say we want to fit a linear model for the relationship between <code>MedV</code> and <code>Rm</code>. We could do this in a script … or create another derived dataset.</p><p>Let&#39;s do this with <code>GLM</code>, so first run <code>] add GLM</code>, then <code>DataToolkit.@addpkgs GLM</code>. Now we&#39;ll create another derived data set with <code>make</code>.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; make boston Rm ~ MedV
+
+(data) julia&gt; @import GLM: @formula, lm
+
+(data) julia&gt; lm(@formula(Rm ~ MedV), d&quot;boston (clean)&quot;)
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? Any
+ Description: A linear model for the relation between Rm and MedV
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created &#39;boston Rm ~ MedV&#39; (e720acb2-5ed1-417f-bfd0-668c21134c87)
+
+(tutorial) data&gt;</code></pre><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>For now, manually specify <code>Any</code> as the return type instead of the default <code>StatsModels.TableRegressionModel{GLM.LinearModel{GLM.LmResp{Array{Float64,1}},GLM.DensePredChol{Float64,LinearAlgebra.CholeskyPivoted{Float64,Array{Float64,2},Array{Int64,1}}}},Array{Float64,2}}</code>. It&#39;s currently difficult for <code>DataToolkitBase</code> to represent types that rely on nested modules, which occurs here.</p></div></div><p>Obtaining the linear regression result is as easy as fetching any other dataset.</p><pre><code class="language-julia-repl hljs">julia&gt; d&quot;boston Rm ~ MedV&quot;
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.95241     0.0753342  65.74    &lt;1e-99  4.80436    5.10045
+MedV         0.0588453   0.0033047  17.81    &lt;1e-53  0.0523509  0.0653397
+─────────────────────────────────────────────────────────────────────────</code></pre><h3 id="A-more-easily-tunable-cleaner"><a class="docs-heading-anchor" href="#A-more-easily-tunable-cleaner">A more easily tunable cleaner</a><a id="A-more-easily-tunable-cleaner-1"></a><a class="docs-heading-anchor-permalink" href="#A-more-easily-tunable-cleaner" title="Permalink"></a></h3><p>In the current implementation of <code>boston (clean)</code>, we hardcoded a <code>proportion</code> value of <code>0.9</code>, and set the <code>column</code> to <code>&quot;MedV&quot;</code>. It could be nice if we made those more easily tunable. We can do this by turning them into keyword arguments of the function.</p><p>To make this change, we will use the <code>edit</code> Data REPL command.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)</code></pre><p>This will open up a temporary TOML file containing the <code>boston (clean)</code> dataset in your text editor of choice. In this file, change the function to:</p><pre><code class="language-julia hljs">function (; var&quot;data#boston&quot;, proportion, column)
+    @import StatsBase.quantile
+    vals = var&quot;data#boston&quot;[!, column]
+    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .&lt;= vals .&lt;= maxval
+    var&quot;data#boston&quot;[mask, :]
+end</code></pre><p>We will then move the <code>proportion = 0.9</code> and <code>column = &quot;MedV&quot;</code> lines to the arguments table.</p><pre><code class="language-toml hljs">[&quot;boston (clean)&quot;.loader.arguments]
+&quot;data#boston&quot; = &quot;📇DATASET&lt;&lt;boston::DataFrame&gt;&gt;&quot;
+proportion = 0.9
+column = &quot;MedV&quot;</code></pre><p>Aftre making these changes and closing the file, we&#39;ll be asked if we want to make this change (we do).</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       + Added column
+       + Added proportion
+     ~ Modified function:
+       &quot;function (; var\&quot;data#boston\&quot;)\n    @import StatsBase.quantile\n    proportion = 0.9\n    column = \&quot;MedV\&quot;\n    vals = var\&quot;data#boston\&quot;[!, column]\n    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .&lt;= vals .&lt;= maxval\n    var\&quot;data#boston\&quot;[mask, :]\nend\n&quot; ~&gt; &quot;function (; var\&quot;data#boston\&quot;, proportion, column)\n    @import StatsBase.quantile\n    vals = var\&quot;data#boston\&quot;[!, column]\n    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .&lt;= vals .&lt;= maxval\n    var\&quot;data#boston\&quot;[mask, :]\nend\n&quot;
+ Does this look correct? [y/N]: y
+ ✓ Edited &#39;boston (clean)&#39; (5162814a-120f-4cdc-9958-620189295330)</code></pre><h3 id="Propagating-changes"><a class="docs-heading-anchor" href="#Propagating-changes">Propagating changes</a><a id="Propagating-changes-1"></a><a class="docs-heading-anchor-permalink" href="#Propagating-changes" title="Permalink"></a></h3><p>With our new parameterisation of the cleaning step, we can now easily tune the cleaning step. We can see the results of this propagating through in the <code>boston Rm ~ MedV</code> dataset.</p><p>First, see that the <code>d&quot;boston Rm ~ MedV&quot;</code> result is the same as it was before.</p><pre><code class="language-julia-repl hljs">julia&gt; d&quot;boston Rm ~ MedV&quot;
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.95241     0.0753342  65.74    &lt;1e-99  4.80436    5.10045
+MedV         0.0588453   0.0033047  17.81    &lt;1e-53  0.0523509  0.0653397
+─────────────────────────────────────────────────────────────────────────</code></pre><p>Now, <code>edit</code> the <code>boston (clean)</code> dataset again and change the <code>proportion</code> to <code>0.8</code>.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       ~ Modified proportion:
+         0.9 ~&gt; 0.8
+ Does this look correct? [y/N]: y
+ ✓ Edited &#39;boston (clean)&#39; (5162814a-120f-4cdc-9958-620189295330)</code></pre><p>Since <code>boston (clean)</code> is an input of <code>boston Rm ~ MedV</code>, and all inputs are recursively hashed (like in a <a href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a>), we can immediately see the (small) change simply by fetching it again — it is automatically recomputed.</p><pre><code class="language-julia-repl hljs">julia&gt; d&quot;boston Rm ~ MedV&quot;
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.98609     0.0978742  50.94    &lt;1e-99  4.79369    5.1785
+MedV         0.0563562   0.0044222  12.74    &lt;1e-30  0.0476627  0.0650497
+─────────────────────────────────────────────────────────────────────────</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../datatoml/">Data.toml format »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Sunday 16 July 2023 16:04">Sunday 16 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
