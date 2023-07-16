@@ -38,7 +38,7 @@ function natkeygen(key::String)
 end
 
 """
-    stringdist(a::AbstractString, b::AbstractString)
+    stringdist(a::AbstractString, b::AbstractString; halfcase::Bool=false)
 
 Calculate the Restricted Damerau-Levenshtein distance (aka. Optimal String
 Alignment) between `a` and `b`.
@@ -46,6 +46,9 @@ Alignment) between `a` and `b`.
 This is the minimum number of edits required to transform `a` to `b`, where each
 edit is a *deletion*, *insertion*, *substitution*, or *transposition* of a
 character, with the restriction that no substring is edited more than once.
+
+When `halfcase` is true, substitutions that just switch the case of a character
+cost half as much.
 
 # Examples
 
@@ -57,11 +60,14 @@ julia> stringdist("The quick brown fox jumps over the lazy dog",
 julia> stringdist("typo", "tpyo")
 1
 
-julia> DataToolkitBase.stringdist("frog", "cat")
+julia> stringdist("frog", "cat")
 4
+
+julia> stringdist("Thing", "thing", halfcase=true)
+0.5
 ```
 """
-function stringdist(a::AbstractString, b::AbstractString)
+function stringdist(a::AbstractString, b::AbstractString; halfcase::Bool=false)
     if length(a) > length(b)
         a, b = b, a
     end
@@ -74,14 +80,14 @@ function stringdist(a::AbstractString, b::AbstractString)
         end
     end
     start == length(a) && return length(b) - start
-    v₀ = collect(1:(length(b) - start))
+    v₀ = collect(2:2:2*(length(b) - start))
     v₁ = similar(v₀)
     aᵢ₋₁, bⱼ₋₁ = first(a), first(b)
     current = 0
     for (i, aᵢ) in enumerate(a)
         i > start || (aᵢ₋₁ = aᵢ; continue)
-        left = i - start - 1
-        current = i - start
+        left = 2*(i - start - 1)
+        current = 2*(i - start)
         transition_next = 0
         @inbounds for (j, bⱼ) in enumerate(b)
             j > start || (bⱼ₋₁ = bⱼ; continue)
@@ -92,10 +98,23 @@ function stringdist(a::AbstractString, b::AbstractString)
             v₁[j - start] = current = left
             left = v₀[j - start]
             if aᵢ != bⱼ
+                # (Potentially) cheaper substitution when just
+                # switching case.
+                substitutecost = if halfcase
+                    aᵢswitchcap = if isuppercase(aᵢ)
+                        lowercase(aᵢ)
+                    elseif islowercase(aᵢ)
+                        uppercase(aᵢ)
+                    else aᵢ end
+                    ifelse(aᵢswitchcap == bⱼ, 1, 2)
+                else
+                    2
+                end
                 # Minimum between substitution, deletion and insertion
-                current = min(current + 1, above + 1, left + 1)
+                current = min(current + substitutecost,
+                              above + 2, left + 2) # deletion or insertion
                 if i > start + 1 && j > start + 1 && aᵢ == bⱼ₋₁ && aᵢ₋₁ == bⱼ
-                    current = min(current, (this_transition += 1))
+                    current = min(current, (this_transition += 2))
                 end
             end
             v₀[j - start] = current
@@ -103,14 +122,14 @@ function stringdist(a::AbstractString, b::AbstractString)
         end
         aᵢ₋₁ = aᵢ
     end
-    current
+    if halfcase current/2 else current÷2 end
 end
 
 """
-    stringsimilarity(a::AbstractString, b::AbstractString)
+    stringsimilarity(a::AbstractString, b::AbstractString; halfcase::Bool=false)
 
 Return the `stringdist` as a proportion of the maximum length of `a` and `b`,
-take one.
+take one. When `halfcase` is true, case switches cost half as much.
 
 # Example
 
@@ -120,10 +139,13 @@ julia> stringsimilarity("same", "same")
 
 julia> stringsimilarity("semi", "demi")
 0.75
+
+julia> stringsimilarity("Same", "same")
+0.875
 ```
 """
-stringsimilarity(a::AbstractString, b::AbstractString) =
-    1 - stringdist(a, b) / max(length(a), length(b))
+stringsimilarity(a::AbstractString, b::AbstractString; halfcase::Bool=false) =
+    1 - stringdist(a, b; halfcase) / max(length(a), length(b))
 
 """
     longest_common_subsequence(a, b)

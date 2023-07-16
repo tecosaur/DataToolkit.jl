@@ -80,7 +80,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
                 for ident in Identifier.(collection.datasets, nothing)
                     istr = @advise collection string(ident)
                     push!(candidates,
-                        (ident, collection, stringsimilarity(err.identifier, istr)))
+                        (ident, collection, stringsimilarity(err.identifier, istr; halfcase=true)))
                 end
             end
         elseif isnothing(err.collection) && !isempty(STACK)
@@ -88,7 +88,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
                 for ident in Identifier.(collection.datasets)
                     istr = @advise collection string(ident)
                     push!(candidates,
-                        (ident, collection, stringsimilarity(err.identifier, istr)))
+                        (ident, collection, stringsimilarity(err.identifier, istr; halfcase=true)))
                 end
             end
         end
@@ -118,7 +118,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection})
         for collection in STACK
             if !isnothing(collection.name)
                 push!(candidates,
-                      (collection, stringsimilarity(err.identifier, collection.name)))
+                      (collection, stringsimilarity(err.identifier, collection.name; halfcase=true)))
             end
         end
         if maximum(last.(candidates), init=0.0) >= 0.5
