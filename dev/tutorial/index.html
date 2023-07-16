@@ -167,8 +167,8 @@ julia&gt; DataToolkit.@addpkgs StatsBase</code></pre><div class="admonition is-c
 (data) julia&gt; @import StatsBase.quantile
 std (generic function with 5 methods)
 
-(data) julia&gt; proportion = 0.9
-0.9
+(data) julia&gt; proportion = 0.8
+0.8
 
 (data) julia&gt; column = &quot;MedV&quot;
 
@@ -204,7 +204,7 @@ description = &quot;Cleaned Boston Housing data&quot;
     function = &#39;&#39;&#39;
 function (; var&quot;data#boston&quot;)
     @import StatsBase.quantile
-    proportion = 0.9
+    proportion = 0.8
     column = &quot;MedV&quot;
     vals = var&quot;data#boston&quot;[!, column]
     (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
@@ -240,15 +240,15 @@ Coefficients:
 ─────────────────────────────────────────────────────────────────────────
 (Intercept)  4.95241     0.0753342  65.74    &lt;1e-99  4.80436    5.10045
 MedV         0.0588453   0.0033047  17.81    &lt;1e-53  0.0523509  0.0653397
-─────────────────────────────────────────────────────────────────────────</code></pre><h3 id="A-more-easily-tunable-cleaner"><a class="docs-heading-anchor" href="#A-more-easily-tunable-cleaner">A more easily tunable cleaner</a><a id="A-more-easily-tunable-cleaner-1"></a><a class="docs-heading-anchor-permalink" href="#A-more-easily-tunable-cleaner" title="Permalink"></a></h3><p>In the current implementation of <code>boston (clean)</code>, we hardcoded a <code>proportion</code> value of <code>0.9</code>, and set the <code>column</code> to <code>&quot;MedV&quot;</code>. It could be nice if we made those more easily tunable. We can do this by turning them into keyword arguments of the function.</p><p>To make this change, we will use the <code>edit</code> Data REPL command.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)</code></pre><p>This will open up a temporary TOML file containing the <code>boston (clean)</code> dataset in your text editor of choice. In this file, change the function to:</p><pre><code class="language-julia hljs">function (; var&quot;data#boston&quot;, proportion, column)
+─────────────────────────────────────────────────────────────────────────</code></pre><h3 id="A-more-easily-tunable-cleaner"><a class="docs-heading-anchor" href="#A-more-easily-tunable-cleaner">A more easily tunable cleaner</a><a id="A-more-easily-tunable-cleaner-1"></a><a class="docs-heading-anchor-permalink" href="#A-more-easily-tunable-cleaner" title="Permalink"></a></h3><p>In the current implementation of <code>boston (clean)</code>, we hardcoded a <code>proportion</code> value of <code>0.8</code>, and set the <code>column</code> to <code>&quot;MedV&quot;</code>. It could be nice if we made those more easily tunable. We can do this by turning them into keyword arguments of the function.</p><p>To make this change, we will use the <code>edit</code> Data REPL command.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)</code></pre><p>This will open up a temporary TOML file containing the <code>boston (clean)</code> dataset in your text editor of choice. In this file, change the function to:</p><pre><code class="language-julia hljs">function (; var&quot;data#boston&quot;, proportion, column)
     @import StatsBase.quantile
     vals = var&quot;data#boston&quot;[!, column]
     (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
     mask = minval .&lt;= vals .&lt;= maxval
     var&quot;data#boston&quot;[mask, :]
-end</code></pre><p>We will then move the <code>proportion = 0.9</code> and <code>column = &quot;MedV&quot;</code> lines to the arguments table.</p><pre><code class="language-toml hljs">[&quot;boston (clean)&quot;.loader.arguments]
+end</code></pre><p>We will then move the <code>proportion = 0.8</code> and <code>column = &quot;MedV&quot;</code> lines to the arguments table.</p><pre><code class="language-toml hljs">[&quot;boston (clean)&quot;.loader.arguments]
 &quot;data#boston&quot; = &quot;📇DATASET&lt;&lt;boston::DataFrame&gt;&gt;&quot;
-proportion = 0.9
+proportion = 0.8
 column = &quot;MedV&quot;</code></pre><p>Aftre making these changes and closing the file, we&#39;ll be asked if we want to make this change (we do).</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)
  ~ Modified loader:
    ~ Modified [1]:
@@ -267,14 +267,14 @@ Coefficients:
 ─────────────────────────────────────────────────────────────────────────
                  Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
 ─────────────────────────────────────────────────────────────────────────
-(Intercept)  4.95241     0.0753342  65.74    &lt;1e-99  4.80436    5.10045
-MedV         0.0588453   0.0033047  17.81    &lt;1e-53  0.0523509  0.0653397
-─────────────────────────────────────────────────────────────────────────</code></pre><p>Now, <code>edit</code> the <code>boston (clean)</code> dataset again and change the <code>proportion</code> to <code>0.8</code>.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)
+(Intercept)  4.98609     0.0978742  50.94    &lt;1e-99  4.79369    5.1785
+MedV         0.0563562   0.0044222  12.74    &lt;1e-30  0.0476627  0.0650497
+─────────────────────────────────────────────────────────────────────────</code></pre><p>Now, <code>edit</code> the <code>boston (clean)</code> dataset again and change the <code>proportion</code> to <code>0.95</code>.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)
  ~ Modified loader:
    ~ Modified [1]:
      ~ Modified arguments:
        ~ Modified proportion:
-         0.9 ~&gt; 0.8
+         0.8 ~&gt; 0.95
  Does this look correct? [y/N]: y
  ✓ Edited &#39;boston (clean)&#39; (5162814a-120f-4cdc-9958-620189295330)</code></pre><p>Since <code>boston (clean)</code> is an input of <code>boston Rm ~ MedV</code>, and all inputs are recursively hashed (like in a <a href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a>), we can immediately see the (small) change simply by fetching it again — it is automatically recomputed.</p><pre><code class="language-julia-repl hljs">julia&gt; d&quot;boston Rm ~ MedV&quot;
 StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
@@ -285,8 +285,8 @@ Coefficients:
 ─────────────────────────────────────────────────────────────────────────
                  Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
 ─────────────────────────────────────────────────────────────────────────
-(Intercept)  4.98609     0.0978742  50.94    &lt;1e-99  4.79369    5.1785
-MedV         0.0563562   0.0044222  12.74    &lt;1e-30  0.0476627  0.0650497
+(Intercept)  5.05849    0.0618848   81.74    &lt;1e-99   4.9369    5.18008
+MedV         0.0541727  0.00251511  21.54    &lt;1e-72   0.049231  0.0591144
 ─────────────────────────────────────────────────────────────────────────</code></pre><h2 id="The-final-Data.toml"><a class="docs-heading-anchor" href="#The-final-Data.toml">The final <code>Data.toml</code></a><a id="The-final-Data.toml-1"></a><a class="docs-heading-anchor-permalink" href="#The-final-Data.toml" title="Permalink"></a></h2><p>At the end of this tutorial (or should you wish to just poke at the results), you should end up with a <code>Data.toml</code> that looks like this:</p><pre><code class="language-toml hljs">data_config_version = 0
 uuid = &quot;f20a77d0-0dc9-41bb-875b-ad0bf42c90bd&quot;
 name = &quot;tutorial&quot;
@@ -324,7 +324,7 @@ end
         [&quot;boston (clean)&quot;.loader.arguments]
         column = &quot;MedV&quot;
         &quot;data#boston&quot; = &quot;📇DATASET&lt;&lt;boston::DataFrame&gt;&gt;&quot;
-        proportion = 0.8
+        proportion = 0.95
 
 [[&quot;boston Rm ~ MedV&quot;]]
 uuid = &quot;e720acb2-5ed1-417f-bfd0-668c21134c87&quot;
@@ -356,4 +356,4 @@ description = &quot;Fisher&#39;s famous Iris flower measurements&quot;
 
         [iris.loader.args]
         header = [&quot;sepal_length&quot;, &quot;sepal_width&quot;, &quot;petal_length&quot;, &quot;petal_width&quot;, &quot;species_class&quot;]
-        skipto = 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../datatoml/">Data.toml format »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Sunday 16 July 2023 16:09">Sunday 16 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+        skipto = 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../datatoml/">Data.toml format »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Sunday 16 July 2023 16:13">Sunday 16 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

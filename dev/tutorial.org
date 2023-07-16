@@ -463,8 +463,8 @@ Now we can create the =boston (clean)= dataset with the =make= command.
 (data) julia> @import StatsBase.quantile
 std (generic function with 5 methods)
 
-(data) julia> proportion = 0.9
-0.9
+(data) julia> proportion = 0.8
+0.8
 
 (data) julia> column = "MedV"
 
@@ -506,7 +506,7 @@ description = "Cleaned Boston Housing data"
     function = '''
 function (; var"data#boston")
     @import StatsBase.quantile
-    proportion = 0.9
+    proportion = 0.8
     column = "MedV"
     vals = var"data#boston"[!, column]
     (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
@@ -573,7 +573,7 @@ MedV         0.0588453   0.0033047  17.81    <1e-53  0.0523509  0.0653397
 ** A more easily tunable cleaner
 
 In the current implementation of =boston (clean)=, we hardcoded a ~proportion~
-value of ~0.9~, and set the ~column~ to ~"MedV"~. It could be nice if we made those
+value of ~0.8~, and set the ~column~ to ~"MedV"~. It could be nice if we made those
 more easily tunable. We can do this by turning them into keyword arguments of
 the function.
 
@@ -596,13 +596,13 @@ function (; var"data#boston", proportion, column)
 end
 #+end_src
 
-We will then move the ~proportion = 0.9~ and ~column = "MedV"~ lines to the
+We will then move the ~proportion = 0.8~ and ~column = "MedV"~ lines to the
 arguments table.
 
 #+begin_src toml
 ["boston (clean)".loader.arguments]
 "data#boston" = "📇DATASET<<boston::DataFrame>>"
-proportion = 0.9
+proportion = 0.8
 column = "MedV"
 #+end_src
 
@@ -640,12 +640,12 @@ Coefficients:
 ─────────────────────────────────────────────────────────────────────────
                  Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
 ─────────────────────────────────────────────────────────────────────────
-(Intercept)  4.95241     0.0753342  65.74    <1e-99  4.80436    5.10045
-MedV         0.0588453   0.0033047  17.81    <1e-53  0.0523509  0.0653397
+(Intercept)  4.98609     0.0978742  50.94    <1e-99  4.79369    5.1785
+MedV         0.0563562   0.0044222  12.74    <1e-30  0.0476627  0.0650497
 ─────────────────────────────────────────────────────────────────────────
 #+end_src
 
-Now, =edit= the =boston (clean)= dataset again and change the ~proportion~ to ~0.8~.
+Now, =edit= the =boston (clean)= dataset again and change the ~proportion~ to ~0.95~.
 
 #+begin_src julia-repl
 (tutorial) data> edit boston (clean)
@@ -653,7 +653,7 @@ Now, =edit= the =boston (clean)= dataset again and change the ~proportion~ to ~0
    ~ Modified [1]:
      ~ Modified arguments:
        ~ Modified proportion:
-         0.9 ~> 0.8
+         0.8 ~> 0.95
  Does this look correct? [y/N]: y
  ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
 #+end_src
@@ -672,8 +672,8 @@ Coefficients:
 ─────────────────────────────────────────────────────────────────────────
                  Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
 ─────────────────────────────────────────────────────────────────────────
-(Intercept)  4.98609     0.0978742  50.94    <1e-99  4.79369    5.1785
-MedV         0.0563562   0.0044222  12.74    <1e-30  0.0476627  0.0650497
+(Intercept)  5.05849    0.0618848   81.74    <1e-99   4.9369    5.18008
+MedV         0.0541727  0.00251511  21.54    <1e-72   0.049231  0.0591144
 ─────────────────────────────────────────────────────────────────────────
 #+end_src
 
@@ -720,7 +720,7 @@ end
         ["boston (clean)".loader.arguments]
         column = "MedV"
         "data#boston" = "📇DATASET<<boston::DataFrame>>"
-        proportion = 0.8
+        proportion = 0.95
 
 [["boston Rm ~ MedV"]]
 uuid = "e720acb2-5ed1-417f-bfd0-668c21134c87"
