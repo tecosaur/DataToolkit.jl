@@ -172,6 +172,15 @@ const STORE_PLUGIN = Plugin("store", [
             parameters["__epoch"] = epoch(storage)
         end
         (f, (storage, parameters, h))
+    end,
+    function (f::typeof(DataToolkitBase.init), dc::DataCollection)
+        if "defaults" in dc.plugins && isinteractive() &&
+            confirm_yn(" Use checksums by default?", true)
+            dc = DataToolkitBase.config_set(
+                dc, ["defaults", "storage", "_", "checksum"], "auto";
+                quiet = true)
+        end
+        (f, (dc,))
     end])
 
 """
