@@ -43,6 +43,8 @@ function init(input::AbstractString)
     elseif first(peelword(rest)) == "at"
         _, rest = peelword(rest)
         missing
+    elseif first(peelword(rest)) == "with"
+        missing
     else
         word, _ = peelword(rest)
         if endswith(word, ".toml") ||
@@ -58,7 +60,7 @@ function init(input::AbstractString)
         end
     end
 
-    path = if isempty(rest)
+    path = if isempty(rest) || first(peelword(rest)) == "with"
         if !isnothing(Base.active_project(false)) &&
             !isfile(joinpath(dirname(Base.active_project(false)), "Data.toml")) &&
             confirm_yn(" Create Data.toml for current project?", true)
@@ -69,10 +71,20 @@ function init(input::AbstractString)
                                 dirname(Base.active_project(false))
                             else pwd() end, "$(coalesce(name, "Data")).toml"))
         end
-    elseif first(peelword(rest)) != "with"
+    else
         path, rest = peelword(rest)
         path
     end |> expanduser |> abspath
+
+    plugins = copy(DataToolkitBase.DEFAULT_PLUGINS)
+    if ((_, rest) = peelword(rest)) |> first == "with"
+        extra_plugins = split(rest, r", *| +")
+        if "-n" in extra_plugins
+            plugins = String[]
+            deleteat!(extra_plugins, findfirst("-n" .== extra_plugins)::Int)
+        end
+        append!(plugins, extra_plugins)
+    end
 
     if !endswith(path, ".toml")
         path = joinpath(path, "Data.toml")
@@ -110,6 +122,6 @@ function init(input::AbstractString)
         name = prompt(" Name: ", name)
     end
 
-    DataToolkitBase.init(name, path)
+    DataToolkitBase.init(name, path; plugins)
     nothing
 end
