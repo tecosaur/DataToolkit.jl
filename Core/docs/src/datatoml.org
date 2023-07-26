@@ -87,7 +87,7 @@ priority=1 # (optional)
 #+end_src
 
 A data set is a top-level instance of an [[https://toml.io/en/v1.0.0#array-of-tables][array of tables]], with any name other
-than =data=. Data set names need not be unique, but should be able to be uniquely
+than =config=. Data set names need not be unique, but should be able to be uniquely
 identified by the combination of their name and parameters.
 
 Apart from data transformers, there is one recognised data property: =uuid=, a
