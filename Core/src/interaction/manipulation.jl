@@ -45,10 +45,12 @@ function init(name::Union{AbstractString, Missing},
                 dirname |> basename
         end
     end
-    newcollection = DataCollection(LATEST_DATA_CONFIG_VERSION, name, uuid,
-                                   plugins, Dict{String, Any}(), DataSet[],
-                                   path, AdviceAmalgamation(plugins),
-                                   Main)
+    newcollection = DataCollection(
+        LATEST_DATA_CONFIG_VERSION, name, uuid,
+        plugins, Dict{String, Any}(), DataSet[],
+        path, AdviceAmalgamation(plugins),
+        Main)
+    newcollection = @advise init(newcollection)
     !isnothing(path) && write && Base.write(newcollection)
     addtostack && pushfirst!(STACK, newcollection)
     if !quiet
@@ -60,6 +62,9 @@ function init(name::Union{AbstractString, Missing},
     end
     newcollection
 end
+
+# For advice purposes
+init(dc::DataCollection) = dc
 
 # ------------------
 # Stack management
