@@ -3,7 +3,20 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     args = @getparam loader."args"::SmallDict{String, Any}
     kwargs = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in args)
     if haskey(kwargs, :types)
-        kwargs[:types] = typeify.(QualifiedType.(kwargs[:types]))
+        types = kwargs[:types]
+        kwargs[:types] = if types isa SmallDict
+            Dict{eltype(keys(types)), Type}(
+                k => typeify(QualifiedType(v)) for (k, v) in types)
+        elseif types isa Vector
+            typeify.(QualifiedType.( types))
+        elseif types isa String
+            typeify(QualifiedType( types))
+        else
+        end
+        if isnothing(kwargs[:types])
+            @warn "CSV types argument is invalid: must be a resolvable type string, vector, or dict. Ignoring." types
+            delete!(kwargs, :types)
+        end
     end
     if haskey(kwargs, :typemap)
         kwargs[:typemap] = Dict{Type, Type}(
