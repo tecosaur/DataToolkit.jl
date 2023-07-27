@@ -39,7 +39,7 @@ types to an `IO`-supporting storage backend.
 
 # Parameters
 
-- `type`: The element type of the matrix
+- `dtype`: The element type of the matrix
 - `delim`: The character used to separate entries
 - `eol`: The character separating each line of input
 - `header`: Whether the first row of data should be read as a header
