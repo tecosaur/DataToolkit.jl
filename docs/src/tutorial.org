@@ -60,6 +60,7 @@ the command (e.g.  =it=).
 (⋅) data> init
  Create Data.toml for current project? [Y/n]: y
  Name: tutorial
+ Use checksums by default? [Y/n]: n
  ✓ Created new data collection 'tutorial' at /home/tec/Documents/datatoolkit_tutorial/Data.toml
 #+end_example
 
@@ -363,7 +364,8 @@ the /same/ downloaded data.
 The second, is that by setting =iris='s =web= storage driver's =checksum= property to
 ="auto"=, the next time we load =iris= a checksum will be generated and saved. If in
 future the =web= storage driver produces different data, this will now be caught
-and raised.
+and raised. This can be done automatically by setting the default value to
+="auto"=, which we were prompted to do during initialisation.
 
 * Multi-step analysis with the Boston Housing data set
 ** Loading the data
@@ -475,7 +477,6 @@ std (generic function with 5 methods)
 2-element Vector{Float64}:
  10.2
  43.4
-
 
 (data) julia> mask = minval .<= vals .<= maxval
 506-element BitVector:
