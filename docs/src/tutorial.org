@@ -451,11 +451,11 @@ it available to use with ~DataToolkit.@addpkgs~.
 julia> DataToolkit.@addpkgs StatsBase
 #+end_src
 
-#+begin_notes
+#+begin_info
 The ~DataToolkit.@addpkgs StatsBase~ line will need to be executed in every fresh
 Julia session, when creating a data /package/ it makes sense to put this within
 the ~__init__~ function.
-#+end_notes
+#+end_info
 
 Now we can create the =boston (clean)= dataset with the =make= command.
 
