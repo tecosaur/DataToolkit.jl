@@ -1,7 +1,7 @@
 name = "DataToolkit"
 uuid = "dc83c90b-d41d-4e55-bdb7-0fc919659999"
 authors = ["TEC <tec@tecosaur.com> and contributors"]
-version = "0.4.0"
+version = "0.5.0"
 
 [deps]
 DataToolkitBase = "e209d0c3-e863-446f-9b45-de6ca9730756"
@@ -10,8 +10,8 @@ Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 
 [compat]
-DataToolkitBase = "~0.4"
-DataToolkitCommon = "~0.4"
+DataToolkitBase = "~0.5"
+DataToolkitCommon = "~0.5"
 PrecompileTools = "1.1.2"
 julia = "1"
 
