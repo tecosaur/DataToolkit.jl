@@ -1,7 +1,7 @@
 #+title: DataToolkitCommon
 #+author: tecosaur
 
-#+html: <a href="https://tecosaur.github.io/DataToolkitCommon.jl/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
+#+html: <a href="https://tecosaur.github.io/DataToolkitDocs/common/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
 #+html: <a href="https://tecosaur.github.io/DataToolkitCommon.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
 
 Making [[https://github.com/tecosaur/DataToolkitBase.jl][DataTookitBase]] useful.
