@@ -401,7 +401,13 @@ Save the `value` produced by `loader` into `inventory`.
 """
 function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), value::T) where {T}
     ptypes = pkgtypes(value)
-    modules = unique(parentmodule.(ptypes))
+    modules = parentmodule.(ptypes)
+    for i in eachindex(modules)
+        while modules[i] !== parentmodule(modules[i])
+            modules[i] = parentmodule(modules[i])
+        end
+    end
+    unique!(modules)
     pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], modules)
     !isempty(ptypes) && first(ptypes) == T ||
         pushfirst!(ptypes, T)
