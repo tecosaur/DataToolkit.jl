@@ -318,10 +318,13 @@ end
 
 Return all files referenced by `inventory`.
 """
-function files(inventory::Inventory)
-    map(Iterators.flatten((inventory.stores, inventory.caches))) do source
-        storefile(inventory, source)
-    end
+function files(inv::Inventory)
+    fs = [inv.file.path,
+          joinpath(dirname(inv.file.path), inv.config.store_dir),
+          joinpath(dirname(inv.file.path), inv.config.cache_dir)]
+    append!(fs, storefile.(Ref(inv), inv.stores))
+    append!(fs, storefile.(Ref(inv), inv.caches))
+    fs
 end
 
 """
@@ -452,12 +455,21 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
                 ifelse(nsources == 1, "", "s"),
                 " (", num_recipe_checks, " recipe check",
                 ifelse(num_recipe_checks == 1, "", "s"), ")")
-        orphan_files = setdiff(readdir(dirname(inv.file.path), join=true),
-                               files(inv), (inv.file.path,))
+        orphan_files = let fs = readdir(dirname(inv.file.path), join=true)
+            storedir = joinpath(dirname(inv.file.path), inv.config.store_dir)
+            isdir(storedir) && append!(fs, readdir(storedir, join=true))
+            cachedir = joinpath(dirname(inv.file.path), inv.config.cache_dir)
+            isdir(cachedir) && append!(fs, readdir(cachedir, join=true))
+            setdiff(fs, files(inv))
+        end
         deleted_bytes = 0
         for f in orphan_files
+            if dirname(f) == dirname(inv.file.path)
+                @warn "Found an unexpected $(ifelse(isdir(f), "subfolder", "file")) in the inventory folder, \
+                    this is quite irregular ($(relpath(f, inv.file.path))) \
+                    — $(ifelse(dryrun, "would remove", "removing"))"
+            end
             if isdir(f)
-                @warn "Found a file in the inventory folder, this is quite irregular"
                 dryrun || rm(f, force=true, recursive=true)
             else
                 deleted_bytes += stat(f).size
