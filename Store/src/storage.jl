@@ -412,6 +412,7 @@ function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), valu
         pkgs)
     dest = storefile(inventory, newsource)
     isfile(dest) && rm(dest, force=true)
+    isdir(dirname(dest)) || mkpath(dirname(dest))
     if should_log_event("cache", loader)
         @info "Saving $T form of $(sprint(show, loader.dataset.name)) to the store"
     end
