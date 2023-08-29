@@ -10,7 +10,8 @@ function repl_config_get(input::AbstractString)
     end |> update_inventory!
     value_sets = [(:auto_gc, "hours"),
                   (:max_age, "days"),
-                  (:max_size, join ∘ humansize),
+                  (:max_size, s ->
+                      if isnothing(s) "-" else join(humansize(s)) end),
                   (:recency_beta, ""),
                   (:store_dir, ""),
                   (:cache_dir, "")]
