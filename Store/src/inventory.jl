@@ -433,7 +433,7 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
     dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
     inactive_collections = live_collections ∪ ghost_collections
     (; orphan_sources, num_recipe_checks) =
-        refresh_sources!(inv; inactive_collections, active_collections, dryrun)
+        refresh_sources!(inv; active_collections, inactive_collections, dryrun)
     if log
         printstyled(lpad("Scanned", MSG_LABEL_WIDTH), bold=true, color=:green)
         num_scanned_collections = length(active_collections) + length(live_collections)
@@ -699,14 +699,14 @@ Sources with no references after this update are considered orphaned and removed
 The result is a named tuple giving a list of orphaned sources and the number of
 recipe checks that occured.
 """
-function refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
-                          active_collections::Dict{UUID, Set{UInt64}},
-                          dryrun::Bool=false)
+function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UInt64}},
+                          inactive_collections::Set{UUID}, dryrun::Bool=false)
     orphan_sources = SourceInfo[]
     num_recipe_checks = 0
     for sources in (inv.stores, inv.caches)
         let i = 1; while i <= length(sources)
             source = sources[i]
+            # TODO avoid permanantly modifying during dryrun
             filter!(source.references) do r
                 if haskey(active_collections, r)
                     num_recipe_checks += 1
