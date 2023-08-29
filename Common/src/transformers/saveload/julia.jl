@@ -59,6 +59,20 @@ function save(writer::DataWriter{:julia}, dest, info)
     end
 end
 
+# To account for the contents of a script file.
+function Store.rhash(loader::DataLoader{:julia}, h::UInt)
+    if haskey(loader.parameters, "path")
+        scriptpath =
+            abspath(dirof(loader.dataset.collection),
+                    expanduser(@getparam transformer."pathroot"::String ""),
+                    expanduser(@getparam loader."path"::String))
+        if isfile(scriptpath)
+            h = hash(read(scriptpath), h)
+        end
+    end
+    invoke(Store.rhash, Tuple{DataLoader, UInt}, loader, h)
+end
+
 createpriority(::Type{DataLoader{:julia}}) = 10
 
 function create(::Type{DataLoader{:julia}}, source::String)
