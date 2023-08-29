@@ -241,7 +241,10 @@ const STORE_SUBCMDS =
             repl_gc),
         ReplCmd{:store_stats}(
             "stats", "Show statistics about the data store",
-            _ -> printstats())]
+            function (_)
+                update_inventory!.(INVENTORIES)
+                printstats()
+            end)]
 
 const STORE_REPL_CMD =
     ReplCmd(:store,
