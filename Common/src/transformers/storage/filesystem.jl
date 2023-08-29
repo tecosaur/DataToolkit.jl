@@ -39,9 +39,9 @@ end
 # file if there is no checksum.
 function Store.rhash(storage::DataStorage{:filesystem}, h::UInt)
     if @getparam(storage."checksum"::Union{Bool, String}, false) === false
-        h = hash(if isfile(@getparam storage."path"::String)
-                     mtime(@getparam storage."path"::String)
-                 else 0.0 end, h)
+        path = abspath(dirof(storage.dataset.collection),
+                       @getparam storage."path"::String)
+        h = hash(if isfile(path) mtime(path) else 0.0 end, h)
     else
         # The checksum should already be accounted for since it's a storage parameter,
         # but that means we should omit the path.
@@ -49,7 +49,7 @@ function Store.rhash(storage::DataStorage{:filesystem}, h::UInt)
             storage.dataset, storage.type, storage.priority,
             delete!(copy(storage.parameters), "path"))
     end
-    invoke(Store.rhash, Tuple{AbstractDataTransformer, UInt}, storage, h)
+    invoke(Store.rhash, Tuple{DataStorage, UInt}, storage, h)
 end
 
 # Variant on the generic `storesave` implementation that copies the file.
