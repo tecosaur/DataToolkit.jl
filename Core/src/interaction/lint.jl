@@ -271,7 +271,7 @@ function lintfix(report::LintReport, manualfix::Bool=false)
                         printstyled("!", color=:red, bold=true)
                         print(" Aborted\n")
                     else
-                        rethrow(e)
+                        rethrow()
                     end
                 end
             end

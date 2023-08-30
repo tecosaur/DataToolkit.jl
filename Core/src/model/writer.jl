@@ -12,7 +12,7 @@ Base.iswritable(dc::DataCollection) =
         if e isa SystemError
             false
         else
-            rethrow(e)
+            rethrow()
         end
     end
 

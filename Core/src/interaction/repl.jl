@@ -264,7 +264,7 @@ function toplevel_execute_repl_cmd(line::AbstractString)
             printstyled(" !", color=:red, bold=true)
             print(" Aborted\n")
         else
-            rethrow(e)
+            rethrow()
         end
     end
 end
