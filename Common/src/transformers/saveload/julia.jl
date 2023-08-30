@@ -64,7 +64,7 @@ function Store.rhash(loader::DataLoader{:julia}, h::UInt)
     if haskey(loader.parameters, "path")
         scriptpath =
             abspath(dirof(loader.dataset.collection),
-                    expanduser(@getparam transformer."pathroot"::String ""),
+                    expanduser(@getparam loader."pathroot"::String ""),
                     expanduser(@getparam loader."path"::String))
         if isfile(scriptpath)
             h = hash(read(scriptpath), h)
