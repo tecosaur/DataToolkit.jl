@@ -382,8 +382,8 @@ function pkgtypes!(types::Vector{Type}, x::T) where {T <: AbstractArray}
             pkgtypes!(types, first(x))
         end
     else
-        for elt in x
-            pkgtypes!(types, elt)
+        for index in eachindex(x)
+            isassigned(x, index) && pkgtypes!(types, x[index])
         end
     end
 end
