@@ -81,7 +81,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                     if e isa ArgumentError
                         Some(nothing)
                     else
-                        rethrow(e)
+                        rethrow()
                     end
                 end
                 if !isnothing(itype)

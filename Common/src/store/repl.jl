@@ -80,7 +80,7 @@ function repl_config_set(input::AbstractString)
                 parsebytesize(value)
             catch err
                 if !(err isa ArgumentError)
-                    rethrow(err)
+                    rethrow()
                 end
             end
         end

@@ -139,7 +139,7 @@ function create_sandbox()
                     return Expr(:quote, res)
                 catch err
                     push!(hist_ignore, length(julia_mode.hist.history))
-                    rethrow(err)
+                    rethrow()
                 end
             end
             push!(hist_ignore, length(julia_mode.hist.history))
