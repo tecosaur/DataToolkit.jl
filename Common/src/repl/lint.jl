@@ -21,7 +21,7 @@ function repl_lint(input::AbstractString)
     if isempty(STACK)
         printstyled(" ! ", color=:yellow, bold=true)
         println("The data collection stack is empty")
-    elseif isempty(input)
+    elseif all(isspace, input)
         dolint(first(STACK))
     else
         try

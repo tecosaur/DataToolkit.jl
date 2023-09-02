@@ -7,23 +7,23 @@ Show the dataset refered to by an identifier
 """
 
 function repl_show(input::AbstractString)
-    if isempty(input)
+    if all(isspace, input)
         printstyled(" ! ", color=:yellow, bold=true)
-        println("Provide a dataset to be shown")
-    else
-        dataset = try resolve(input) catch _
-            printstyled(" ! ", color=:red, bold=true)
-            println("Could not resolve identifier: $input")
-            return nothing
-        end
-        display(dataset)
-        if dataset isa DataSet
-            print("  UUID:    ")
-            printstyled(dataset.uuid, '\n', color=:light_magenta)
-            @advise show_extra(stdout, dataset)
-        end
-        nothing
+        println("Specify a DataSet shown")
+        return
     end
+    dataset = try resolve(input) catch _
+        printstyled(" ! ", color=:red, bold=true)
+        println("Could not resolve identifier: $input")
+        return
+    end
+    display(dataset)
+    if dataset isa DataSet
+        print("  UUID:    ")
+        printstyled(dataset.uuid, '\n', color=:light_magenta)
+        @advise show_extra(stdout, dataset)
+    end
+    nothing
 end
 
 """

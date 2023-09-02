@@ -12,14 +12,20 @@ Remove a data set
 Parse and call the repl-format remove command `input`.
 """
 function remove(input::AbstractString)
+    if all(isspace, input)
+        printstyled(" ! ", color=:yellow, bold=true)
+        println("Specify a DataSet to remove")
+        return
+    end
     ident = try parse(Identifier, input) catch _
         printstyled(" ! ", color=:red, bold=true)
         println("Could not parse '$input' as an identifier")
+        return
     end
     dataset = try resolve(ident) catch _
         printstyled(" ! ", color=:red, bold=true)
         println("Could not resolve identifier: $input")
-        return nothing
+        return
     end
     confirm_yn(" Are you sure you want to remove $(dataset.name)?") || return nothing
     delete!(dataset)

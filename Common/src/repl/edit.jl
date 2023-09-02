@@ -82,70 +82,70 @@ function deep_diff(old::Any, new::Any, parents::Vector{String}=String[])
 end
 
 function repl_edit(input::AbstractString)
-    if isempty(input)
+    if all(isspace, input)
         printstyled(" ! ", color=:yellow, bold=true)
-        println("Specify a dataset to edit")
-    else
-        dataset = try resolve(input) catch _
-            printstyled(" ! ", color=:red, bold=true)
-            println("Could not resolve identifier: $input")
-            return
-        end
-        if !iswritable(dataset.collection)
-            printstyled(" ! ", color=:red, bold=true)
-            println("The data collection $(dataset.name) belongs to is read-only")
-            return
-        end
-        dataspec = convert(Dict, dataset)
-        tomlfile = tempname(cleanup=false) * ".toml"
-        open(tomlfile, "w") do io
-            datakeygen(key) = if haskey(DataToolkitBase.DATA_CONFIG_KEY_SORT_MAPPING, key)
-                [DataToolkitBase.DATA_CONFIG_KEY_SORT_MAPPING[key]]
-            else natkeygen(key) end
-            intermediate = IOBuffer()
-            TOML.print(intermediate, Dict(dataset.name => [dataspec]),
-                       sorted = true, by = datakeygen)
-            write(io, "data_config_version = ",
-                  string(dataset.collection.version), '\n',
-                  "#     ╭─[extracted from '$(dataset.collection.name)' for modification]\n",
-                  "# ╭───┴────────────────────────$('─'^textwidth(dataset.name))──╮\n",
-                  "# │ *Editing the definition of $(dataset.name)* │\n",
-                  "# ╰────────────────────────────$('─'^textwidth(dataset.name))──╯\n\n")
-            write(io, take!(DataToolkitBase.tomlreformat!(intermediate)))
-        end
-        edit(tomlfile, 8)
-        isfile(tomlfile) || return
-        newspec = let tomldata = open(TOML.parse, tomlfile)
-            dspecs = get(tomldata, dataset.name, Dict{String, Any}())
-            if dspecs isa Vector && !isempty(dspecs) && first(dspecs) isa Dict
-                first(dspecs)
-            end
-        end
-        rm(tomlfile)
-        newspec isa Dict || return
-        if newspec == dataspec
-            printstyled("  No changes made\n", color=:light_black)
-            return
-        end
-        deep_diff(dataspec, newspec)
-        if !confirm_yn(" Does this look correct?")
-            printstyled(" ! ", color=:red, bold=true)
-            println("Cancelled")
-            return
-        end
-        index = findfirst(==(dataset), dataset.collection.datasets)
-        newdata = DataSet(dataset.collection, dataset.name, newspec)
-        newdata.collection.datasets[index] = newdata
-        lintreport = LintReport(newdata)
-        if !isempty(lintreport.results)
-            show(lintreport)
-            print("\n\n")
-            DataToolkitBase.lintfix(lintreport)
-        end
-        write(newdata.collection)
-        printstyled(" ✓ Edited '$(newdata.name)' ", color=:green)
-        printstyled('(', newdata.uuid, ')', '\n', color=:light_black)
+        println("Specify a DataSet to remove")
+        return
     end
+    dataset = try resolve(input) catch _
+        printstyled(" ! ", color=:red, bold=true)
+        println("Could not resolve identifier: $input")
+        return
+    end
+    if !iswritable(dataset.collection)
+        printstyled(" ! ", color=:red, bold=true)
+        println("The data collection $(dataset.name) belongs to is read-only")
+        return
+    end
+    dataspec = convert(Dict, dataset)
+    tomlfile = tempname(cleanup=false) * ".toml"
+    open(tomlfile, "w") do io
+        datakeygen(key) = if haskey(DataToolkitBase.DATA_CONFIG_KEY_SORT_MAPPING, key)
+            [DataToolkitBase.DATA_CONFIG_KEY_SORT_MAPPING[key]]
+        else natkeygen(key) end
+        intermediate = IOBuffer()
+        TOML.print(intermediate, Dict(dataset.name => [dataspec]),
+                    sorted = true, by = datakeygen)
+        write(io, "data_config_version = ",
+                string(dataset.collection.version), '\n',
+                "#     ╭─[extracted from '$(dataset.collection.name)' for modification]\n",
+                "# ╭───┴────────────────────────$('─'^textwidth(dataset.name))──╮\n",
+                "# │ *Editing the definition of $(dataset.name)* │\n",
+                "# ╰────────────────────────────$('─'^textwidth(dataset.name))──╯\n\n")
+        write(io, take!(DataToolkitBase.tomlreformat!(intermediate)))
+    end
+    edit(tomlfile, 8)
+    isfile(tomlfile) || return
+    newspec = let tomldata = open(TOML.parse, tomlfile)
+        dspecs = get(tomldata, dataset.name, Dict{String, Any}())
+        if dspecs isa Vector && !isempty(dspecs) && first(dspecs) isa Dict
+            first(dspecs)
+        end
+    end
+    rm(tomlfile)
+    newspec isa Dict || return
+    if newspec == dataspec
+        printstyled("  No changes made\n", color=:light_black)
+        return
+    end
+    deep_diff(dataspec, newspec)
+    if !confirm_yn(" Does this look correct?")
+        printstyled(" ! ", color=:red, bold=true)
+        println("Cancelled")
+        return
+    end
+    index = findfirst(==(dataset), dataset.collection.datasets)
+    newdata = DataSet(dataset.collection, dataset.name, newspec)
+    newdata.collection.datasets[index] = newdata
+    lintreport = LintReport(newdata)
+    if !isempty(lintreport.results)
+        show(lintreport)
+        print("\n\n")
+        DataToolkitBase.lintfix(lintreport)
+    end
+    write(newdata.collection)
+    printstyled(" ✓ Edited '$(newdata.name)' ", color=:green)
+    printstyled('(', newdata.uuid, ')', '\n', color=:light_black)
 end
 
 completions(::ReplCmd{:edit}, sofar::AbstractString) =
