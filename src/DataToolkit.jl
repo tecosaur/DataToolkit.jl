@@ -58,14 +58,15 @@ end
     init(mod::Module=Main; force::Bool=false)
 
 Load the `mod`-local `Data.toml` if it exists.
-When `mod` is `Main`, every `Data.toml` on the load path is loaded.
+When `mod` is `Main`, every `Data.toml` on the load path is loaded, except for
+`Data.toml`s within packages' projects.
 Unless `force` is set, the data collection is soft-loaded.
 
 A `Data.d` directory can be used in place of a `Data.toml`, in which case
 every toml file within it will be read. Mixing `Data.d/*.toml` and `Data.toml`
 is discouraged.
 """
-function init(mod::Module=Main.Base.Main; force::Bool=false)
+function init(mod::Module=Main; force::Bool=false)
     function tryloadcollection!(path::String, m::Module; soft::Bool)
         try
             loadcollection!(path, m; soft)
@@ -81,6 +82,18 @@ function init(mod::Module=Main.Base.Main; force::Bool=false)
     for project_path in project_paths |> reverse
         if !isdir(project_path)
             project_path = dirname(project_path)
+        end
+        # Skip packages when `init(Main)` called.
+        if mod === Main
+            pkg_name = basename(rstrip(project_path, first(Main.Base.Filesystem.path_separator)))
+            ispkg = isfile(joinpath(project_path, "Project.toml")) &&
+                    isfile(joinpath(project_path, "src", pkg_name * ".jl")) &&
+                    open(f -> mapreduce(
+                            line -> (line == "name = \"$pkg_name\"",
+                                startswith(line, "uuid = \"")),
+                            .|, eachline(f)) |> all,
+                        joinpath(project_path, "Project.toml"))
+            ispkg && continue
         end
         # Load Data.d/*.toml
         data_dir = joinpath(project_path, "Data.d")
