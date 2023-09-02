@@ -1,5 +1,3 @@
-using Pkg
-
 """
     @addpkgs pkgs...
 
@@ -39,12 +37,7 @@ This must be run at runtime to take effect, so be sure to place it in the
 `__init__` function of a package.
 """
 function addpkgs(mod::Module, pkgs::Vector{Symbol})
-    project_deps = if isnothing(pathof(mod)) # Main, etc.
-        Pkg.project().dependencies
-    else # Not a public API, but the best option availible.
-        Pkg.Types.read_package(
-            abspath(pathof(mod), "..", "..", "Project.toml")).deps
-    end
+    project_deps = _project_deps(mod)
     if length(pkgs) == 1 && first(pkgs) == :*
         pkgs = Symbol.(keys(project_deps))
     end
@@ -54,5 +47,21 @@ function addpkgs(mod::Module, pkgs::Vector{Symbol})
         else
             @warn "(@addpkgs) $mod does not have $pkg in its dependencies, skipping."
         end
+    end
+end
+
+function _project_deps(mod::Module)
+    project_file = if isnothing(pathof(mod)) # Main, etc.
+        JLBase.active_project()
+    else
+        abspath(pathof(mod), "..", "..", "Project.toml")
+    end
+    project_deps = if isfile(project_file)
+        Dict{String, JLBase.UUID}(
+            pkg => JLBase.UUID(id)
+            for (pkg, id) in get(JLBase.parsed_toml(project_file),
+                                 "deps", Dict{String, Any}()))
+    else
+        Dict{String, JLBase.UUID}()
     end
 end
