@@ -1,5 +1,7 @@
 module DataToolkit
 
+import Base as JLBase
+
 using DataToolkitBase
 using DataToolkitCommon
 
@@ -75,7 +77,7 @@ function init(mod::Module=Main; force::Bool=false)
         end
     end
     project_paths = if isnothing(pathof(mod))
-        Main.Base.load_path()
+        JLBase.load_path()
     else
         [abspath(pathof(mod), "..", "..")]
     end
@@ -85,7 +87,7 @@ function init(mod::Module=Main; force::Bool=false)
         end
         # Skip packages when `init(Main)` called.
         if mod === Main
-            pkg_name = basename(rstrip(project_path, first(Main.Base.Filesystem.path_separator)))
+            pkg_name = basename(rstrip(project_path, first(JLBase.Filesystem.path_separator)))
             ispkg = isfile(joinpath(project_path, "Project.toml")) &&
                     isfile(joinpath(project_path, "src", pkg_name * ".jl")) &&
                     open(f -> mapreduce(
