@@ -195,9 +195,9 @@ end
 abstract type PackageException <: Exception end
 
 """
-    UnregisteredPackage(name::Symbol, mod::Module)
+    UnregisteredPackage(pkg::Symbol, mod::Module)
 
-The package `name` was asked for within `mod`, but has not been
+The package `pkg` was asked for within `mod`, but has not been
 registered by `mod`, and so cannot be loaded.
 
 # Example occurance
@@ -209,14 +209,14 @@ Stacktrace: [...]
 ```
 """
 struct UnregisteredPackage <: PackageException
-    name::Symbol
+    pkg::Symbol
     mod::Module
 end
 
 function Base.showerror(io::IO, err::UnregisteredPackage)
-    print(io, "UnregisteredPackage: ", err.name,
           " has not been registered by ", err.mod,
           ", see @addpkg for more information")
+    print(io, "UnregisteredPackage: ", err.pkg,
 end
 
 """
