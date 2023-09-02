@@ -78,7 +78,7 @@ function Store.storefile(inventory::Store.Inventory, storage::DataStorage{:files
         linkfile = Store.storefile(inventory, source)
         if isfile(linkfile)
             file = getpath(storage)
-            if isfile(file) && mtime(linkfile) > mtime(file)
+            if isfile(file) && lstat(linkfile).ctime > mtime(file)
                 return linkfile
             else
                 rm(linkfile)
