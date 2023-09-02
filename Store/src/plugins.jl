@@ -181,6 +181,27 @@ const STORE_PLUGIN = Plugin("store", [
                 quiet = true)
         end
         (f, (dc,))
+    end,
+    function (f::typeof(show_extra), io::IO, dataset::DataSet)
+        if any(shouldstore, dataset.storage)
+            print(io, "  Stored:  ")
+            inventory = getinventory(dataset.collection) |> update_inventory!
+            files = map(s -> if shouldstore(s) storefile(inventory, s) end,
+                        dataset.storage)
+            filter!(!isnothing, files)
+            filter!(isfile, files)
+            if isempty(files)
+                printstyled(io, "no", color=:yellow)
+            else
+                printstyled("yes", color=:green)
+                if length(files) > 1
+                    printstyled('(', length(files), ')', color=:green)
+                end
+                print(' ', join(humansize(sum(filesize, files)), ' '))
+            end
+            print(io, '\n')
+        end
+        (f, (io, dataset))
     end])
 
 """
@@ -281,4 +302,28 @@ const CACHE_PLUGIN = Plugin("cache", [
     function (f::typeof(rhash), @nospecialize(loader::DataLoader), parameters::SmallDict, h::UInt)
         delete!(parameters, "cache") # Does not impact the final result
         (f, (loader, parameters, h))
+    end,
+    function (f::typeof(show_extra), io::IO, dataset::DataSet)
+        forms = [(s, t) for s in dataset.loaders for t in typeify.(s.type)
+                     if !isnothing(t)]
+        filter!(Base.splat(shouldstore), forms)
+        if !isempty(forms)
+            print(io, "  Cached:  ")
+            inventory = getinventory(dataset.collection) |> update_inventory!
+            files = map(((s, t),) -> storefile(inventory, getsource(inventory, s, t)),
+                        forms)
+            filter!(!isnothing, files)
+            filter!(isfile, files)
+            if isempty(files)
+                printstyled(io, "no", color=:yellow)
+            else
+                printstyled("yes", color=:green)
+                if length(files) > 1
+                    printstyled('(', length(files), ')', color=:green)
+                end
+                print(' ', join(humansize(sum(filesize, files)), ' '))
+            end
+            print(io, '\n')
+        end
+        (f, (io, dataset))
     end])
