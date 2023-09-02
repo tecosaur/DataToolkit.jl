@@ -1,6 +1,6 @@
 module DataToolkitBase
 
-using UUIDs, TOML, Dates, Pkg
+using UUIDs, TOML, Dates
 
 using PrecompileTools
 using Compat

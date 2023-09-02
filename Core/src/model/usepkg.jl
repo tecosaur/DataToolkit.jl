@@ -26,9 +26,13 @@ function get_package(pkg::Base.PkgId)
             true
         catch err
             pkgmsg = "is required but does not seem to be installed"
-            err isa ArgumentError && occursin(pkgmsg, err.msg) &&
-                isdefined(Pkg.REPLMode, :try_prompt_pkg_add) && isinteractive() &&
-                Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
+            err isa ArgumentError && isinteractive() && occursin(pkgmsg, err.msg) &&
+                let pkg_id = Base.PkgId(Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pkg")
+                    Pkg = get(Base.loaded_modules, pkg_id, nothing)
+                    !isnothing(Pkg) && isdefined(Pkg, :REPLMode) &&
+                        isdefined(Pkg.REPLMode, :try_prompt_pkg_add) &&
+                        Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
+                end
         end || throw(MissingPackage(pkg))
         PkgRequiredRerunNeeded()
     else

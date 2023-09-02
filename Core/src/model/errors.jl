@@ -216,11 +216,17 @@ end
 function Base.showerror(io::IO, err::UnregisteredPackage)
     print(io, "UnregisteredPackage: ", err.pkg,
           " has not been registered by ", err.mod)
-    project_deps = if isnothing(pathof(err.mod)) # Main, etc.
-        Pkg.project().dependencies
-    else # Not a public API, but the best option availible.
-        Pkg.Types.read_package(
-            abspath(pathof(err.mod), "..", "..", "Project.toml")).deps
+    project_deps = let proj_file = if isnothing(pathof(err.mod)) # Main, etc.
+        Base.active_project()
+    else abspath(pathof(err.mod), "..", "..", "Project.toml") end
+        if isfile(proj_file)
+            Dict{String, Base.UUID}(
+                pkg => Base.UUID(id)
+                for (pkg, id) in get(Base.parsed_toml(proj_file),
+                                     "deps", Dict{String, Any}()))
+        else
+            Dict{String, Base.UUID}()
+        end
     end
     dtk = "DataToolkit" => Base.UUID("dc83c90b-d41d-4e55-bdb7-0fc919659999")
     has_dtk = dtk in project_deps
@@ -232,7 +238,7 @@ function Base.showerror(io::IO, err::UnregisteredPackage)
         if has_dtk
             print(io, "   @addpkg $(err.pkg)")
         else
-            print(io, "   addpkg($(err.mod), :$(err.pkg), <UUID of $(err.pkg)>)")
+            print(io, "   addpkg($(err.mod), :$(err.pkg), $(sprint(show, project_deps[String(err.pkg)])))")
         end
     else
         print(io, " (it is also worth noting that the package does not seem to be present as a dependancy of $(err.mod))")
