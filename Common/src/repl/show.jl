@@ -16,8 +16,7 @@ function repl_show(input::AbstractString)
             println("Could not resolve identifier: $input")
             return nothing
         end
-        show(dataset)
-        print('\n')
+        display(dataset)
         if dataset isa DataSet
             print("  UUID:    ")
             printstyled(dataset.uuid, '\n', color=:light_magenta)
