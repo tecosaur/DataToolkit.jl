@@ -11,6 +11,7 @@ using UUIDs
 import DataToolkitBase: REPL_CMDS, ReplCmd, completions, allcompletions,
     prompt, prompt_char, confirm_yn, peelword, displaytable, natkeygen,
     REPL_QUESTION_COLOR, REPL_USER_INPUT_COLOUR
+import ..show_extra
 
 include("utils.jl")
 

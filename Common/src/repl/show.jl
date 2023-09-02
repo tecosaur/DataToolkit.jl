@@ -20,7 +20,7 @@ function repl_show(input::AbstractString)
         if dataset isa DataSet
             print("  UUID:    ")
             printstyled(dataset.uuid, '\n', color=:light_magenta)
-            show_extra(stdout, dataset)
+            @advise show_extra(stdout, dataset)
         end
         nothing
     end
@@ -30,6 +30,9 @@ end
     show_extra(io::IO, dataset::DataSet)
 
 Print extra information (namely this description) about `dataset` to `io`.
+
+!!! info "Advice point"
+    This function call is advised within the `repl_show` invocation.
 """
 function show_extra(io::IO, dataset::DataSet)
     if haskey(dataset.parameters, "description")

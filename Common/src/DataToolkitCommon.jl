@@ -17,6 +17,8 @@ using UUIDs
 
 # Defined in `plugins/log.jl`, but also wanted for the store plugins.
 function should_log_event end
+# Defined in `repl/show.jl`, but also wantend for the store plugins.
+function show_extra end
 
 include("misc/collectiondir.jl")
 include("misc/humansize.jl")
