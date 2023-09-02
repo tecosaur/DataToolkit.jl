@@ -20,14 +20,23 @@ function repl_show(input::AbstractString)
         if dataset isa DataSet
             print("  UUID:    ")
             printstyled(dataset.uuid, '\n', color=:light_magenta)
-            if !isnothing(get(dataset, "description"))
-                indented_desclines =
-                    join(split(strip(get(dataset, "description")),
-                                '\n'), "\n   ")
-                println("\n  “\e[3m", indented_desclines, "\e[m”")
-            end
+            show_extra(stdout, dataset)
         end
         nothing
+    end
+end
+
+"""
+    show_extra(io::IO, dataset::DataSet)
+
+Print extra information (namely this description) about `dataset` to `io`.
+"""
+function show_extra(io::IO, dataset::DataSet)
+    if haskey(dataset.parameters, "description")
+        desc = get(dataset, "description") |> Markdown.parse
+        print("\n\e[2;3m")
+        show(stdout, MIME("text/plain"), desc)
+        print("\e[m\n")
     end
 end
 

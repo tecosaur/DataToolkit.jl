@@ -4,7 +4,7 @@ using REPL, REPL.TerminalMenus
 
 using DataToolkitBase
 using Dates
-using Markdown: @md_str
+using Markdown
 using TOML
 using UUIDs
 
