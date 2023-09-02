@@ -214,9 +214,29 @@ struct UnregisteredPackage <: PackageException
 end
 
 function Base.showerror(io::IO, err::UnregisteredPackage)
-          " has not been registered by ", err.mod,
-          ", see @addpkg for more information")
     print(io, "UnregisteredPackage: ", err.pkg,
+          " has not been registered by ", err.mod)
+    project_deps = if isnothing(pathof(err.mod)) # Main, etc.
+        Pkg.project().dependencies
+    else # Not a public API, but the best option availible.
+        Pkg.Types.read_package(
+            abspath(pathof(err.mod), "..", "..", "Project.toml")).deps
+    end
+    dtk = "DataToolkit" => Base.UUID("dc83c90b-d41d-4e55-bdb7-0fc919659999")
+    has_dtk = dtk in project_deps
+    print(io, ", see ",
+          ifelse(has_dtk, "@addpkg", "addpkg"),
+          " for more information")
+    if haskey(project_deps, String(err.pkg))
+        println(io, "\n The package is present as a dependency of $(err.mod), and so this issue can likely be fixed by invoking:")
+        if has_dtk
+            print(io, "   @addpkg $(err.pkg)")
+        else
+            print(io, "   addpkg($(err.mod), :$(err.pkg), <UUID of $(err.pkg)>)")
+        end
+    else
+        print(io, " (it is also worth noting that the package does not seem to be present as a dependancy of $(err.mod))")
+    end
 end
 
 """
