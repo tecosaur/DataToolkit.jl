@@ -167,6 +167,18 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
         end
         candidates
     end
+    subcommands = Dict{String, Vector{String}}()
+    for command in commands
+        if command.execute isa Vector{ReplCmd}
+            for subcmd in command.execute
+                if haskey(subcommands, subcmd.trigger)
+                    push!(subcommands[subcmd.trigger], command.trigger)
+                else
+                    subcommands[subcmd.trigger] = [command.trigger]
+                end
+            end
+        end
+    end
     all_cmd_names = getproperty.(commands, :trigger)
     if cmd == "" && "" in all_cmd_names
         replcmds[findfirst("" .== all_cmd_names)]
@@ -187,6 +199,11 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
             cand === last(candidates) || print(", ")
         end
         print('\n')
+    elseif warn && haskey(subcommands, cmd)
+        printstyled(" ! ", color=:red, bold=true)
+        println("The $scope command '$cmd' is not defined.")
+        printstyled(" i ", color=:cyan, bold=true)
+        println("Perhaps you want the '$(join(subcommands[cmd], '/')) $cmd' subcommand?")
     elseif warn # no matching commands
         printstyled(" ! ", color=:red, bold=true)
         println("The $scope command '$cmd' is not defined.")
