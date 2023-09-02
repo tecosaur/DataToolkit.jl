@@ -50,6 +50,7 @@ include("transformers/saveload/tiff.jl")
 include("transformers/saveload/xlsx.jl")
 include("transformers/saveload/zip.jl")
 
+include("plugins/addpkgs.jl")
 include("plugins/defaults.jl")
 include("plugins/log.jl") # Must be early so `should_log_event` is availible.
 include("plugins/versions.jl")
@@ -88,6 +89,7 @@ function __init__()
     # Plugins
     @addpkg Pkg            "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
+    @dataplugin ADDPKGS_PLUGIN
     @dataplugin DEFAULTS_PLUGIN :default
     @dataplugin LOG_PLUGIN
     @dataplugin VERSIONS_PLUGIN
