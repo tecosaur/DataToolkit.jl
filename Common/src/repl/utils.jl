@@ -11,10 +11,10 @@ end
 function complete_dataset(sofar::AbstractString)
     try # In case `resolve` or `getlayer` fail.
         relevant_options = if !isnothing(match(r"^.+::", sofar))
-                identifier = Identifier(first(split(sofar, "::")))
-                types = map(l -> l.type, resolve(identifier).loaders) |>
-                    Iterators.flatten .|> string |> unique
-                string.(string(identifier), "::", types)
+            identifier = parse(Identifier, first(split(sofar, "::")))
+            types = map(l -> l.type, resolve(identifier).loaders) |>
+                Iterators.flatten .|> string |> unique
+            string.(string(identifier), "::", types)
         elseif !isnothing(match(r"^[^:]+:", sofar))
             layer, _ = split(sofar, ':', limit=2)
             filter(o -> startswith(o, sofar),
