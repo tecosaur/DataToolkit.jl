@@ -9,10 +9,10 @@ collection in "natural order".
 ```jldoctest; setup = :(import DataToolkitBase.natkeygen)
 julia> natkeygen.(["A1", "A10", "A02", "A1.5"])
 4-element Vector{Vector{AbstractString}}:
- ["a", "0\x01"]
- ["a", "0\n"]
- ["a", "0\x02"]
- ["a", "0\x015"]
+ ["a", "0\\x01"]
+ ["a", "0\\n"]
+ ["a", "0\\x02"]
+ ["a", "0\\x015"]
 
 julia> sort(["A1", "A10", "A02", "A1.5"], by=natkeygen)
 4-element Vector{String}:
@@ -140,7 +140,7 @@ julia> stringsimilarity("same", "same")
 julia> stringsimilarity("semi", "demi")
 0.75
 
-julia> stringsimilarity("Same", "same")
+julia> stringsimilarity("Same", "same", halfcase=true)
 0.875
 ```
 """
@@ -208,7 +208,7 @@ Return `true` if `a` is a subsequence of `b`, `false` otherwise.
 
 ## Examples
 
-```jldoctest; setup = :(import DataToolkitBase.longest_common_subsequence)
+```jldoctest; setup = :(import DataToolkitBase.issubseq)
 julia> issubseq("abc", "abc")
 true
 
