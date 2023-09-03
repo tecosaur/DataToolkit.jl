@@ -9,6 +9,10 @@ using PrecompileTools
 
 export loadcollection!, dataset, DataSet, @d_str, @data_cmd, @import
 
+macro reexport()
+    :(export DataToolkit, loadcollection!, dataset, DataSet, @d_str, @data_cmd, @import)
+end
+
 const Base = DataToolkitBase
 const Common = DataToolkitCommon
 
