@@ -85,7 +85,7 @@ findadvice!(acc, ::Any; parent=nothing) = nothing
 alladvice = Vector{AdviseRecord}()
 for (root, dirs, files) in walkdir("../../src")
     for file in files
-        file == "precompile.jl" || continue
+        file == "precompile.jl" && continue
         @info "Analysing $file for advise"
         path = joinpath(root, file)
         expr = Meta.parseall(read(path, String); filename=path)
