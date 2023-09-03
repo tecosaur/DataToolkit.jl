@@ -83,4 +83,5 @@
     empty!(DEFAULT_PLUGINS)
     empty!(DataToolkitBase.EXTRA_PACKAGES)
     empty!(REPL_CMDS)
+    empty!(Store.INVENTORIES)
 end
