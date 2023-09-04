@@ -354,7 +354,12 @@ function interpret_lifetime(lifetime::String)
         period["seconds"]
 end
 
-function pkgtypes!(types::Vector{Type}, x::T) where {T}
+function pkgtypes!(types::Vector{Type}, seen::Set{UInt}, x::T) where {T}
+    if objectid(x) in seen
+        return
+    else
+        push!(seen, objectid(x))
+    end
     M = parentmodule(T)
     if M ∉ (Base, Core) && !isnothing(pkgdir(M)) &&
         !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
@@ -362,12 +367,18 @@ function pkgtypes!(types::Vector{Type}, x::T) where {T}
     end
     if isconcretetype(T)
         for field in fieldnames(T)
-            pkgtypes!(types, getfield(x, field))
+            isdefined(x, field) &&
+                pkgtypes!(types, seen, getfield(x, field))
         end
     end
 end
 
-function pkgtypes!(types::Vector{Type}, x::T) where {T <: AbstractArray}
+function pkgtypes!(types::Vector{Type}, seen::Set{UInt}, x::T) where {T <: AbstractArray}
+    if objectid(x) in seen
+        return
+    else
+        push!(seen, objectid(x))
+    end
     M = parentmodule(T)
     if M ∉ (Base, Core) && !isnothing(pkgdir(M)) &&
         !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
@@ -379,18 +390,23 @@ function pkgtypes!(types::Vector{Type}, x::T) where {T <: AbstractArray}
         elseif startswith(pkgdir(parentmodule(eltype(T))), Sys.STDLIB)
         elseif eltype(T) ∈ types
         elseif !isempty(x) && isassigned(x, firstindex(x))
-            pkgtypes!(types, first(x))
+            pkgtypes!(types, seen, first(x))
         end
     else
         for index in eachindex(x)
-            isassigned(x, index) && pkgtypes!(types, x[index])
+            isassigned(x, index) && pkgtypes!(types, seen, x[index])
         end
     end
 end
 
+function pkgtypes!(::Vector{Type}, seen::Set{UInt}, x::Union{Function, Type})
+    objectid(x) in seen || push!(seen, objectid(x))
+end
+
 function pkgtypes(x)
     types = Type[]
-    pkgtypes!(types, x)
+    seen = Set{UInt}()
+    pkgtypes!(types, seen, x)
     types
 end
 
