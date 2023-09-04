@@ -2,7 +2,14 @@ const TOMLValue = TOML.Internals.Printer.TOMLValue
 # TOML_TYPES = Base.uniontypes(TOMLValue)
 
 function getstorage(storage::DataStorage{:raw}, T::Type{<:TOMLValue})
-    @getparam storage."value"::Union{T, Nothing} nothing
+    if T <: Dict
+        val = @getparam storage."value"::Union{SmallDict, Nothing} nothing
+        if !isnothing(val)
+            convert(Dict, val)::T
+        end
+    else
+        @getparam storage."value"::Union{T, Nothing} nothing
+    end
 end
 
 function putstorage(storage::DataStorage{:raw}, ::Type{<:TOMLValue})
