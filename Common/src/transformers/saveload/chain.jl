@@ -68,7 +68,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                     # requiring it and seeing what happens.
                     pkg = DataToolkitBase.get_package(
                         toploader.dataset.collection.mod,
-                        iqtype.parentmodule)
+                        iqtype.root)
                     if pkg isa DataToolkitBase.PkgRequiredRerunNeeded
                         typeify(iqtype)
                     else

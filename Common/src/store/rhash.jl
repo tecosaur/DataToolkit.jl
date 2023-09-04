@@ -115,9 +115,13 @@ end
 rhash(::DataCollection, obj::Type, h::UInt) = rhash(obj, h)
 
 function rhash(qt::QualifiedType, h::UInt=zero(UInt))
-    hash(qt.parentmodule,
-         hash(qt.name,
-              hash(rhash.(qt.parameters), h)))
+    for p in qt.parents
+        h = hash(p, h)
+    end
+    for p in rhash.(qt.parameters)
+        h = hash(p, h)
+    end
+    hash(qt.root, hash(qt.name, h))
 end
 
 # Fallbacks
