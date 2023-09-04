@@ -230,11 +230,11 @@ end
 
 """
     update_inventory!(path::String)
-    update_inventory(inventory::Inventory)
+    update_inventory!(inventory::Inventory)
 
-Find the inventory specified by `path`/`inventory` in the `INVENTORIES` collection,
-and update it in-place if appropriate. Should the inventory specified not be
-part of `INVENTORIES`, it is added.
+Find the inventory specified by `path`/`inventory` in the `INVENTORIES`
+collection, and update it in-place. Should the inventory specified not be part
+of `INVENTORIES`, it is added.
 
 Returns the up-to-date `Inventory`.
 """
@@ -243,17 +243,19 @@ function update_inventory!(path::String)
     if isnothing(index)
         push!(INVENTORIES, load_inventory(path)) |> last
     else
-        update_inventory!(INVENTORIES[index], index)
+        update_inventory!(INVENTORIES[index])
     end
 end
 
-function update_inventory!(inventory::Inventory, index::Union{Int, Nothing}=findfirst(i -> i === inventory, INVENTORIES))
-    INVENTORIES[index] = update_inventory(inventory)
-end
-
-function update_inventory(inventory::Inventory)
+function update_inventory!(inventory::Inventory)
     if mtime(inventory.file.path) > inventory.file.recency
-        inventory = load_inventory(inventory.file.path)
+        (; config, collections, stores, caches, last_gc) =
+            load_inventory(inventory.file.path)
+        inventory.config = config
+        inventory.collections = collections
+        inventory.stores = stores
+        inventory.caches = caches
+        inventory.last_gc = last_gc
     end
     inventory
 end
