@@ -59,21 +59,33 @@ end
 # Identifier
 # ---------------
 
-function Base.parse(::Type{Identifier}, spec::AbstractString; advised::Bool=false)
-    collection_str, rest::SubString{String} = match(r"^(?:([^:]+):)?([^:].*)?$", spec).captures
-    collection = if !isnothing(collection_str)
-        something(tryparse(UUID, collection_str), collection_str)
+function Base.parse(::Type{Identifier}, spec::AbstractString)
+    isempty(STACK) && return parse_ident(spec)
+    mark = findfirst(':', spec)
+    collection = if !isnothing(mark) && (mark == length(spec) || spec[mark+1] != ':')
+        cstring = spec[1:prevind(spec, mark)]
+        something(tryparse(UUID, cstring), cstring)
     end
-    if !isnothing(collection) && !advised
-        @advise getlayer(collection) parse(Identifier, spec, advised=true)
+    @advise getlayer(collection) parse_ident(spec)
+end
+
+function parse_ident(spec::AbstractString)
+    mark = findfirst(':', spec)
+    collection = if !isnothing(mark) && (mark == length(spec) || spec[mark+1] != ':')
+        cstring, spec = spec[begin:prevind(spec, mark)], spec[mark+1:end]
+        something(tryparse(UUID, cstring), cstring)
+    end
+    mark = findfirst(':', spec)
+    dataset = if isnothing(mark)
+        _, spec = spec, ""
     else
-        dataset, rest = match(r"^([^:]+)(.*)$", rest).captures
-        dtype = match(r"^(?:::([A-Za-z0-9{, }<:\.]+)|::)?$", rest).captures[1]
-        Identifier(collection,
-                   something(tryparse(UUID, dataset), dataset),
-                   if !isnothing(dtype) parse(QualifiedType, dtype) end,
-                   SmallDict{String,Any}())
+        _, spec = spec[begin:prevind(spec, mark)], spec[mark:end]
+    end |> first
+    dtype  = if startswith(spec, "::") && length(spec) > 2
+        parse(QualifiedType, spec[3:end])
     end
+    Identifier(collection, something(tryparse(UUID, dataset), dataset),
+                dtype, SmallDict{String,Any}())
 end
 
 # ---------------

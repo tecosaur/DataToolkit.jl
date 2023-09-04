@@ -41,7 +41,7 @@ tospec(adt::AbstractDataTransformer)::Dict
 
 Both the parsing of an ~Identifier~ from a string, and the serialisation of an ~Identifier~ to a string are advised. Specifically, the following function calls:
 #+begin_src julia
-parse(Identifier, spec::AbstractString, advised=true)
+parse_ident(spec::AbstractString)
 string(ident::Identifier)
 #+end_src
 

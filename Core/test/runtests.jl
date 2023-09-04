@@ -375,7 +375,7 @@ end
                               ("a:b", Identifier("a", "b", nothing, SmallDict{String, Any}())),
                               ("a::Main.sometype", Identifier(nothing, "a", QualifiedType(:Main, :sometype), SmallDict{String, Any}())),
                               ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), SmallDict{String, Any}()))]
-            @test parse(Identifier, istr; advised=true) == ident
+            @test parse_ident(istr) == ident
             @test istr == string(ident)
         end
     end
