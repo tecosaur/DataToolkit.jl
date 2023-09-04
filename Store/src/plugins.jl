@@ -139,12 +139,21 @@ const STORE_PLUGIN = Plugin("store", [
             # as a reference.
             update_source!(inventory, source, storer.dataset.collection)
             if as === IO || as === IOStream
-                if should_log_event("store", storer)
+                should_log_event("store", storer) &&
                     @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-                end
                 (identity, (open(file, "r"),))
             elseif as === FilePath
+                should_log_event("store", storer) &&
+                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
                 (identity, (FilePath(file),))
+            elseif as === Vector{UInt8}
+                should_log_event("store", storer) &&
+                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+                (identity, (read(file),))
+            elseif as === String
+                should_log_event("store", storer) &&
+                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+                (identity, (read(file, String),))
             else
                 (f, (storer, as), (; write))
             end
