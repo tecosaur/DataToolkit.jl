@@ -90,15 +90,11 @@ function init(mod::Module=Main; force::Bool=false)
             project_path = dirname(project_path)
         end
         # Skip packages when `init(Main)` called.
-        if mod === Main
-            pkg_name = basename(rstrip(project_path, first(JLBase.Filesystem.path_separator)))
-            ispkg = isfile(joinpath(project_path, "Project.toml")) &&
-                    isfile(joinpath(project_path, "src", pkg_name * ".jl")) &&
-                    open(f -> mapreduce(
-                            line -> (line == "name = \"$pkg_name\"",
-                                startswith(line, "uuid = \"")),
-                            .|, eachline(f)) |> all,
-                        joinpath(project_path, "Project.toml"))
+        if mod === Main && isfile(joinpath(project_path, "Project.toml"))
+            data = JLBase.parsed_toml(joinpath(project_path, "Project.toml"))
+            ispkg = haskey(data, "name") && haskey(data, "uuid") &&
+                haskey(data, "version") && isfile(joinpath(
+                    project_path, "src", data["name"] * ".jl"))
             ispkg && continue
         end
         # Load Data.d/*.toml
