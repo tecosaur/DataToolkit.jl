@@ -205,7 +205,7 @@ function _read(dataset::DataSet, as::Type)
                                    # but we'll give the very most basic a shot, and cross
                                    # our fingers with the rest.
                                    if load_fn_sig.types[4] == Type{load_fn_sig.types[3]}
-                                       stype == as
+                                       stype <: as
                                    else
                                        accept.lb <: stype <: accept.ub
                                    end
@@ -237,7 +237,9 @@ function _read(dataset::DataSet, as::Type)
     if length(potential_loaders) == 0
         throw(UnsatisfyableTransformer{DataLoader}(dataset, [qtype]))
     else
-        loadertypes = map(f -> QualifiedType(f.types[3]),
+        loadertypes = map(f -> let t = f.types[3]
+                              QualifiedType(if t isa TypeVar t.ub else t end)
+                          end,
                           filter(f -> any(l -> l isa f.types[2], potential_loaders),
                                  all_load_fn_sigs))
         throw(UnsatisfyableTransformer{DataStorage}(dataset, loadertypes))
