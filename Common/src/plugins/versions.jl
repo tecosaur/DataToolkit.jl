@@ -42,7 +42,7 @@ When multiple data sets match the version specification, the one with the
 highest matching version is used.
 """
 const VERSIONS_PLUGIN = Plugin("versions", [
-    function (f::typeof(parse), ::Type{Identifier}, ident::AbstractString)
+    function (f::typeof(parse_ident), ident::AbstractString)
         function extractversion!(ident::Identifier)
             if ident.dataset isa AbstractString && count('@', ident.dataset) == 1
                 name, version = split(ident.dataset, '@')
@@ -52,7 +52,7 @@ const VERSIONS_PLUGIN = Plugin("versions", [
                 ident
             end
         end
-        (extractversion!, f, (Identifier, ident))
+        (extractversion!, f, (ident,))
     end,
     function (f::typeof(refine), datasets::Vector{DataSet}, ident::Identifier, ignoreparams::Vector{String})
         @import Pkg.Versions.semver_spec
