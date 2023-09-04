@@ -20,12 +20,14 @@ function Base.string(q::QualifiedType)
     if haskey(QUALIFIED_TYPE_SHORTHANDS.reverse, q)
         return QUALIFIED_TYPE_SHORTHANDS.reverse[q]
     end
-    qname = if q.parentmodule == :Base && Base.isexported(Base, q.name)
+    qname = if q.root == :Base && Base.isexported(Base, q.name)
         string(q.name)
-    elseif q.parentmodule == :Core && Base.isexported(Core, q.name)
+    elseif q.root == :Core && Base.isexported(Core, q.name)
         string(q.name)
+    elseif isempty(q.parents)
+        string(q.root, '.', q.name)
     else
-        string(q.parentmodule, '.', q.name)
+        string(q.root, '.', join(q.parents, '.'), '.', q.name)
     end
     if isempty(q.parameters)
         qname

@@ -43,7 +43,8 @@ This can be easily `parse`d as a QualifiedType, e.g. `parse(QualifiedType,
 "Core.IO")`.
 """
 struct QualifiedType
-    parentmodule::Symbol
+    root::Symbol
+    parents::Vector{Symbol}
     name::Symbol
     parameters::Tuple
 end

@@ -1,6 +1,8 @@
-QualifiedType(t::AbstractString) = parse(QualifiedType, t)
+QualifiedType(m::Symbol, name::Symbol, params::Tuple=()) =
+    QualifiedType(m, Symbol[], name, params)
 
-QualifiedType(m::Symbol, name::Symbol) = QualifiedType(m, name, ())
+QualifiedType(m::Symbol, parents::Vector{Symbol}, name::Symbol) =
+    QualifiedType(m, parents, name, ())
 
 function QualifiedType(::Type{T0}) where {T0}
     T = Base.unwrap_unionall(T0)
@@ -8,10 +10,21 @@ function QualifiedType(::Type{T0}) where {T0}
                      QualifiedType(p)
                  else p end,
                  T.parameters)
-    QualifiedType(Symbol(parentmodule(T)), nameof(T), Tuple(params))
+    parents = Symbol[]
+    root = parentmodule(T)
+    while root != parentmodule(root)
+        push!(parents, Symbol(root))
+        root = parentmodule(root)
+    end
+    QualifiedType(Symbol(root), parents, nameof(T), Tuple(params))
 end
 
+Base.:(==)(a::QualifiedType, b::QualifiedType) =
+    a.root == b.root && a.parents == b.parents &&
+    a.name == b.name && a.parameters == b.parameters
+
 QualifiedType(qt::QualifiedType) = qt
+QualifiedType(t::AbstractString) = parse(QualifiedType, t) # remove?
 
 function Base.show(io::IO, ::MIME"text/plain", qt::QualifiedType)
     print(io, "QualifiedType(", string(qt), ")")
@@ -24,19 +37,24 @@ Convert `qt` to a `Type` availible in `mod`, if possible.
 If this cannot be done, `nothing` is returned instead.
 """
 function typeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)
-    mod = if qt.parentmodule === :Main
+    mod = if qt.root === :Main
         mod
-    elseif isdefined(mod, qt.parentmodule)
-        getfield(mod, qt.parentmodule)
+    elseif isdefined(mod, qt.root)
+        getfield(mod, qt.root)
     else
         hmod = nothing
         for (pkgid, pmod) in Base.loaded_modules
-            if pkgid.name == String(qt.parentmodule)
+            if pkgid.name == String(qt.root)
                 hmod = pmod
                 break
             end
         end
         hmod
+    end
+    for parent in qt.parents
+        mod = if isdefined(mod, parent)
+            getfield(mod, parent)
+        end
     end
     # For the sake of the `catch` statement:
     if !isnothing(mod) && isdefined(mod, qt.name)

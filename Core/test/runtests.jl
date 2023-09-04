@@ -358,7 +358,11 @@ end
 @testset "stringification" begin
     @testset "QualifiedType" begin
         for (str, qt) in [("a.b", QualifiedType(:a, :b)),
+                          ("a.b.c", QualifiedType(:a, [:b], :c)),
+                          ("a.b.c.d", QualifiedType(:a, [:b, :c], :d)),
                           ("String", QualifiedType(String)),
+                          ("a.b{c.d}", QualifiedType(:a, :b, (QualifiedType(:c, :d),))),
+                          ("a.b.c{d.e.f}", QualifiedType(:a, [:b], :c, (QualifiedType(:d, [:e], :f),))),
                           ("Array{Bool,2}", QualifiedType(Array{Bool, 2})),
                           ("Array{Array{Array{<:Integer,1},1},1}",
                            QualifiedType(Array{Array{Array{<:Integer,1},1},1})),

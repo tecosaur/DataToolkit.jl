@@ -433,10 +433,10 @@ end
 function Base.showerror(io::IO, err::ImpossibleTypeException)
     print(io, "ImpossibleTypeException: Could not realise the type ", string(err.qt))
     if isnothing(err.mod)
-        print(io, ", as the parent module ", err.qt.parentmodule,
+        print(io, ", as the parent module ", err.qt.root,
               " is not loaded.")
     elseif !isdefined(err.mod, err.qt.name)
-        print(io, ", as the parent module ", err.qt.parentmodule,
+        print(io, ", as the parent module ", err.qt.root,
               " has no property ", err.qt.name, '.')
     else
         print(io, ", for unknown reasons, possibly an issue with the type parameters?")

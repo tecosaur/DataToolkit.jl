@@ -19,18 +19,23 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
                     QUALIFIED_TYPE_SHORTHANDS.forward[string(param)]
                 else
                     QualifiedType(Symbol(Base.binding_module(Main, param)),
-                                  param, Tuple{}())
+                                  Symbol[], param, Tuple{}())
                 end
-            elseif param isa Expr && param.head == :.
+            elseif Meta.isexpr(param, :.)
                 parse(QualifiedType, string(param))
-            elseif param isa Expr && param.head == :<: && last(param.args) isa Symbol
+            elseif Meta.isexpr(param, :<:) && last(param.args) isa Symbol
                 TypeVar(if length(param.args) == 2
                             first(param.args)
                         else Symbol("#s0") end,
                         getfield(Main, last(param.args)))
-            elseif param isa Expr && param.head == :curly
+            elseif Meta.isexpr(param, :<:) && (val = typeify(parse(QualifiedType, string(last(param.args))))) |> !isnothing
+                TypeVar(if length(param.args) == 2
+                            first(param.args)
+                        else Symbol("#s0") end,
+                        val)
+            elseif Meta.isexpr(param, :curly)
                 base = parse(QualifiedType, string(first(param.args)))
-                QualifiedType(base.parentmodule, base.name, Tuple(destruct.(param.args[2:end])))
+                QualifiedType(base.root, Symbol[], base.name, Tuple(destruct.(param.args[2:end])))
             else
                 throw(ArgumentError("Invalid QualifiedType parameter $(sprint(show, param)) in $(sprint(show, spec))"))
             end
@@ -38,21 +43,19 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
         if length(cbsplit) == 1
             split(cbsplit[1], '.'), Tuple{}()
         else
-            split(cbsplit[1], '.'),
-            let typeparams = Meta.parse(spec[1+length(cbsplit[1]):end])
-                Tuple(destruct.(typeparams.args))
-            end
+            typeparams = Meta.parse(spec[1+length(cbsplit[1]):end])
+            split(cbsplit[1], '.'), Tuple(destruct.(typeparams.args))
         end
     end
-    parentmodule, name = if length(components) == 1
+    root, parents, name = if length(components) == 1
         n = Symbol(components[1])
-        Symbol(Base.binding_module(Main, n)), n
+        Symbol(Base.binding_module(Main, n)), Symbol[], n
     elseif length(components) == 2
-        Symbol.(components)
+        Symbol(components[1]), Symbol[], Symbol(components[2])
     else
-        Symbol.(components[end-1:end])
+        Symbol(components[1]), Symbol.(components[2:end-1]), Symbol(components[end])
     end
-    QualifiedType(parentmodule, name, parameters)
+    QualifiedType(root, parents, name, parameters)
 end
 
 # ---------------
