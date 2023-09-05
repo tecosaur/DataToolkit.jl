@@ -22,10 +22,17 @@ function remove(input::AbstractString)
         println("Could not parse '$input' as an identifier")
         return
     end
-    dataset = try resolve(ident) catch _
+    dataset = try resolve(ident) catch err
         printstyled(" ! ", color=:red, bold=true)
         println("Could not resolve identifier: $input")
-        return
+        if err isa IdentifierException
+            print(' ')
+            showerror(stdout, err)
+            print('\n')
+            return
+        else
+            rethrow()
+        end
     end
     confirm_yn(" Are you sure you want to remove $(dataset.name)?") || return nothing
     delete!(dataset)

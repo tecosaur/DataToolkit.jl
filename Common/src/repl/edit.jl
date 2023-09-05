@@ -87,10 +87,17 @@ function repl_edit(input::AbstractString)
         println("Specify a DataSet to remove")
         return
     end
-    dataset = try resolve(input) catch _
+    dataset = try resolve(input) catch err
         printstyled(" ! ", color=:red, bold=true)
         println("Could not resolve identifier: $input")
-        return
+        if err isa IdentifierException
+            print(' ')
+            showerror(stdout, err)
+            print('\n')
+            return
+        else
+            rethrow()
+        end
     end
     if !iswritable(dataset.collection)
         printstyled(" ! ", color=:red, bold=true)
