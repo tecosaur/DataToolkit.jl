@@ -197,6 +197,6 @@ function resolve(identstr::AbstractString, parameters::Union{SmallDict{String, A
             result = resolve(collection, ident; resolvetype, requirematch=false)
             !isnothing(result) && return result
         end
-        throw(UnresolveableIdentifier{DataSet}(identstr))
+        throw(UnresolveableIdentifier{DataSet}(String(identstr)))
     end
 end
