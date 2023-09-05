@@ -135,6 +135,9 @@ function create_sandbox()
             else
                 try
                     res = Core.eval(mod, expr)
+                    if res isa DataToolkitBase.PkgRequiredRerunNeeded
+                        res = Core.eval(mod, expr)
+                    end
                     lasttype[] = typeof(res)
                     return Expr(:quote, res)
                 catch err
