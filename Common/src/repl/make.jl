@@ -275,10 +275,13 @@ function sandbox_dataset(; collection::DataCollection=first(STACK),
         loader.parameters["arguments"] = args
     end
 
-    savefile = if prompt_char(" Should the script be inserted inline (i), or as a file (f)? ",
+    savefile = nothing
+    if prompt_char(" Should the script be inserted inline (i), or as a file (f)? ",
                               ['i', 'f']) == 'f'
-        # TODO prompt about overwriting
-        prompt(" Save file: ", string(name, ".jl"))
+        savefile = prompt(" Save file: ", string(name, ".jl"))
+        while !isfile(savefile) || !confirm_yn(" File already exists, overwrite?", false)
+            savefile = prompt(" Save file: ", string(name, ".jl"))
+        end
     end
 
     if isnothing(savefile)
