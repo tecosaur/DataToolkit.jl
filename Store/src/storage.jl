@@ -93,9 +93,10 @@ end
 
 function storefile(inventory::Inventory, source::CacheSource)
     joinpath(dirname(inventory.file.path), inventory.config.cache_dir,
-             string(string("R-", string(source.recipe, base=16)),
-                    '-', string(last(first(source.types)), base=16),
-                    '.', fileextension(source)))
+             string("R-", string(source.recipe, base=16),
+                    "-T", string(last(first(source.types)), base=16),
+                    '-', ifelse(Base.ENDIAN_BOM == 0x04030201, "L", "B"),
+                    Sys.WORD_SIZE, '.', fileextension(source)))
 end
 
 # For convenient chaning with `getsource`
