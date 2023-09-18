@@ -157,19 +157,25 @@ const STORE_PLUGIN = Plugin("store", [
             else
                 (f, (storer, as), (; write))
             end
-        elseif as == IO || as == IOStream
+        elseif as === FilePath
+            (storesave(inventory, storer, as), f, (storer, as), (; write))
+        elseif as ∈ (IO, IOStream, Vector{UInt8}, String)
             # Try to get it as a file, because that avoids
             # some potential memory issues (e.g. large downloads
             # which exceed memory limits).
             tryfile = storage(storer, FilePath; write)
             if !isnothing(tryfile)
                 io = open(storesave(inventory, storer, FilePath, tryfile).path, "r")
-                (identity, (io,))
+                (identity, (if as ∈ (IO, IOStream)
+                                io
+                            elseif as == Vector{UInt8}
+                                read(io)
+                            elseif as == String
+                                read(io, String)
+                            end,))
             else
                 (storesave(inventory, storer, as), f, (storer, as), (; write))
             end
-        elseif as === FilePath
-            (storesave(inventory, storer, as), f, (storer, as), (; write))
         else
             (f, (storer, as), (; write))
         end
