@@ -105,7 +105,7 @@ function resolve(collection::DataCollection, ident::Identifier;
         if !isempty(notypematches)
             throw(UnsatisfyableTransformer{DataLoader}(first(notypematches), ident.type))
         else
-            throw(UnresolveableIdentifier{DataSet}(notypeident, collection))
+            throw(UnresolveableIdentifier{DataSet}(string(notypeident), collection))
         end
     elseif length(matchingdatasets) > 1
         throw(AmbiguousIdentifier((@advise collection string(ident)),
