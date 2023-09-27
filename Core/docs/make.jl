@@ -1,3 +1,5 @@
+#!/usr/bin/env -S julia --startup-file=no
+
 using Documenter
 using DataToolkitBase
 using Org
@@ -32,7 +34,8 @@ makedocs(;
     ],
     repo="https://github.com/tecosaur/DataToolkitBase.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkitBase.jl",
-    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitBase.jl/graphs/contributors"
+    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitBase.jl/graphs/contributors",
+    warnonly = [:missing_docs],
 )
 
 deploydocs(;

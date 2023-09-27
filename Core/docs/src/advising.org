@@ -176,5 +176,5 @@ for file in sort(afiles)
     push!(content, list)
 end
 
-Markdown.MD(content)
+Markdown.MD(content) |> string |> Markdown.parse
 #+end_src

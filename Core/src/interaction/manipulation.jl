@@ -188,8 +188,8 @@ function plugin_add(collection::DataCollection, plugins::Vector{<:AbstractString
             print(" Added plugins: ")
             printstyled(join(new_plugins, ", "), '\n', color=:green)
         end
+        newcollection
     end
-    newcollection
 end
 
 function plugin_add(plugins::Vector{<:AbstractString}; quiet::Bool=false)

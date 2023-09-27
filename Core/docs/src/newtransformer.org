@@ -19,12 +19,6 @@ the three key data transformer methods:
 
 #+begin_src @docs
 load
-#+end_src
-
-#+begin_src @docs
 storage
-#+end_src
-
-#+begin_src @docs
 save
 #+end_src
