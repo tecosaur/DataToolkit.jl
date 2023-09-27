@@ -25,6 +25,18 @@ Cache IO from data storage backends, by saving the contents to the disk.
 
 ## Configuration
 
+#### Store path
+
+The directory the the store is maintained in can be set via the `store.path`
+configuration parameter.
+
+```toml
+config.store.path = "relative/to/datatoml"
+```
+
+The system default is `$(contractuser(Store.BaseDirs.User.cache(Store.BaseDirs.Project("DataToolkit"))))`,
+which can be overriden with the `DATATOOLKIT_STORE` environment variable.
+
 #### Disabling on a per-storage basis
 
 Saving of individual storage sources can be disabled by setting the "save"
@@ -269,6 +281,13 @@ both "B" and "C", and so is included in each. "E" is also used in "D".
 
 ## Configuration
 
+#### Store path
+
+This uses the same `store.path` configuration variable as the `store` plugin
+(which see).
+
+#### Disabling on a per-loader basis
+
 Caching of individual loaders can be disabled by setting the "cache" parameter
 to `false`, i.e.
 
@@ -277,6 +296,8 @@ to `false`, i.e.
 cache = false
 ...
 ```
+
+#### Store management
 
 System-wide configuration can be set via the `store config set` REPL command, or
 directly modifying the `$(@__MODULE__).getinventory().config` struct.

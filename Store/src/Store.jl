@@ -12,7 +12,12 @@ using UUIDs
 using ..DataToolkitCommon: should_log_event, show_extra, dirof, humansize
 
 const INVENTORY_FILENAME = "Inventory.toml"
-const USER_STORE = BaseDirs.User.cache(BaseDirs.Project("DataToolkit"), create=true)
+const USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
+    mkpath(ENV["DATATOOLKIT_STORE"])
+else
+    BaseDirs.User.cache(BaseDirs.Project("DataToolkit"), create=true)
+end
+
 const USER_INVENTORY = joinpath(USER_STORE, INVENTORY_FILENAME)
 
 include("types.jl")
