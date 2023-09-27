@@ -22,12 +22,13 @@ Stacktrace: [...]
 ```
 """
 struct UnresolveableIdentifier{T, I} <: IdentifierException where {T, I <: Union{String, UUID}}
+    target::Type{T} # Prevent "unused type variable" warning
     identifier::I
     collection::Union{DataCollection, Nothing}
 end
 
 UnresolveableIdentifier{T}(ident::I, collection::Union{DataCollection, Nothing}=nothing) where {T, I <: Union{String, UUID}} =
-    UnresolveableIdentifier{T, I}(ident, collection)
+    UnresolveableIdentifier{T, I}(T, ident, collection)
 
 function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
     print(io, "UnresolveableIdentifier: ", sprint(show, err.identifier),
