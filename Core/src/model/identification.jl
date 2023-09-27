@@ -103,7 +103,7 @@ function resolve(collection::DataCollection, ident::Identifier;
         notypeident = Identifier(ident.collection, ident.dataset, nothing, ident.parameters)
         notypematches = refine(collection, collection.datasets, notypeident)
         if !isempty(notypematches)
-            throw(UnsatisfyableTransformer{DataLoader}(first(notypematches), ident.type))
+            throw(UnsatisfyableTransformer(first(notypematches), DataLoader, ident.type))
         else
             throw(UnresolveableIdentifier{DataSet}(string(notypeident), collection))
         end

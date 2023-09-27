@@ -391,14 +391,25 @@ Stacktrace: [...]
 """
 struct UnsatisfyableTransformer{T} <: DataOperationException where { T <: AbstractDataTransformer }
     dataset::DataSet
-    types::Vector{QualifiedType}
+    transformer::Type{T}
+    wanted::Vector{QualifiedType}
 end
 
-function Base.showerror(io::IO, err::UnsatisfyableTransformer{DataLoader})
-    print(io, "UnsatisfyableTransformer: There are no loaders for ",
+function Base.showerror(io::IO, err::UnsatisfyableTransformer)
+    transformer_type = lowercase(replace(string(nameof(err.transformer)), "Data" => ""))
+    print(io, "UnsatisfyableTransformer: There are no $(transformer_type)s for ",
           sprint(show, err.dataset.name), " that can provide a ",
-          join(string.(err.types), ", ", ", or "),
-          ". The defined loaders are as follows:")
+          join(string.(err.wanted), ", ", ", or "),
+          ".\n The defined $(transformer_type)s are as follows:")
+    transformers = if err.transformer isa DataLoader
+        err.dataset.loaders
+    else
+        err.dataset.storage
+    end
+    for transformer in transformers
+        print(io, "\n   ")
+        show(io, transformer)
+    end
 end
 
 """
