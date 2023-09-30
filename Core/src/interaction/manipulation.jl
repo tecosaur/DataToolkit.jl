@@ -11,12 +11,12 @@
 Create a new data collection.
 
 This can be an in-memory data collection, when `path` is set to `nothing`, or a
-collection which correspands to a Data TOML file, in which case `path` should be
+collection which corresponds to a Data TOML file, in which case `path` should be
 set to either a path to a .toml file or a directory in which a Data.toml file
 should be placed.
 
 When `path` is a string and `write` is set, the data collection file will be
-immedately written, overwriting any existing file at the path.
+immediately written, overwriting any existing file at the path.
 
 When `addtostack` is set, the data collection will also be added to the top of
 the data collection stack.
@@ -73,7 +73,7 @@ init(dc::DataCollection) = dc
 """
     stack_index(ident::Union{Int, String, UUID, DataCollection}; quiet::Bool=false)
 
-Obtai the index of the data collection identified by `ident` on the stack,
+Obtain the index of the data collection identified by `ident` on the stack,
 if it is present. If it is not found, `nothing` is returned and unless `quiet`
 is set a warning is printed.
 """
@@ -172,7 +172,7 @@ function plugin_add(collection::DataCollection, plugins::Vector{<:AbstractString
         # 3. Convert back
         # instead of simply `push!`-ing to the `plugins` field
         # of `collection`, however this is necessary to avoid
-        # asymetric advice trigerring by the plugins in question.
+        # asymmetric advice triggering by the plugins in question.
         snapshot = convert(Dict, collection)
         snapshot["plugins"] =
             append!(get(snapshot, "plugins", String[]), new_plugins)
@@ -226,7 +226,7 @@ function plugin_remove(collection::DataCollection, plugins::Vector{<:AbstractStr
         # 3. Convert back
         # instead of simply modifying the `plugins` field
         # of `collection`, however this is necessary to avoid
-        # asymetric advice trigerring by the plugins in question.
+        # asymmetric advice triggering by the plugins in question.
         snapshot = convert(Dict, collection)
         snapshot["plugins"] =
             setdiff(get(snapshot, "plugins", String[]), rem_plugins)
@@ -256,7 +256,7 @@ end
 Fetch the documentation of `plugin`, or return `nothing` if documentation could
 not be fetched.
 
-If `quiet` is not set warning messages will be ommited when no documentation
+If `quiet` is not set warning messages will be omitted when no documentation
 could be fetched.
 """
 function plugin_info(plugin::AbstractString; quiet::Bool=false)
@@ -331,7 +331,7 @@ Unless `quiet` is set, a success message is printed.
 """
 function config_set(collection::DataCollection, propertypath::Vector{String}, value::Any;
                      quiet::Bool=false)
-    # It may seem like an unecessary layer of inderection to set
+    # It may seem like an unnecessary layer of indirection to set
     # the configuration via a Dict conversion of `collection`,
     # however this way any plugin-processing of the configuration
     # will be symmetric (i.e. applied at load and write).
@@ -377,7 +377,7 @@ Unless `quiet` is set, a success message is printed.
 """
 function config_unset(collection::DataCollection, propertypath::Vector{String};
                        quiet::Bool=false)
-    # It may seem like an unecessary layer of inderection to set
+    # It may seem like an unnecessary layer of indirection to set
     # the configuration via a Dict conversion of `collection`,
     # however this way any plugin-processing of the configuration
     # will be symmetric (i.e. applied at load and write).
@@ -420,7 +420,7 @@ end
 Create a new DataSet with a `name` and `spec`, and add it to `collection`.  The
 data transformers will be constructed with each of the backends listed in
 `storage`, `loaders`, and `writers` from `source`. If the symbol `*` is given,
-all possible drivers will be searched and the highest priority driver avilible
+all possible drivers will be searched and the highest priority driver available
 (according to `createpriority`) used. Should no transformer of the specified
 driver and type exist, it will be skipped.
 """

@@ -107,7 +107,7 @@ Base.read(f::AbstractString, ::Type{DataCollection}; mod::Module=Base.Main) =
 """
     read(io::IO, DataCollection; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
 
-Read the entirity of `io`, as a `DataCollection`.
+Read the entirety of `io`, as a `DataCollection`.
 """
 Base.read(io::IO, ::Type{DataCollection};
           path::Union{String, Nothing}=nothing, mod::Module=Base.Main) =
@@ -128,7 +128,7 @@ Storage ◀────▶ Data          Information
 ```
 
 The loader and storage provider are selected by identifying the highest priority
-loader that can be saisfied by a storage provider. What this looks like in practice
+loader that can be satisfied by a storage provider. What this looks like in practice
 is illustrated in the diagram below.
 ```
       read(dataset, Matrix) ⟶ ::Matrix ◀╮
@@ -177,7 +177,7 @@ function _read(dataset::DataSet, as::Type)
                dataset.loaders)
     # If no matching loaders could be found, be a bit generous and /just try/
     # filtering to the specified `as` type. If this works, it's probably what's
-    # wanted, and incompatability should be caught by later stages.
+    # wanted, and incompatibility should be caught by later stages.
     if isempty(potential_loaders)
         # Here I use `!isempty(methods(...))` which may seem strange, given
         # `hasmethod` exists. While in theory it would be reasonable to expect
@@ -192,8 +192,8 @@ function _read(dataset::DataSet, as::Type)
         load_fn_sigs = filter(fnsig -> loader isa fnsig.types[2], all_load_fn_sigs)
         # Find the highest priority load function that can be satisfied,
         # by going through each of the storage backends one at a time:
-        # looking for the first that is (a) compatable with a load function,
-        # and (b) availible (checked via `!isnothing`).
+        # looking for the first that is (a) compatible with a load function,
+        # and (b) available (checked via `!isnothing`).
         for storage in dataset.storage
             for load_fn_sig in load_fn_sigs
                 supported_storage_types = Vector{Type}(
@@ -275,7 +275,7 @@ end
 Using a certain `loader`, obtain information in the form of
 `as` from the data given by `source`.
 
-This fufills this component of the overall data flow:
+This fulfils this component of the overall data flow:
 ```
   ╭────loader─────╮
   ╵               ▼
@@ -284,7 +284,7 @@ Data          Information
 
 When the loader produces `nothing` this is taken to indicate that it was unable
 to load the data for some reason, and that another loader should be tried if
-possible. This can be considered a soft failiure. Any other value is considered
+possible. This can be considered a soft failure. Any other value is considered
 valid information.
 """
 function load end
@@ -351,8 +351,8 @@ function Base.write(dataset::DataSet, info::T) where {T}
         write_fn_sigs = filter(fnsig -> writer isa fnsig.types[2], all_write_fn_sigs)
         # Find the highest priority load function that can be satisfied,
         # by going through each of the storage backends one at a time:
-        # looking for the first that is (a) compatable with a load function,
-        # and (b) availible (checked via `!isnothing`).
+        # looking for the first that is (a) compatible with a load function,
+        # and (b) available (checked via `!isnothing`).
         for storage in dataset.storage
             for write_fn_sig in write_fn_sigs
                 supported_storage_types = Vector{Type}(
@@ -376,7 +376,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
     if length(potential_writers) == 0
         throw(TransformerError("There are no writers for $(sprint(show, dataset.name)) that can work with $T"))
     else
-        TransformerError("There are no availible storage backends for $(sprint(show, dataset.name)) that can be used by a writer for $T.")
+        TransformerError("There are no available storage backends for $(sprint(show, dataset.name)) that can be used by a writer for $T.")
     end
 end
 
@@ -385,7 +385,7 @@ end
 
 Using a certain `writer`, save the `information` to the `destination`.
 
-This fufills this component of the overall data flow:
+This fulfils this component of the overall data flow:
 ```
 Data          Information
   ▲               ╷

@@ -19,17 +19,17 @@ LintItem(source, severity::Union{Int, Symbol}, id::Symbol, message::String,
 
 `id` is a symbol representing the type of lint (e.g. `:unknown_driver`)
 
-`message` is a message, intelligable to the end-user, describing the particular
+`message` is a message, intelligible to the end-user, describing the particular
 nature of the issue with respect to `source`. It should be as specific as possible.
 
 `fixer` can be set to a function which modifies `source` to resolve the issue.
-If `autoapply` is set to `true` then `fixer` will be called spontaniously.
+If `autoapply` is set to `true` then `fixer` will be called spontaneously.
 The function should return `true` or `false` to indicate whether it was able
-to sucessully fix the issue.
+to successfully fix the issue.
 
 As a general rule, fixers that do or might require user input should *not* be
 run automatically, and fixers that can run without any user input and
-allways "do the right thing" should be run automatically.
+always "do the right thing" should be run automatically.
 
 # Examples
 

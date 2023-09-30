@@ -5,7 +5,7 @@
 Return a `vector` of strings, formed from each row in `rows`.
 
 Each string is of the same `displaywidth`, and individual values
-are seperated by `spacing` spaces. Values are truncated if necessary
+are separated by `spacing` spaces. Values are truncated if necessary
 to ensure the no row is no wider than `maxwidth`.
 """
 function displaytable(rows::Vector{<:Vector};

@@ -35,7 +35,7 @@ function (dt::Advice{F, C})(callform::Tuple{Function, Function, Tuple, NamedTupl
         end
         (post, func, args, kwargs)
     else
-        (post, func, args, kwargs) # act as the identity fuction
+        (post, func, args, kwargs) # act as the identity fiction
     end
 end
 
@@ -59,18 +59,18 @@ Base.empty(::Type{AdviceAmalgamation}) =
 # When getting a property of a `AdviceAmalgamation`, first check
 # if the `:plugins_wanted` field is satisfied. Should it not be,
 # regenerate the `:advisors`, `:adviseall`, and `:plugins_used` fields
-# based on the currently availible plugins and `:plugins_wanted`.
+# based on the currently available plugins and `:plugins_wanted`.
 function Base.getproperty(dta::AdviceAmalgamation, prop::Symbol)
     if getfield(dta, :plugins_wanted) != getfield(dta, :plugins_used)
-        plugins_availible =
+        plugins_available =
             filter(plugin -> plugin.name in getfield(dta, :plugins_wanted), PLUGINS)
-        if getfield.(plugins_availible, :name) != getfield(dta, :plugins_used)
-            advisors = getfield.(plugins_availible, :advisors) |>
+        if getfield.(plugins_available, :name) != getfield(dta, :plugins_used)
+            advisors = getfield.(plugins_available, :advisors) |>
                 Iterators.flatten |> collect |> Vector{Advice}
             sort!(advisors, by = t -> t.priority)
             setfield!(dta, :advisors, advisors)
             setfield!(dta, :adviseall, ∘(reverse(advisors)...))
-            setfield!(dta, :plugins_used, getfield.(plugins_availible, :name))
+            setfield!(dta, :plugins_used, getfield.(plugins_available, :name))
         end
     end
     getfield(dta, prop)
@@ -136,7 +136,7 @@ an advised call of `func(args...; kwargs...)`.
         @warn """Attempted to generate advised function call for $(func.instance),
                  however none of the provided arguments were advisable.
                  Arguments types: $args
-                 This funtion call call will not be advised."""
+                 This function call will not be advised."""
         :(func(args...; kwargs...))
     else
         :(_dataadvise(args[$dataarg])(func, args...; kwargs...))
@@ -159,7 +159,7 @@ This macro performs a fairly minor code transformation, but should improve
 clarity.
 """
 macro advise(source::Union{Symbol, Expr}, funcall::Union{Expr, Nothing}=nothing)
-    # Handle @advice(funcall), and ensure `source` is corruct both ways.
+    # Handle @advice(funcall), and ensure `source` is correct both ways.
     if isnothing(funcall)
         funcall = source
         source = GlobalRef(@__MODULE__, :_dataadvisecall)

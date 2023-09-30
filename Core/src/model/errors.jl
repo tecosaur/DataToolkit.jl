@@ -3,21 +3,21 @@ abstract type IdentifierException <: Exception end
 """
     UnresolveableIdentifier{T}(identifier::Union{String, UUID}, [collection::DataCollection])
 
-No `T` (opionally from `collection`) could be found that matches `identifier`.
+No `T` (optionally from `collection`) could be found that matches `identifier`.
 
-# Example occurances
+# Example occurrences
 
 ```julia-repl
 julia> d"iirs"
-ERROR: UnresolveableIdentifier: "iirs" does not match any availible data sets
+ERROR: UnresolveableIdentifier: "iirs" does not match any available data sets
   Did you perhaps mean to refer to one of these data sets?
     ■:iris (75% match)
 Stacktrace: [...]
 
 julia> d"iris::Int"
-ERROR: UnresolveableIdentifier: "iris::Int" does not match any availible data sets
+ERROR: UnresolveableIdentifier: "iris::Int" does not match any available data sets
   Without the type restriction, however, the following data sets match:
-    datatest:iris, which is availible as a DataFrame, Matrix, CSV.File
+    dataset:iris, which is available as a DataFrame, Matrix, CSV.File
 Stacktrace: [...]
 ```
 """
@@ -32,7 +32,7 @@ UnresolveableIdentifier{T}(ident::I, collection::Union{DataCollection, Nothing}=
 
 function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
     print(io, "UnresolveableIdentifier: ", sprint(show, err.identifier),
-          " does not match any availible data sets")
+          " does not match any available data sets")
     if !isnothing(err.collection)
         print(io, " in ", sprint(show, err.collection.name))
     end
@@ -67,7 +67,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
         for dataset in notypematches
             print(io, "\n    ")
             show(io, MIME("text/plain"), Identifier(dataset); dataset.collection)
-            print(io, ", which is availible as a ")
+            print(io, ", which is available as a ")
             types = getfield.(dataset.loaders, :type) |> Iterators.flatten |> unique
             for type in types
                 printstyled(io, string(type), color=:yellow)
@@ -124,13 +124,13 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection})
         end
         if maximum(last.(candidates), init=0.0) >= 0.5
             print(io, "\n  Did you perhaps mean to refer to one of these data collections?")
-            for (collection, simiarity) in candidates
+            for (collection, similarity) in candidates
                 print(io, "\n  • ")
                 crep = IOContext(IOBuffer(), :color => true, :compact => true)
                 show(crep, MIME("text/plain"), collection)
                 highlight_lcs(io, String(take!(crep.io)), err.identifier,
                               before="\e[2m", invert=true)
-                printstyled(io, " (", round(Int, 100*simiarity), "% similaity)",
+                printstyled(io, " (", round(Int, 100*similarity), "% similarity)",
                             color=:light_black)
             end
         end
@@ -143,7 +143,7 @@ end
 Searching for `identifier` (optionally within `collection`), found multiple
 matches (provided as `matches`).
 
-# Example occurance
+# Example occurrence
 
 ```julia-repl
 julia> d"multimatch"
@@ -174,7 +174,7 @@ function Base.showerror(io::IO, err::AmbiguousIdentifier{DataSet, I}) where {I}
             printstyled(io, " [", dataset.uuid, ']', color=:light_black)
         end
     else
-        print(io, ". There is likely some kind of accidental ID duplication occuring.")
+        print(io, ". There is likely some kind of accidental ID duplication occurring.")
     end
 end
 
@@ -201,7 +201,7 @@ abstract type PackageException <: Exception end
 The package `pkg` was asked for within `mod`, but has not been
 registered by `mod`, and so cannot be loaded.
 
-# Example occurance
+# Example occurrence
 
 ```julia-repl
 julia> @import Foo
@@ -242,17 +242,17 @@ function Base.showerror(io::IO, err::UnregisteredPackage)
             print(io, "   addpkg($(err.mod), :$(err.pkg), $(sprint(show, project_deps[String(err.pkg)])))")
         end
     else
-        print(io, " (it is also worth noting that the package does not seem to be present as a dependancy of $(err.mod))")
+        print(io, " (it is also worth noting that the package does not seem to be present as a dependency of $(err.mod))")
     end
 end
 
 """
     MissingPackage(pkg::Base.PkgId)
 
-The package `pkg` was asked for, but does not seem to be availible in the
+The package `pkg` was asked for, but does not seem to be available in the
 current environment.
 
-# Example occurance
+# Example occurrence
 
 ```julia-repl
 julia> @addpkg Bar "00000000-0000-0000-0000-000000000000"
@@ -280,7 +280,7 @@ abstract type DataOperationException <: Exception end
 The `version` of the collection currently being acted on is not supported
 by the current version of $(@__MODULE__).
 
-# Example occurance
+# Example occurrence
 
 ```julia-repl
 julia> fromspec(DataCollection, SmallDict{String, Any}("data_config_version" => -1))
@@ -313,7 +313,7 @@ end
 An attempt was made to perform an operation on a collection within the data
 stack, but the data stack is empty.
 
-# Example occurance
+# Example occurrence
 
 ```julia-repl
 julia> getlayer(nothing) # with an empty STACK
@@ -331,7 +331,7 @@ Base.showerror(io::IO, err::EmptyStackError) =
 
 Modification of `collection` is not viable, as it is read-only.
 
-# Example Occurance
+# Example Occurrence
 
 ```julia-repl
 julia> lockedcollection = DataCollection(SmallDict{String, Any}("uuid" => Base.UUID(rand(UInt128)), "config" => SmallDict{String, Any}("locked" => true)))
@@ -354,7 +354,7 @@ Base.showerror(io::IO, err::ReadonlyCollection) =
 
 A catch-all for issues involving data transformers, with details given in `msg`.
 
-# Example occurance
+# Example occurrence
 
 ```julia-repl
 julia> emptydata = DataSet(DataCollection(), "empty", SmallDict{String, Any}("uuid" => Base.UUID(rand(UInt128))))
@@ -378,7 +378,7 @@ Base.showerror(io::IO, err::TransformerError) =
 A transformer (of type `T`) that could provide any of `types` was asked for, but
 there is no transformer that satisfies this restriction.
 
-# Example occurance
+# Example occurrence
 
 ```julia-repl
 julia> emptydata = DataSet(DataCollection(), "empty", SmallDict{String, Any}("uuid" => Base.UUID(rand(UInt128))))
@@ -434,7 +434,7 @@ end
     ImpossibleTypeException(qt::QualifiedType, mod::Union{Module, Nothing})
 
 The qualified type `qt` could not be converted to a `Type`, for some reason or
-another (`mod` is the parent module used in the attempt, should it be sucesfully
+another (`mod` is the parent module used in the attempt, should it be successfully
 identified, and `nothing` otherwise).
 """
 struct ImpossibleTypeException <: Exception

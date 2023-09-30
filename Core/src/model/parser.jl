@@ -101,7 +101,7 @@ end
 Return a list of types supported by the data transformer `ADT`.
 
 This is used as the default value for the `type` key in the Data TOML.
-The list of types is dynamically generated based on the availible methods for
+The list of types is dynamically generated based on the available methods for
 the data transformer.
 
 In some cases, it makes sense for this to be explicitly defined for a particular
@@ -194,7 +194,7 @@ end
 
 Create a `DataCollection` from `spec`.
 
-The `path` and `mod` keywords are used as the values for the correspanding
+The `path` and `mod` keywords are used as the values for the corresponding
 fields in the DataCollection.
 """
 function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
@@ -219,12 +219,12 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                 end)
     plugins::Vector{String} = get(spec, "plugins", String[])
     parameters = get(spec, "config", Dict{String, Any}()) |> smallify
-    unavailible_plugins = setdiff(plugins, getproperty.(PLUGINS, :name))
-    if length(unavailible_plugins) > 0
-        @warn string("The ", join(unavailible_plugins, ", ", ", and "),
-                     " plugin", if length(unavailible_plugins) == 1
+    unavailable_plugins = setdiff(plugins, getproperty.(PLUGINS, :name))
+    if length(unavailable_plugins) > 0
+        @warn string("The ", join(unavailable_plugins, ", ", ", and "),
+                     " plugin", if length(unavailable_plugins) == 1
                          " is" else "s are" end,
-                     " not availible at the time of loading '$name'.",
+                     " not available at the time of loading '$name'.",
                      "\n It is highly recommended that all plugins are loaded",
                      " prior to DataCollections.")
     end

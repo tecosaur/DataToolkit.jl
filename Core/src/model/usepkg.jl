@@ -6,7 +6,7 @@ struct PkgRequiredRerunNeeded end
 
 Obtain a module specified by either `pkg` or identified by `name` and declared
 by `from`. Should the package not be currently loaded, in Julia ≥ 1.7
-DataToolkit will atempt to lazy-load the package and return its module.
+DataToolkit will attempt to lazy-load the package and return its module.
 
 Failure to either locate `name` or require `pkg` will result in an exception
 being thrown.
@@ -52,7 +52,7 @@ end
 """
     @addpkg name::Symbol uuid::String
 
-Register the package identifed by `name` with UUID `uuid`.
+Register the package identified by `name` with UUID `uuid`.
 This package may now be used with `@import \$name`.
 
 All @addpkg statements should lie within a module's `__init__` function.

@@ -30,7 +30,7 @@ ReplCmd(name::Union{Symbol, String}, description::Any, execute::Function)
 ```julia
 ReplCmd(:echo, "print the argument", identity)
 ReplCmd(:addone, "return the input plus one", v -> 1 + parse(Int, v))
-ReplCmd(:math, "A collection of basic integer arithmatic",
+ReplCmd(:math, "A collection of basic integer arithmetic",
     [ReplCmd(:add, "a + b + ...", nums -> sum(parse.(Int, split(nums))))],
      ReplCmd(:mul, "a * b * ...", nums -> prod(parse.(Int, split(nums)))))
 ```
@@ -83,11 +83,11 @@ end
 """
     completions(r::ReplCmd, sofar::AbstractString)
 
-Obtain a list of `String` completion candidates baesd on `sofar`.
+Obtain a list of `String` completion candidates based on `sofar`.
 All candidates should begin with `sofar`.
 
 Should this function not be implemented for the specific ReplCmd `r`,
-`allcompletions(r)` will be called and filter to candiadates that begin
+`allcompletions(r)` will be called and filter to candidates that begin
 with `sofar`.
 
 If `r` has subcommands, then the subcommand prefix will be removed and
@@ -101,7 +101,7 @@ completions(r::ReplCmd{<:Any, Vector{ReplCmd}}, sofar::AbstractString) =
 """
     allcompletions(r::ReplCmd)
 
-Obtain all possible `String` completion candiadates for `r`.
+Obtain all possible `String` completion candidates for `r`.
 This defaults to the empty vector `String[]`.
 
 `allcompletions` is only called when `completions(r, sofar::AbstractString)` is
@@ -115,7 +115,7 @@ This contains the template string \"<SCOPE>\", which
 is replaced with the relevant scope at runtime.
 """
 const HELP_CMD_HELP =
-    """Display help information on the availible <SCOPE> commands
+    """Display help information on the available <SCOPE> commands
 
        For convenience, help information can also be accessed via '?', e.g. '?help'.
 
@@ -148,7 +148,7 @@ If `cmd` is ambiguous and `warn` is true, then a message listing all potentially
 matching commands is printed.
 
 If `cmd` does not match any of `commands` and `warn` is true, then a warning
-message is printed. Adittionally, should the named command in `cmd` have more
+message is printed. Additionally, should the named command in `cmd` have more
 than a 3/5th longest common subsequence overlap with any of `commands`, then
 those commands are printed as suggestions.
 """
@@ -581,7 +581,7 @@ end
     prompt_char(question::AbstractString, options::Vector{Char},
                 default::Union{Char, Nothing}=nothing)
 
-Interatively ask `question`, only accepting `options` keys as answers.
+Interactively ask `question`, only accepting `options` keys as answers.
 All keys are converted to lower case on input. If `default` is not nothing and
 'RET' is hit, then `default` will be returned.
 
@@ -724,7 +724,7 @@ end
 """
     transformer_docs(name::Symbol, type::Symbol=:any)
 
-Retur the documentation for the transformer identified by `name`,
+Return the documentation for the transformer identified by `name`,
 or `nothing` if no documentation entry could be found.
 """
 function transformer_docs(name::Symbol, type::Symbol=:any)

@@ -12,7 +12,7 @@ type name and the module it belongs to as Symbols.
 
 While the subtype operator cannot work on QualifiedTypes (`<:` is a built-in),
 when the Julia types are defined the subset operator `⊆` can be used instead.
-This works by simply `convert`ing the QualifiedTypes to the correspanding Type
+This works by simply `convert`ing the QualifiedTypes to the corresponding Type
 and then applying the subtype operator.
 
 ```julia-repl
@@ -58,7 +58,7 @@ a list of keys, and a list of values.
 
 For a small number of items, this has time and particularly space advantages
 over a standard dictionary — a Dict{String, Any}("a" => 1) is about 4x larger
-than the equivalent SmallDict. Futrher testing indicates this provides a ~40%
+than the equivalent SmallDict. Further testing indicates this provides a ~40%
 reduction on the overall in-memory size of a `DataCollection`.
 """
 struct SmallDict{K, V} <: AbstractDict{K, V}
@@ -153,9 +153,9 @@ end
     Advice{func, context} <: Function
 Advices allow for composable, highly flexible modifications of data by
 encapsulating a function call. They are inspired by elisp's advice system,
-namely the most versitile form — `:around` advice, and Clojure's advisors.
+namely the most versatile form — `:around` advice, and Clojure's advisors.
 
-A `Advice` is esentially a function wrapper, with a `priority::Int`
+A `Advice` is essentially a function wrapper, with a `priority::Int`
 attribute. The wrapped functions should be of the form:
 ```julia
 (action::Function, args...; kargs...) ->
@@ -163,7 +163,7 @@ attribute. The wrapped functions should be of the form:
 ```
 
 Short-hand return values with `post` or `kargs` omitted are also accepted, in
-which case default values (the `identity` function and `(;)` respectivly) will
+which case default values (the `identity` function and `(;)` respectively) will
 be automatically substituted in.
 
 ```
@@ -270,7 +270,7 @@ struct DataSet
 end
 
 """
-A collection of `Advices` sourced from availible Plugins.
+A collection of `Advices` sourced from available Plugins.
 
 Like individual `Advices`, a `AdviceAmalgamation` can be called
 as a function. However, it also supports the following convenience syntax:

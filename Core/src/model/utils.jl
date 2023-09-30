@@ -150,7 +150,7 @@ stringsimilarity(a::AbstractString, b::AbstractString; halfcase::Bool=false) =
 """
     longest_common_subsequence(a, b)
 
-Find the longest common subsequence of `b` within `a`, returning the indicies of
+Find the longest common subsequence of `b` within `a`, returning the indices of
 `a` that comprise the subsequence.
 
 This function is intended for strings, but will work for any indexable objects

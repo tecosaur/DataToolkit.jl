@@ -5,12 +5,12 @@ when reading any Data.toml files which do not set `data_config_version`.
 const LATEST_DATA_CONFIG_VERSION = 0 # while in alpha
 
 """
-The set of data collections currently availible.
+The set of data collections currently available.
 """
 const STACK = DataCollection[]
 
 """
-The set of plugins currently availible.
+The set of plugins currently available.
 """
 const PLUGINS = Plugin[]
 
@@ -47,7 +47,7 @@ The default `priority` field value for `Advice`s.
 const DEFAULT_DATA_ADVISOR_PRIORITY = 1
 
 """
-A tuple of delimitors defining a dataset reference.
+A tuple of delimiters defining a dataset reference.
 For example, if set to `("{", "}")` then `{abc}` would
 be recognised as a dataset reference for `abc`.
 """
@@ -173,7 +173,7 @@ This should be a symbol present in `Base.text_colors`.
 const REPL_USER_INPUT_COLOUR = :light_yellow
 
 """
-The set of commands availible directly in the Data REPL.
+The set of commands available directly in the Data REPL.
 """
 const REPL_CMDS = ReplCmd[]
 
