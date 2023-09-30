@@ -41,7 +41,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
     notypematches = Vector{DataSet}()
     if err.identifier isa String
         if !isnothing(err.collection)
-            ident = @advise err.collection parse(Identifier, err.identifier)
+            ident = @advise err.collection parse_ident(err.identifier)
             if !isnothing(ident.type)
                 identnotype = Identifier(ident.collection, ident.dataset,
                                          nothing, ident.parameters)
@@ -50,7 +50,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
             end
         else
             for collection in STACK
-                ident = @advise collection parse(Identifier, err.identifier)
+                ident = @advise collection parse_ident(err.identifier)
                 if !isnothing(ident.type)
                     identnotype = Identifier(ident.collection, ident.dataset,
                                              nothing, ident.parameters)

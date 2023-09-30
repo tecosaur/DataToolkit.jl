@@ -37,7 +37,7 @@ dataset_parameters(adt::AbstractDataTransformer, action::Val, params::Any) =
 function dataset_parameters(collection::DataCollection, ::Val{:extract}, param::String)
     dsid_match = match(DATASET_REFERENCE_REGEX, param)
     if !isnothing(dsid_match)
-        @advise collection parse(Identifier, dsid_match.captures[1])
+        @advise collection parse_ident(dsid_match.captures[1])
     else
         param
     end

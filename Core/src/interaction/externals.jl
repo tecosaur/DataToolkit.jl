@@ -77,11 +77,11 @@ function dataset(identstr::AbstractString, kv::Pair{<:AbstractString, <:Any}, kv
 end
 
 dataset(collection::DataCollection, identstr::AbstractString) =
-    resolve(collection, @advise parse(Identifier, identstr);
+    resolve(collection, @advise collection parse_ident(identstr);
             resolvetype=false)
 
 function dataset(collection::DataCollection, identstr::AbstractString, parameters::Dict{String, Any})
-    ident = @advise parse(Identifier, identstr)
+    ident = @advise collection parse_ident(identstr)
     resolve(collection, Identifier(ident, parameters); resolvetype=false)
 end
 

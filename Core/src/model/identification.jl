@@ -187,12 +187,12 @@ function resolve(identstr::AbstractString, parameters::Union{SmallDict{String, A
     isempty(stack) && throw(EmptyStackError())
     if (cname = parse(Identifier, identstr).collection) |> !isnothing
         collection = getlayer(cname)
-        ident = Identifier((@advise collection parse(Identifier, identstr)),
+        ident = Identifier((@advise collection parse_ident(identstr)),
                            parameters)
         resolve(collection, ident; resolvetype)
     else
         for collection in stack
-            ident = Identifier((@advise collection parse(Identifier, identstr)),
+            ident = Identifier((@advise collection parse_ident(identstr)),
                                parameters)
             result = resolve(collection, ident; resolvetype, requirematch=false)
             !isnothing(result) && return result
