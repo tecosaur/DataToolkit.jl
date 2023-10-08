@@ -9,16 +9,13 @@ convenience, others need to be specifically imported or accessed with =DataToolk
 
 #+begin_src @docs
 @d_str
-#+end_src
-
-#+begin_src @docs
 @data_cmd
 #+end_src
 
 *** DataToolkitBase
 
 #+begin_src @docs
-@import
+DataToolkitBase.@import
 #+end_src
 
 ** Functions
@@ -26,18 +23,15 @@ convenience, others need to be specifically imported or accessed with =DataToolk
 *** DataToolkitBase
 
 #+begin_src @docs
-dataset
-#+end_src
-
-#+begin_src @docs
-loadcollection!
+DataToolkitBase.dataset
+DataToolkitBase.loadcollection!
 #+end_src
 
 ** Types
 *** DataToolkitBase
 
 #+begin_src @docs
-DataSet
+# DataToolkitBase.DataSet
 #+end_src
 
 * Unexported Symbols
@@ -50,10 +44,7 @@ DataSet
 
 #+begin_src @docs
 DataToolkit.@addpkgs
-#+end_src
-
-#+begin_src @docs
-DataToolkit.@addpkg
+DataToolkitBase.@addpkg
 #+end_src
 
 ** Functions
@@ -61,49 +52,25 @@ DataToolkit.@addpkg
 
 #+begin_src @docs
 DataToolkit.init
-#+end_src
-
-#+begin_src @docs
 DataToolkit.plugins
-#+end_src
-
-#+begin_src @docs
 DataToolkit.addpkgs
 #+end_src
 
 *** DataToolkitBase
 
 #+begin_src @docs
-DataToolkit.getlayer
+DataToolkitBase.getlayer
 #+end_src
 
 ** Types
 *** DataToolkitBase
 
 #+begin_src @docs
-DataToolkit.DataCollection
-#+end_src
-
-#+begin_src @docs
-DataToolkit.DataSet
-#+end_src
-
-#+begin_src @docs
-DataToolkit.DataStorage
-#+end_src
-
-#+begin_src @docs
-DataToolkit.DataLoader
-#+end_src
-
-#+begin_src @docs
-DataToolkit.DataWriter
-#+end_src
-
-#+begin_src @docs
-DataToolkit.Identifier
-#+end_src
-
-#+begin_src @docs
-DataToolkit.Plugin
+# DataToolkitBase.DataCollection
+# DataToolkitBase.DataSet
+# DataToolkitBase.DataStorage
+# DataToolkitBase.DataLoader
+# DataToolkitBase.DataWriter
+DataToolkitBase.Identifier
+# DataToolkitBase.Plugin
 #+end_src

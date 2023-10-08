@@ -463,7 +463,7 @@ Now we can create the =boston (clean)= dataset with the =make= command.
 (tutorial) data> make boston (clean)
 
 (data) julia> @import StatsBase.quantile
-std (generic function with 5 methods)
+quantile (generic function with 6 methods)
 
 (data) julia> proportion = 0.8
 0.8
@@ -475,8 +475,8 @@ std (generic function with 5 methods)
 
 (data) julia> minval, maxval = quantile(vals, [0.5 - proportion/2, 0.5 + proportion/2])
 2-element Vector{Float64}:
- 10.2
- 43.4
+ 12.75
+ 34.8
 
 (data) julia> mask = minval .<= vals .<= maxval
 506-element BitVector:
