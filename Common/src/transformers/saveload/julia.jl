@@ -153,27 +153,27 @@ end
 
 ```julia
 [[addone.loader]]
-driver ` "julia"
-input ` "Number"
-function ` "n -> n+1"
+driver = "julia"
+input = "Number"
+function = "n -> n+1"
 ```
 
 ```julia
 [[combined.loader]]
-driver ` "julia"
-path ` "scripts/mergedata.jl"
+driver = "julia"
+path = "scripts/mergedata.jl"
 
 [combined.loader.arguments]
-foo ` "📇DATASET<<foo::DataFrame>>"
-bar ` "📇DATASET<<bar::DataFrame>>"
-baz ` "📇DATASET<<baz::DataFrame>>"
+foo = "📇DATASET<<foo::DataFrame>>"
+bar = "📇DATASET<<bar::DataFrame>>"
+baz = "📇DATASET<<baz::DataFrame>>"
 ```
 
 ```julia
 [[repeated.loader]]
-driver ` "julia"
-input ` "Integer"
-function ` "(n::Integer; data::DataFrame) -> repeat(data, n)"
-arguments ` { data ` "📇DATASET<<iris::DataFrame>>" }
+driver = "julia"
+input = "Integer"
+function = "(n::Integer; data::DataFrame) -> repeat(data, n)"
+arguments = { data = "📇DATASET<<iris::DataFrame>>" }
 ```
 """
