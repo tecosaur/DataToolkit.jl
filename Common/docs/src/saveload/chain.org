@@ -1,5 +1,5 @@
 #+title: Chain
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:chain)
+Main.DataToolkitCommon.tdocs(:chain)
 #+end_src

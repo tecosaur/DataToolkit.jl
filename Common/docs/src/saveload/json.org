@@ -1,5 +1,5 @@
 #+title: JSON
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:json)
+Main.DataToolkitCommon.tdocs(:json)
 #+end_src

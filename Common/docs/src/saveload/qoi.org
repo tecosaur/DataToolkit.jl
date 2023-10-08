@@ -1,5 +1,5 @@
 #+title: QOI
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:qoi)
+Main.DataToolkitCommon.tdocs(:qoi)
 #+end_src

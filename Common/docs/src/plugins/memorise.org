@@ -1,5 +1,5 @@
 #+title: Memorise
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.plugin_info("memorise")
+Main.DataToolkitCommon.pdocs("memorise")
 #+end_src

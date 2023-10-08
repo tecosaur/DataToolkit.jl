@@ -1,5 +1,6 @@
 using Documenter
 using DataToolkitCommon
+using Markdown
 using Org
 
 for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
@@ -13,6 +14,12 @@ for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
             m -> write(mdfile, m)
     end
 end
+
+Core.eval(DataToolkitCommon,
+          quote
+              tdocs(args...) = DataToolkitBase.transformer_docs(args...) |> string |> $Markdown.parse
+              pdocs(name) = DataToolkitBase.plugin_info(name) |> string |> $Markdown.parse
+          end)
 
 makedocs(;
     modules=[DataToolkitCommon],
@@ -58,7 +65,8 @@ makedocs(;
     ],
     repo="https://github.com/tecosaur/DataToolkitCommon.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkitCommon.jl",
-    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitCommon.jl/graphs/contributors"
+    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitCommon.jl/graphs/contributors",
+    warnonly = [:missing_docs],
 )
 
 deploydocs(;

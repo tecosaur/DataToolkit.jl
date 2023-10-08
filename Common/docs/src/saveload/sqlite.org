@@ -1,5 +1,5 @@
 #+title: SQLite
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:sqlite)
+Main.DataToolkitCommon.tdocs(:sqlite)
 #+end_src

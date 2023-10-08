@@ -1,5 +1,5 @@
 #+title: Delim
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:delim)
+Main.DataToolkitCommon.tdocs(:delim)
 #+end_src

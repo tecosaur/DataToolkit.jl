@@ -37,7 +37,8 @@ Core.eval(Main, quote
                   else
                       Markdown.Code("ansi", string(repl_cmd.description))
                   end
-                  Markdown.MD(vcat([header, desc], ifelse(postrule, [Markdown.HorizontalRule()], [])))
+                  Markdown.MD(vcat([header, desc], ifelse(postrule, [Markdown.HorizontalRule()], []))) |>
+                      string |> Markdown.parse
               end
           end)
 nothing

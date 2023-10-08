@@ -1,5 +1,5 @@
 #+title: Julia
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:julia)
+Main.DataToolkitCommon.tdocs(:julia)
 #+end_src

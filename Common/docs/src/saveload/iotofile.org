@@ -1,5 +1,5 @@
 #+title: IO to File
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.transformer_docs(:iotofile)
+Main.DataToolkitCommon.tdocs(:iotofile)
 #+end_src

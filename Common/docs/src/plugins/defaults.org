@@ -1,5 +1,5 @@
 #+title: Defaults
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitBase.plugin_info("defaults")
+Main.DataToolkitCommon.pdocs("defaults")
 #+end_src
