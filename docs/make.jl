@@ -1,6 +1,12 @@
 using Documenter
-using DataToolkit
+using DataToolkit, DataToolkit.DataToolkitBase
 using Org
+
+# Ugly fix
+Core.eval(Documenter, quote
+              getdocs(binding::Docs.Binding, typesig::Type = Union{}; kwargs...) =
+                  ((@info "b: $binding" ); Base.Docs.doc(binding, typesig))
+          end)
 
 let orgconverted = 0
     html2utf8entity_dirty(text) = # Remove as soon as unnecesary
@@ -26,7 +32,7 @@ let orgconverted = 0
 end
 
 makedocs(;
-    modules=[DataToolkit],
+    modules=[DataToolkit, DataToolkitBase],
     format=Documenter.HTML(),
     pages=[
         "Introduction" => "index.md",
@@ -37,7 +43,8 @@ makedocs(;
     ],
     repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkit.jl",
-    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors"
+    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
+    warnonly = [:missing_docs],
 )
 
 deploydocs(;
