@@ -1,7 +1,7 @@
 # Get then nice SI representation of a byte size. Useful in a few different places.
 
 """
-    humansize(bytes::Integer; digits::Int=1)
+    humansize(bytes::Integer; digits::Int=2)
 
 Determine the SI prefix for `bytes`, then give a tuple of the number of bytes
 with that prefix (rounded to `digits`), and the units as a string.
@@ -22,7 +22,7 @@ julia> humansize(1024^3)
 (1.0, "GiB")
 ```
 """
-function humansize(bytes::Integer; digits::Int=1)
+function humansize(bytes::Integer; digits::Int=2)
     units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
     magnitude = floor(Int, log(1024, max(1, bytes)))
     if 1024 <= bytes < 10.0^(digits-1) * 1024^magnitude
