@@ -321,6 +321,19 @@ end
 # Base.open(data::DataSet, qas::QualifiedType; write::Bool) =
 #     open(typeify(qas, mod=data.collection.mod), data; write)
 
+"""
+    storage(storer::DataStorage, as::Type; write::Bool=false)
+
+Fetch a `storer` in form `as`, appropiate for reading from or writing to
+(depending on `write`).
+
+By default, this just calls `getstorage` or `putstorage` (when `write=true`).
+
+This executes this component of the overall data flow:
+```
+Storage ◀────▶ Data
+```
+"""
 function storage(storer::DataStorage, as::Type; write::Bool=false)
     if write
         putstorage(storer, as)
