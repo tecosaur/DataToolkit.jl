@@ -212,8 +212,12 @@ function completions(::ReplCmd{:stack_load}, sofar::AbstractString)
     pathsofar = first(match(r"^(?:\d+ *)?(.*)$", sofar).captures)
     currentsegment = reverse(first(split(reverse(pathsofar), '/', limit=2, keepempty=true)))
     nextsegments = getfield.(first(REPL.REPLCompletions.complete_path(pathsofar, 0)), :path)
-    ccompletions = if !isempty(nextsegments) complete_collection(sofar) else String[] end
-    isempty(ccompletions) || return ccompletions
+    if all(isspace, sofar) || '/' ∉ sofar
+        append!(nextsegments, complete_collection(sofar))
+        return Vector{String}(nextsegments)
+    elseif isempty(nextsegments)
+        return complete_collection(sofar)
+    end
     (if !isempty(nextsegments)
          nextsegments
      else String[] end,
