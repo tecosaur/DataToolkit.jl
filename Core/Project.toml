@@ -1,7 +1,7 @@
 name = "DataToolkitBase"
 uuid = "e209d0c3-e863-446f-9b45-de6ca9730756"
 authors = ["TEC <tec@tecosaur.com> and contributors"]
-version = "0.6.0"
+version = "0.7.0"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
