@@ -95,7 +95,10 @@ function stack_load(input::AbstractString)
         printstyled(" ! ", color=:red, bold=true)
         println("File '$input' does not exist")
     else
-        loadcollection!(file, index=something(tryparse(Int, position), 1))
+        uuid = UUID(get(open(TOML.parse, file), "uuid", UUID(zero(UInt128))))
+        existing = findfirst(c -> c.uuid == uuid, STACK)
+        mod = if isnothing(existing) Main else STACK[existing].mod end
+        loadcollection!(file, mod, index=something(tryparse(Int, position), 1))
     end
 end
 
