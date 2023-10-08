@@ -86,6 +86,7 @@ function rhash(collection::DataCollection, vec::Vector, h::UInt)
 end
 
 rhash(::DataCollection, obj::String, h::UInt) = hash(obj, h)
+rhash(::DataCollection, str::SubString, h::UInt) = hash(String(str), h)
 rhash(::DataCollection, obj::Number, h::UInt) = hash(obj, h)
 rhash(::DataCollection, obj::Symbol, h::UInt) = hash(obj, h)
 
