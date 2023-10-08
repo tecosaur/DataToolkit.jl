@@ -10,7 +10,8 @@ function plugin_add(input::AbstractString)
     nonexistant = filter(p -> p ∉ getfield.(PLUGINS, :name), plugins)
     if !isempty(nonexistant)
         printstyled(" ! ", color=:yellow)
-        println("Warning: the plugins $(join(nonexistant, ", ", ", and ")) are not known to exist")
+        println("Warning: the plugin$(ifelse(length(nonexistant) > 1, "s", "")) $(join(nonexistant, ", ", ", and ")) \
+                 are not known to exist")
         if !confirm_yn(" Do you wish to continue anyway?")
             return nothing
         end
