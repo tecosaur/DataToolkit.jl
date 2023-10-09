@@ -34,7 +34,7 @@ configuration parameter.
 config.store.path = "relative/to/datatoml"
 ```
 
-The system default is `$(contractuser(Store.BaseDirs.User.cache(Store.BaseDirs.Project("DataToolkit"))))`,
+The system default is `$(Base.Filesystem.contractuser(Store.BaseDirs.User.cache(Store.BaseDirs.Project("DataToolkit"))))`,
 which can be overriden with the `DATATOOLKIT_STORE` environment variable.
 
 #### Disabling on a per-storage basis
