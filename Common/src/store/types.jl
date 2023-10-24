@@ -1,6 +1,7 @@
 struct InventoryFile
     path::String
     recency::Float64 # mtime
+    writable::Bool
 end
 
 mutable struct InventoryConfig

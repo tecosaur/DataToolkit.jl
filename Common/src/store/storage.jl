@@ -214,6 +214,7 @@ end
 Save the `file` representing `storage` into `inventory`.
 """
 function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::Type{FilePath}, file::FilePath)
+    inventory.file.writable || return file
     # The checksum must be calculated first because it will likely affect the
     # `rhash` result, should the checksum property be modified and included
     # in the hashing.
@@ -417,6 +418,7 @@ end
 Save the `value` produced by `loader` into `inventory`.
 """
 function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), value::T) where {T}
+    inventory.file.writable || return value
     ptypes = pkgtypes(value)
     modules = parentmodule.(ptypes)
     for i in eachindex(modules)
@@ -463,10 +465,13 @@ by `collection`.
 
 This will update the atime of the source, and add `collection` as a reference if
 it is not already listed.
+
+Should the `inventory` file not be writable, nothing will be done.
 """
 function update_source!(inventory::Inventory,
                         source::Union{StoreSource, CacheSource},
                         collection::DataCollection)
+    inventory.file.writable || return
     update_atime(s::StoreSource) =
         StoreSource(s.recipe, s.references, now(), s.checksum, s.extension)
     update_atime(s::CacheSource) =

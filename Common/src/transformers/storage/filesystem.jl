@@ -56,6 +56,7 @@ end
 # Instead, we create a symlink so we can make use of the checksum metadata.
 # We just need to check the symlink is no older than the original file.
 function Store.storesave(inventory::Store.Inventory, storage::DataStorage{:filesystem}, ::Type{FilePath}, file::FilePath)
+    inventory.file.writable || return file
     checksum = Store.getchecksum(storage, file.path)
     newsource = Store.StoreSource(
         Store.rhash(storage),

@@ -52,6 +52,11 @@ function repl_config_set(input::AbstractString)
     else
         getinventory(first(STACK))
     end
+    if !inventory.file.writable
+        printstyled(" ! ", color=:red, bold=true)
+        println("inventory is not writable")
+        return
+    end
     if !any(isspace, input)
         printstyled(" ! ", color=:red, bold=true)
         println("must provide a \"{parameter} {value}\" form")
