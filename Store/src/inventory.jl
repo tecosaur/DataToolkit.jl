@@ -206,7 +206,7 @@ function load_inventory(path::String, create::Bool=true)
         if data["inventory_version"] != INVENTORY_VERSION
             error("Incompatable inventory version!")
         end
-        file = InventoryFile(path, mtime(path))
+        file = InventoryFile(path)
         last_gc = data["inventory_last_gc"]
         config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
         collections = [convert(CollectionInfo, key => val)
@@ -216,7 +216,7 @@ function load_inventory(path::String, create::Bool=true)
         Inventory(file, config, collections, stores, caches, last_gc)
     elseif create
         inventory = Inventory(
-            InventoryFile(path, time()),
+            InventoryFile(path),
             convert(InventoryConfig, Dict{String, Any}()),
             CollectionInfo[], StoreSource[],
             CacheSource[], now())
@@ -226,6 +226,20 @@ function load_inventory(path::String, create::Bool=true)
     else
         error("No inventory exists at $path")
     end
+end
+
+function InventoryFile(path)
+    recency = if isfile(path) mtime(path) else time() end
+    writable = !isfile(path) || try
+        open(io -> iswritable(io), path, "a")
+    catch e
+        if e isa SystemError
+            false
+        else
+            rethrow()
+        end
+    end
+    InventoryFile(path, recency, writable)
 end
 
 """
@@ -430,6 +444,7 @@ If `dryrun` is set, no actions are taken.
 If `trimmsg` is set, a message about any sources removed by trimming is emitted.
 """
 function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
+    inv.file.writable || return
     (; active_collections, live_collections, ghost_collections, dead_collections) =
         scan_collections(inv)
     dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
@@ -750,6 +765,7 @@ function expunge!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool
     cindex = findfirst(==(collection), inventory.collections)
     isnothing(cindex) || deleteat!(inventory.collections, cindex)
     removed_sources = SourceInfo[]
+    inventory.file.writable || return removed_sources
     for sources in (inventory.stores, inventory.caches)
         i = 1; while i <= length(sources)
             source = sources[i]

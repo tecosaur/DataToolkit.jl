@@ -140,7 +140,7 @@ const STORE_PLUGIN = Plugin("store", [
             # If the store is invalid (should not be stored, or about to be
             # written to), then it should be removed before proceeding as
             # normal.
-            if !isnothing(source)
+            if !isnothing(source) && inventory.file.writable
                 index = findfirst(==(source), inventory.stores)
                 !isnothing(index) && deleteat!(inventory.stores, index)
                 write(inventory)
