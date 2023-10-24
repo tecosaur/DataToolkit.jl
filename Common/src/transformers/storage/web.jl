@@ -153,7 +153,7 @@ function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retr
         print(stderr, "\e[G\e[2K\e[A\e[2K")
         target isa IO && seekstart(target)
     catch err
-        if err isa RequestError && retries > 0
+        if err isa Downloads.RequestError && retries > 0
             @warn "Download failed, retrying ($retries retries remaining)" url err
             target isa IO && seekstart(target)
             download_to(storage, target, retries - 1)
