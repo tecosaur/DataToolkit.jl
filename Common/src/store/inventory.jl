@@ -203,11 +203,18 @@ so long as `create` is set to `true`.
 function load_inventory(path::String, create::Bool=true)
     if isfile(path)
         data = open(io -> TOML.parse(io), path)
-        if data["inventory_version"] != INVENTORY_VERSION
+        if !haskey(data, "inventory_version")
+            if create && all(isspace, read(path, String))
+                rm(path)
+                load_inventory(path, create)
+            else
+                error("$path does not seem to be an inventory file")
+            end
+        elseif data["inventory_version"] != INVENTORY_VERSION
             error("Incompatable inventory version!")
         end
         file = InventoryFile(path)
-        last_gc = data["inventory_last_gc"]
+        last_gc = get(data, "inventory_last_gc", unix2datetime(0))
         config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
         collections = [convert(CollectionInfo, key => val)
                     for (key, val) in get(data, "collections", Dict{String, Any}[])]
