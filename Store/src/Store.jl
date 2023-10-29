@@ -12,13 +12,16 @@ using UUIDs
 using ..DataToolkitCommon: should_log_event, show_extra, dirof, humansize
 
 const INVENTORY_FILENAME = "Inventory.toml"
-const USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
-    mkpath(ENV["DATATOOLKIT_STORE"])
-else
-    BaseDirs.User.cache(BaseDirs.Project("DataToolkit"), create=true)
+USER_STORE::String = ""
+USER_INVENTORY::String = ""
+function _init_user_inventory!()
+    global USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
+        mkpath(ENV["DATATOOLKIT_STORE"])
+    else
+        BaseDirs.User.cache(BaseDirs.Project("DataToolkit"), create=true)
+    end
+    global USER_INVENTORY = joinpath(USER_STORE, INVENTORY_FILENAME)
 end
-
-const USER_INVENTORY = joinpath(USER_STORE, INVENTORY_FILENAME)
 
 include("types.jl")
 include("rhash.jl")
@@ -43,6 +46,7 @@ function __init__()
     let pos = searchsorted(REPL_CMDS, STORE_REPL_CMD, by=c -> DataToolkitBase.natkeygen(c.trigger))
         splice!(REPL_CMDS, pos, (STORE_REPL_CMD,))
     end
+    _init_user_inventory!()
     push!(INVENTORIES, load_inventory(USER_INVENTORY))
     atexit() do
         for inv in INVENTORIES
