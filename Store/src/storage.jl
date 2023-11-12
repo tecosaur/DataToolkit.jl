@@ -42,7 +42,7 @@ function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
                 return record
             end
         end
-    elseif checksum == "auto"
+    elseif !occursin(':', checksum)
         # We don't know what the checksum actually is, and
         # so nothing can match.
     else
@@ -154,7 +154,7 @@ const CHECKSUM_AUTO_LOG_SIZE = 1024^3
 """
 The checksum scheme used when `auto` is specified. Must be recognised by `checksum`.
 """
-const CHECKSUM_DEFAULT_SCHEME = :crc32c
+const CHECKSUM_DEFAULT_SCHEME = :k12
 
 """
     checksum(file::String, method::Symbol)
@@ -162,12 +162,41 @@ const CHECKSUM_DEFAULT_SCHEME = :crc32c
 Calculate the checksum of `file` with `method`, returning the `Unsigned` result.
 
 Method should be one of:
+- `k12`
+- `sha512`
+- `sha348`
+- `sha256`
+- `sha224`
+- `sha1`
+- `md5`
 - `crc32c`
 
 Should `method` not be recognised, `nothing` is returned.
 """
 function getchecksum(file::String, method::Symbol)
-    checksum = if method === :crc32c
+    checksum = if method === :k12
+        @import KangarooTwelve.k12
+        reinterpret(UInt8, [hton(open(k12, file)::UInt128)]) |> collect
+    elseif method === :sha512
+        @import SHA.sha512
+        open(sha512, file)::Vector{UInt8}
+    elseif method === :sha348
+        @import SHA.sha348
+        open(sha348, file)::Vector{UInt8}
+    elseif method === :sha256
+        @import SHA.sha256
+        open(sha256, file)::Vector{UInt8}
+    elseif method === :sha224
+        @import SHA.sha224
+        open(sha224, file)::Vector{UInt8}
+    elseif method === :sha1
+        @import SHA.sha1
+        open(sha1, file)::Vector{UInt8}
+    elseif method === :md5
+        @import MD5.md5
+        open(md5, file)::Vector{UInt8}
+    elseif method === :crc32c
+        @import CRC32c.crc32c
         reinterpret(UInt8, [hton(open(crc32c, file)::UInt32)]) |> collect
     else
         return
@@ -238,9 +267,9 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
             @warn "Checksum scheme '$checksum' is not known, skipping"
             return
         end
-        storage.parameters["checksum"] = string(checksum, ':', chash)
+        storage.parameters["checksum"] = string(cmethod, ':', chash)
         write(storage)
-        (Symbol(checksum), chash)
+        (cmethod, chash)
     elseif checksum !== false
         @warn "Checksum value '$checksum' is invalid, ignoring"
     end
@@ -524,8 +553,8 @@ function update_source!(inventory::Inventory,
     sindex = findfirst(Base.Fix1(≃, source), sources)
     if isnothing(cindex)
         push!(inventory.collections,
-                CollectionInfo(collection.uuid, collection.path,
-                                collection.name, now()))
+              CollectionInfo(collection.uuid, collection.path,
+                             collection.name, now()))
     else
         inventory.collections[cindex] = CollectionInfo(
             collection.uuid, collection.path, collection.name, now())

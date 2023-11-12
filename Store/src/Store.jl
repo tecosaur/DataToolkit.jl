@@ -2,7 +2,6 @@ module Store
 
 using DataToolkitBase
 using BaseDirs
-using CRC32c
 using Dates
 using Markdown: MD, @md_str
 using Serialization
@@ -41,11 +40,19 @@ Initialise the data store by:
 - Registering the GC-on-exit hook
 """
 function __init__()
+    # Hashing packages
+    @addpkg KangarooTwelve "2a5dabf5-6a39-42aa-818d-ce8a58d1b312"
+    @addpkg CRC32c         "8bf52ea8-c179-5cab-976a-9e18b702a9bc"
+    @addpkg MD5            "6ac74813-4b46-53a4-afec-0b5dc9d7885c"
+    @addpkg SHA            "ea8e919c-243c-51af-8825-aaa63cd721ce"
+    # Plugins
     @dataplugin STORE_PLUGIN :default
     @dataplugin CACHE_PLUGIN
+    # REPL injection
     let pos = searchsorted(REPL_CMDS, STORE_REPL_CMD, by=c -> DataToolkitBase.natkeygen(c.trigger))
         splice!(REPL_CMDS, pos, (STORE_REPL_CMD,))
     end
+    # Inventory loading
     _init_user_inventory!()
     push!(INVENTORIES, load_inventory(USER_INVENTORY))
     atexit() do
