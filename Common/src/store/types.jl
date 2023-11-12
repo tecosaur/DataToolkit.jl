@@ -26,7 +26,7 @@ struct StoreSource <: SourceInfo
     recipe::UInt64
     references::Vector{UUID}
     accessed::DateTime
-    checksum::Union{Nothing, Tuple{Symbol, Unsigned}}
+    checksum::Union{Nothing, Tuple{Symbol, String}}
     extension::String
 end
 

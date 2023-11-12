@@ -85,8 +85,7 @@ function storefile(inventory::Inventory, source::StoreSource)
              string(if isnothing(source.checksum)
                         string("R-", string(source.recipe, base=16))
                     else
-                        string(source.checksum[1], '-',
-                               string(source.checksum[2], base=16))
+                        string(source.checksum[1], '-', source.checksum[2])
                     end,
                     '.', fileextension(source)))
 end
@@ -153,6 +152,30 @@ when calculating the threshold, no matter what the `checksum` log setting is.
 const CHECKSUM_AUTO_LOG_SIZE = 1024^3
 
 """
+The checksum scheme used when `auto` is specified. Must be recognised by `checksum`.
+"""
+const CHECKSUM_DEFAULT_SCHEME = :crc32c
+
+"""
+    checksum(file::String, method::Symbol)
+
+Calculate the checksum of `file` with `method`, returning the `Unsigned` result.
+
+Method should be one of:
+- `crc32c`
+
+Should `method` not be recognised, `nothing` is returned.
+"""
+function getchecksum(file::String, method::Symbol)
+    checksum = if method === :crc32c
+        reinterpret(UInt8, [hton(open(crc32c, file)::UInt32)]) |> collect
+    else
+        return
+    end
+    join(string.(checksum, base=16))
+end
+
+"""
     getchecksum(storage::DataStorage, file::String)
 
 Returns the checksum tuple for the `file` backing `storage`, or `nothing` if
@@ -162,41 +185,35 @@ The checksum of `file` is checked against the recorded checksum in `storage`, if
 it exists.
 """
 function getchecksum(@nospecialize(storage::DataStorage), file::String)
-    checksum = get(storage, "checksum", false)
-    if checksum == "auto"
-        if iswritable(storage.dataset.collection)
-            if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
-                @info "Calculating checksum of $(storage.dataset.name)'s source"
-            end
-            csum = open(io -> crc32c(io), file)
-            checksum = string("crc32c:", string(csum, base=16))
-            storage.parameters["checksum"] = checksum
-            write(storage)
-            (:crc32c, csum)
-        else
-            @warn "Could not update checksum, data collection is not writable"
-        end
-    elseif checksum !== false
+    checksum = @getparam storage."checksum"::Union{Bool, String} false
+    if checksum isa String && occursin(':', checksum)
         if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
             @info "Calculating checksum of $(storage.dataset.name)'s source"
         end
-        csum = open(io -> crc32c(io), file)
-        actual_checksum = string("crc32c:", string(csum, base=16))
+        cmethod = Symbol(first(eachsplit(checksum, ':')))
+        if cmethod === :auto
+            cmethod = CHECKSUM_DEFAULT_SCHEME
+        end
+        chash = DataToolkitBase.invokepkglatest(getchecksum, file, Symbol(cmethod))
+        if isnothing(chash)
+            @warn "Checksum scheme '$checksum' is not known, skipping"
+            return
+        end
+        actual_checksum = string(cmethod, ':', chash)
         if checksum == actual_checksum
-            (:crc32c, csum)
+            (cmethod, chash)
         elseif isinteractive() && iswritable(storage.dataset.collection)
             printstyled(" ! ", color=:yellow, bold=true)
             print("Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
-                    "  Expected the CRC32c checksum to be $checksum, got $actual_checksum.\n",
-                    "  How would you like to proceed?\n\n")
+                  "  Expected the checksum to be $checksum, got $actual_checksum.\n",
+                  "  How would you like to proceed?\n\n")
             options = ["(o) Overwrite checksum to $actual_checksum", "(a) Abort and throw an error"]
             choice = request(RadioMenu(options, keybindings=['o', 'a']))
             print('\n')
             if choice == 1 # Overwrite
-                checksum = actual_checksum
-                storage.parameters["checksum"] = checksum
+                storage.parameters["checksum"] = actual_checksum
                 write(storage)
-                (:crc32c, csum)
+                (cmethod, chash)
             else
                 error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
                              " Expected $checksum, got $actual_checksum."))
@@ -205,6 +222,27 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
             error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
                          " Expected $checksum, got $actual_checksum."))
         end
+    elseif checksum isa String && !occursin(':', checksum) # name of method, or auto
+        if !iswritable(storage.dataset.collection)
+            @warn "Could not update checksum, data collection is not writable"
+            return
+        end
+        if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
+            @info "Calculating checksum of $(storage.dataset.name)'s source"
+        end
+        cmethod = if checksum == "auto"
+            CHECKSUM_DEFAULT_SCHEME
+        else Symbol(checksum) end
+        chash = DataToolkitBase.invokepkglatest(getchecksum, file, cmethod)
+        if isnothing(chash)
+            @warn "Checksum scheme '$checksum' is not known, skipping"
+            return
+        end
+        storage.parameters["checksum"] = string(checksum, ':', chash)
+        write(storage)
+        (Symbol(checksum), chash)
+    elseif checksum !== false
+        @warn "Checksum value '$checksum' is invalid, ignoring"
     end
 end
 
