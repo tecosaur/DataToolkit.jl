@@ -40,25 +40,19 @@ end
 
 Parse a string representation of a checksum in the format `"type:value"`.
 
-A tuple giving the checksum type (as a `Symbol`) and value (as an `Unsigned`) is
-returned.
+A tuple giving the checksum type (as a `Symbol`) and value (as a `String`)
+is returned.
 
 ### Example
 
 ```jldoctest; setup = :(import DataToolkitCommon.Store.parsechecksum)
 julia> parsechecksum("crc32c:9c0188ee")
-(:crc32c, 0x9c0188ee)
+(:crc32c, "9c0188ee")
 ```
 """
 function parsechecksum(checksum::String)
-    typestr, valstr = split(checksum, ':')
-    type = Symbol(typestr)
-    val = if type === :crc32c
-        parse(UInt32, valstr, base=16)
-    elseif type === :xxhash
-        parse(UInt128, valstr, base=16)
-    end
-    type, val
+    typestr, valstr = split(checksum, ':', limit=2)
+    Symbol(typestr), valstr
 end
 
 function Base.convert(::Type{StoreSource}, spec::Dict{String, Any})
@@ -133,8 +127,7 @@ function Base.convert(::Type{Dict}, sinfo::StoreSource)
                           "accessed" => sinfo.accessed,
                           "extension" => sinfo.extension)
     if !isnothing(sinfo.checksum)
-        d["checksum"] = string(sinfo.checksum[1], ':',
-                               string(sinfo.checksum[2], base=16))
+        d["checksum"] = string(sinfo.checksum[1], ':', sinfo.checksum[2])
     end
     d
 end
