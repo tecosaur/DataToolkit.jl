@@ -527,7 +527,7 @@ end
     end
     @test_throws EmptyStackError dataset("dataset")
     @test_throws EmptyStackError getlayer(nothing)
-    push!(STACK, collection)
+    @test (collection = loadcollection!(IOBuffer(datatoml))) isa Any # if this actually goes wrong, it should be caught by subsequent tests
     @test getlayer(nothing) === collection
     @test_throws UnresolveableIdentifier getlayer("nope")
     @test_throws UnresolveableIdentifier getlayer(Base.UUID("11111111-24db-4e28-b693-58d2e1f59d05"))
@@ -549,6 +549,8 @@ end
         @test open(dataset("dataset"), Vector{Int}) == [1, 2, 3]
         @test read(dataset("dataset"), Vector{Int}) == [1, 2, 3]
         @test read(dataset("dataset")) == [1, 2, 3]
+        @test read(parse(Identifier, "dataset"), Vector{Int}) == [1, 2, 3]
+        @test read(parse(Identifier, "dataset::Vector{Int}")) == [1, 2, 3]
     end
     @testset "Identifier" begin
         @test_throws UnresolveableIdentifier dataset("nonexistent")
