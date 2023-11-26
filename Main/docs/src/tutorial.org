@@ -183,30 +183,46 @@ loaded as a ~Matrix~, and so it will be).
 
 #+begin_example
 julia> read(dataset("iris"))
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
+ │ Package KangarooTwelve not found, but a package named KangarooTwelve is available from a registry.
+ │ Install package?
+ │   (dt_test) pkg> add KangarooTwelve
+ └ (y/n/o) [y]: y
+    Updating registry at `~/.julia/registries/General.toml`
+   Resolving package versions...
+    Updating `/tmp/dt_test/Project.toml`
+  [2a5dabf5] + KangarooTwelve v1.0.0
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
 [ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
  │ Package CSV not found, but a package named CSV is available from a registry.
  │ Install package?
- │   (datatoolkit_tutorial) pkg> add CSV
+ │   (dt_test) pkg> add CSV
  └ (y/n/o) [y]:
    Resolving package versions...
-    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+    Updating `/tmp/dt_test/Project.toml`
   [336ed68f] + CSV v0.10.11
-    Updating `~/Documents/datatoolkit_tutorial/Manifest.toml`
-Precompiling project...
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
 [ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
 150×5 Matrix{Float64}:
  5.1  3.5  1.4  0.2  0.0
  4.9  3.0  1.4  0.2  0.0
- ...
+ 4.7  3.2  1.3  0.2  0.0
+ ⋮
+ 6.5  3.0  5.2  2.0  2.0
  6.2  3.4  5.4  2.3  2.0
  5.9  3.0  5.1  1.8  2.0
 #+end_example
 
 #+begin_note
-We haven't installed the =CSV= package, but thanks to the lazy-loading system we
-are presented with the option to install it on-the-fly. Of course, you can
-always just load the =CSV= package yourself trying to access information that uses
-the =csv= loader.
+We haven't installed the =KangarooTwelve= (a cryptographic hash) or  =CSV= packages,
+but thanks to the lazy-loading system we are presented with the option to
+install them on-the-fly. The =KangarooTwelve= package is only used when hashing
+new data, or verifying the hash of downloaded data. Should you want to avoid
+lazy-loading, you can always just load the =CSV= package yourself before trying to
+access information that uses the =csv= loader.
 #+end_note
 
 Because ~read(dataset("iris"))~ is a fairly common pattern, for convenience there
@@ -225,7 +241,7 @@ julia> using DataFrames
  └ (y/n/o) [y]:
    Resolving package versions...
     Updating `~/Documents/datatoolkit_tutorial/Project.toml`
-  [a93c6f00] + DataFrames v1.5.0
+  [a93c6f00] + DataFrames v1.6.1
   ...
   1 dependency successfully precompiled in 25 seconds. 41 already precompiled.
 
@@ -336,6 +352,7 @@ description = "Fisher's famous Iris flower measurements"
 
     [[iris.storage]]
     driver = "web"
+    checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
     url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
 
     [[iris.loader]]
@@ -349,7 +366,7 @@ description = "Fisher's famous Iris flower measurements"
 Now, you have a =Project.toml=, =Manifest.toml=, and =Data.toml= that can be relocated
 to other systems and ~d"iris"~ will consistently produce the exact same ~DataFrame~.
 
-** Bonus: ensuring the integrity of the downloaded data
+** On ensuring the integrity of the downloaded data
 
 One of the three plugins used by default is the =store= plugin. It is responsible
 for caching IO data and checking data validity. For a more complete description
@@ -362,10 +379,11 @@ fact if we copy the =iris= specification into a separate data set it will re-use
 the /same/ downloaded data.
 
 The second, is that by setting =iris='s =web= storage driver's =checksum= property to
-="auto"=, the next time we load =iris= a checksum will be generated and saved. If in
-future the =web= storage driver produces different data, this will now be caught
-and raised. This can be done automatically by setting the default value to
-="auto"=, which we were prompted to do during initialisation.
+="auto"= (as is done by default), the next time we load =iris= a checksum will be
+generated and saved. If in future the =web= storage driver produces different
+data, this will now be caught and raised. This can be done automatically by
+setting the default value to ="auto"=, which we were prompted to do during
+initialisation.
 
 * Multi-step analysis with the Boston Housing data set
 ** Loading the data
@@ -689,12 +707,16 @@ uuid = "f20a77d0-0dc9-41bb-875b-ad0bf42c90bd"
 name = "tutorial"
 plugins = ["defaults", "store"]
 
+[config.defaults.storage._]
+checksum = "auto"
+
 [[boston]]
 uuid = "02968c42-828e-4f22-86b8-ec67ac629a03"
 description = "The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass."
 
     [[boston.storage]]
     driver = "web"
+    checksum = "k12:663371e9040b883267104b32d8ac28e6"
     url = "https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz"
 
     [[boston.loader]]
@@ -745,7 +767,7 @@ description = "Fisher's famous Iris flower measurements"
 
     [[iris.storage]]
     driver = "web"
-    checksum = "crc32c:d5c06b86"
+    checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
     url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
 
     [[iris.loader]]
