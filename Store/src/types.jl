@@ -22,11 +22,16 @@ end
 
 abstract type SourceInfo end
 
+struct Checksum{length}
+    alg::Symbol
+    hash::NTuple{length, UInt8}
+end
+
 struct StoreSource <: SourceInfo
     recipe::UInt64
     references::Vector{UUID}
     accessed::DateTime
-    checksum::Union{Nothing, Tuple{Symbol, String}}
+    checksum::Union{Nothing, Checksum}
     extension::String
 end
 
