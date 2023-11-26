@@ -54,13 +54,17 @@ to the store. For example,
 
 ```toml
 [[iris.storage]]
-checksum = "crc32c:f7ae7e64"
+checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
 ```
 
 If you do not have a checksum, but wish for one to be calculated upon accessing
 the data, the checksum parameter can be set to the special value `"auto"`. When
 the data is first accessed, a checksum will be generated and replace the "auto"
 value.
+
+Instead of `"auto"`, a particular checksum algorithm can be specified, by naming
+it, e.g. `"sha256"`. The currently supported algorithms are: `k12` (Kangaroo
+Twelve), `sha512`, `sha348`, `sha256`, `sha224`, `sha1`, `md5`, and `crc32c`.
 
 To explicitly specify no checksum, set the parameter to `false`.
 
