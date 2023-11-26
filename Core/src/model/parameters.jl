@@ -65,3 +65,32 @@ end
 Base.get(dataobj::Union{DataSet, DataCollection, <:AbstractDataTransformer},
          ::typeof(:)) =
     dataset_parameters(dataobj, Val(:resolve), dataobj.parameters)
+
+# Nice extra
+
+function referenced_datasets(dataset::DataSet)
+    dataset_references = Identifier[]
+    add_dataset_refs!(dataset_references, dataset.parameters)
+    for paramsource in vcat(dataset.storage, dataset.loaders, dataset.writers)
+        add_dataset_refs!(dataset_references, paramsource)
+    end
+    map(r -> resolve(dataset.collection, r, resolvetype=false), dataset_references) |> unique!
+end
+
+add_dataset_refs!(acc::Vector{Identifier}, @nospecialize(adt::AbstractDataTransformer)) =
+    add_dataset_refs!(acc, adt.parameters)
+
+add_dataset_refs!(acc::Vector{Identifier}, props::SmallDict) =
+    for val in values(props)
+        add_dataset_refs!(acc, val)
+    end
+
+add_dataset_refs!(acc::Vector{Identifier}, props::Vector) =
+    for val in props
+        add_dataset_refs!(acc, val)
+    end
+
+add_dataset_refs!(acc::Vector{Identifier}, ident::Identifier) =
+    push!(acc, ident)
+
+add_dataset_refs!(::Vector{Identifier}, ::Any) = nothing
