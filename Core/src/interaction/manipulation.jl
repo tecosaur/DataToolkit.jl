@@ -280,13 +280,13 @@ function plugin_info(plugin::AbstractString; quiet::Bool=false)
 end
 
 """
-    plugin_list(; collection::DataCollection=first(STACK), quiet::Bool=false)
+    plugin_list(collection::DataCollection=first(STACK); quiet::Bool=false)
 
 Obtain a list of plugins used in `collection`.
 
 `quiet` is unused but accepted as an argument for the sake of consistency.
 """
-plugin_list(; collection::DataCollection=first(STACK), quiet::Bool=false) =
+plugin_list(collection::DataCollection=first(STACK); quiet::Bool=false) =
     collection.plugins
 
 # ------------------
