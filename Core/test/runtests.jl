@@ -3,7 +3,8 @@ using Test
 
 import DataToolkitBase: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
-    DATASET_REFERENCE_WRAPPER
+    stack_index, plugin_add, plugin_list, plugin_remove, config_get,
+    config_set, config_unset, DATASET_REFERENCE_WRAPPER
 
 @testset "Utils" begin
     @testset "Doctests" begin
@@ -471,6 +472,7 @@ end
     name = "datatest"
 
     config.setting = 123
+    config.nested.value = 4
 
     [[dataset]]
     uuid = "d9826666-5049-4051-8d2e-fe306c20802c"
@@ -490,6 +492,9 @@ end
 
     [config]
     setting = 123
+
+        [config.nested]
+        value = 4
 
     [[dataset]]
     uuid = "d9826666-5049-4051-8d2e-fe306c20802c"
@@ -513,7 +518,8 @@ end
         @test collection.version == 0
         @test collection.uuid == Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05")
         @test collection.name == "datatest"
-        @test collection.parameters == SmallDict{String, Any}("setting" => 123)
+        @test collection.parameters ==
+            SmallDict{String, Any}("setting" => 123, "nested" => SmallDict{String, Any}("value" => 4))
         @test collection.plugins == String[]
         @test collection.path === nothing
         @test collection.mod == Main
@@ -569,5 +575,22 @@ end
             write(io, collection)
             @test String(take!(io)) == datatoml_full
         end
+    end
+    @testset "Manipulation" begin
+        @test stack_index(collection.uuid) == stack_index(collection.name) == stack_index(1)
+        @test stack_index(2) === nothing
+        @test plugin_add(["test"]).plugins == ["test"]
+        @test plugin_add(["test2"]).plugins == ["test", "test2"]
+        @test plugin_list() == ["test", "test2"]
+        @test plugin_remove(["test"]).plugins == ["test2"]
+        @test plugin_remove(["test2"]).plugins == String[]
+        @test config_get(collection, ["setting"]) == 123
+        @test config_get(collection, ["setting", "none"]) ===nothing
+        @test config_get(collection, ["nested", "value"]) == 4
+        @test config_get(collection, ["nested", "nope"]) ===nothing
+        @test config_set(["some", "nested", "val"], 5).parameters["some"] ==
+            SmallDict{String, Any}("nested" => SmallDict{String, Any}("val" => 5))
+        @test config_get(["some", "nested", "val"]) == 5
+        @test get(config_unset(collection, ["some"]), "some") === nothing
     end
 end
