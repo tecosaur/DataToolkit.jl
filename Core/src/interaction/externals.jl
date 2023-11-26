@@ -255,18 +255,15 @@ function _read(dataset::DataSet, as::Type)
 end
 
 function Base.read(ident::Identifier, as::Type)
-    dataset = resolve(ident)
+    dataset = resolve(ident, resolvetype=false)
     read(dataset, as)
 end
 
 function Base.read(ident::Identifier)
-    if isnothing(ident.type)
+    isnothing(ident.type) &&
         throw(ArgumentError("Cannot read from DataSet Identifier without type information."))
-    end
-    read(ident, if !isnothing(ident.type)
-             mod = getlayer(ident.collection).mod
-             typeify(ident.type; mod)
-         end)
+    mod = getlayer(ident.collection).mod
+    read(ident, typeify(ident.type; mod))
 end
 
 """
