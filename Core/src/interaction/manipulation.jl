@@ -302,10 +302,10 @@ Obtain the configuration value at `propertypath` in `collection`.
 When no value is set, `nothing` is returned instead and if `quiet` is unset
 "unset" is printed.
 """
-function config_get(propertypath::Vector{String};
-                    collection::DataCollection=first(STACK), quiet::Bool=false)
+function config_get(collection::DataCollection, propertypath::Vector{String}; quiet::Bool=false)
     config = collection.parameters
     for segment in propertypath
+        config isa AbstractDict || (config = SmallDict{String, Nothing}();)
         config = get(config, segment, nothing)
         if isnothing(config)
             quiet || printstyled(" unset\n", color=:light_black)
@@ -314,6 +314,9 @@ function config_get(propertypath::Vector{String};
     end
     config
 end
+
+config_get(propertypath::Vector{String}; quiet::Bool=false) =
+    config_get(first(STACK), propertypath; quiet)
 
 """
     config_set([collection::DataCollection=first(STACK)], propertypath::Vector{String}, value::Any;
