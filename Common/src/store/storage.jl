@@ -42,13 +42,11 @@ function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
                 return record
             end
         end
-    elseif !occursin(':', checksum)
-        # We don't know what the checksum actually is, and
-        # so nothing can match.
     else
-        checksum2 = parsechecksum(checksum)
+        thechecksum = tryparse(Checksum, checksum)
+        isnothing(thechecksum) && return
         for record in inventory.stores
-            if record.recipe === recipe && record.checksum === checksum2
+            if record.recipe === recipe && record.checksum === thechecksum
                 return record
             end
         end
@@ -85,7 +83,7 @@ function storefile(inventory::Inventory, source::StoreSource)
              string(if isnothing(source.checksum)
                         string("R-", string(source.recipe, base=16))
                     else
-                        string(source.checksum[1], '-', source.checksum[2])
+                        string(source.checksum)
                     end,
                     '.', fileextension(source)))
 end
@@ -174,84 +172,49 @@ Method should be one of:
 Should `method` not be recognised, `nothing` is returned.
 """
 function getchecksum(file::String, method::Symbol)
-    checksum = if method === :k12
+    len, hash = if method === :k12
         @import KangarooTwelve.k12
-        reinterpret(UInt8, [hton(open(k12, file)::UInt128)]) |> collect
+        16, reinterpret(UInt8, [hton(open(k12, file)::UInt128)]) |> collect
     elseif method === :sha512
         @import SHA.sha512
-        open(sha512, file)::Vector{UInt8}
+        64, open(sha512, file)::Vector{UInt8}
     elseif method === :sha348
         @import SHA.sha348
-        open(sha348, file)::Vector{UInt8}
+        48, open(sha348, file)::Vector{UInt8}
     elseif method === :sha256
         @import SHA.sha256
-        open(sha256, file)::Vector{UInt8}
+        32, open(sha256, file)::Vector{UInt8}
     elseif method === :sha224
         @import SHA.sha224
-        open(sha224, file)::Vector{UInt8}
+        28, open(sha224, file)::Vector{UInt8}
     elseif method === :sha1
         @import SHA.sha1
-        open(sha1, file)::Vector{UInt8}
+        20, open(sha1, file)::Vector{UInt8}
     elseif method === :md5
         @import MD5.md5
-        open(md5, file)::Vector{UInt8}
+        16, open(md5, file)::Vector{UInt8}
     elseif method === :crc32c
         @import CRC32c.crc32c
-        reinterpret(UInt8, [hton(open(crc32c, file)::UInt32)]) |> collect
+        4, reinterpret(UInt8, [hton(open(crc32c, file)::UInt32)]) |> collect
     else
         return
     end
-    join(string.(checksum, base=16))
+    Checksum(method, NTuple{len, UInt8}(hash))
 end
 
 """
     getchecksum(storage::DataStorage, file::String)
 
-Returns the checksum tuple for the `file` backing `storage`, or `nothing` if
-there is no checksum.
+Returns the `Checksum` for the `file` backing `storage`, or `nothing` if there
+is no checksum.
 
 The checksum of `file` is checked against the recorded checksum in `storage`, if
 it exists.
 """
 function getchecksum(@nospecialize(storage::DataStorage), file::String)
-    checksum = @getparam storage."checksum"::Union{Bool, String} false
-    if checksum isa String && occursin(':', checksum)
-        if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
-            @info "Calculating checksum of $(storage.dataset.name)'s source"
-        end
-        cmethod = Symbol(first(eachsplit(checksum, ':')))
-        if cmethod === :auto
-            cmethod = CHECKSUM_DEFAULT_SCHEME
-        end
-        chash = DataToolkitBase.invokepkglatest(getchecksum, file, Symbol(cmethod))
-        if isnothing(chash)
-            @warn "Checksum scheme '$checksum' is not known, skipping"
-            return
-        end
-        actual_checksum = string(cmethod, ':', chash)
-        if checksum == actual_checksum
-            (cmethod, chash)
-        elseif isinteractive() && iswritable(storage.dataset.collection)
-            printstyled(" ! ", color=:yellow, bold=true)
-            print("Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
-                  "  Expected the checksum to be $checksum, got $actual_checksum.\n",
-                  "  How would you like to proceed?\n\n")
-            options = ["(o) Overwrite checksum to $actual_checksum", "(a) Abort and throw an error"]
-            choice = request(RadioMenu(options, keybindings=['o', 'a']))
-            print('\n')
-            if choice == 1 # Overwrite
-                storage.parameters["checksum"] = actual_checksum
-                write(storage)
-                (cmethod, chash)
-            else
-                error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                             " Expected $checksum, got $actual_checksum."))
-            end
-        else
-            error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                         " Expected $checksum, got $actual_checksum."))
-        end
-    elseif checksum isa String && !occursin(':', checksum) # name of method, or auto
+    csumval = @getparam storage."checksum"::Union{Bool, String} false
+    csumval == false && return
+    if csumval isa String && !occursin(':', csumval) # name of method, or auto
         if !iswritable(storage.dataset.collection)
             @warn "Could not update checksum, data collection is not writable"
             return
@@ -259,19 +222,55 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
         if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
             @info "Calculating checksum of $(storage.dataset.name)'s source"
         end
-        cmethod = if checksum == "auto"
+        alg = if csumval == "auto"
             CHECKSUM_DEFAULT_SCHEME
-        else Symbol(checksum) end
-        chash = DataToolkitBase.invokepkglatest(getchecksum, file, cmethod)
-        if isnothing(chash)
-            @warn "Checksum scheme '$checksum' is not known, skipping"
+        else Symbol(csumval) end
+        checksum = DataToolkitBase.invokepkglatest(getchecksum, file, alg)
+        if isnothing(checksum)
+            @warn "Checksum scheme '$csumval' is not known, skipping"
             return
         end
-        storage.parameters["checksum"] = string(cmethod, ':', chash)
+        storage.parameters["checksum"] = string(checksum)
         write(storage)
-        (cmethod, chash)
-    elseif checksum !== false
+        return checksum
+    end
+    checksum = tryparse(Checksum, csumval)
+    if isnothing(checksum)
         @warn "Checksum value '$checksum' is invalid, ignoring"
+        return
+    end
+    if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
+        @info "Calculating checksum of $(storage.dataset.name)'s source"
+    end
+    if checksum.alg === :auto
+        checksum = Checksum(CHECKSUM_DEFAULT_SCHEME, checksum.hash)
+    end
+    actual_checksum = DataToolkitBase.invokepkglatest(getchecksum, file, checksum.alg)
+    if isnothing(actual_checksum)
+        @warn "Checksum scheme '$(checksum.alg)' is not known, skipping"
+        return
+    end
+    if checksum == actual_checksum
+        actual_checksum
+    elseif isinteractive() && iswritable(storage.dataset.collection)
+        printstyled(" ! ", color=:yellow, bold=true)
+        print("Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
+                "  Expected the checksum to be $checksum, got $actual_checksum.\n",
+                "  How would you like to proceed?\n\n")
+        options = ["(o) Overwrite checksum to $actual_checksum", "(a) Abort and throw an error"]
+        choice = request(RadioMenu(options, keybindings=['o', 'a']))
+        print('\n')
+        if choice == 1 # Overwrite
+            storage.parameters["checksum"] = string(actual_checksum)
+            write(storage)
+            actual_checksum
+        else
+            error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
+                            " Expected $checksum, got $actual_checksum."))
+        end
+    else
+        error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
+                        " Expected $checksum, got $actual_checksum."))
     end
 end
 

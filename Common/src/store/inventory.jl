@@ -36,23 +36,38 @@ function Base.convert(::Type{CollectionInfo}, (uuid, spec)::Pair{String, Dict{St
 end
 
 """
-    parsechecksum(checksum::String)
+    parse(Checksum, checksum::String)
 
 Parse a string representation of a checksum in the format `"type:value"`.
 
-A tuple giving the checksum type (as a `Symbol`) and value (as a `String`)
-is returned.
-
 ### Example
 
-```jldoctest; setup = :(import DataToolkitCommon.Store.parsechecksum)
-julia> parsechecksum("crc32c:9c0188ee")
-(:crc32c, "9c0188ee")
+```jldoctest; setup = :(import DataToolkitCommon.Store.Checksum)
+julia> parse(Checksum, "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4")
+Checksum{16}(:k12, (0xcf, 0xb9, 0xa6, 0xa3, 0x02, 0xf5, 0x8e, 0x5a, 0x9b, 0x0c, 0x81, 0x5b, 0xb7, 0xe8, 0xef, 0xb4))
 ```
 """
-function parsechecksum(checksum::String)
+function Base.parse(::Type{Checksum}, checksum::String)
     typestr, valstr = split(checksum, ':', limit=2)
-    Symbol(typestr), valstr
+    hash = NTuple{ncodeunits(valstr) ÷ 2, UInt8}(
+       map(byte -> parse(UInt8, byte, base=16), Iterators.partition(valstr, 2)))
+    Checksum(Symbol(typestr), hash)
+end
+
+function Base.tryparse(::Type{Checksum}, checksum::String)
+    count(':', checksum) == 1 || return
+    typestr, valstr = split(checksum, ':', limit=2)
+    all(c -> '0' <= c <= '9' || 'a' <= c <= 'f', valstr)
+    ncodeunits(valstr) % 2 == 0 || return
+    hash = NTuple{ncodeunits(valstr) ÷ 2, UInt8}(
+        # This is slightly overcomplicated for 1.8 compat
+        map(byteind -> parse(UInt8, view(valstr, byteind), base=16),
+            Iterators.partition(1:ncodeunits(valstr), 2)))
+    Checksum(Symbol(typestr), hash)
+end
+
+function Base.string(checksum::Checksum)
+    string(checksum.alg, ':', join(map(b -> lpad(string(b, base=16), 2, '0'), checksum.hash)))
 end
 
 function Base.convert(::Type{StoreSource}, spec::Dict{String, Any})
@@ -68,7 +83,7 @@ function Base.convert(::Type{StoreSource}, spec::Dict{String, Any})
         end
     end
     checksum = if haskey(spec, "checksum")
-        parsechecksum(spec["checksum"]) end
+        tryparse(Checksum, spec["checksum"]) end
     StoreSource(parse(UInt64, spec["recipe"], base=16),
                 parse.(UUID, spec["references"]),
                 spec["accessed"], checksum,
@@ -127,7 +142,7 @@ function Base.convert(::Type{Dict}, sinfo::StoreSource)
                           "accessed" => sinfo.accessed,
                           "extension" => sinfo.extension)
     if !isnothing(sinfo.checksum)
-        d["checksum"] = string(sinfo.checksum[1], ':', sinfo.checksum[2])
+        d["checksum"] = string(sinfo.checksum)
     end
     d
 end
