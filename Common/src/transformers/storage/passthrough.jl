@@ -13,6 +13,9 @@ function supportedtypes(::Type{DataStorage{:passthrough}}, params::SmallDict{Str
     end
 end
 
+DataToolkitBase.add_dataset_refs!(acc::Vector{Identifier}, storage::DataStorage{:passthrough}) =
+    DataToolkitBase.add_dataset_refs!(acc, parse(Identifier, get(storage, "source")))
+
 createpriority(::Type{<:DataStorage{:passthrough}}) = 60
 
 function create(::Type{<:DataStorage{:passthrough}}, source::String)
