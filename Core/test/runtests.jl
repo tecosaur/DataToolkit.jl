@@ -2,7 +2,8 @@ using DataToolkitBase
 using Test
 
 import DataToolkitBase: natkeygen, stringdist, stringsimilarity,
-    longest_common_subsequence, highlight_lcs
+    longest_common_subsequence, highlight_lcs, referenced_datasets,
+    DATASET_REFERENCE_WRAPPER
 
 @testset "Utils" begin
     @testset "Doctests" begin
@@ -385,7 +386,38 @@ end
     end
 end
 
-# Ensure this runs at the end, it should simulate a basic workflow
+@testset "DataSet Parameters" begin
+    refpre, refpost = DATASET_REFERENCE_WRAPPER
+    datatoml = """
+    data_config_version = 0
+    uuid = "1c59ad24-f655-4903-b791-f3ef3afc5df1"
+    name = "datatest"
+
+    config.ref = "$(refpre)adataset$(refpost)"
+
+    [[adataset]]
+    uuid = "8c12e6b4-6987-44e9-a33d-efe2ad60f501"
+    self = "$(refpre)adataset$(refpost)"
+    others = { b = "$(refpre)bdataset$(refpost)" }
+
+    [[bdataset]]
+    uuid = "aa5ba7ab-cabd-4c08-8e4e-78d516e15801"
+    other = ["$(refpre)adataset$(refpost)"]
+    """
+    collection = read(IOBuffer(datatoml), DataCollection)
+    adataset, bdataset = sort(collection.datasets, by=d -> d.name)
+    @test referenced_datasets(adataset) == [adataset, bdataset]
+    @test referenced_datasets(bdataset) == [adataset]
+    @test get(adataset, "self") == adataset
+    @test adataset == @getparam adataset."self"
+    @test get(adataset, "others")["b"] == bdataset
+    @test get(bdataset, "other") == [adataset]
+    # Collection config cannot hold data set refs
+    @test get(collection, "ref") == "$(refpre)adataset$(refpost)"
+end
+
+# Ensure this runs at the end (because it defines new methods, and may affect
+# state). It should simulate a basic workflow.
 @testset "Dry run" begin
     # Basic storage/loader implementation for testing
     @eval begin
