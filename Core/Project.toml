@@ -4,22 +4,22 @@ authors = ["TEC <tec@tecosaur.com> and contributors"]
 version = "0.7.0"
 
 [deps]
-AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+MetaGraphsNext = "fa8bd995-216d-47f1-8a91-f3b68fbeb377"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
-AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+MetaGraphsNext = "fa8bd995-216d-47f1-8a91-f3b68fbeb377"
 
 [extensions]
-AbstractTreesExt = "AbstractTrees"
+GraphExt = "MetaGraphsNext"
 
 [compat]
-AbstractTrees = "0.2, 0.3, 0.4"
+MetaGraphsNext = "0.5, 0.6"
 Compat = "3.29, 4"
 PrecompileTools = "1"
 julia = "1.6"
