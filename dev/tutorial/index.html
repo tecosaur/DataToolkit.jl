@@ -50,30 +50,44 @@ description = &quot;Fisher&#39;s famous Iris flower measurements&quot;
 
     [[iris.loader]]
     driver = &quot;csv&quot;</code></pre><p>To obtain a particular loaded form of the data set, we can use the <code>read</code> function. For instance, <code>read(dataset(&quot;iris&quot;), DataFrame)</code> or <code>read(dataset(&quot;iris&quot;), Matrix)</code>. We can also omit the second argument, in which case the first form that <em>can</em> be loaded will be (e.g. in this case since <code>DataFrames</code> is not loaded, <code>iris</code> can not be loaded as a <code>DataFrame</code>, but it can be loaded as a <code>Matrix</code>, and so it will be).</p><pre><code class="nohighlight hljs">julia&gt; read(dataset(&quot;iris&quot;))
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
+ │ Package KangarooTwelve not found, but a package named KangarooTwelve is available from a registry.
+ │ Install package?
+ │   (dt_test) pkg&gt; add KangarooTwelve
+ └ (y/n/o) [y]: y
+    Updating registry at `~/.julia/registries/General.toml`
+   Resolving package versions...
+    Updating `/tmp/dt_test/Project.toml`
+  [2a5dabf5] + KangarooTwelve v1.0.0
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
 [ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
  │ Package CSV not found, but a package named CSV is available from a registry.
  │ Install package?
- │   (datatoolkit_tutorial) pkg&gt; add CSV
+ │   (dt_test) pkg&gt; add CSV
  └ (y/n/o) [y]:
    Resolving package versions...
-    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+    Updating `/tmp/dt_test/Project.toml`
   [336ed68f] + CSV v0.10.11
-    Updating `~/Documents/datatoolkit_tutorial/Manifest.toml`
-Precompiling project...
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
 [ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
 150×5 Matrix{Float64}:
  5.1  3.5  1.4  0.2  0.0
  4.9  3.0  1.4  0.2  0.0
- ...
+ 4.7  3.2  1.3  0.2  0.0
+ ⋮
+ 6.5  3.0  5.2  2.0  2.0
  6.2  3.4  5.4  2.3  2.0
- 5.9  3.0  5.1  1.8  2.0</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>We haven&#39;t installed the <code>CSV</code> package, but thanks to the lazy-loading system we are presented with the option to install it on-the-fly. Of course, you can always just load the <code>CSV</code> package yourself trying to access information that uses the <code>csv</code> loader.</p></div></div><p>Because <code>read(dataset(&quot;iris&quot;))</code> is a fairly common pattern, for convenience there is a <code>d&quot;&quot;</code> &quot;data set in loaded form&quot; macro. <code>d&quot;iris&quot;</code> is equivalent to <code>read(dataset(&quot;iris&quot;))</code>.</p><p>Having the <code>iris</code> data as a <code>Matrix</code> is fine, but it would be nicer to have it as a <code>DataFrame</code>. Since that is the first format listed, if we just install <code>DataFrames</code> and ask for <code>iris</code> again (but this time using the <code>d&quot;&quot;</code> macro).</p><pre><code class="language-julia-repl hljs">julia&gt; using DataFrames
+ 5.9  3.0  5.1  1.8  2.0</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>We haven&#39;t installed the <code>KangarooTwelve</code> (a cryptographic hash) or <code>CSV</code> packages, but thanks to the lazy-loading system we are presented with the option to install them on-the-fly. The <code>KangarooTwelve</code> package is only used when hashing new data, or verifying the hash of downloaded data. Should you want to avoid lazy-loading, you can always just load the <code>CSV</code> package yourself before trying to access information that uses the <code>csv</code> loader.</p></div></div><p>Because <code>read(dataset(&quot;iris&quot;))</code> is a fairly common pattern, for convenience there is a <code>d&quot;&quot;</code> &quot;data set in loaded form&quot; macro. <code>d&quot;iris&quot;</code> is equivalent to <code>read(dataset(&quot;iris&quot;))</code>.</p><p>Having the <code>iris</code> data as a <code>Matrix</code> is fine, but it would be nicer to have it as a <code>DataFrame</code>. Since that is the first format listed, if we just install <code>DataFrames</code> and ask for <code>iris</code> again (but this time using the <code>d&quot;&quot;</code> macro).</p><pre><code class="language-julia-repl hljs">julia&gt; using DataFrames
  │ Package DataFrames not found, but a package named DataFrames is available from a registry.
  │ Install package?
  │   (datatoolkit_tutorial) pkg&gt; add DataFrames
  └ (y/n/o) [y]:
    Resolving package versions...
     Updating `~/Documents/datatoolkit_tutorial/Project.toml`
-  [a93c6f00] + DataFrames v1.5.0
+  [a93c6f00] + DataFrames v1.6.1
   ...
   1 dependency successfully precompiled in 25 seconds. 41 already precompiled.
 
@@ -127,6 +141,7 @@ description = &quot;Fisher&#39;s famous Iris flower measurements&quot;
 
     [[iris.storage]]
     driver = &quot;web&quot;
+    checksum = &quot;k12:cfb9a6a302f58e5a9b0c815bb7e8efb4&quot;
     url = &quot;https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv&quot;
 
     [[iris.loader]]
@@ -134,7 +149,7 @@ description = &quot;Fisher&#39;s famous Iris flower measurements&quot;
 
         [iris.loader.args]
         header = [&quot;sepal_length&quot;, &quot;sepal_width&quot;, &quot;petal_length&quot;, &quot;petal_width&quot;, &quot;species_class&quot;]
-        skipto = 2</code></pre><p>Now, you have a <code>Project.toml</code>, <code>Manifest.toml</code>, and <code>Data.toml</code> that can be relocated to other systems and <code>d&quot;iris&quot;</code> will consistently produce the exact same <code>DataFrame</code>.</p><h3 id="Bonus:-ensuring-the-integrity-of-the-downloaded-data"><a class="docs-heading-anchor" href="#Bonus:-ensuring-the-integrity-of-the-downloaded-data">Bonus: ensuring the integrity of the downloaded data</a><a id="Bonus:-ensuring-the-integrity-of-the-downloaded-data-1"></a><a class="docs-heading-anchor-permalink" href="#Bonus:-ensuring-the-integrity-of-the-downloaded-data" title="Permalink"></a></h3><p>One of the three plugins used by default is the <code>store</code> plugin. It is responsible for caching IO data and checking data validity. For a more complete description of what it does, see the web docs or the Data REPL (sub)command <code>plugin info store</code>.</p><p>There are two immediate impacts of this plugin we can easily observe. The first is that we can load the <code>iris</code> data set offline in a fresh Julia session, and in fact if we copy the <code>iris</code> specification into a separate data set it will re-use the <em>same</em> downloaded data.</p><p>The second, is that by setting <code>iris</code>&#39;s <code>web</code> storage driver&#39;s <code>checksum</code> property to <code>&quot;auto&quot;</code>, the next time we load <code>iris</code> a checksum will be generated and saved. If in future the <code>web</code> storage driver produces different data, this will now be caught and raised. This can be done automatically by setting the default value to <code>&quot;auto&quot;</code>, which we were prompted to do during initialisation.</p><h2 id="Multi-step-analysis-with-the-Boston-Housing-data-set"><a class="docs-heading-anchor" href="#Multi-step-analysis-with-the-Boston-Housing-data-set">Multi-step analysis with the Boston Housing data set</a><a id="Multi-step-analysis-with-the-Boston-Housing-data-set-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-step-analysis-with-the-Boston-Housing-data-set" title="Permalink"></a></h2><h3 id="Loading-the-data"><a class="docs-heading-anchor" href="#Loading-the-data">Loading the data</a><a id="Loading-the-data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-the-data" title="Permalink"></a></h3><p>The <em>Boston Housing</em> data set is part of the <code>RDatasets</code> package, and we can obtain a link to the raw data file in the repository: <a href="https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz">https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz</a></p><p>As with the Iris data, we will use the <code>add</code> Data REPL command to conveniently create a new data set.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; add boston https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+        skipto = 2</code></pre><p>Now, you have a <code>Project.toml</code>, <code>Manifest.toml</code>, and <code>Data.toml</code> that can be relocated to other systems and <code>d&quot;iris&quot;</code> will consistently produce the exact same <code>DataFrame</code>.</p><h3 id="On-ensuring-the-integrity-of-the-downloaded-data"><a class="docs-heading-anchor" href="#On-ensuring-the-integrity-of-the-downloaded-data">On ensuring the integrity of the downloaded data</a><a id="On-ensuring-the-integrity-of-the-downloaded-data-1"></a><a class="docs-heading-anchor-permalink" href="#On-ensuring-the-integrity-of-the-downloaded-data" title="Permalink"></a></h3><p>One of the three plugins used by default is the <code>store</code> plugin. It is responsible for caching IO data and checking data validity. For a more complete description of what it does, see the web docs or the Data REPL (sub)command <code>plugin info store</code>.</p><p>There are two immediate impacts of this plugin we can easily observe. The first is that we can load the <code>iris</code> data set offline in a fresh Julia session, and in fact if we copy the <code>iris</code> specification into a separate data set it will re-use the <em>same</em> downloaded data.</p><p>The second, is that by setting <code>iris</code>&#39;s <code>web</code> storage driver&#39;s <code>checksum</code> property to <code>&quot;auto&quot;</code> (as is done by default), the next time we load <code>iris</code> a checksum will be generated and saved. If in future the <code>web</code> storage driver produces different data, this will now be caught and raised. This can be done automatically by setting the default value to <code>&quot;auto&quot;</code>, which we were prompted to do during initialisation.</p><h2 id="Multi-step-analysis-with-the-Boston-Housing-data-set"><a class="docs-heading-anchor" href="#Multi-step-analysis-with-the-Boston-Housing-data-set">Multi-step analysis with the Boston Housing data set</a><a id="Multi-step-analysis-with-the-Boston-Housing-data-set-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-step-analysis-with-the-Boston-Housing-data-set" title="Permalink"></a></h2><h3 id="Loading-the-data"><a class="docs-heading-anchor" href="#Loading-the-data">Loading the data</a><a id="Loading-the-data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-the-data" title="Permalink"></a></h3><p>The <em>Boston Housing</em> data set is part of the <code>RDatasets</code> package, and we can obtain a link to the raw data file in the repository: <a href="https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz">https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz</a></p><p>As with the Iris data, we will use the <code>add</code> Data REPL command to conveniently create a new data set.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; add boston https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
  Description: The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass.
  ✓ Created &#39;boston&#39; (02968c42-828e-4f22-86b8-ec67ac629a03)
  DataSet tutorial:boston
@@ -292,12 +307,16 @@ uuid = &quot;f20a77d0-0dc9-41bb-875b-ad0bf42c90bd&quot;
 name = &quot;tutorial&quot;
 plugins = [&quot;defaults&quot;, &quot;store&quot;]
 
+[config.defaults.storage._]
+checksum = &quot;auto&quot;
+
 [[boston]]
 uuid = &quot;02968c42-828e-4f22-86b8-ec67ac629a03&quot;
 description = &quot;The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass.&quot;
 
     [[boston.storage]]
     driver = &quot;web&quot;
+    checksum = &quot;k12:663371e9040b883267104b32d8ac28e6&quot;
     url = &quot;https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz&quot;
 
     [[boston.loader]]
@@ -348,7 +367,7 @@ description = &quot;Fisher&#39;s famous Iris flower measurements&quot;
 
     [[iris.storage]]
     driver = &quot;web&quot;
-    checksum = &quot;crc32c:d5c06b86&quot;
+    checksum = &quot;k12:cfb9a6a302f58e5a9b0c815bb7e8efb4&quot;
     url = &quot;https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv&quot;
 
     [[iris.loader]]
@@ -356,4 +375,4 @@ description = &quot;Fisher&#39;s famous Iris flower measurements&quot;
 
         [iris.loader.args]
         header = [&quot;sepal_length&quot;, &quot;sepal_width&quot;, &quot;petal_length&quot;, &quot;petal_width&quot;, &quot;species_class&quot;]
-        skipto = 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../datatoml/">Data.toml format »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.0 on <span class="colophon-date" title="Monday 9 October 2023 00:49">Monday 9 October 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+        skipto = 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../datatoml/">Data.toml format »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.0 on <span class="colophon-date" title="Monday 27 November 2023 16:03">Monday 27 November 2023</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
