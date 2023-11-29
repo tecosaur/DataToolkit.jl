@@ -36,7 +36,7 @@ returning the source or `nothing` if none could be found.
 function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
     recipe = rhash(storage)
     checksum = @getparam storage."checksum"::Union{Bool, String} false
-    if checksum === false
+    if checksum === false || checksum == "auto" && haskey(storage.parameters, "lifetime")
         for record in inventory.stores
             if record.recipe == recipe
                 return record
@@ -214,6 +214,7 @@ it exists.
 function getchecksum(@nospecialize(storage::DataStorage), file::String)
     csumval = @getparam storage."checksum"::Union{Bool, String} false
     csumval == false && return
+    csumval == "auto" && haskey(storage.parameters, "lifetime") && return
     if csumval isa String && !occursin(':', csumval) # name of method, or auto
         if !iswritable(storage.dataset.collection)
             @warn "Could not update checksum, data collection is not writable"
