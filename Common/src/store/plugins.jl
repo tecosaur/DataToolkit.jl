@@ -68,7 +68,10 @@ Twelve), `sha512`, `sha348`, `sha256`, `sha224`, `sha1`, `md5`, and `crc32c`.
 
 To explicitly specify no checksum, set the parameter to `false`.
 
-#### Expiry/lifecycle
+For data sets with `lifetime` set (see *Expiry/Lifecycle*), `"auto"` interpreted
+as `false`.
+
+#### Expiry/Lifecycle
 
 After a storage source is saved, the cache file can be made to expire after a
 certain period. This is done by setting the "`lifetime`" parameter of the storage,
