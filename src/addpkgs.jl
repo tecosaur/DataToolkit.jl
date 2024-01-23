@@ -48,6 +48,24 @@ function addpkgs(mod::Module, pkgs::Vector{Symbol})
             @warn "(@addpkgs) $mod does not have $pkg in its dependencies, skipping."
         end
     end
+    # When run interactively, and there's a relevant collection using the
+    # `addpkgs` plugin, it makes sense to add `pkgs` to `[config.pkgs]`.
+    if isinteractive()
+        for collection in DataToolkitBase.STACK
+            if collection.mod === mod && iswritable(collection) && "addpkgs" in collection.plugins
+                ismodified = false
+                confpkgs = get!(() -> DataToolkitBase.SmallDict{String, String}(),
+                                collection.parameters, "packages")
+                for pkg in pkgs
+                    if !haskey(confpkgs, pkg) && haskey(project_deps, String(pkg))
+                        confpkgs[String(pkg)] = string(project_deps[String(pkg)])
+                        ismodified = true
+                    end
+                end
+                ismodified && write(collection)
+            end
+        end
+    end
 end
 
 function _project_deps(mod::Module)
