@@ -368,9 +368,9 @@ function Base.write(dataset::DataSet, info::T) where {T}
                dataset.writers)
     for writer in potential_writers
         write_fn_sigs = filter(fnsig -> writer isa fnsig.types[2], all_write_fn_sigs)
-        # Find the highest priority load function that can be satisfied,
+        # Find the highest priority save function that can be satisfied,
         # by going through each of the storage backends one at a time:
-        # looking for the first that is (a) compatible with a load function,
+        # looking for the first that is (a) compatible with a save function,
         # and (b) available (checked via `!isnothing`).
         for storage in dataset.storage
             for write_fn_sig in write_fn_sigs
@@ -442,7 +442,7 @@ supportedtypes(L::Type{<:DataLoader}, T::Type=Any)::Vector{QualifiedType} =
             Iterators.flatten .|> QualifiedType |> unique |> reverse
 
 supportedtypes(W::Type{<:DataWriter}, T::Type=Any)::Vector{QualifiedType} =
-    map(fn -> QualifiedType(Base.unwrap_unionall(fn.sig).types[3]),
+    map(fn -> QualifiedType(Base.unwrap_unionall(fn.sig).types[4]),
         methods(save, Tuple{W, T, Any})) |> unique |> reverse
 
 supportedtypes(S::Type{<:DataStorage})::Vector{QualifiedType} =
