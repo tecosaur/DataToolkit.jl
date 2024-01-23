@@ -31,6 +31,7 @@ include("transformers/storage/git.jl")
 include("transformers/storage/raw.jl")
 include("transformers/storage/web.jl")
 
+include("transformers/saveload/arrow.jl")
 include("transformers/saveload/chain.jl")
 include("transformers/saveload/compression.jl")
 include("transformers/saveload/csv.jl")
@@ -67,6 +68,7 @@ function __init__()
     @addpkg Downloads      "f43a241f-c20a-4ad4-852c-f6b1247861c6"
     @addpkg Git_jll        "f8c6e375-362e-5223-8a59-34ff63f689eb"
     # Loaders
+    @addpkg Arrow          "69666777-d1a9-59fb-9406-91d4454c9d45"
     @addpkg CSV            "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
     @addpkg CodecBzip2     "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
     @addpkg CodecXz        "ba30903b-d9e8-5048-a5ec-d1f5b0d4b47b"
@@ -102,6 +104,7 @@ function __init__()
              (:storage, :passthrough) => PASSTHROUGH_S_DOC,
              (:storage, :raw) => RAW_DOC,
              (:storage, :web) => WEB_DOC,
+             (:loader, :arrow) => ARROW_DOC,
              (:loader, :chain) => CHAIN_DOC,
              (:loader, :gzip) => COMPRESSION_DOC,
              (:loader, :zlib) => COMPRESSION_DOC,

@@ -35,6 +35,7 @@ makedocs(;
             "storage/web.md",
         ],
         "Loaders/Writers" => Any[
+            "saveload/arrow.md",
             "saveload/chain.md",
             "saveload/compression.md",
             "saveload/csv.md",
