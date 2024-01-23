@@ -120,7 +120,7 @@ function create_sandbox()
             if expr isa Expr && expr.head == :toplevel
                 expr = expr.args[2]
             end
-            result = if expr isa Symbol
+            result = if !(expr isa Expr)
                 res = Core.eval(mod, expr)
                 lasttype[] = typeof(res)
                 Expr(:quote, res)
