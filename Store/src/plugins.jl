@@ -150,7 +150,7 @@ const STORE_PLUGIN = Plugin("store", [
             if !isnothing(source) && inventory.file.writable
                 index = findfirst(==(source), inventory.stores)
                 !isnothing(index) && deleteat!(inventory.stores, index)
-                write(inventory)
+                Base.write(inventory)
             end
             (f, (storer, as), (; write))
         elseif !isnothing(file) && isfile(file)
