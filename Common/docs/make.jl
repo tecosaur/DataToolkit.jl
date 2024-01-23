@@ -54,6 +54,7 @@ makedocs(;
             "saveload/zip.md",
         ],
         "Plugins" => Any[
+            "plugins/addpkgs.md",
             "plugins/cache.md",
             "plugins/defaults.md",
             "plugins/log.md",
