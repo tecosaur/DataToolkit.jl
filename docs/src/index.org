@@ -3,7 +3,10 @@
 =DataToolkit= is a batteries-included framework for robustly managing data.
 
 For details on the fundamental system, see the [[https://tecosaur.github.io/DataToolkitDocs/base][DataToolkitBase]] docs; for details
-on the transformers and plugins available see the [[https://tecosaur.github.io/DataToolkitDocs/common/][DataToolkitCommon]] docs.
+on the transformers and plugins available see the [[https://tecosaur.github.io/DataToolkitDocs/common/][DataToolkitCommon]] docs. The
+separation between packages makes it easier to just depend on what you need.
+
+[[file:assets/package-structure.svg]]
 
 * Why this exists
 
@@ -39,6 +42,11 @@ description = "Fisher's famous Iris flower measurements"
     args.header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
     args.skipto = 2
 #+end_src
+
+This creates an =iris= dataset that can be conveniently and reproducibly loaded
+within a Julia session, with data flowing like so:
+
+[[file:assets/data-flow-iris.svg]]
 
 * The data model
 ** Data Sets --- Information and Data
