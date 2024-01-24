@@ -24,9 +24,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="0.78395062"
-     inkscape:cx="243"
-     inkscape:cy="75.897638"
+     inkscape:zoom="1.1086736"
+     inkscape:cx="200.69027"
+     inkscape:cy="11.274734"
      inkscape:window-width="1340"
      inkscape:window-height="939"
      inkscape:window-x="0"
@@ -230,22 +230,22 @@
     <rect
        style="fill:#d7eada;fill-opacity:1;fill-rule:evenodd;stroke:#88c190;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181"
        id="rect471-3-6"
-       width="7.2587013"
-       height="3.7266014"
-       x="95.898735"
+       width="7.5118303"
+       height="3.7687881"
+       x="95.605293"
        y="114.2584"
        rx="0.46949789"
        ry="0.46949789" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.50559px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#225b2a;stroke-width:0.187799"
-       x="96.842804"
-       y="117.03318"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.00639px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#225b2a;stroke-width:0.187799"
+       x="96.292313"
+       y="117.18446"
        id="text413"><tspan
          sodipodi:role="line"
          id="tspan411"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.50559px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#225b2a;stroke-width:0.187799"
-         x="96.842804"
-         y="117.03318">csv</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.00639px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#225b2a;stroke-width:0.187799"
+         x="96.292313"
+         y="117.18446">csv</tspan></text>
   </g>
 </svg>
