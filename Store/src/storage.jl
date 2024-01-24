@@ -256,9 +256,9 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
     elseif isinteractive() && iswritable(storage.dataset.collection)
         printstyled(" ! ", color=:yellow, bold=true)
         print("Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
-                "  Expected the checksum to be $checksum, got $actual_checksum.\n",
+                "  Expected the checksum to be $(string(checksum)), got $(string(actual_checksum)).\n",
                 "  How would you like to proceed?\n\n")
-        options = ["(o) Overwrite checksum to $actual_checksum", "(a) Abort and throw an error"]
+        options = ["(o) Overwrite checksum to $(string(actual_checksum))", "(a) Abort and throw an error"]
         choice = request(RadioMenu(options, keybindings=['o', 'a']))
         print('\n')
         if choice == 1 # Overwrite
@@ -267,11 +267,11 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
             actual_checksum
         else
             error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                            " Expected $checksum, got $actual_checksum."))
+                            " Expected $(string(checksum)), got $(string(actual_checksum))."))
         end
     else
         error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                        " Expected $checksum, got $actual_checksum."))
+                        " Expected $(string(checksum)), got $(string(actual_checksum))."))
     end
 end
 
