@@ -192,7 +192,7 @@ function getchecksum(file::String, method::Symbol)
         20, open(sha1, file)::Vector{UInt8}
     elseif method === :md5
         @import MD5.md5
-        16, open(md5, file)::Vector{UInt8}
+        16, collect(open(md5, file))::Vector{UInt8}
     elseif method === :crc32c
         @import CRC32c.crc32c
         4, reinterpret(UInt8, [hton(open(crc32c, file)::UInt32)]) |> collect
