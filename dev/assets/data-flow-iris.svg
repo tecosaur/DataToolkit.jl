@@ -24,9 +24,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="1.1086736"
-     inkscape:cx="200.69027"
-     inkscape:cy="11.274734"
+     inkscape:zoom="2.2173472"
+     inkscape:cx="136.87527"
+     inkscape:cy="35.402665"
      inkscape:window-width="1340"
      inkscape:window-height="939"
      inkscape:window-x="0"
@@ -193,8 +193,8 @@
          x="119.73687"
          y="122.54543">Matrix</tspan></text>
     <path
-       style="fill:none;stroke:#4063d8;stroke-width:0.401032;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#RoundedArrow);marker-end:url(#RoundedArrow)"
-       d="m 54.264175,125.574 22.044807,1e-5"
+       style="fill:none;stroke:#4063d8;stroke-width:0.401032;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#RoundedArrow)"
+       d="m 53.186016,125.574 23.122966,1e-5"
        id="path1533"
        sodipodi:nodetypes="cc" />
     <rect
