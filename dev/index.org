@@ -3,7 +3,8 @@
 =DataToolkit= is a batteries-included framework for robustly managing data.
 
 For details on the fundamental system, see the [[https://tecosaur.github.io/DataToolkitDocs/base][DataToolkitBase]] docs; for details
-on the transformers and plugins available see the [[https://tecosaur.github.io/DataToolkitDocs/common/][DataToolkitCommon]] docs.
+on the transformers and plugins available see the [[https://tecosaur.github.io/DataToolkitDocs/common/][DataToolkitCommon]] docs. The
+separation between packages makes it easier to just depend on what you need.
 
 [[file:assets/package-structure.svg]]
 
