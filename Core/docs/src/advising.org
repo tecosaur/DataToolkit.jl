@@ -2,11 +2,25 @@
 
 * Advice
 
+Inspired by Lisp, =DataToolkitBase= comes with a method of completely transforming
+its behaviour at certain defined points. This is essentially a restricted form
+of [[https://en.wikipedia.org/wiki/Aspect-oriented_programming][Aspect-oriented programming]]. At certain declared locations (termed "join
+points"), we consult a list of "advise" functions that modify the execution at
+that point, and apply the (matched via "pointcuts") advise functions
+accordingly.
+
+[[file:assets/join-point-model.svg]]
+
+Each applied advise function is wrapped around the invocation of the join point,
+and is able to modify the arguments, execution, and results of the join point.
+
+[[file:assets/advice-flow.svg]]
+
 #+begin_src @docs
 Advice
 #+end_src
 
-* Advisement points
+* Advisement points (standard join points)
 
 ** Parsing and serialisation of data sets and collections
 
@@ -55,7 +69,7 @@ storage(provider::DataStorage, as::Type; write::Bool)
 save(writer::DataWriter, datahandle, info)
 #+end_src
 
-* Index of advised calls
+* Index of advised calls (all known join points)
 
 #+begin_src @eval
 using Markdown
