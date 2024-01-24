@@ -330,7 +330,10 @@ const CACHE_PLUGIN = Plugin("cache", [
             end
             if !isnothing(file) && isfile(file)
                 if should_log_event("cache", loader)
-                    @info "Loading $as form of $(sprint(show, loader.dataset.name)) from the store"
+                    ds_name = sprint(io -> show(
+                        io, MIME("text/plain"), Identifier(loader.dataset);
+                        collection=loader.dataset.collection))
+                    @info "Loading $as form of $(ds_name) from the store"
                 end
                 update_source!(inventory, cache, loader.dataset.collection)
                 info = Base.invokelatest(deserialize, file)
