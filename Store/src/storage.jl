@@ -544,24 +544,26 @@ function update_source!(inventory::Inventory,
     update_atime(s::CacheSource) =
         CacheSource(s.recipe, s.references, now(), s.types, s.packages)
     inventory = update_inventory!(inventory)
-    cindex = findfirst(Base.Fix1(≃, collection), inventory.collections)
+    cinfo = CollectionInfo(collection.uuid, collection.path, collection.name, now())
+    # While two collections are only really considered the same if the UUIDs match,
+    # if `inventory` exists at a path which a previously known collection existed at,
+    # it has doubtless been replaced, and so replacing it is appropriate.
+    cindex = findfirst(Base.Fix1((a, b) -> a.uuid == b.uuid || a.path == b.path, collection),
+                       inventory.collections)
+    if isnothing(cindex)
+        push!(inventory.collections, cinfo)
+    else
+        inventory.collections[cindex] = cinfo
+    end
+    if collection.uuid ∉ source.references
+        push!(source.references, collection.uuid)
+    end
     sources = if source isa StoreSource
         inventory.stores
     else
         inventory.caches
     end
     sindex = findfirst(Base.Fix1(≃, source), sources)
-    if isnothing(cindex)
-        push!(inventory.collections,
-              CollectionInfo(collection.uuid, collection.path,
-                             collection.name, now()))
-    else
-        inventory.collections[cindex] = CollectionInfo(
-            collection.uuid, collection.path, collection.name, now())
-    end
-    if collection.uuid ∉ source.references
-        push!(source.references, collection.uuid)
-    end
     if isnothing(sindex)
         push!(sources, source)
     else
