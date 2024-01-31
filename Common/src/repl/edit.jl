@@ -84,7 +84,7 @@ end
 function repl_edit(input::AbstractString)
     if all(isspace, input)
         printstyled(" ! ", color=:yellow, bold=true)
-        println("Specify a DataSet to remove")
+        println("Specify a DataSet to edit")
         return
     end
     dataset = try resolve(input) catch err
