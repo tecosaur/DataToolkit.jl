@@ -7,3 +7,22 @@ To gain an understanding of how these two components fit together, it is
 recommended the DataToolkitBase docs be looked at first to understand the
 system, and then these docs for useful transformers and plugins to actually work
 with your data.
+
+------
+
+Note that in addition to being displayed here, you can also view the
+documentation of the various drivers in the =data>= REPL like so:
+
+#+begin_example
+data> ?: # See a list of all known drivers
+ storage transformers (<count>)
+   [...]
+ loader transformers (<count>)
+   [...]
+ writer transformers (<count>)
+   [...]
+
+data> ?:csv # View the CSV loader documentation
+  Parse and serialize CSV data
+  [...]
+#+end_example
