@@ -162,7 +162,7 @@ Calculate the checksum of `file` with `method`, returning the `Unsigned` result.
 Method should be one of:
 - `k12`
 - `sha512`
-- `sha348`
+- `sha384`
 - `sha256`
 - `sha224`
 - `sha1`
@@ -178,9 +178,9 @@ function getchecksum(file::String, method::Symbol)
     elseif method === :sha512
         @import SHA.sha512
         64, open(sha512, file)::Vector{UInt8}
-    elseif method === :sha348
-        @import SHA.sha348
-        48, open(sha348, file)::Vector{UInt8}
+    elseif method === :sha384
+        @import SHA.sha384
+        48, open(sha384, file)::Vector{UInt8}
     elseif method === :sha256
         @import SHA.sha256
         32, open(sha256, file)::Vector{UInt8}
