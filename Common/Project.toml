@@ -35,7 +35,27 @@ UUIDs = "1"
 julia = "1.8"
 
 [extras]
+Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"
+CRC32c = "8bf52ea8-c179-5cab-976a-9e18b702a9bc"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+CodecBzip2 = "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
+CodecXz = "ba30903b-d9e8-5048-a5ec-d1f5b0d4b47b"
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+CodecZstd = "6b39b394-51ab-5f42-8807-6242bab2b4c2"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DataToolkitBase = "e209d0c3-e863-446f-9b45-de6ca9730756"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+JpegTurbo = "b835a17e-a41a-41e7-81f0-2f016b05efe0"
+KangarooTwelve = "2a5dabf5-6a39-42aa-818d-ce8a58d1b312"
+MD5 = "6ac74813-4b46-53a4-afec-0b5dc9d7885c"
+Netpbm = "f09324ee-3d7c-5217-9330-fc30815ba969"
+PNGFiles = "f57f5aa1-a3ce-4bc8-8ab9-96f992907883"
+QOI = "4b34888f-f399-49d4-9bb3-47ed5cae4e65"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
+ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["Test"]
+test = ["Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "DataFrames", "DataToolkitBase", "JLD2", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "QOI", "SHA", "Tar", "Test", "TiffImages", "ZipFile"]

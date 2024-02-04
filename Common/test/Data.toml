@@ -1,0 +1,267 @@
+data_config_version = 0
+uuid = "9685d4b2-b32a-4ecf-8ded-2ec1876464d4"
+name = "test"
+plugins = ["store", "defaults", "memorise"]
+
+[config.defaults.storage._]
+checksum = "auto"
+
+[[checksum-crc32c]]
+uuid = "b60ecf1a-621f-4bbf-b610-f36905943e88"
+
+    [[checksum-crc32c.storage]]
+    driver = "web"
+    checksum = "crc32c:531d0f89"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-crc32c.loader]]
+    driver = "passthrough"
+
+[[checksum-k12]]
+uuid = "f224d5c5-b8c5-414a-b2b8-625b55f0d4f1"
+
+    [[checksum-k12.storage]]
+    driver = "web"
+    checksum = "k12:6a87501acf89058ac307bec26281cacb"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-k12.loader]]
+    driver = "passthrough"
+
+[[checksum-md5]]
+uuid = "e1b44149-255c-437c-9713-69f41323a14c"
+
+    [[checksum-md5.storage]]
+    driver = "web"
+    checksum = "md5:18254137977e377a0d447a2889dd0b6d"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-md5.loader]]
+    driver = "passthrough"
+
+[[checksum-sha1]]
+uuid = "a60c5222-4377-4d5c-a91e-1880abf713d0"
+
+    [[checksum-sha1.storage]]
+    driver = "web"
+    checksum = "sha1:7e327f112f022f3e8b8213014c874144bcfa648b"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-sha1.loader]]
+    driver = "passthrough"
+
+[[checksum-sha224]]
+uuid = "a60c5222-4377-4d5c-a91e-1880abf713d0"
+
+    [[checksum-sha224.storage]]
+    driver = "web"
+    checksum = "sha224:bdc281b7b4207fcf0a76c163f0403c4445a19ee0f58f7a57260c1f52"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-sha224.loader]]
+    driver = "passthrough"
+
+[[checksum-sha256]]
+uuid = "05cdbcd5-d31e-4831-bf4d-d06cb162f65a"
+
+    [[checksum-sha256.storage]]
+    driver = "web"
+    checksum = "sha256:25fbd681c8c2ef088eb48172211164cfe580395911b15f418caac08b11844781"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-sha256.loader]]
+    driver = "passthrough"
+
+[[checksum-sha384]]
+uuid = "460a3d45-65d8-4aa4-94d0-e76796e4b082"
+
+    [[checksum-sha384.storage]]
+    driver = "web"
+    checksum = "sha384:69dc3f790d4e8444977a7a70c41c8671329890ebdcdb373f0746e08f403e977a32bae40cea2bcaf12d788efec867f020"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-sha384.loader]]
+    driver = "passthrough"
+
+[[checksum-sha512]]
+uuid = "1093bf20-a1e5-4eb0-a2ca-3edf301eac23"
+
+    [[checksum-sha512.storage]]
+    driver = "web"
+    checksum = "sha512:e0c30998f1ec6b569b1e174148842ac4b22dd84015205b037135864a7e88d7d4d7bfe47dfb3f24da53ad1aefbfe4980edf259bc96ba5ba6811ef6c3198fa8e34"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/checksum.txt"
+
+    [[checksum-sha512.loader]]
+    driver = "passthrough"
+
+[[iris]]
+uuid = "ba667659-9e08-40e6-b6bb-e06e8862df05"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "k12:d8e04889edd692e1f36dfac9cc7e73b0"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+
+[[iris-arrow]]
+uuid = "22ea817a-f9ed-4765-b126-928f3490f55a"
+
+    [[iris-arrow.storage]]
+    driver = "web"
+    checksum = "k12:999570896b92c784180bce28089d1693"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.arrow"
+
+    [[iris-arrow.loader]]
+    driver = "arrow"
+
+[[iris-bzip2]]
+uuid = "f36899e1-31af-4fb0-896b-38634165a37e"
+
+    [[iris-bzip2.storage]]
+    driver = "web"
+    checksum = "k12:4253949b416a1746741056abdf679bd8"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.csv.bzip2"
+
+    [[iris-bzip2.loader]]
+    driver = "chain"
+    loaders = ["bzip2", "csv"]
+
+[[iris-gz]]
+uuid = "b2da8633-cc95-4eed-8cd8-3d0981cac2d5"
+
+    [[iris-gz.storage]]
+    driver = "web"
+    checksum = "k12:f24bb3dad18a20a9473c0958150b397d"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.csv.gz"
+
+    [[iris-gz.loader]]
+    driver = "chain"
+    loaders = ["gzip", "csv"]
+
+[[iris-jld2]]
+uuid = "cf3933a3-b5f7-4443-86f1-66e46adcb317"
+
+    [[iris-jld2.storage]]
+    driver = "web"
+    checksum = "k12:646de7d8a65560b6b9f06b12c4d1f692"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.jld2"
+
+    [[iris-jld2.loader]]
+    driver = "jld2"
+    key = "data"
+
+[[iris-tar]]
+uuid = "0d0b54d8-bdd1-4d08-b7be-872d074a7e4f"
+
+    [[iris-tar.storage]]
+    driver = "web"
+    checksum = "k12:118f9a8b499af90ea1a873a53061e92e"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.tar"
+
+    [[iris-tar.loader]]
+    driver = "tar"
+    file = "iris.csv"
+
+[[iris-xz]]
+uuid = "e5a4de26-5525-4b2f-ba85-28e6636dd578"
+
+    [[iris-xz.storage]]
+    driver = "web"
+    checksum = "k12:5ac3bb048cd17834d96e57f49db44527"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.csv.xz"
+
+    [[iris-xz.loader]]
+    driver = "chain"
+    loaders = ["xz", "csv"]
+
+[[iris-zip]]
+uuid = "c6bd42af-58b8-4ef5-93fa-674ca1a8417e"
+
+    [[iris-zip.storage]]
+    driver = "web"
+    checksum = "k12:ca32b8dfd9c51bcd4f2d62ea126b56f0"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.zip"
+
+    [[iris-zip.loader]]
+    driver = "zip"
+    file = "iris.csv"
+
+[[iris-zstd]]
+uuid = "ded48517-d6b8-42b9-8d76-cc3a093aa863"
+
+    [[iris-zstd.storage]]
+    driver = "web"
+    checksum = "k12:5b1c4a93653dd53de03c7080f778a3ac"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/iris.csv.zst"
+
+    [[iris-zstd.loader]]
+    driver = "chain"
+    loaders = ["zstd", "csv"]
+
+[[lighthouse-jpeg]]
+uuid = "176acbad-9b90-4bdd-bc3f-0329ec14042d"
+
+    [[lighthouse-jpeg.storage]]
+    driver = "web"
+    checksum = "k12:d0469d4537fc9cf3388b9bf262999ebb"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.jpeg"
+
+    [[lighthouse-jpeg.loader]]
+    driver = "jpeg"
+
+[[lighthouse-netpbm]]
+uuid = "1d6839a1-d5d9-4291-8119-5cfaa0f2e89c"
+
+    [[lighthouse-netpbm.storage]]
+    driver = "web"
+    checksum = "k12:832d9d97a84557aad0d6fa684104b1a6"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.ppm"
+
+    [[lighthouse-netpbm.loader]]
+    driver = "netpbm"
+
+[[lighthouse-png]]
+uuid = "6a9c23bf-bfd4-44c1-9f50-e90a7d295019"
+
+    [[lighthouse-png.storage]]
+    driver = "web"
+    checksum = "k12:747056e6565e1419ba9754af78c15ae4"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.png"
+
+    [[lighthouse-png.loader]]
+    driver = "png"
+
+[[lighthouse-qoi]]
+uuid = "270db32e-a501-45ee-8398-0bc901a2136d"
+
+    [[lighthouse-qoi.storage]]
+    driver = "web"
+    checksum = "k12:07810b1bcda0917200a7ed8d4d61fa7a"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.qoi"
+
+    [[lighthouse-qoi.loader]]
+    driver = "qoi"
+
+[[lighthouse-tiff]]
+uuid = "66a5fc67-cee1-4481-b9f2-e750be2897ff"
+
+    [[lighthouse-tiff.storage]]
+    driver = "web"
+    checksum = "k12:56893a4e9f184ea70602710f34040467"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.tiff"
+
+    [[lighthouse-tiff.loader]]
+    driver = "tiff"
+
+[[mini-glossary]]
+uuid = "b7fafb13-1642-4f75-b608-8ecd497e9520"
+
+    [[mini-glossary.storage]]
+    driver = "web"
+    checksum = "k12:d7dfd7c508eaf3eecdbb338a7ec803d6"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/glossary.json"
+
+    [[mini-glossary.loader]]
+    driver = "json"
