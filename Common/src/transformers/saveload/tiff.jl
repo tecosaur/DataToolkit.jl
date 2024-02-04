@@ -1,9 +1,9 @@
-function load(loader::DataLoader{:tiff}, from::IO, ::Type{AbstractArray})
+function load(loader::DataLoader{:tiff}, from::IO, ::Type{AbstractMatrix})
     @import TiffImages
     TiffImages.load(from)
 end
 
-function save(writer::DataWriter{:tiff}, dest::IO, info::AbstractArray)
+function save(writer::DataWriter{:tiff}, dest::IO, info::AbstractMatrix)
     @import TiffImages
     TiffImages.save(dest, info)
 end
