@@ -64,7 +64,7 @@ value.
 
 Instead of `"auto"`, a particular checksum algorithm can be specified, by naming
 it, e.g. `"sha256"`. The currently supported algorithms are: `k12` (Kangaroo
-Twelve), `sha512`, `sha348`, `sha256`, `sha224`, `sha1`, `md5`, and `crc32c`.
+Twelve), `sha512`, `sha384`, `sha256`, `sha224`, `sha1`, `md5`, and `crc32c`.
 
 To explicitly specify no checksum, set the parameter to `false`.
 
