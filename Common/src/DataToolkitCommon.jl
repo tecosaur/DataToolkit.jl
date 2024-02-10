@@ -36,6 +36,7 @@ include("transformers/saveload/chain.jl")
 include("transformers/saveload/compression.jl")
 include("transformers/saveload/csv.jl")
 include("transformers/saveload/delim.jl")
+include("transformers/saveload/geopackage.jl")
 include("transformers/saveload/iotofile.jl")
 include("transformers/saveload/jld2.jl")
 include("transformers/saveload/jpeg.jl")
@@ -68,6 +69,7 @@ function __init__()
     @addpkg Downloads      "f43a241f-c20a-4ad4-852c-f6b1247861c6"
     @addpkg Git_jll        "f8c6e375-362e-5223-8a59-34ff63f689eb"
     # Loaders
+    @addpkg ArchGDAL       "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
     @addpkg Arrow          "69666777-d1a9-59fb-9406-91d4454c9d45"
     @addpkg CSV            "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
     @addpkg CodecBzip2     "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
@@ -114,6 +116,7 @@ function __init__()
              (:loader, :zstd) => COMPRESSION_DOC,
              (:loader, :csv) => CSV_DOC,
              (:loader, :delim) => DELIM_DOC,
+             (:loader, :geopackage) => GEOPACKAGE_DOC,
              (:loader, Symbol("io->file")) => IOTOFILE_DOC,
              (:loader, :jld2) => JLD2_DOC,
              (:loader, :jpeg) => JPEG_DOC,

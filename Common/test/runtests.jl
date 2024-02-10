@@ -22,6 +22,12 @@ end
     @testset "csv" begin
         @test size(read(dataset("iris"), DataFrame)) == (150, 5)
     end
+    @testset "gpkg" begin
+        geo = read(dataset("eurostat-gpkg"))
+        using ArchGDAL
+        @test geo isa ArchGDAL.IDataset
+        @test ArchGDAL.getlayer(geo, 0) |> length == 1025
+    end
     @testset "jpeg" begin
         @test read(dataset("lighthouse-jpeg"), Matrix) isa Matrix
     end

@@ -94,6 +94,17 @@ uuid = "1093bf20-a1e5-4eb0-a2ca-3edf301eac23"
     [[checksum-sha512.loader]]
     driver = "passthrough"
 
+[[eurostat-gpkg]]
+uuid = "b24d8baa-e0b5-4890-8855-bbd689ce088a"
+
+    [[eurostat-gpkg.storage]]
+    driver = "web"
+    checksum = "k12:e5060ba396f24615921be671fd0d5e02"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/grid_100km_surf.gpkg"
+
+    [[eurostat-gpkg.loader]]
+    driver = "geopackage"
+
 [[iris]]
 uuid = "ba667659-9e08-40e6-b6bb-e06e8862df05"
 

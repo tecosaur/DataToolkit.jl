@@ -35,6 +35,7 @@ UUIDs = "1"
 julia = "1.8"
 
 [extras]
+ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
 Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"
 CRC32c = "8bf52ea8-c179-5cab-976a-9e18b702a9bc"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -58,4 +59,4 @@ TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "DataFrames", "DataToolkitBase", "JLD2", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "QOI", "SHA", "Tar", "Test", "TiffImages", "ZipFile"]
+test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "DataFrames", "DataToolkitBase", "JLD2", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "QOI", "SHA", "Tar", "Test", "TiffImages", "ZipFile"]
