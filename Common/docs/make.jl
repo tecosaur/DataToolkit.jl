@@ -10,6 +10,19 @@ let orgconverted = 0
                 "&mdash;" => "—",
                 "&mdash;" => "–",
                 "&shy;" => "-")
+    editfile(orgfile) = if basename(dirname(orgfile)) ∈ ("storage", "saveload")
+        name = first(splitext(basename(orgfile)))
+        jfile = joinpath(dirname(@__DIR__), "src", "transformers", basename(dirname(orgfile)), "$name.jl")
+        if isfile(jfile)
+            docline = open(io -> findfirst(line -> !isnothing(match(r"^const [A-Z_]+_DOC = md\"", line)),
+                                           collect(eachline(io))), jfile)
+            relpath(jfile * "#L" * string(something(docline, "")), joinpath(@__DIR__, "src"))
+        else
+            relpath(orgfile, joinpath(@__DIR__, "src"))
+        end
+    else
+        relpath(orgfile, joinpath(@__DIR__, "src"))
+    end
     for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
         orgfiles = joinpath.(root, filter(f -> endswith(f, ".org"), files))
         for orgfile in orgfiles
@@ -19,7 +32,7 @@ let orgconverted = 0
                 o -> sprint(markdown, o) |>
                 html2utf8entity_dirty |>
                 s -> replace(s, r"\.org]" => ".md]") |>
-                m -> string("```@meta\nEditURL=\"$(basename(orgfile))\"\n```\n\n", m) |>
+                m -> string("```@meta\nEditURL=\"$(editfile(orgfile))\"\n```\n\n", m) |>
                 m -> write(mdfile, m)
         end
         orgconverted += length(orgfiles)
