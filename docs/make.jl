@@ -24,6 +24,7 @@ let orgconverted = 0
                 o -> sprint(markdown, o) |>
                 html2utf8entity_dirty |>
                 s -> replace(s, r"\.org]" => ".md]") |>
+                m -> string("```@meta\nEditURL=\"$(basename(orgfile))\"\n```\n\n", m) |>
                 m -> write(mdfile, m)
         end
         orgconverted += length(orgfiles)
@@ -41,7 +42,6 @@ makedocs(;
         "Reference" => "reference.md",
         "Quick Reference Guide" => "quickref.md",
     ],
-    repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkit.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
     warnonly = [:missing_docs],
