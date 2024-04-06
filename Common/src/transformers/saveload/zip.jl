@@ -44,16 +44,16 @@ unzip(file::String, dir::String=dirname(file); recursive::Bool=false, log::Bool=
     open(file) do io unzip(io, dir; recursive, log) end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
-    path = if !isnothing(get(loader, "extract"))
-        abspath(dirof(loader.dataset.collection),
-                get(loader, "extract"))
+    extract = @getparam loader."extract"::Union{String, Nothing}
+    path = if !isnothing(extract)
+        abspath(dirof(loader.dataset.collection), extract)
     else
         joinpath(tempdir(), "jl_datatoolkit_zip_" * string(Store.rhash(loader), base=16))
     end
-    file = get(loader, "file", nothing)
+    file = @getparam loader."file"::Union{String, Nothing}
     if !isdir(path) || !isnothing(file) && !isfile(joinpath(path, file))
         unzip(from, path;
-              recursive = get(loader, "recursive", false),
+              recursive = @getparam(loader."recursive"::Bool, false),
               log = should_log_event("unzip", loader),
               onlyfile = file)
     end
@@ -66,7 +66,7 @@ end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
     @import ZipFile
-    filename = get(loader, "file")
+    filename = @getparam loader."file"::Union{String, Nothing}
     if !isnothing(filename)
         zarchive = ZipFile.Reader(from)
         for file in zarchive.files
