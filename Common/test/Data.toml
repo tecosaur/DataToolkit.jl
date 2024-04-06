@@ -277,11 +277,23 @@ uuid = "b7fafb13-1642-4f75-b608-8ecd497e9520"
     [[mini-glossary.loader]]
     driver = "json"
 
+[[sample-toml]]
+uuid = "accfb596-c067-4528-99d2-3c8d30cef846"
+
+    [[sample-toml.storage]]
+    driver = "web"
+    checksum = "k12:b184266525bbcdc6393cccc4814d2000"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/sample.toml"
+
+    [[sample-toml.loader]]
+    driver = "toml"
+
 [[sample-yaml]]
 uuid = "fcab32a5-0a1c-44ab-b02a-9e9f65cc2454"
 
     [[sample-yaml.storage]]
     driver = "web"
+    checksum = "k12:07a7f23a6305816f7f7211c5b4507c97"
     url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/sample.yaml"
 
     [[sample-yaml.loader]]

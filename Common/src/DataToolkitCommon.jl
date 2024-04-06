@@ -49,6 +49,7 @@ include("transformers/saveload/qoi.jl")
 include("transformers/saveload/sqlite.jl")
 include("transformers/saveload/tar.jl")
 include("transformers/saveload/tiff.jl")
+include("transformers/saveload/toml.jl")
 include("transformers/saveload/xlsx.jl")
 include("transformers/saveload/yaml.jl")
 include("transformers/saveload/zip.jl")
@@ -89,6 +90,7 @@ function __init__()
     @addpkg SQLite         "0aa819cd-b072-5ff4-a722-6bc24af294d9"
     @addpkg Tar            "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
     @addpkg TiffImages     "731e570b-9d59-4bfa-96dc-6df516fadf69"
+    @addpkg TOML           "fa267f1f-6049-4f14-aa54-33bafae1ed76"
     @addpkg XLSX           "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
     @addpkg YAML           "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
     @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
@@ -131,6 +133,7 @@ function __init__()
              (:loader, :sqlite) => SQLITE_DOC,
              (:loader, :tar) => TAR_DOC,
              (:loader, :tiff) => TIFF_DOC,
+             (:loader, :toml) => TOML_DOC,
              (:loader, :xlsx) => XLSX_DOC,
              (:loader, :yaml) => YAML_DOC,
              (:loader, :zip) => ZIP_DOC,
