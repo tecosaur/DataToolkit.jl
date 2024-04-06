@@ -14,6 +14,9 @@ function unzip(archive::IO, dir::String=pwd();
     @import ZipFile
     if !isdir(dir) mkpath(dir) end
     zarchive = ZipFile.Reader(archive)
+    if onlyfile isa String
+        onlyfile = lstrip(onlyfile, '/')
+    end
     for file in zarchive.files
         if isnothing(onlyfile) || file.name == onlyfile ||
             recursive && endswith(file.name, ".zip") && startswith(onlyfile, first(splitext(file.name)))
@@ -50,12 +53,14 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
     else
         joinpath(tempdir(), "jl_datatoolkit_zip_" * string(Store.rhash(loader), base=16))
     end
+    prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     file = @getparam loader."file"::Union{String, Nothing}
+    filepath = if !isnothing(file) prefix * file end
     if !isdir(path) || (!isnothing(file) && !isfile(joinpath(path, file)))
         unzip(from, path;
               recursive = @getparam(loader."recursive"::Bool, false),
               log = should_log_event("unzip", loader),
-              onlyfile = file)
+              onlyfile = filepath)
     end
     if isnothing(file)
         FilePath(path)
@@ -66,24 +71,26 @@ end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
     @import ZipFile
+    prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     filename = @getparam loader."file"::Union{String, Nothing}
     if !isnothing(filename)
         zarchive = ZipFile.Reader(from)
         for file in zarchive.files
-            if file.name == filename
+            if chopprefix(file.name, prefix) == filename
                 return IOBuffer(read(file))
             end
         end
-        error("File $filename not found within zip.")
+        error("File $prefix/$filename not found within zip.")
     else
         error("Cannot load entire zip to IO, must specify a particular file.")
     end
 end
 
-function load(::DataLoader{:zip}, from::IO, ::Type{Dict{FilePath, IO}})
+function load(loader::DataLoader{:zip}, from::IO, ::Type{Dict{FilePath, IO}})
     @import ZipFile
+    prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     zarchive = ZipFile.Reader(from)
-    Dict{FilePath, IO}(FilePath(file.name) => IOBuffer(read(file))
+    Dict{FilePath, IO}(FilePath(chopprefix(file.name, prefix)) => IOBuffer(read(file))
                        for file in zarchive.files
                            if !endswith(file.name, "/") && !endswith(file.name, "\\"))
 end
@@ -102,7 +109,8 @@ createpriority(::Type{DataLoader{:zip}}) = 10
 
 function create(::Type{DataLoader{:zip}}, source::String)
     if !isnothing(match(r"\.zip$"i, source))
-        ["file" => (; prompt="File: ", type=String, optional=true),
+        ["prefix" => (; prompt="Prefix: ", type=String, optional=true),
+         "file" => (; prompt="File: ", type=String, optional=true),
          "extract" => function (spec)
              if !haskey(spec, "file")
                  (; prompt="Extract: ", type=String, optional=true)
@@ -130,6 +138,7 @@ It can load the contents to the following formats:
 
 # Parameters
 
+- `prefix`: a path prefix applied to `file`, and stripped from paths when reading to a `Dict`.
 - `file`: the file in the zip whose contents should be extracted, when producing `IO`.
 - `extract`: the path that the zip should be extracted to, when producing an
   unzipped `FilePath`.
