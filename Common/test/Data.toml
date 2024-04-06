@@ -276,3 +276,13 @@ uuid = "b7fafb13-1642-4f75-b608-8ecd497e9520"
 
     [[mini-glossary.loader]]
     driver = "json"
+
+[[sample-yaml]]
+uuid = "fcab32a5-0a1c-44ab-b02a-9e9f65cc2454"
+
+    [[sample-yaml.storage]]
+    driver = "web"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/sample.yaml"
+
+    [[sample-yaml.loader]]
+    driver = "yaml"

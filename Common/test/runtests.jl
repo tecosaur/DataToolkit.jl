@@ -50,6 +50,10 @@ end
     @testset "tiff" begin
         @test read(dataset("lighthouse-tiff"), AbstractMatrix) isa AbstractMatrix
     end
+    @testset "yaml" begin
+        @test sort([k => length(v) for (k, v) in read(dataset("sample-yaml"))], by=first) ==
+            ["database" => 4, "owner" => 2, "servers" => 2, "title" => 12]
+    end
     @testset "zip" begin
         @test sum(read(read(dataset("iris-zip"), IO))) == 258587
     end

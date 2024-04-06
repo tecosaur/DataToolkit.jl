@@ -56,7 +56,8 @@ SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "DataFrames", "DataToolkitBase", "JLD2", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "QOI", "SHA", "Tar", "Test", "TiffImages", "ZipFile"]
+test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "DataFrames", "DataToolkitBase", "JLD2", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "QOI", "SHA", "Tar", "Test", "TiffImages", "YAML", "ZipFile"]
