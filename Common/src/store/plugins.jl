@@ -143,7 +143,7 @@ const STORE_PLUGIN = Plugin("store", [
                 rm(file, force=true)
             end
         end
-        if !(shouldstore(storer) || @getparam(storer."save"::Bool, false) === true) || write
+        if !(shouldstore(storer) || @getparam(storer."save"::Bool, false)) || write
             # If the store is invalid (should not be stored, or about to be
             # written to), then it should be removed before proceeding as
             # normal.
