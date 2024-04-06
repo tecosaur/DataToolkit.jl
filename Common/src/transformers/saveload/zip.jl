@@ -51,7 +51,7 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
         joinpath(tempdir(), "jl_datatoolkit_zip_" * string(Store.rhash(loader), base=16))
     end
     file = @getparam loader."file"::Union{String, Nothing}
-    if !isdir(path) || !isnothing(file) && !isfile(joinpath(path, file))
+    if !isdir(path) || (!isnothing(file) && !isfile(joinpath(path, file)))
         unzip(from, path;
               recursive = @getparam(loader."recursive"::Bool, false),
               log = should_log_event("unzip", loader),
