@@ -99,7 +99,9 @@ function create_sandbox()
     isdefined(Main, Symbol("@d_str")) &&
         Core.eval(mod, Expr(:toplevel, :(const var"@d_str" = $(Main.var"@d_str"))))
 
-    repl = REPL.LineEditREPL(REPL.TerminalMenus.terminal, get(stdout, :color, false), true)
+    term_env = get(ENV, "TERM", @static Sys.iswindows() ? "" : "dumb")
+    term = REPL.Terminals.TTYTerminal(term_env, stdin, stdout, stderr)
+    repl = REPL.LineEditREPL(term, get(stdout, :color, false), true)
     if repl.hascolor
         repl.prompt_color = DataToolkitBase.REPL_PROMPTSTYLE
     end
