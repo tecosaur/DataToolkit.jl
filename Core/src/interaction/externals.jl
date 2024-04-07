@@ -56,7 +56,7 @@ end
 
 """
     dataset([collection::DataCollection], identstr::AbstractString, [parameters::Dict{String, Any}])
-    dataset([collection::DataCollection], identstr::AbstractString, [parameters::Pair{Symbol, Any}...])
+    dataset([collection::DataCollection], identstr::AbstractString, [parameters::Pair{String, Any}...])
 
 Return the data set identified by `identstr`, optionally specifying the `collection`
 the data set should be found in and any `parameters` that apply.
@@ -83,15 +83,6 @@ dataset(collection::DataCollection, identstr::AbstractString) =
 function dataset(collection::DataCollection, identstr::AbstractString, parameters::Dict{String, Any})
     ident = @advise collection parse_ident(identstr)
     resolve(collection, Identifier(ident, parameters); resolvetype=false)
-end
-
-function dataset(collection::DataCollection, identstr::AbstractString, kv::Pair{Symbol, <:Any}, kvs::Pair{Symbol, <:Any}...)
-    parameters = Dict{String, Any}()
-    parameters[String(first(kv))] = last(kv)
-    for (key, value) in kvs
-        parameters[String(key)] = value
-    end
-    dataset(collection, identstr, parameters)
 end
 
 """
