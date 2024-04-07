@@ -61,9 +61,9 @@ end
 Return the data set identified by `identstr`, optionally specifying the `collection`
 the data set should be found in and any `parameters` that apply.
 """
-dataset(identstr::AbstractString) = resolve(identstr; resolvetype=false)
+dataset(identstr::AbstractString) = resolve(identstr; resolvetype=false)::DataSet
 dataset(identstr::AbstractString, parameters::SmallDict{String, Any}) =
-    resolve(identstr, parameters; resolvetype=false)
+    resolve(identstr, parameters; resolvetype=false)::DataSet
 dataset(identstr::AbstractString, parameters::Dict{String, Any}) =
     dataset(identstr, smallify(parameters))
 
@@ -78,11 +78,11 @@ end
 
 dataset(collection::DataCollection, identstr::AbstractString) =
     resolve(collection, @advise collection parse_ident(identstr);
-            resolvetype=false)
+            resolvetype=false)::DataSet
 
 function dataset(collection::DataCollection, identstr::AbstractString, parameters::Dict{String, Any})
     ident = @advise collection parse_ident(identstr)
-    resolve(collection, Identifier(ident, parameters); resolvetype=false)
+    resolve(collection, Identifier(ident, parameters); resolvetype=false)::DataSet
 end
 
 """
