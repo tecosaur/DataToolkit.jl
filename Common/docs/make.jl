@@ -16,12 +16,15 @@ let orgconverted = 0
         if isfile(jfile)
             docline = open(io -> findfirst(line -> !isnothing(match(r"^const [A-Z_]+_DOC = md\"", line)),
                                            collect(eachline(io))), jfile)
-            relpath(jfile * "#L" * string(something(docline, "")), joinpath(@__DIR__, "src"))
+            # It would be good to use `jfile * "#L" * string(something(docline, ""))`
+            # however, at the moment this makes Documenter.jl look for a file
+            # with `#` in the path, and then complain that it doesn't exist.
+            jfile
         else
-            relpath(orgfile, joinpath(@__DIR__, "src"))
+            orgfile
         end
     else
-        relpath(orgfile, joinpath(@__DIR__, "src"))
+        orgfile
     end
     for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
         orgfiles = joinpath.(root, filter(f -> endswith(f, ".org"), files))
