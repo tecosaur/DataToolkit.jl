@@ -28,16 +28,33 @@ function get_package(pkg::Base.PkgId)
         catch err
             pkgmsg = "is required but does not seem to be installed"
             err isa ArgumentError && isinteractive() && occursin(pkgmsg, err.msg) &&
-                let pkg_id = Base.PkgId(Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pkg")
-                    Pkg = get(Base.loaded_modules, pkg_id, nothing)
-                    !isnothing(Pkg) && isdefined(Pkg, :REPLMode) &&
-                        isdefined(Pkg.REPLMode, :try_prompt_pkg_add) &&
-                        Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
-                end
+                try_install_pkg(pkg)
         end || throw(MissingPackage(pkg))
         PkgRequiredRerunNeeded()
     else
         Base.root_module(pkg)
+    end
+end
+
+const PKG_ID = Base.PkgId(Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pkg")
+
+@static if VERSION <= v"1.10"
+    function try_install_pkg(pkg::Base.PkgId)
+        Pkg = get(Base.loaded_modules, PKG_ID, nothing)
+        !isnothing(Pkg) && isdefined(Pkg, :REPLMode) &&
+            isdefined(Pkg.REPLMode, :try_prompt_pkg_add) &&
+            Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
+    end
+else # 1.11+
+    function try_install_pkg(pkg::Base.PkgId)
+        Pkg = try
+            @something get(Base.loaded_modules, PKG_ID, nothing) Base.require(PKG_ID)
+        catch _ end
+        isnothing(Pkg) && return false
+        repl_ext = Base.get_extension(Pkg, :REPLExt)
+        !isnothing(repl_ext) &&
+            isdefined(repl_ext, :try_prompt_pkg_add) &&
+            Base.get_extension(Pkg, :REPLExt).try_prompt_pkg_add([Symbol(pkg.name)])
     end
 end
 
