@@ -13,14 +13,15 @@ being thrown.
 """
 function get_package(pkg::Base.PkgId)
     if !Base.root_module_exists(pkg)
+        fmtpkg = string(pkg.name, '[', pkg.uuid, ']')
         if VERSION < v"1.7" # Before `Base.invokelatest`
             @error string(
-                "The package $pkg is required for the operation of DataToolkit.\n",
+                "The package $fmtpkg is required for the operation of DataToolkit.\n",
                 "DataToolkit can not do this for you, so please add `using $(pkg.name)`\n",
                 "as appropriate then re-trying this operation.")
             throw(MissingPackage(pkg))
         end
-        @info "Lazy-loading $pkg"
+        @info "Lazy-loading $fmtpkg"
         try
             Base.require(pkg)
             true
