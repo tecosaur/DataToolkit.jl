@@ -590,10 +590,12 @@ Should '^C' be pressed, an InterruptException will be thrown.
 function prompt_char(question::AbstractString, options::Vector{Char},
                      default::Union{Char, Nothing}=nothing)
     printstyled(question, color=REPL_QUESTION_COLOR)
-    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, true)
+    term_env = get(ENV, "TERM", @static Sys.iswindows() ? "" : "dumb")
+    term = REPL.Terminals.TTYTerminal(term_env, stdin, stdout, stderr)
+    REPL.Terminals.raw!(term, true)
     char = '\x01'
     while char ∉ options
-        char = lowercase(Char(REPL.TerminalMenus.readkey(REPL.TerminalMenus.terminal.in_stream)))
+        char = lowercase(Char(REPL.TerminalMenus.readkey(stdin)))
         if char == '\r' && !isnothing(default)
             char = default
         elseif char == '\x03' # ^C
@@ -601,7 +603,7 @@ function prompt_char(question::AbstractString, options::Vector{Char},
             throw(InterruptException())
         end
     end
-    REPL.Terminals.raw!(REPL.TerminalMenus.terminal, false)
+    REPL.Terminals.raw!(term, false)
     get(stdout, :color, false) && print(Base.text_colors[REPL_USER_INPUT_COLOUR])
     print(stdout, char, '\n')
     get(stdout, :color, false) && print("\e[m")
