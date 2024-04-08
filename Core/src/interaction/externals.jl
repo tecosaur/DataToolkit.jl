@@ -243,10 +243,10 @@ function _read(dataset::DataSet, as::Type)
                     if f.types[4] == Type{f.types[3]}
                         as
                     else
-                        tf.types[3].ub
+                        f.types[3].ub
                     end
                 else
-                    tf.types[3]
+                    f.types[3]
                 end),
             filter(f -> any(l -> l isa f.types[2], potential_loaders),
                    all_load_fn_sigs))
