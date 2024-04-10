@@ -38,14 +38,7 @@ end
 
 const PKG_ID = Base.PkgId(Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pkg")
 
-@static if VERSION <= v"1.10"
-    function try_install_pkg(pkg::Base.PkgId)
-        Pkg = get(Base.loaded_modules, PKG_ID, nothing)
-        !isnothing(Pkg) && isdefined(Pkg, :REPLMode) &&
-            isdefined(Pkg.REPLMode, :try_prompt_pkg_add) &&
-            Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
-    end
-else # 1.11+
+@static if VERSION > v"1.11-alpha1"
     function try_install_pkg(pkg::Base.PkgId)
         Pkg = try
             @something get(Base.loaded_modules, PKG_ID, nothing) Base.require(PKG_ID)
@@ -55,6 +48,13 @@ else # 1.11+
         !isnothing(repl_ext) &&
             isdefined(repl_ext, :try_prompt_pkg_add) &&
             Base.get_extension(Pkg, :REPLExt).try_prompt_pkg_add([Symbol(pkg.name)])
+    end
+else
+    function try_install_pkg(pkg::Base.PkgId)
+        Pkg = get(Base.loaded_modules, PKG_ID, nothing)
+        !isnothing(Pkg) && isdefined(Pkg, :REPLMode) &&
+            isdefined(Pkg.REPLMode, :try_prompt_pkg_add) &&
+            Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
     end
 end
 
@@ -113,7 +113,7 @@ end
 module ImportParser
 
 const PkgTerm = NamedTuple{(:name, :as), Tuple{Symbol, Symbol}}
-const ImportTerm = NamedTuple{(:pkg, :property, :as),
+const ImportTerm = NamedTuple{(:pkg, :property, :as), # TODO support :type
                               Tuple{Symbol, Union{Symbol, Expr}, Symbol}}
 const PkgList = Vector{PkgTerm}
 const ImportList = Vector{ImportTerm}
@@ -413,6 +413,10 @@ end
 
 Fetch modules previously registered with `@addpkg`, and import them into the
 current namespace. This macro tries to largely mirror the syntax of `using`.
+
+For the sake of type inference, it is assumed that all bindings that start with
+a lower case letter are functions, and bindings that start with an upper case
+letter are types. Exceptions must be manually annotated with type assertions.
 
 If a required package had to be loaded for the `@import` statement, a
 `PkgRequiredRerunNeeded` singleton will be returned.
