@@ -171,14 +171,52 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
     catch err
         url = @getparam(storage."url"::String)
         @error "Download failed" url err
-        Some(nothing)
+        nothing
     end
 end
 
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
-    tmpfile = tempname()
-    download_to(storage, tmpfile)
-    FilePath(tmpfile)
+    try
+        if Store.shouldstore(storage)
+            newsource = Store.StoreSource(
+                Store.rhash(storage),
+                [storage.dataset.collection.uuid],
+                now(), nothing, Store.fileextension(storage))
+            inventory = Store.getinventory(storage.dataset.collection)
+            refdest = Store.storefile(inventory, newsource)
+            miliseconds = round(Int, 1000 * time())
+            # We don't technically need to use .part then .download,
+            # but I like that it makes it clear what stage of existence
+            # the file is at.
+            partfile = string(refdest, '-', miliseconds, ".part")
+            # In case the user aborts the download, let's try to clean up the
+            # files. This is just a nice extra, so we'll speculatively use Base
+            # internals for now, and revisit this approach if it becomes a
+            # problem.
+            @static if isdefined(Base.Filesystem, :temp_cleanup_later)
+                Base.Filesystem.temp_cleanup_later(partfile)
+            end
+            isdir(dirname(partfile)) || mkpath(dirname(partfile))
+            download_to(storage, partfile)
+            tmpfile = string(refdest, '-', miliseconds, ".download")
+            mv(partfile, tmpfile)
+            @static if isdefined(Base.Filesystem, :temp_cleanup_forget)
+                Base.Filesystem.temp_cleanup_forget(partfile)
+            end
+            @static if isdefined(Base.Filesystem, :temp_cleanup_later)
+                Base.Filesystem.temp_cleanup_later(tmpfile)
+            end
+            FilePath(tmpfile)
+        else
+            tmpfile = tempname()
+            download_to(storage, tmpfile)
+            FilePath(tmpfile)
+        end
+    catch err
+        url = @getparam(storage."url"::String)
+        @error "Download failed" url err
+        nothing
+    end
 end
 
 function Store.fileextension(storage::DataStorage{:web})
