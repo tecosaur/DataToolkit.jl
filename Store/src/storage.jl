@@ -311,9 +311,32 @@ end
 Save the IO in `from` representing `storage` into `inventory`.
 """
 function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::Union{Type{IO}, Type{IOStream}}, from::IO)
-    dumpfile, dumpio = mktemp()
-    write(dumpio, from)
-    close(dumpio)
+    # We could create a tempfile, however there it is near certain that the `storesave`
+    # invocation at the end will result in moving the file to the storage dir, which
+    # may not be on the same filesystem as the tempdir. In such an event, the file must
+    # be copied, which is a needless overhead. We can avoid this eventuality by simply
+    # seeing where a similar file to the final `StoreSource` would go according to `inventory`,
+    # and create a uniquely named file in the same directory. This ensures that the likely
+    # renaming remains just a rename, not a copy.
+    newsource = StoreSource(
+        rhash(storage),
+        [storage.dataset.collection.uuid],
+        now(), nothing, fileextension(storage))
+    refdest = storefile(inventory, newsource)
+    miliseconds = round(Int, 1000 * time())
+    partfile = string(refdest, '-', miliseconds, ".part")
+    dumpfile = string(refdest, '-', miliseconds, ".dump")
+    # In case the user aborts the `write` operation, let's try to clean up
+    # the dumpfile. This is just a nice extra, so we'll speculatively use
+    # Base internals for now, and revisit this approach if it becomes a problem.
+    @static if isdefined(Base.Filesystem, :temp_cleanup_later)
+        Base.Filesystem.temp_cleanup_later(partfile)
+    end
+    write(partfile, from)
+    @static if isdefined(Base.Filesystem, :temp_cleanup_forget)
+        Base.Filesystem.temp_cleanup_forget(partfile)
+    end
+    mv(partfile, dumpfile, force=true)
     open(storesave(inventory, storage, FilePath, FilePath(dumpfile)).path, "r")
 end
 
@@ -503,13 +526,22 @@ function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), valu
         now(), QualifiedType.(ptypes) .=> rhash.(ptypes),
         pkgs)
     dest = storefile(inventory, newsource)
-    isfile(dest) && rm(dest, force=true)
+    # Writing directly to `dest` may be the obvious behaviour, but that
+    # risks an abort-during-write creating a corrupt file. As such, we
+    # first write to a temporary file and then rename it to `dest` once
+    # the operation is complete. To ensure that the rename operation does
+    # not become a copy, we should avoid using `tempdir` since it may lie
+    # on a different filesystem.
+    tempdest = string(dest, '-', round(Int, 1000 * time()), ".part")
     isdir(dirname(dest)) || mkpath(dirname(dest))
+    isfile(dest) && rm(dest, force=true)
+    isfile(tempdest) && rm(tempdest, force=true)
     if should_log_event("cache", loader)
         @info "Saving $T form of $(sprint(show, loader.dataset.name)) to the store"
     end
-    Base.invokelatest(serialize, dest, value)
-    chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
+    Base.invokelatest(serialize, tempdest, value)
+    chmod(tempdest, 0o100444 & filemode(inventory.file.path)) # Make read-only
+    mv(tempdest, dest, force=true)
     update_source!(inventory, newsource, loader.dataset.collection)
     value
 end
@@ -571,4 +603,3 @@ function update_source!(inventory::Inventory,
     end
     write(inventory)
 end
-
