@@ -46,8 +46,8 @@ end
 
 supportedtypes(::Type{DataLoader{:csv}}) =
     [QualifiedType(:DataFrames, :DataFrame),
-     QualifiedType(:Base, :Matrix),
-     QualifiedType(:CSV, :File)]
+     QualifiedType(:CSV, :File),
+     QualifiedType(:Base, :Matrix)]
 
 function save(writer::DataWriter{:csv}, dest::IO, info)
     @import CSV
