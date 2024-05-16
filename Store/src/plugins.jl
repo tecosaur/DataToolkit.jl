@@ -20,6 +20,150 @@ A few (system-wide) settings determine garbage collection behaviour:
   used for Julia cache files.
 """
 
+# ------------
+# Store plugin
+# ------------
+
+"""
+    store_get_a( <storage(storer::DataStorage, as::Type; write::Bool)> )
+
+This advice ensures that data is added to and retrieved from the store
+appropriately.
+
+Part of `STORE_PLUGIN`.
+"""
+function store_get_a(f::typeof(storage), @nospecialize(storer::DataStorage), as::Type; write::Bool)
+    inventory = getinventory(storer.dataset.collection) |> update_inventory!
+    # Get any applicable cache file
+    source = getsource(inventory, storer)
+    file = storefile(inventory, storer)
+    if !isnothing(file) && isfile(file) && haskey(storer.parameters, "lifetime")
+        if epoch(storer) > epoch(storer, ctime(file))
+            rm(file, force=true)
+        end
+    end
+    if !(shouldstore(storer) || @getparam(storer."save"::Bool, false)) || write
+        # If the store is invalid (should not be stored, or about to be
+        # written to), then it should be removed before proceeding as
+        # normal.
+        if !isnothing(source) && inventory.file.writable
+            index = findfirst(==(source), inventory.stores)
+            !isnothing(index) && deleteat!(inventory.stores, index)
+            Base.write(inventory)
+        end
+        (f, (storer, as), (; write))
+    elseif !isnothing(file) && isfile(file)
+        # If using a cache file, ensure the parent collection is registered
+        # as a reference.
+        update_source!(inventory, source, storer.dataset.collection)
+        if as === IO || as === IOStream
+            should_log_event("store", storer) &&
+                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            (identity, (open(file, "r"),))
+        elseif as === FilePath
+            should_log_event("store", storer) &&
+                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            (identity, (FilePath(file),))
+        elseif as === Vector{UInt8}
+            should_log_event("store", storer) &&
+                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            (identity, (read(file),))
+        elseif as === String
+            should_log_event("store", storer) &&
+                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            (identity, (read(file, String),))
+        else
+            (f, (storer, as), (; write))
+        end
+    elseif as === FilePath
+        (storesave(inventory, storer, as), f, (storer, as), (; write))
+    elseif as ∈ (IO, IOStream, Vector{UInt8}, String)
+        # Try to get it as a file, because that avoids
+        # some potential memory issues (e.g. large downloads
+        # which exceed memory limits).
+        tryfile = storage(storer, FilePath; write)
+        if !isnothing(tryfile)
+            io = open(storesave(inventory, storer, FilePath, tryfile).path, "r")
+            (identity, (if as ∈ (IO, IOStream)
+                            io
+                        elseif as == Vector{UInt8}
+                            read(io)
+                        elseif as == String
+                            read(io, String)
+                        end,))
+        else
+            (storesave(inventory, storer, as), f, (storer, as), (; write))
+        end
+    else
+        (f, (storer, as), (; write))
+    end
+end
+
+"""
+    store_epoch_param_a( <rhash(storage::DataStorage, parameters::SmallDict, h::UInt)> )
+
+The ensures that the epoch of the lifetime parameter, but not the lifetime
+value itself affects the `rhash` of the storage.
+
+Part of `STORE_PLUGIN`.
+"""
+function store_epoch_param_a(f::typeof(rhash), @nospecialize(storage::DataStorage), parameters::SmallDict, h::UInt)
+    delete!(parameters, "save") # Does not impact the final result
+    if haskey(parameters, "lifetime")
+        delete!(parameters, "lifetime") # Does not impact the final result
+        parameters["__epoch"] = epoch(storage)
+    end
+    (f, (storage, parameters, h))
+end
+
+"""
+    store_init_checksum_a( <init(dc::DataCollection)> )
+
+This advice prompts the user to enable checksums by default when run
+interactively with the defaults package active.
+
+Part of `STORE_PLUGIN`.
+"""
+function store_init_checksum_a(f::typeof(DataToolkitBase.init), dc::DataCollection)
+    if "defaults" in dc.plugins && isinteractive() &&
+        confirm_yn(" Use checksums by default?", true)
+        dc = DataToolkitBase.config_set(
+            dc, ["defaults", "storage", "_", "checksum"], "auto";
+            quiet = true)
+    end
+    (f, (dc,))
+end
+
+"""
+    store_extra_info_a( <show_extra(io::IO, dataset::DataSet)> )
+
+This advice adds information about stored files when showing `dataset`
+in the Data REPL.
+
+Part of `STORE_PLUGIN`.
+"""
+function store_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
+    if any(shouldstore, dataset.storage)
+        print(io, "  Stored:  ")
+        inventory = getinventory(dataset.collection) |> update_inventory!
+        files = map(s -> if shouldstore(s) storefile(inventory, s) end,
+                    dataset.storage)
+        filter!(!isnothing, files)
+        filter!(isfile, files)
+        if isempty(files)
+            printstyled(io, "no", color=:yellow)
+        else
+            printstyled("yes", color=:green)
+            if length(files) > 1
+                printstyled('(', length(files), ')', color=:green)
+            end
+            print(' ', join(humansize(sum(filesize, files)), ' '))
+        end
+        print(io, '\n')
+    end
+    (f, (io, dataset))
+end
+
 """
 Cache IO from data storage backends, by saving the contents to the disk.
 
@@ -132,111 +276,101 @@ directly modifying the `$(@__MODULE__).getinventory().config` struct.
 
 $STORE_GC_CONFIG_INFO
 """
-const STORE_PLUGIN = Plugin("store", [
-    function (f::typeof(storage), @nospecialize(storer::DataStorage), as::Type; write::Bool)
-        inventory = getinventory(storer.dataset.collection) |> update_inventory!
+const STORE_PLUGIN =
+    Plugin("store", [
+        store_get_a,
+        store_epoch_param_a,
+        store_init_checksum_a,
+        store_extra_info_a,])
+
+# ------------
+# Cache plugin
+# ------------
+
+"""
+    cache_get_a( <load(loader::DataLoader, source::Any, as::Type)> )
+
+Store and retrieve information from the cache, as appropriate.
+
+Part of `CACHE_PLUGIN`.
+"""
+function cache_get_a(f::typeof(load), @nospecialize(loader::DataLoader), source::Any, as::Type)
+    if shouldstore(loader, as) || @getparam(loader."cache"::Bool, false) === true
         # Get any applicable cache file
-        source = getsource(inventory, storer)
-        file = storefile(inventory, storer)
-        if !isnothing(file) && isfile(file) && haskey(storer.parameters, "lifetime")
-            if epoch(storer) > epoch(storer, ctime(file))
-                rm(file, force=true)
+        inventory = getinventory(loader.dataset.collection) |> update_inventory!
+        cache = getsource(inventory, loader, as)
+        file = storefile(inventory, cache)
+        # Ensure all needed packages are loaded, and all relevant
+        # types have the same structure, before loading.
+        if !isnothing(file)
+            for pkg in cache.packages
+                DataToolkitBase.get_package(pkg)
+            end
+            if !all(@. rhash(typeify(first(cache.types))) == last(cache.types))
+                file = nothing
             end
         end
-        if !(shouldstore(storer) || @getparam(storer."save"::Bool, false)) || write
-            # If the store is invalid (should not be stored, or about to be
-            # written to), then it should be removed before proceeding as
-            # normal.
-            if !isnothing(source) && inventory.file.writable
-                index = findfirst(==(source), inventory.stores)
-                !isnothing(index) && deleteat!(inventory.stores, index)
-                Base.write(inventory)
+        if !isnothing(file) && isfile(file)
+            if should_log_event("cache", loader)
+                ds_name = sprint(io -> show(
+                    io, MIME("text/plain"), Identifier(loader.dataset);
+                    collection=loader.dataset.collection))
+                @info "Loading $as form of $(ds_name) from the store"
             end
-            (f, (storer, as), (; write))
-        elseif !isnothing(file) && isfile(file)
-            # If using a cache file, ensure the parent collection is registered
-            # as a reference.
-            update_source!(inventory, source, storer.dataset.collection)
-            if as === IO || as === IOStream
-                should_log_event("store", storer) &&
-                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-                (identity, (open(file, "r"),))
-            elseif as === FilePath
-                should_log_event("store", storer) &&
-                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-                (identity, (FilePath(file),))
-            elseif as === Vector{UInt8}
-                should_log_event("store", storer) &&
-                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-                (identity, (read(file),))
-            elseif as === String
-                should_log_event("store", storer) &&
-                    @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-                (identity, (read(file, String),))
-            else
-                (f, (storer, as), (; write))
-            end
-        elseif as === FilePath
-            (storesave(inventory, storer, as), f, (storer, as), (; write))
-        elseif as ∈ (IO, IOStream, Vector{UInt8}, String)
-            # Try to get it as a file, because that avoids
-            # some potential memory issues (e.g. large downloads
-            # which exceed memory limits).
-            tryfile = storage(storer, FilePath; write)
-            if !isnothing(tryfile)
-                io = open(storesave(inventory, storer, FilePath, tryfile).path, "r")
-                (identity, (if as ∈ (IO, IOStream)
-                                io
-                            elseif as == Vector{UInt8}
-                                read(io)
-                            elseif as == String
-                                read(io, String)
-                            end,))
-            else
-                (storesave(inventory, storer, as), f, (storer, as), (; write))
-            end
+            update_source!(inventory, cache, loader.dataset.collection)
+            info = Base.invokelatest(deserialize, file)
+            (identity, (info,))
         else
-            (f, (storer, as), (; write))
+            (storesave(inventory, loader), f, (loader, source, as))
         end
-    end,
-    function (f::typeof(rhash), @nospecialize(storage::DataStorage), parameters::SmallDict, h::UInt)
-        delete!(parameters, "save") # Does not impact the final result
-        if haskey(parameters, "lifetime")
-            delete!(parameters, "lifetime") # Does not impact the final result
-            parameters["__epoch"] = epoch(storage)
-        end
-        (f, (storage, parameters, h))
-    end,
-    function (f::typeof(DataToolkitBase.init), dc::DataCollection)
-        if "defaults" in dc.plugins && isinteractive() &&
-            confirm_yn(" Use checksums by default?", true)
-            dc = DataToolkitBase.config_set(
-                dc, ["defaults", "storage", "_", "checksum"], "auto";
-                quiet = true)
-        end
-        (f, (dc,))
-    end,
-    function (f::typeof(show_extra), io::IO, dataset::DataSet)
-        if any(shouldstore, dataset.storage)
-            print(io, "  Stored:  ")
-            inventory = getinventory(dataset.collection) |> update_inventory!
-            files = map(s -> if shouldstore(s) storefile(inventory, s) end,
-                        dataset.storage)
-            filter!(!isnothing, files)
-            filter!(isfile, files)
-            if isempty(files)
-                printstyled(io, "no", color=:yellow)
-            else
-                printstyled("yes", color=:green)
-                if length(files) > 1
-                    printstyled('(', length(files), ')', color=:green)
-                end
-                print(' ', join(humansize(sum(filesize, files)), ' '))
+    else
+        (f, (loader, source, as))
+    end
+end
+
+"""
+    cache_rhash_omit_a( <rhash(loader::DataLoader, parameters::SmallDict, h::UInt)> )
+
+The ensures that the cache parameter does not affect the `rhash` of the loader.
+
+Part of `CACHE_PLUGIN`.
+"""
+function cache_rhash_omit_a(f::typeof(rhash), @nospecialize(loader::DataLoader), parameters::SmallDict, h::UInt)
+    delete!(parameters, "cache") # Does not impact the final result
+    (f, (loader, parameters, h))
+end
+
+"""
+    cache_extra_info_a( <show_extra(io::IO, dataset::DataSet)> )
+
+This advice adds information about cached files when showing a dataset.
+
+Part of `CACHE_PLUGIN`.
+"""
+function cache_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
+    forms = [(s, t) for s in dataset.loaders for t in typeify.(s.type)
+                    if !isnothing(t)]
+    filter!(Base.splat(shouldstore), forms)
+    if !isempty(forms)
+        print(io, "  Cached:  ")
+        inventory = getinventory(dataset.collection) |> update_inventory!
+        files = map(((s, t),) -> storefile(inventory, getsource(inventory, s, t)),
+                    forms)
+        filter!(!isnothing, files)
+        filter!(isfile, files)
+        if isempty(files)
+            printstyled(io, "no", color=:yellow)
+        else
+            printstyled("yes", color=:green)
+            if length(files) > 1
+                printstyled('(', length(files), ')', color=:green)
             end
-            print(io, '\n')
+            print(' ', join(humansize(sum(filesize, files)), ' '))
         end
-        (f, (io, dataset))
-    end])
+        print(io, '\n')
+    end
+    (f, (io, dataset))
+end
 
 """
 Cache the results of data loaders using the `Serialisation` standard library. Cache keys
@@ -311,65 +445,8 @@ directly modifying the `$(@__MODULE__).getinventory().config` struct.
 
 $STORE_GC_CONFIG_INFO
 """
-const CACHE_PLUGIN = Plugin("cache", [
-    function (f::typeof(load), @nospecialize(loader::DataLoader), source::Any, as::Type)
-        if shouldstore(loader, as) || @getparam(loader."cache"::Bool, false) === true
-            # Get any applicable cache file
-            inventory = getinventory(loader.dataset.collection) |> update_inventory!
-            cache = getsource(inventory, loader, as)
-            file = storefile(inventory, cache)
-            # Ensure all needed packages are loaded, and all relevant
-            # types have the same structure, before loading.
-            if !isnothing(file)
-                for pkg in cache.packages
-                    DataToolkitBase.get_package(pkg)
-                end
-                if !all(@. rhash(typeify(first(cache.types))) == last(cache.types))
-                    file = nothing
-                end
-            end
-            if !isnothing(file) && isfile(file)
-                if should_log_event("cache", loader)
-                    ds_name = sprint(io -> show(
-                        io, MIME("text/plain"), Identifier(loader.dataset);
-                        collection=loader.dataset.collection))
-                    @info "Loading $as form of $(ds_name) from the store"
-                end
-                update_source!(inventory, cache, loader.dataset.collection)
-                info = Base.invokelatest(deserialize, file)
-                (identity, (info,))
-            else
-                (storesave(inventory, loader), f, (loader, source, as))
-            end
-        else
-            (f, (loader, source, as))
-        end
-    end,
-    function (f::typeof(rhash), @nospecialize(loader::DataLoader), parameters::SmallDict, h::UInt)
-        delete!(parameters, "cache") # Does not impact the final result
-        (f, (loader, parameters, h))
-    end,
-    function (f::typeof(show_extra), io::IO, dataset::DataSet)
-        forms = [(s, t) for s in dataset.loaders for t in typeify.(s.type)
-                     if !isnothing(t)]
-        filter!(Base.splat(shouldstore), forms)
-        if !isempty(forms)
-            print(io, "  Cached:  ")
-            inventory = getinventory(dataset.collection) |> update_inventory!
-            files = map(((s, t),) -> storefile(inventory, getsource(inventory, s, t)),
-                        forms)
-            filter!(!isnothing, files)
-            filter!(isfile, files)
-            if isempty(files)
-                printstyled(io, "no", color=:yellow)
-            else
-                printstyled("yes", color=:green)
-                if length(files) > 1
-                    printstyled('(', length(files), ')', color=:green)
-                end
-                print(' ', join(humansize(sum(filesize, files)), ' '))
-            end
-            print(io, '\n')
-        end
-        (f, (io, dataset))
-    end])
+const CACHE_PLUGIN =
+    Plugin("cache", [
+        cache_get_a,
+        cache_rhash_omit_a,
+        cache_extra_info_a])
