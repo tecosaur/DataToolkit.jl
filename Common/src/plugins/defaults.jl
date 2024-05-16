@@ -1,10 +1,16 @@
 const DEFAULT_DEFAULTS = SmallDict{String, Any}()
 
+"""
+    DEFAULTS_ALL
+
+The special key that applies to all drivers of a particular `AbstractDataTransformer`.
+"""
 const DEFAULTS_ALL = "_"
 
 """
     getdefaults(collection::DataCollection)
     getdefaults(dataset::DataSet)
+
 Get the default parameters of the `dataset`s of a certain data `collection`.
 """
 getdefaults(collection::DataCollection) =
@@ -16,6 +22,7 @@ getdefaults(dataset::DataSet) = getdefaults(dataset.collection)
 """
     getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
                driver::Symbol; resolvetype::Bool=true)
+
 Get the default parameters of an AbstractDataTransformer of type `ADT` using
 `driver` attached to a certain `dataset`. The default type resolved when
 `resolvetype` is set.
@@ -47,25 +54,83 @@ end
 """
     getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
                 spec::Dict, resolvetype::Bool=true)
+
 Get the default parameters of an AbstractDataTransformer of type `ADT` where the
 transformer driver is read from `ADT` if possible, and taken from `spec`
 otherwise. The default type resolved when `resolvetype` is set.
 """
 getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
             spec::Dict, resolvetype::Bool=true) =
-    getdefaults(dataset, ADT,
-                if ADT isa DataType
-                    first(ADT.parameters)
-                else Symbol(get(spec, "driver", "MISSING")) end,
-                DataToolkitBase.smallify(spec);
-                resolvetype)
+                getdefaults(dataset, ADT,
+                            if ADT isa DataType
+                                first(ADT.parameters)
+                            else Symbol(get(spec, "driver", "MISSING")) end,
+                            DataToolkitBase.smallify(spec);
+                            resolvetype)
 
 """
     getdefaults(adt::AbstractDataTransformer)
+
 Get the default parameters of `adt`.
 """
 getdefaults(adt::AbstractDataTransformer) =
     getdefaults(adt.dataset, typeof(adt), first(typeof(adt).parameters), adt.parameters)
+
+"""
+    defaults_read_ds_a( <fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})> )
+
+Advice that merges default values into `spec`, while parsing a `DataSet`.
+
+Part of `DEFAULTS_PLUGIN`.
+"""
+function defaults_read_ds_a(
+    f::typeof(fromspec), D::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
+    (f, (D, collection, name, merge(getdefaults(collection), spec)))
+end
+
+"""
+    defaults_read_adt_a( <fromspec(::Type{AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})> )
+
+Advice that merges default values into `spec`, while parsing an `AbstractDataTransformer`.
+
+Part of `DEFAULTS_PLUGIN`.
+"""
+function defaults_read_adt_a(
+    f::typeof(fromspec), ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
+    (f, (ADT, dataset,
+         merge(getdefaults(dataset, ADT; spec, resolvetype=false),
+               spec)))
+end
+
+"""
+    defaults_write_ds_a( <tospec(::Type{DataSet}, ds::DataSet)> )
+
+Advice that removes default values from `spec`, just before writing a `DataSet`.
+
+Part of `DEFAULTS_PLUGIN`.
+"""
+function defaults_write_ds_a(f::typeof(tospec), ds::DataSet)
+    defaults = getdefaults(ds)
+    removedefaults(dict) =
+        filter(((key, val),) -> !(haskey(defaults, key) && defaults[key] == val),
+               dict)
+    (removedefaults, f, (ds,))
+end
+
+"""
+    defaults_write_adt_a( <tospec(::Type{AbstractDataTransformer}, adt::AbstractDataTransformer)> )
+
+Advice that removes default values from `spec`, just before writing an `AbstractDataTransformer`.
+
+Part of `DEFAULTS_PLUGIN`.
+"""
+function defaults_write_adt_a(f::typeof(tospec), adt::AbstractDataTransformer)
+    defaults = getdefaults(adt)
+    removedefaults(dict) =
+        filter(((key, val),) -> !(haskey(defaults, key) && defaults[key] == val),
+               dict)
+    (removedefaults, f, (adt,))
+end
 
 """
 Apply default values from the "defaults" data collection property.
@@ -92,29 +157,9 @@ priority=0
 priority=2
 ```
 """
-const DEFAULTS_PLUGIN = Plugin("defaults", [
-    function (f::typeof(fromspec), D::Type{DataSet},
-              collection::DataCollection, name::String, spec::Dict{String, Any})
-        (f, (D, collection, name, merge(getdefaults(collection), spec)))
-    end,
-    function (f::typeof(fromspec), ADT::Type{<:AbstractDataTransformer},
-             dataset::DataSet, spec::Dict{String, Any})
-        (f, (ADT, dataset,
-             merge(getdefaults(dataset, ADT; spec, resolvetype=false),
-                   spec)))
-    end,
-    function (f::typeof(tospec), ds::DataSet)
-        defaults = getdefaults(ds)
-        removedefaults(dict) =
-            filter(((key, val),) -> !(haskey(defaults, key) && defaults[key] == val),
-                   dict)
-        (removedefaults, f, (ds,))
-    end,
-    function (f::typeof(tospec), adt::AbstractDataTransformer)
-        defaults = getdefaults(adt)
-        removedefaults(dict) =
-            filter(((key, val),) -> !(haskey(defaults, key) && defaults[key] == val),
-                   dict)
-        (removedefaults, f, (adt,))
-    end,
-])
+const DEFAULTS_PLUGIN =
+    Plugin("defaults", [
+        defaults_read_ds_a,
+        defaults_read_adt_a,
+        defaults_write_ds_a,
+        defaults_write_adt_a])
