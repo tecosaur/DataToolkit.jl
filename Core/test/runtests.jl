@@ -251,109 +251,15 @@ import DataToolkitBase: get_package, addpkg
         @test @addpkg(Test, "8dfed614-e22c-5e08-85e1-65c5234f0b40") isa Any
         @test get_package(@__MODULE__, :Test) === Test
     end
-    @testset "@import" begin
+    @testset "@require" begin
         nolinenum(blk) = Expr(:block, filter(e -> !(e isa LineNumberNode), blk.args)...)
-        getpkg = GlobalRef(DataToolkitBase, :get_package)
-        mod = GlobalRef(Core, :Module)
-        gensymidx() = parse(Int, last(split(String(gensym()), '#')))
-        function nextgensym(tag::String, next::Int=1)
-            Symbol("##$tag#$(gensymidx()+next)")
-        end
+        ref_get_package = GlobalRef(DataToolkitBase, :get_package)
+        ref_isa = GlobalRef(DataToolkitBase, :isa)
+        pkgrereun = GlobalRef(DataToolkitBase, :PkgRequiredRerunNeeded)
         @test quote
-            A = $getpkg($Main, :A)
-            A isa $mod || return A
-        end |> nolinenum == @macroexpand @import A
-        @test quote
-            A = $getpkg($Main, :A)
-            A isa $mod || return A
-            B = $getpkg($Main, :B)
-            B isa $mod || return B
-            C = $getpkg($Main, :C)
-            C isa $mod || return C
-        end |> nolinenum == @macroexpand @import A, B, C
-        @test quote
-            B = $getpkg($Main, :A)
-            B isa $mod || return B
-        end |> nolinenum == @macroexpand @import A as B
-        @test quote
-            A = $getpkg($Main, :A)
-            A isa $mod || return A
-            C = $getpkg($Main, :B)
-            C isa $mod || return C
-            D = $getpkg($Main, :D)
-            D isa $mod || return D
-        end |> nolinenum == @macroexpand @import A, B as C, D
-        sA = nextgensym("A")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            B = ($sA).B
-        end |> nolinenum == @macroexpand @import A.B
-        @test quote
-            A = $getpkg($Main, :A)
-            A isa $mod || return A
-            B = A.B
-        end |> nolinenum == @macroexpand @import A, A.B
-        @test quote
-            A = $getpkg($Main, :A)
-            A isa $mod || return A
-            C = A.B
-        end |> nolinenum == @macroexpand @import A, A.B as C
-        @test quote
-            B = $getpkg($Main, :A)
-            B isa $mod || return B
-            C = B.B.C
-        end |> nolinenum == @macroexpand @import A as B, A.B.C
-        sA = nextgensym("A")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            B = ($sA).B
-        end |> nolinenum == @macroexpand @import A: B
-        sA = nextgensym("A")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            C = ($sA).B.C
-        end |> nolinenum == @macroexpand @import A: B.C
-        sA = nextgensym("A", 3)
-        sB = nextgensym("B")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            $sB = ($sA).B
-            C = ($sB).C
-        end |> nolinenum == @macroexpand @import A.B: C
-        sA = nextgensym("A")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            C = ($sA).B
-        end |> nolinenum == @macroexpand @import A: B as C
-        sA = nextgensym("A")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            C = ($sA).B
-            E = ($sA).D
-        end |> nolinenum == @macroexpand @import A: B as C, D as E
-        sA = nextgensym("A")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            B = ($sA).B
-            C = ($sA).C
-            D = ($sA).D
-        end |> nolinenum == @macroexpand @import A: B, C, D
-        sA = nextgensym("A")
-        @test quote
-            $sA = $getpkg($Main, :A)
-            $sA isa $mod || return $sA
-            C = ($sA).B
-            D = ($sA).D
-            F = ($sA).E
-            G = ($sA).G
-        end |> nolinenum == @macroexpand @import A: B as C, D, E as F, G
+            A = $ref_get_package($Main, :A)
+            $ref_isa(A, $pkgrereun) && return A
+        end |> nolinenum == nolinenum(@macroexpand @require A)
     end
 end
 

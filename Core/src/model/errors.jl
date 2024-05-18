@@ -204,7 +204,7 @@ registered by `mod`, and so cannot be loaded.
 # Example occurrence
 
 ```julia-repl
-julia> @import Foo
+julia> @require Foo
 ERROR: UnregisteredPackage: Foo has not been registered by Main, see @addpkg for more information
 Stacktrace: [...]
 ```
@@ -258,7 +258,7 @@ current environment.
 julia> @addpkg Bar "00000000-0000-0000-0000-000000000000"
 Bar [00000000-0000-0000-0000-000000000000]
 
-julia> @import Bar
+julia> @require Bar
 [ Info: Lazy-loading Bar [00000000-0000-0000-0000-000000000001]
 ERROR: MissingPackage: Bar [00000000-0000-0000-0000-000000000001] has been required, but does not seem to be installed.
 Stacktrace: [...]

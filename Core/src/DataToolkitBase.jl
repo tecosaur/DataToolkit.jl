@@ -20,7 +20,7 @@ export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     ReadonlyCollection, TransformerError, UnsatisfyableTransformer,
     OrphanDataSet, InvalidParameterType
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
-export @import, @addpkg, @dataplugin, @advise, @getparam
+export @require, @addpkg, @dataplugin, @advise, @getparam
 
 # For plugin packages
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
