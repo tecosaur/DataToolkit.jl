@@ -39,7 +39,6 @@ jobs:
     strategy:
       matrix:
         version:
-          - '1.8'
           - '1.9'
           - '1'
           - 'nightly'
