@@ -173,29 +173,30 @@ Should `method` not be recognised, `nothing` is returned.
 """
 function getchecksum(file::String, method::Symbol)
     len, hash = if method === :k12
-        @import KangarooTwelve.k12
-        16, reinterpret(UInt8, [hton(open(k12, file)::UInt128)]) |> collect
+        @require KangarooTwelve
+        res = open(KangarooTwelve.k12, file)::UInt128
+        16, reinterpret(UInt8, [hton(res)]) |> collect
     elseif method === :sha512
-        @import SHA.sha512
-        64, open(sha512, file)::Vector{UInt8}
+        @require SHA
+        64, open(SHA.sha512, file)::Vector{UInt8}
     elseif method === :sha384
-        @import SHA.sha384
-        48, open(sha384, file)::Vector{UInt8}
+        @require SHA
+        48, open(SHA.sha384, file)::Vector{UInt8}
     elseif method === :sha256
-        @import SHA.sha256
-        32, open(sha256, file)::Vector{UInt8}
+        @require SHA
+        32, open(SHA.sha256, file)::Vector{UInt8}
     elseif method === :sha224
-        @import SHA.sha224
-        28, open(sha224, file)::Vector{UInt8}
+        @require SHA
+        28, open(SHA.sha224, file)::Vector{UInt8}
     elseif method === :sha1
-        @import SHA.sha1
-        20, open(sha1, file)::Vector{UInt8}
+        @require SHA
+        20, open(SHA.sha1, file)::Vector{UInt8}
     elseif method === :md5
-        @import MD5.md5
-        16, collect(open(md5, file))::Vector{UInt8}
+        @require MD5
+        16, collect(open(MD5.md5, file))::Vector{UInt8}
     elseif method === :crc32c
-        @import CRC32c.crc32c
-        4, reinterpret(UInt8, [hton(open(crc32c, file)::UInt32)]) |> collect
+        @require CRC32c
+        4, reinterpret(UInt8, [hton(open(CRC32c.crc32c, file)::UInt32)]) |> collect
     else
         return
     end
