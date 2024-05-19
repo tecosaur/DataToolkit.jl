@@ -1,14 +1,14 @@
+function _read_yaml end # Implemented in `../../../ext/YAMLExt.jl`
+function _write_yaml end # Implemented in `../../../ext/YAMLExt.jl`
+
 function load(loader::DataLoader{:yaml}, from::IO, ::Type{T}) where {T <: AbstractDict}
-    @import YAML
-    dicttype = if !isconcretetype(T)
-        Dict{Any, Any}
-    else T end
-    YAML.load(from; dicttype)
+    @require YAML
+    invokelatest(_read_yaml, from, T)
 end
 
 function save(writer::DataWriter{:yaml}, dest::IO, info::AbstractDict)
-    @import YAML
-    YAML.write(dest, info)
+    @require YAML
+    invokelatest(_write_yaml, dest, info)
 end
 
 create(::Type{DataLoader{:yaml}}, source::String) =

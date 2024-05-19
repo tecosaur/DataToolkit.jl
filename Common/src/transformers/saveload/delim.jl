@@ -1,5 +1,8 @@
+function _read_dlm end # Implemented in `../../../ext/DelimitedFilesExt.jl`
+function _write_dlm end # Implemented in `../../../ext/DelimitedFilesExt.jl`
+
 function load(loader::DataLoader{:delim}, from::IO, ::Type{Matrix})
-    @import DelimitedFiles
+    @require DelimitedFiles
     dtype::Type = something(typeify(QualifiedType(@getparam loader."type"::String "Any")), Any)
     delim::Char = first(@getparam loader."delim"::String ",")
     eol::Char = first(@getparam loader."eol"::String "\n")
@@ -8,19 +11,14 @@ function load(loader::DataLoader{:delim}, from::IO, ::Type{Matrix})
     skipblanks::Bool = @getparam loader."skipblanks"::Bool false
     quotes::Bool = @getparam loader."quotes"::Bool true
     comment_char::Char = first(@getparam loader."comment_char"::String "#")
-    result = DelimitedFiles.readdlm(
-        from, delim, dtype, eol;
-        header, skipstart, skipblanks,
-        quotes, comment_char)
-    close(from)
-    result
+    invokelatest(_read_dlm, from, delim, dtype, eol;
+                 header, skipstart, skipblanks, quotes, comment_char)
 end
 
 function save(writer::DataWriter{:delim}, dest::IO, info::Union{Vector, Matrix})
-    @import DelimitedFiles
+    @require DelimitedFiles
     delim::Char = first(@getparam writer."delim"::String ",")
-    DelimitedFiles.writedlm(dest, info; delim)
-    close(dest)
+    invokelatest(_write_dlm, dest, info; delim)
 end
 
 const DELIM_DOC = md"""

@@ -1,19 +1,18 @@
+function _read_sqlite end # Implemented in `../../../ext/SQLiteExt.jl`
+function _write_sqlite end # Implemented in `../../../ext/SQLiteExt.jl`
+
 function load(loader::DataLoader{:sqlite}, from::FilePath, as::Type)
-    @import SQLite
-    db = SQLite.DB(string(from))
-    # We would dispatch on `as` being a `SQLite.DB`,
-    # but we only just made `SQLite` availible so this
-    # decision needs to be made within the function body.
-    if as == SQLite.DB
-        db
+    @require SQLite
+    if QualifiedType(as) == QualifiedType(:SQLite, :DB)
+        invokelatest(_read_sqlite, from, as)
     else
-        @import DBInterface
+        @require DBInterface
         query = @something(@getparam(loader."query"::Union{String, Nothing}),
                            string("SELECT ",
                                   @getparam(loader."columns"::String, "*"),
                                   " FROM ",
                                   @getparam(loader."table"::String, "data")))
-        DBInterface.execute(db, query) |> as
+        invokelatest(_read_sqlite, from, query, as)
     end
 end
 
@@ -23,8 +22,9 @@ supportedtypes(::Type{DataLoader{:sqlite}}) =
      QualifiedType(:Core, :Any)]
 
 function save(writer::DataWriter{:sqlite}, dest::FilePath, info::Any)
-    @import SQLite
-    SQLite.load!(info, SQLite.DB(string(dest)), @getparam(writer."table"::String, "data");
+    @require SQLite
+    invokelatest(_write_sqlite,
+                 info, SQLite.DB(string(dest)), @getparam(writer."table"::String, "data");
                  ifnotexists = @getparam(writer."ifnotexists"::Bool, false),
                  analyze = @getparam(writer."analyze"::Bool, false))
     true

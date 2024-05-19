@@ -1,17 +1,14 @@
+function _read_arrow end # Implemented in `../../../ext/ArrowExt.jl`
+function _write_arrow end # Implemented in `../../../ext/ArrowExt.jl`
+
 function load(loader::DataLoader{:arrow}, io::IO, sink::Type)
-    @import Arrow
+    @require Arrow
     convert = @getparam loader."convert"::Bool true
-    result = Arrow.Table(io; convert) |>
-    if sink == Any || sink == Arrow.Table
-        identity
-    elseif QualifiedType(sink) == QualifiedType(:DataFrames, :DataFrame)
-        sink
-    end
-    result
+    invokelatest(_read_arrow, io, sink; convert)
 end
 
 function save(writer::DataWriter{:arrow}, io::IO, tbl)
-    @import Arrow
+    @require Arrow
     compress         = @getparam writer."compress"::Union{Symbol, Nothing} nothing
     alignment        = @getparam writer."alignment"::Int 8
     dictencode       = @getparam writer."dictencode"::Bool false
@@ -20,12 +17,11 @@ function save(writer::DataWriter{:arrow}, io::IO, tbl)
     largelists       = @getparam writer."largelists"::Bool false
     maxdepth         = @getparam writer."maxdepth"::Int 6
     ntasks           = @getparam writer."ntasks"::Int Int(typemax(Int32))
-    Arrow.write(
-        io, tbl;
-        compress, alignment,
-        dictencode, dictencodenested,
-        denseunions, largelists,
-        maxdepth, ntasks)
+    invokelatest(_write_arrow, io, tbl;
+                 compress, alignment,
+                 dictencode, dictencodenested,
+                 denseunions, largelists,
+                 maxdepth, ntasks)
 end
 
 supportedtypes(::Type{DataLoader{:arrow}}) =

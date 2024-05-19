@@ -1,11 +1,14 @@
+function _read_netpbm end # Implemented in `../../../ext/NetpbmExt.jl`
+function _write_netpbm end # Implemented in `../../../ext/NetpbmExt.jl`
+
 function load(loader::DataLoader{:netpbm}, from::IO, ::Type{AbstractArray})
-    @import Netpbm
-    Netpbm.load(from)
+    @require Netpbm
+    invokelatest(_read_netpbm, from)
 end
 
 function save(writer::DataWriter{:netpbm}, dest::IO, info::AbstractArray)
-    @import Netpbm
-    Netpbm.save(dest, info)
+    @require Netpbm
+    invokelatest(_write_netpbm, dest, info)
 end
 
 create(::Type{DataLoader{:netpbm}}, source::String) =

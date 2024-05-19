@@ -1,18 +1,18 @@
+function _read_json end # Implemented in `../../../ext/JSON3Ext.jl`
+function _write_json end # Implemented in `../../../ext/JSON3Ext.jl`
+
 function load(::DataLoader{:json}, from::IO, ::Type)
-    @import JSON3
-    JSON3.read(from)
+    @require JSON3
+    invokelatest(_read_json, from)
 end
 
 supportedtypes(::Type{DataLoader{:json}}) =
     [QualifiedType(Any)]
 
 function save(writer::DataWriter{:json}, dest::IO, info)
-    @import JSON3
-    if @getparam writer."pretty"::Bool false
-        JSON3.pretty(dest, info)
-    else
-        JSON3.write(dest, info)
-    end
+    @require JSON3
+    pretty = @getparam writer."pretty"::Bool false
+    invokelatest(_write_json, dest, info, pretty)
 end
 
 createpriority(::Type{DataLoader{:json}}) = 10

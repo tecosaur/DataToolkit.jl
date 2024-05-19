@@ -15,7 +15,7 @@ a script to produce a new data set.
 const MAKE_INFO_BANNER = "\
 This is a sandbox where you can interacively develop the
 new data set's creation script. Load any packages needed with
-@import instead of import or using, but make sure they've been
+@require instead of import or using, but make sure they've been
 registered with @addpkg(s) first.
 
 Press ^D to finish. You'll then have an oppotunity to edit the
@@ -131,7 +131,7 @@ function create_sandbox()
                 println("Disallowed: Global assignment is not permitted")
             elseif expr.head ∈ (:import, :using)
                 printstyled("ERROR: ", color=:light_red, bold=true)
-                println("Dissalowed: Use @import instead of $(expr.head)")
+                println("Dissalowed: Use @require instead of $(expr.head)")
             elseif expr == :(exit())
                 @info "Press ^D to exit"
             else

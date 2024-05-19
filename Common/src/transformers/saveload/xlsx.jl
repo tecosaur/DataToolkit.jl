@@ -1,14 +1,12 @@
-function load(loader::DataLoader{:xlsx}, from::IO, ::Type{Matrix})
-    @import XLSX
-    if !isnothing(get(loader, "range"))
-        XLSX.readdata(from, get(loader, "sheet", 1), get(loader, "range"))
-    else
-        XLSX.readdata(from, get(loader, "sheet", 1))
-    end
-end
+function _read_xlsx end # Implemented in `../../../ext/XLSXExt.jl`
+function _write_xlsx end # Implemented in `../../../ext/XLSXExt.jl`
 
-# When <https://github.com/felipenoris/XLSX.jl/pull/217> is merged,
-# we can support IO.
+function load(loader::DataLoader{:xlsx}, from::IO, ::Type{Matrix})
+    @require XLSX
+    sheet = @getparam loader."sheet"::Union{String, Int} 1
+    range = @getparam loader."range"::Union{String, Nothing}
+    invokelatest(_read_xlsx, from, sheet, range)
+end
 
 createpriority(::Type{DataLoader{:xlsx}}) = 10
 

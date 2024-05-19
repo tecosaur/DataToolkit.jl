@@ -4,8 +4,8 @@ function getstorage(storage::DataStorage{:git}, ::Type{IO})
     git = if !isnothing(Sys.which("git"))
         `git`
     else
-        @import Git_jll
-        Git_jll.git()
+        @require Git_jll
+        Git_jll.git()::Cmd
     end
     remote = @getparam storage."remote"::String ""
     !isempty(remote) || throw(ArgumentError("Git storage must specify a remote"))

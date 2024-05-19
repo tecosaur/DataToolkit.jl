@@ -1,32 +1,22 @@
-for (lib, name, ext, stream_decompress, decompress,
-     stream_compress, compress) in
-    ((:CodecZlib, :gzip, "gzip|gz",
-      :GzipDecompressorStream, :GzipDecompressor,
-      :GzipCompressorStream, :GzipCompressor),
-     (:CodecZlib, :zlib, "zlib",
-      :ZlibDecompressorStream, :ZlibDecompressor,
-      :ZlibCompressorStream, :ZlibCompressor),
-     (:CodecZlib, :deflate, "zz",
-      :DeflateDecompressorStream, :DeflateDecompressor,
-      :DeflateCompressorStream, :DeflateCompressor),
-     (:CodecBzip2, :bzip2, "bz(ip)?2?",
-      :Bzip2DecompressorStream, :Bzip2Decompressor,
-      :Bzip2CompressorStream, :Bzip2Compressor),
-     (:CodecXz, :xz, "xz",
-      :XzDecompressorStream, :XzDecompressor,
-      :XzCompressorStream, :XzCompressor),
-     (:CodecZstd, :zstd, "zstd",
-      :ZstdDecompressorStream, :ZstdDecompressor,
-      :ZstdCompressorStream, :ZstdCompressor))
+for (lib, name, ext) in
+    ((:CodecZlib, :gzip, r"\\.(?:gzip|gz)$"i),
+     (:CodecZlib, :zlib, r"\\.zlib$"i),
+     (:CodecZlib, :deflate, r".zz"i),
+     (:CodecBzip2, :bzip2, r"\\.bz(ip)?2?$"i),
+     (:CodecXz, :xz, r"\\.xz$"i),
+     (:CodecZstd, :zstd, r"\\.zstd$"i))
     eval(quote
-             function load(::DataLoader{$(QuoteNode(name))}, from::IO, ::Type{IO})
-                 @import $lib
-                 $lib.$stream_decompress(from)
+             function $(Symbol("_read_$name")) end
+             function $(Symbol("_write_$name")) end
+
+             function load(::DataLoader{$(QuoteNode(name))}, from::IO, T::Type{IO})
+                 @require $lib
+                 invokelatest($(Symbol("_read_$name")), from, T)
              end
 
-             function load(::DataLoader{$(QuoteNode(name))}, from::IO, ::Type{Vector{UInt8}})
-                 @import $lib
-                 transcode($lib.$decompress, read(from))
+             function load(::DataLoader{$(QuoteNode(name))}, from::IO, T::Type{Vector{UInt8}})
+                 @require $lib
+                 invokelatest($(Symbol("_read_$name")), from, T)
              end
 
              load(l::DataLoader{$(QuoteNode(name))}, from::IO, ::Type{String}) =
@@ -42,18 +32,11 @@ for (lib, name, ext, stream_decompress, decompress,
              createpriority(::Type{DataLoader{$(QuoteNode(name))}}) = 10
 
              create(::Type{DataLoader{$(QuoteNode(name))}}, source::String) =
-                 !isnothing(match($(Regex("\\.$ext\$", "i")), source))
-
-             function save(::DataWriter{$(QuoteNode(name))}, dest::IO, info::IOStream)
-                 @import $lib
-                 stream = $lib.$stream_compress(dest)
-                 write(stream, info)
-                 stream
-             end
+                 !isnothing(match($ext, source))
 
              function save(::DataWriter{$(QuoteNode(name))}, dest::IO, info)
-                 @import $lib
-                 write(dest, transcode($lib.$compress, info))
+                 @require $lib
+                 invokelatest($(Symbol("_write_$name")), dest, info)
              end
          end)
 end

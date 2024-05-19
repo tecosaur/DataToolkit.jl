@@ -1,11 +1,14 @@
+function _read_tiff end # Implemented in `../../../ext/TiffImagesExt.jl`
+function _write_tiff end # Implemented in `../../../ext/TiffImagesExt.jl`
+
 function load(loader::DataLoader{:tiff}, from::IO, ::Type{AbstractMatrix})
-    @import TiffImages
-    TiffImages.load(from)
+    @require TiffImages
+    invokelatest(_read_tiff, from)
 end
 
 function save(writer::DataWriter{:tiff}, dest::IO, info::AbstractMatrix)
-    @import TiffImages
-    TiffImages.save(dest, info)
+    @require TiffImages
+    invokelatest(_write_tiff, dest, info)
 end
 
 create(::Type{DataLoader{:tiff}}, source::String) =

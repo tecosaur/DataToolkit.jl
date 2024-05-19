@@ -1,13 +1,14 @@
+function _read_geopkg end # Implemented in `../../../ext/ArchGDALExt.jl`
+function _write_geopkg end # Implemented in `../../../ext/ArchGDALExt.jl`
+
 function load(::DataLoader{:geopackage}, from::FilePath, T::Type)
-    @import ArchGDAL
-    if ArchGDAL.IDataset <: T <: Any
-        ArchGDAL.read(string(from))
-    end
+    @require ArchGDAL
+    invokelatest(_read_geopkg, from.path, T)
 end
 
 function save(writer::DataWriter{:geopackage}, dest::FilePath, info)
-    @import ArchGDAL
-    ArchGDAL.write(string(info))
+    @require ArchGDAL
+    invokelatest(_write_geopkg, dest.path, info)
 end
 
 supportedtypes(::Type{DataLoader{:geopackage}}) =

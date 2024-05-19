@@ -1,11 +1,11 @@
+# `TOML` is already a strong dep
+
 function load(loader::DataLoader{:toml}, from::IO, ::Type{Dict{String, Any}})
-    @import TOML.parse
-    parse(from)
+    TOML.parse(from)
 end
 
 function save(writer::DataWriter{:toml}, dest::IO, info::AbstractDict)
-    @import TOML.print
-    print(dest, info, sorted=true)
+    TOML.print(dest, info, sorted=true)
 end
 
 create(::Type{DataLoader{:toml}}, source::String) = endswith(source, ".toml")

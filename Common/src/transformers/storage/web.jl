@@ -142,25 +142,28 @@ function download_eta(io::IO, remaining::Integer, bps::Number)
 end
 
 function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retries::Int=2)
-    @import Downloads
-    url = @getparam(storage."url"::String)
-    try
-        Downloads.download(
-            url, target;
-            headers = @getparam(storage."headers"::SmallDict{String, Any}),
-            timeout = @getparam(storage."timeout"::Real, Inf),
+    @require Downloads
+    url = @getparam storage."url"::String
+    headers = @getparam storage."headers"::SmallDict{String, Any}
+    timeout = @getparam storage."timeout"::Real Inf
+    success = false
+    for attempt in 1:retries
+        success = invokelatest(
+            download_to, url, target;
+            softreqerr = attempt < retries,
+            headers, timeout,
             progress = DownloadProgress(storage.dataset.name))
-        print(stderr, "\e[G\e[2K\e[A\e[2K")
+        success && break
+        attempt < retries &&
+            @warn "Download failed, retrying ($(retries - attempt) retries remaining)" url
         target isa IO && seekstart(target)
-    catch err
-        if err isa Downloads.RequestError && retries > 0
-            @warn "Download failed, retrying ($retries retries remaining)" url err
-            target isa IO && seekstart(target)
-            download_to(storage, target, retries - 1)
-        else
-            rethrow()
-        end
     end
+    if !success
+        @error "Download failed after $retries attempts"
+        return
+    end
+    print(stderr, "\e[G\e[2K\e[A\e[2K")
+    target
 end
 
 function getstorage(storage::DataStorage{:web}, ::Type{IO})

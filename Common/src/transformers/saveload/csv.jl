@@ -1,5 +1,8 @@
+function _read_csv end # Implemented in `../../../ext/CSVExt.jl`
+function _write_csv end # Implemented in `../../../ext/CSVExt.jl`
+
 function load(loader::DataLoader{:csv}, from::IO, sink::Type)
-    @import CSV
+    @require CSV
     args = @getparam loader."args"::SmallDict{String, Any}
     kwargs = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in args)
     if haskey(kwargs, :types)
@@ -8,9 +11,9 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
             Dict{eltype(keys(types)), Type}(
                 k => typeify(QualifiedType(v)) for (k, v) in types)
         elseif types isa Vector
-            typeify.(QualifiedType.( types))
+            typeify.(QualifiedType.(types))
         elseif types isa String
-            typeify(QualifiedType( types))
+            typeify(QualifiedType(types))
         else
         end
         if isnothing(kwargs[:types])
@@ -26,8 +29,8 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     if haskey(kwargs, :stringtype)
         kwargs[:stringtype] = typeify.(QualifiedType.(kwargs[:stringtype]))
     end
-    CSV.File(from; NamedTuple(kwargs)...) |>
-        if sink == Any || sink == CSV.File
+    invokelatest(_read_csv, from; NamedTuple(kwargs)...) |>
+        if sink == Any || QualifiedType(sink) == QualifiedType(:CSV, :File)
             identity
         elseif QualifiedType(sink) == QualifiedType(:DataFrames, :DataFrame)
             # Replace `SentinelArray.ChainedVector` columns with standard vectors.
@@ -50,7 +53,7 @@ supportedtypes(::Type{DataLoader{:csv}}) =
      QualifiedType(:Base, :Matrix)]
 
 function save(writer::DataWriter{:csv}, dest::IO, info)
-    @import CSV
+    @require CSV
     kwargs = Dict(Symbol(k) => v for (k, v) in
                       @getparam(writer."args"::SmallDict{String, Any}))
     for charkey in (:quotechar, :openquotechar, :escapechar)
@@ -58,7 +61,7 @@ function save(writer::DataWriter{:csv}, dest::IO, info)
             kwargs[charkey] = first(kwargs[charkey])
         end
     end
-    CSV.write(dest, info; NamedTuple(kwargs)...)
+    invokelatest(_write_csv, dest, info; NamedTuple(kwargs)...)
 end
 
 createpriority(::Type{DataLoader{:csv}}) = 10

@@ -1,21 +1,19 @@
+function _read_jpeg end # Implemented in `../../../ext/JpegTurboExt.jl`
+function _write_jpeg end # Implemented in `../../../ext/JpegTurboExt.jl`
+
 function load(loader::DataLoader{:jpeg}, from::IO, ::Type{Matrix})
-    @import JpegTurbo.jpeg_decode
-    @import ColorTypes: Gray
+    @require JpegTurbo
+    @require ColorTypes
     kwargs = (transpose = @getparam(loader."transpose"::Bool, false),
               scale_ratio = @getparam(loader."scale_ratio"::Real, 1))
     # TODO support `preferred_size`
-    if @getparam loader."grayscale"::Bool false
-        jpeg_decode(Gray, from; kwargs...)
-    else
-        jpeg_decode(from; kwargs...)
-    end
+    gray = @getparam loader."grayscale"::Bool false
+    invokelatest(_read_jpeg, from, gray; kwargs...)
 end
 
 function save(writer::DataWriter{:jpeg}, dest::IO, info::Matrix)
-    @import JpegTurbo.jpeg_encode
-    kwargs = (transpose = @getparam(loader."transpose"::Bool, false),
-              quality = @getparam(loader."quality"::Int, 92))
-    jpeg_encode(dest, info; kwargs...)
+    @require JpegTurbo
+    invokelatest(_write_jpeg, dest, info)
 end
 
 create(::Type{DataLoader{:jpeg}}, source::String) =

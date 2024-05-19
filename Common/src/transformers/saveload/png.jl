@@ -1,13 +1,16 @@
+function _read_png end # Implemented in `../../../ext/PNGFilesExt.jl`
+function _write_png end # Implemented in `../../../ext/PNGFilesExt.jl`
+
 function load(loader::DataLoader{:png}, from::IO, ::Type{Matrix})
-    @import PNGFiles
+    @require PNGFiles
     kwargs = (gamma = @getparam(loader."gamma"::Union{Nothing, Float64}),
               expand_paletted = @getparam(loader."expand_paletted"::Bool, false))
     # TODO support `background`
-    PNGFiles.load(from; kwargs...)
+    invokelatest(_read_png, from; kwargs...)
 end
 
 function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
-    @import PNGFiles
+    @require PNGFiles
     compression_strategy = let strat =
         @getparam(writer."compression_strategy"::Union{Int, String}, 3)
         if strat isa Int && 0 <= strat <= 4
@@ -33,7 +36,7 @@ function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
               compression_strategy, filters,
               gamma = @getparam(writer."gamma"::Union{Real, Nothing}))
     # TODO support `background`
-    PNGFiles.save(dest, info; kwargs...)
+    invokelatest(_read_png, dest, info; kwargs...)
 end
 
 create(::Type{DataLoader{:png}}, source::String) =

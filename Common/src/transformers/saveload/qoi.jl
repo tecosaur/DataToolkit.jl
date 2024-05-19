@@ -1,13 +1,16 @@
+function _read_qoi end # Implemented in `../../../ext/QOIExt.jl`
+function _write_qoi end # Implemented in `../../../ext/QOIExt.jl`
+
 function load(loader::DataLoader{:qoi}, from::IO, ::Type{Matrix})
-    @import QOI
-    QOI.qoi_decode(from)
+    @require QOI
+    invokelatest(_read_qoi, from)
 end
 
 # REVIEW look out for a `QOI.qoi_encode(::IO, info)` method,
 # <https://github.com/KristofferC/QOI.jl/issues/11>
 function save(writer::DataWriter{:qoi}, dest::FilePath, info::Matrix)
-    @import QOI
-    QOI.qoi_encode(dest.path, info)
+    @require QOI
+    invokelatest(_write_qoi, dest, info)
 end
 
 create(::Type{DataLoader{:qoi}}, source::String) =

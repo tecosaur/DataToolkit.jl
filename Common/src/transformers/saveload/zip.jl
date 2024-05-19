@@ -1,52 +1,8 @@
-"""
-    unzip(archive::IO, dir::String=pwd();
-        recursive::Bool=false, log::Bool=false)
-Unzip an `archive` to `dir`.
-
-If `recursive` is set, nested zip files will be recursively
-unzipped too.
-
-Set `log` to see unzipping progress.
-"""
-function unzip(archive::IO, dir::String=pwd();
-               recursive::Bool=false, log::Bool=false,
-               onlyfile::Union{String, Nothing}=nothing)
-    @import ZipFile
-    if !isdir(dir) mkpath(dir) end
-    zarchive = ZipFile.Reader(archive)
-    if onlyfile isa String
-        onlyfile = lstrip(onlyfile, '/')
-    end
-    for file in zarchive.files
-        if isnothing(onlyfile) || file.name == onlyfile ||
-            recursive && endswith(file.name, ".zip") && startswith(onlyfile, first(splitext(file.name)))
-            log && @info "(unzip) extracting $(file.name)"
-            out_file = joinpath(dir, file.name)
-            isdir(dirname(out_file)) || mkpath(dirname(out_file))
-            if endswith(file.name, "/") || endswith(file.name, "\\")
-                mkdir(out_file)
-            elseif endswith(file.name, ".zip")
-                if recursive
-                    unzip(IOBuffer(read(file)),
-                          joinpath(dir, first(splitext(file.name)));
-                          recursive, log, onlyfile = if !isnothing(onlyfile)
-                              replace(onlyfile, file.name => "")
-                          end)
-                else
-                    write(out_file, read(file))
-                end
-            else
-                write(out_file, read(file))
-            end
-        end
-    end
-    close(zarchive)
-end
-
-unzip(file::String, dir::String=dirname(file); recursive::Bool=false, log::Bool=false) =
-    open(file) do io unzip(io, dir; recursive, log) end
+function unzip end # Implemented in `../../../ext/TOMLExt.jl`
+function _read_zip end # Implemented in `../../../ext/TOMLExt.jl`
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
+    @require ZipFile
     extract = @getparam loader."extract"::Union{String, Nothing}
     path = if !isnothing(extract)
         abspath(dirof(loader.dataset.collection), extract)
@@ -57,10 +13,11 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
     file = @getparam loader."file"::Union{String, Nothing}
     filepath = if !isnothing(file) prefix * file end
     if !isdir(path) || (!isnothing(file) && !isfile(joinpath(path, file)))
-        unzip(from, path;
-              recursive = @getparam(loader."recursive"::Bool, false),
-              log = should_log_event("unzip", loader),
-              onlyfile = filepath)
+        invokelatest(unzip,
+                     from, path;
+                     recursive = @getparam(loader."recursive"::Bool, false),
+                     log = should_log_event("unzip", loader),
+                     onlyfile = filepath)
     end
     if isnothing(file)
         FilePath(path)
@@ -70,34 +27,22 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
 end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
-    @import ZipFile
+    @require ZipFile
     prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     filename = @getparam loader."file"::Union{String, Nothing}
-    if !isnothing(filename)
-        zarchive = ZipFile.Reader(from)
-        for file in zarchive.files
-            if chopprefix(file.name, prefix) == filename
-                return IOBuffer(read(file))
-            end
-        end
-        error("File $prefix/$filename not found within zip.")
-    else
-        error("Cannot load entire zip to IO, must specify a particular file.")
-    end
+    invokelatest(_read_zip, from, prefix, filename)
 end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{Dict{FilePath, IO}})
-    @import ZipFile
+    @require ZipFile
     prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
-    zarchive = ZipFile.Reader(from)
-    Dict{FilePath, IO}(FilePath(chopprefix(file.name, prefix)) => IOBuffer(read(file))
-                       for file in zarchive.files
-                           if !endswith(file.name, "/") && !endswith(file.name, "\\"))
+    invokelatest(_read_zip, from, prefix)
 end
 
 function load(loader::DataLoader{:zip}, from::IO, ::Type{Dict{String, IO}})
-    Dict{String, IO}(string(fname) => io for (fname, io) in
-                         DataToolkitBase.invokepkglatest(load, loader, from, Dict{FilePath, IO}))
+    Dict{String, IO}(
+        string(fname) => io for (fname, io) in
+            DataToolkitBase.invokepkglatest(load, loader, from, Dict{FilePath, IO}))
 end
 
 function load(loader::DataLoader{:zip}, from::FilePath,

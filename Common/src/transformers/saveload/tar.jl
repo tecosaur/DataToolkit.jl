@@ -1,20 +1,11 @@
+function _read_tar end # Implemented in `../../../ext/TarExt.jl`
+# function _write_tar end # Implemented in `../../../ext/TarExt.jl`
+
 function load(loader::DataLoader{:tar}, from::IO, ::Type{IO})
-    @import Tar
+    @require Tar
     filepath = @getparam loader."file"::Union{String, Nothing}
     !isnothing(filepath) || error("Cannot load entire tarball to IO, must specify a particular file.")
-    buf = Vector{UInt8}(undef, Tar.DEFAULT_BUFFER_SIZE)
-    io = IOBuffer()
-    Tar.read_tarball(_ -> true, from; buf) do header, _
-        if header.path == filepath
-            if header.type === :file
-                Tar.read_data(from, io; size=header.size, buf)
-            else
-                @warn "Found $(sprint(show, filepath)), but it is a $(header.type) not a normal file."
-            end
-        end
-    end
-    io.size > 0 || error("Could not find the file $(sprint(show, filepath)) in the tarball")
-    io
+    invokelatest(_read_tar, from, filepath)
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Vector{UInt8}})
@@ -27,19 +18,9 @@ function load(loader::DataLoader{:tar}, from::IO, ::Type{String})
     String(take!(io))
 end
 
-function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{String, Vector{UInt8}}})
-    @import Tar
-    data = Dict{String, Vector{UInt8}}()
-    buf = Vector{UInt8}(undef, Tar.DEFAULT_BUFFER_SIZE)
-    io = IOBuffer()
-    Tar.read_tarball(_ -> true, from; buf=buf) do header, _
-        if header.type == :file
-            take!(io) # In case there are multiple entries for the file
-            Tar.read_data(from, io; size=header.size, buf)
-            data[header.path] = take!(io)
-        end
-    end
-    data
+function load(loader::DataLoader{:tar}, from::IO, as::Type{Dict{String, Vector{UInt8}}})
+    @require Tar
+    invokelatest(_read_tar, from, as)
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{String, IO}})
