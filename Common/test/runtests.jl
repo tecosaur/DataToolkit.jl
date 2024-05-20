@@ -22,6 +22,9 @@ end
     @testset "csv" begin
         @test size(read(dataset("iris"), DataFrame)) == (150, 5)
     end
+    # @testset "gif" begin # FIXME incompatible `ImageCore` compat with `WebP`
+    #     @test read(dataset("lighthouse-gif"), Matrix) isa Matrix
+    # end
     @testset "gpkg" begin
         geo = read(dataset("eurostat-gpkg"))
         using ArchGDAL

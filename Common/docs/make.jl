@@ -68,6 +68,7 @@ makedocs(;
             "saveload/compression.md",
             "saveload/csv.md",
             "saveload/delim.md",
+            "saveload/gif.md",
             "saveload/iotofile.md",
             "saveload/jpeg.md",
             "saveload/json.md",

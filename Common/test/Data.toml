@@ -211,6 +211,17 @@ uuid = "ded48517-d6b8-42b9-8d76-cc3a093aa863"
     driver = "chain"
     loaders = ["zstd", "csv"]
 
+[[lighthouse-gif]]
+uuid = "26552e4a-b79d-4e10-88b6-23f524e99c02"
+
+    [[lighthouse-gif.storage]]
+    driver = "web"
+    checksum = "k12:5ebb73ba0f114dee366fd7d0749cfa98"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.gif"
+
+    [[lighthouse-gif.loader]]
+    driver = "gif"
+
 [[lighthouse-jpeg]]
 uuid = "176acbad-9b90-4bdd-bc3f-0329ec14042d"
 

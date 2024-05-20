@@ -37,6 +37,7 @@ include("transformers/saveload/compression.jl")
 include("transformers/saveload/csv.jl")
 include("transformers/saveload/delim.jl")
 include("transformers/saveload/geopackage.jl")
+include("transformers/saveload/gif.jl")
 include("transformers/saveload/iotofile.jl")
 include("transformers/saveload/jld2.jl")
 include("transformers/saveload/jpeg.jl")
@@ -82,6 +83,7 @@ function __init__()
     @addpkg ColorTypes     "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
     @addpkg DBInterface    "a10d1c49-ce27-4219-8d33-6db1a4562965"
     @addpkg DelimitedFiles "8bb1440f-4735-579b-a4ab-409b98df4dab"
+    @addpkg GIFImages      "7064036c-d33e-4a25-b247-cf6150d8ad81"
     @addpkg JLD2           "033835bb-8acc-5ee8-8aae-3f567f8a3819"
     @addpkg JSON3          "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
     @addpkg JpegTurbo      "b835a17e-a41a-41e7-81f0-2f016b05efe0"
@@ -123,6 +125,7 @@ function __init__()
              (:loader, :csv) => CSV_DOC,
              (:loader, :delim) => DELIM_DOC,
              (:loader, :geopackage) => GEOPACKAGE_DOC,
+             (:loader, :gif) => GIF_DOC,
              (:loader, Symbol("io->file")) => IOTOFILE_DOC,
              (:loader, :jld2) => JLD2_DOC,
              (:loader, :jpeg) => JPEG_DOC,
@@ -148,6 +151,7 @@ function __init__()
              (:writer, :zstd) => COMPRESSION_DOC,
              (:writer, :csv) => CSV_DOC,
              (:writer, :delim) => DELIM_DOC,
+             (:writer, :gif) => GIF_DOC,
              (:writer, :jpeg) => JPEG_DOC,
              (:writer, :json) => JSON_DOC,
              (:writer, :netpbm) => NETPBM_DOC,
