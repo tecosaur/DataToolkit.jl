@@ -51,6 +51,7 @@ include("transformers/saveload/tar.jl")
 include("transformers/saveload/tiff.jl")
 include("transformers/saveload/toml.jl")
 include("transformers/saveload/xlsx.jl")
+include("transformers/saveload/webp.jl")
 include("transformers/saveload/yaml.jl")
 include("transformers/saveload/zip.jl")
 
@@ -91,6 +92,7 @@ function __init__()
     @addpkg Tar            "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
     @addpkg TiffImages     "731e570b-9d59-4bfa-96dc-6df516fadf69"
     @addpkg TOML           "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+    @addpkg WebP           "e3aaa7dc-3e4b-44e0-be63-ffb868ccd7c1"
     @addpkg XLSX           "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
     @addpkg YAML           "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
     @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
@@ -134,6 +136,7 @@ function __init__()
              (:loader, :tar) => TAR_DOC,
              (:loader, :tiff) => TIFF_DOC,
              (:loader, :toml) => TOML_DOC,
+             (:loader, :webp) => WEBP_DOC,
              (:loader, :xlsx) => XLSX_DOC,
              (:loader, :yaml) => YAML_DOC,
              (:loader, :zip) => ZIP_DOC,
@@ -153,6 +156,7 @@ function __init__()
              (:writer, :qoi) => QOI_DOC,
              (:writer, :sqlite) => SQLITE_DOC,
              (:writer, :tiff) => TIFF_DOC,
+             (:writer, :webp) => WEBP_DOC,
              ])
 end
 

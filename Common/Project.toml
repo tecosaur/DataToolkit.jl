@@ -40,6 +40,7 @@ QOI = "4b34888f-f399-49d4-9bb3-47ed5cae4e65"
 SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
 Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
+WebP = "e3aaa7dc-3e4b-44e0-be63-ffb868ccd7c1"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
@@ -65,6 +66,7 @@ SQLiteExt = "SQLite"
 SQLiteQueryExt = ["DBInterface", "SQLite"]
 TarExt = "Tar"
 TiffImagesExt = "TiffImages"
+WebPExt = "WebP"
 XLSXExt = "XLSX"
 YAMLExt = "YAML"
 ZipFileExt = "ZipFile"
@@ -120,4 +122,4 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DBInterface", "DataFrames", "DataToolkitBase", "DelimitedFiles", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "XLSX", "YAML", "ZipFile"]
+test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DBInterface", "DataFrames", "DataToolkitBase", "DelimitedFiles", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "WebP", "XLSX", "YAML", "ZipFile"]

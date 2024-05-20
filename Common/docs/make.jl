@@ -79,6 +79,7 @@ makedocs(;
             "saveload/sqlite.md",
             "saveload/tar.md",
             "saveload/tiff.md",
+            "saveload/webp.md",
             "saveload/xlsx.md",
             "saveload/zip.md",
         ],

@@ -266,6 +266,17 @@ uuid = "66a5fc67-cee1-4481-b9f2-e750be2897ff"
     [[lighthouse-tiff.loader]]
     driver = "tiff"
 
+[[lighthouse-webp]]
+uuid = "62ef89d8-2d69-4ca1-a13b-d24e5e56995b"
+
+    [[lighthouse-webp.storage]]
+    driver = "web"
+    checksum = "k12:89acb30a4424cb5df2578270541bd768"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.webp"
+
+    [[lighthouse-webp.loader]]
+    driver = "webp"
+
 [[mini-glossary]]
 uuid = "b7fafb13-1642-4f75-b608-8ecd497e9520"
 

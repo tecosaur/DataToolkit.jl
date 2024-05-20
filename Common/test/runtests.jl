@@ -54,6 +54,9 @@ end
         @test sort([k => length(v) for (k, v) in read(dataset("sample-toml"))], by=first) ==
             ["database" => 4, "owner" => 2, "servers" => 2, "title" => 12]
     end
+    @testset "webp" begin
+        @test read(dataset("lighthouse-webp"), Matrix) isa Matrix
+    end
     @testset "yaml" begin
         @test sort([k => length(v) for (k, v) in read(dataset("sample-yaml"))], by=first) ==
             ["database" => 4, "owner" => 2, "servers" => 2, "title" => 12]
