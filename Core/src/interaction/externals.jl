@@ -219,7 +219,7 @@ function _read(dataset::DataSet, as::Type)
                     if !isnothing(datahandle)
                         result = @advise dataset load(loader, datahandle, as)
                         if !isnothing(result)
-                            return result
+                            return something(result)
                         end
                     end
                 end
@@ -310,7 +310,7 @@ function Base.open(data::DataSet, as::Type; write::Bool=false)
         if any(t -> ⊆(as, t, mod=data.collection.mod), storage_provider.type)
             result = @advise data storage(storage_provider, as; write)
             if !isnothing(result)
-                return result
+                return something(result)
             end
         end
     end
