@@ -161,6 +161,50 @@ function Base.read(dataset::DataSet)
 end
 
 """
+    issubtype(X::Type, T::Union{Type, TypeVar})
+    issubtype(x::X, T::Union{Type, TypeVar})
+
+Check if `X` is indeed a subtype of `T`.
+
+This is a tweaked version of `isa` that can (mostly) handle `TypeVar` instances.
+"""
+function issubtype(X::Type, T::Union{Type, TypeVar})
+    if T isa TypeVar
+        # We can't really handle complex `TypeVar` situations,
+        # but we'll give the very most basic a shot, and cross
+        # our fingers with the rest.
+        if T.lb isa Type &&  T.ub isa Type
+            T.lb <: X <: T.ub
+        else
+            false
+        end
+    else
+        @assert T isa Type
+        X <: T
+    end
+end
+
+issubtype(x, T::Union{Type, TypeVar}) =
+    issubtype(typeof(x), T::Union{Type, TypeVar})
+
+"""
+    isparamsubtype(X, T::Union{Type, TypeVar}, Tparam::Union{Type, TypeVar}, paramT::Type)
+
+Check that `arg` is of type `T`, where `T` may be parameterised by
+`Tparam` which itself takes on the type `paramT`.
+
+More specifically, when `Tparam == Type{T}`, this checks that
+`arg` is of type `paramT`, and returns `issubtype(arg, T)` otherwise.
+"""
+function isparamsubtype(X::Type, T::Union{Type, TypeVar}, Tparam::Union{Type, TypeVar}, paramT::Type)
+    if T isa TypeVar && Type{T} == Tparam
+        X <: paramT
+    else
+        issubtype(X, T)
+    end
+end
+
+"""
     _read(dataset::DataSet, as::Type)
 
 The advisible implementation of `read(dataset::DataSet, as::Type)`
@@ -189,7 +233,7 @@ function _read(dataset::DataSet, as::Type)
                    dataset.loaders)
     end
     for loader in potential_loaders
-        load_fn_sigs = filter(fnsig -> loader isa fnsig.types[2], all_load_fn_sigs)
+        load_fn_sigs = filter(fnsig -> issubtype(loader, fnsig.types[2]), all_load_fn_sigs)
         # Find the highest priority load function that can be satisfied,
         # by going through each of the storage backends one at a time:
         # looking for the first that is (a) compatible with a load function,
@@ -199,20 +243,7 @@ function _read(dataset::DataSet, as::Type)
                 supported_storage_types = Vector{Type}(
                     filter(!isnothing, typeify.(storage.type)))
                 valid_storage_types =
-                    filter(stype -> let accept = load_fn_sig.types[3]
-                               if accept isa TypeVar
-                                   # We can't really handle complex `TypeVar` situations,
-                                   # but we'll give the very most basic a shot, and cross
-                                   # our fingers with the rest.
-                                   if load_fn_sig.types[4] == Type{load_fn_sig.types[3]}
-                                       stype <: as
-                                   else
-                                       accept.lb <: stype <: accept.ub
-                                   end
-                               else # must be a Type
-                                   stype <: accept
-                               end
-                           end,
+                    filter(stype -> isparamsubtype(stype, load_fn_sig.types[3], load_fn_sig.types[4], as),
                            supported_storage_types)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = false)
@@ -238,7 +269,7 @@ function _read(dataset::DataSet, as::Type)
         throw(UnsatisfyableTransformer(dataset, DataLoader, [qtype]))
     else
         loadertypes = map(
-            f -> QualifiedType( # Repeat the logic from `valid_storage_types`
+            f -> QualifiedType( # Repeat the logic from `valid_storage_types` / `isparamsubtype`
                 if f.types[3] isa TypeVar
                     if f.types[4] == Type{f.types[3]}
                         as
@@ -248,8 +279,8 @@ function _read(dataset::DataSet, as::Type)
                 else
                     f.types[3]
                 end),
-            filter(f -> any(l -> l isa f.types[2], potential_loaders),
-                   all_load_fn_sigs))
+            filter(f -> any(l -> issubtype(l, f.types[2]), potential_loaders),
+                   all_load_fn_sigs)) |> unique
         throw(UnsatisfyableTransformer(dataset, DataStorage, loadertypes))
     end
 end
@@ -358,7 +389,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
         filter(writer -> any(st -> ⊆(qtype, st, mod=dataset.collection.mod), writer.type),
                dataset.writers)
     for writer in potential_writers
-        write_fn_sigs = filter(fnsig -> writer isa fnsig.types[2], all_write_fn_sigs)
+        write_fn_sigs = filter(fnsig -> issubtype(writer, fnsig.types[2]), all_write_fn_sigs)
         # Find the highest priority save function that can be satisfied,
         # by going through each of the storage backends one at a time:
         # looking for the first that is (a) compatible with a save function,
@@ -368,7 +399,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
                 supported_storage_types = Vector{Type}(
                     filter(!isnothing, typeify.(storage.type)))
                 valid_storage_types =
-                    filter(stype -> stype <: write_fn_sig.types[3],
+                    filter(stype -> issubtype(stype, write_fn_sig.types[3]),
                            supported_storage_types)
                 for storage_type in valid_storage_types
                     datahandle = open(dataset, storage_type; write = true)
