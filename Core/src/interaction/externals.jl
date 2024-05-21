@@ -429,20 +429,22 @@ const genericstoreput = first(methods(putstorage, Tuple{DataStorage{Any}, Any}))
 
 supportedtypes(L::Type{<:DataLoader}, T::Type=Any)::Vector{QualifiedType} =
     map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[4]),
-        methods(load, Tuple{L, T, Any})) |>
+        sort(methods(load, Tuple{L, T, Any}), by=m->m.primary_world)) |>
             Iterators.flatten .|> QualifiedType |> unique |> reverse
 
 supportedtypes(W::Type{<:DataWriter}, T::Type=Any)::Vector{QualifiedType} =
     map(fn -> QualifiedType(Base.unwrap_unionall(fn.sig).types[4]),
-        methods(save, Tuple{W, T, Any})) |> unique |> reverse
+        sort(methods(save, Tuple{W, T, Any}), by=m->m.primary_world)) |>
+            unique |> reverse
 
 supportedtypes(S::Type{<:DataStorage})::Vector{QualifiedType} =
     map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[3]),
-        let ms = filter(m -> m != genericstore, methods(storage, Tuple{S, Any}))
+        let ms = filter(m -> m != genericstore,
+                        sort(methods(storage, Tuple{S, Any}), by=m->m.primary_world))
             if isempty(ms)
                 vcat(filter(m -> m != genericstoreget,
-                            methods(getstorage, Tuple{S, Any})),
+                            sort(methods(getstorage, Tuple{S, Any}), by=m->m.primary_world)),
                      filter(m -> m != genericstoreput,
-                        methods(putstorage, Tuple{S, Any})))
+                            sort(methods(putstorage, Tuple{S, Any}), by=m->m.primary_world)))
             else ms end
         end) |> Iterators.flatten .|> QualifiedType |> unique |> reverse
