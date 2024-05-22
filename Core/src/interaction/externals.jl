@@ -139,8 +139,9 @@ TODO explain further
 ```
 """
 function Base.read(dataset::DataSet, as::Type)
-    @advise _read(dataset, as)
+    @advise read1(dataset, as)
 end
+
 function Base.read(dataset::DataSet)
     as = nothing
     for qtype in getproperty.(dataset.loaders, :type) |> Iterators.flatten
@@ -157,7 +158,7 @@ function Base.read(dataset::DataSet)
         throw(TransformerError(
             "Data set $(sprint(show, dataset.name)) could not be loaded in any form.\n $helpfulextra"))
     end
-    @advise _read(dataset, as)
+    @advise read1(dataset, as)
 end
 
 """
@@ -205,12 +206,12 @@ function isparamsubtype(X::Type, T::Union{Type, TypeVar}, Tparam::Union{Type, Ty
 end
 
 """
-    _read(dataset::DataSet, as::Type)
+    read1(dataset::DataSet, as::Type)
 
 The advisible implementation of `read(dataset::DataSet, as::Type)`
 This is essentially an excersise in useful indirection.
 """
-function _read(dataset::DataSet, as::Type)
+function read1(dataset::DataSet, as::Type)
     all_load_fn_sigs = map(fn -> Base.unwrap_unionall(fn.sig),
                            methods(load, Tuple{DataLoader, Any, Any}))
     qtype = QualifiedType(as)
