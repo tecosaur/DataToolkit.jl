@@ -161,96 +161,31 @@ function Base.read(dataset::DataSet)
 end
 
 """
-    issubtype(X::Type, T::Union{Type, TypeVar})
-    issubtype(x::X, T::Union{Type, TypeVar})
-
-Check if `X` is indeed a subtype of `T`.
-
-This is a tweaked version of `isa` that can (mostly) handle `TypeVar` instances.
-"""
-function issubtype(X::Type, T::Union{Type, TypeVar})
-    if T isa TypeVar
-        # We can't really handle complex `TypeVar` situations,
-        # but we'll give the very most basic a shot, and cross
-        # our fingers with the rest.
-        if T.lb isa Type &&  T.ub isa Type
-            T.lb <: X <: T.ub
-        else
-            false
-        end
-    else
-        @assert T isa Type
-        X <: T
-    end
-end
-
-issubtype(x, T::Union{Type, TypeVar}) =
-    issubtype(typeof(x), T::Union{Type, TypeVar})
-
-"""
-    isparamsubtype(X, T::Union{Type, TypeVar}, Tparam::Union{Type, TypeVar}, paramT::Type)
-
-Check that `arg` is of type `T`, where `T` may be parameterised by
-`Tparam` which itself takes on the type `paramT`.
-
-More specifically, when `Tparam == Type{T}`, this checks that
-`arg` is of type `paramT`, and returns `issubtype(arg, T)` otherwise.
-"""
-function isparamsubtype(X::Type, T::Union{Type, TypeVar}, Tparam::Union{Type, TypeVar}, paramT::Type)
-    if T isa TypeVar && Type{T} == Tparam
-        X <: paramT
-    else
-        issubtype(X, T)
-    end
-end
-
-"""
     read1(dataset::DataSet, as::Type)
 
-The advisible implementation of `read(dataset::DataSet, as::Type)`
-This is essentially an excersise in useful indirection.
+The advisable implementation of `read(dataset::DataSet, as::Type)`, which see.
+
+This is essentially an exercise in useful indirection.
 """
 function read1(dataset::DataSet, as::Type)
-    all_load_fn_sigs = map(fn -> Base.unwrap_unionall(fn.sig),
-                           methods(load, Tuple{DataLoader, Any, Any}))
-    qtype = QualifiedType(as)
-    # Filter to loaders which are declared in `dataset` as supporting `as`.
-    # These will have already been ordered by priority during parsing.
-    potential_loaders =
-        filter(loader -> any(st -> ⊆(st, qtype, mod=dataset.collection.mod), loader.type),
-               dataset.loaders)
-    # If no matching loaders could be found, be a bit generous and /just try/
-    # filtering to the specified `as` type. If this works, it's probably what's
-    # wanted, and incompatibility should be caught by later stages.
-    if isempty(potential_loaders)
-        # Here I use `!isempty(methods(...))` which may seem strange, given
-        # `hasmethod` exists. While in theory it would be reasonable to expect
-        # that `hasmethod(f, Tuple{A, Union{}, B})` would return true if a method
-        # with the signature `Tuple{A, <:Any, B}` existed, this is unfortunately
-        # not the case in practice, and so we must resort to `methods`.
-        potential_loaders =
-            filter(loader -> !isempty(methods(load, Tuple{typeof(loader), <:Any, Type{as}})),
-                   dataset.loaders)
-    end
-    for loader in potential_loaders
-        load_fn_sigs = filter(fnsig -> issubtype(loader, fnsig.types[2]), all_load_fn_sigs)
+    for loader in dataset.loaders
+        l_steps = typesteps(loader, as)
+        isempty(l_steps) && continue
         # Find the highest priority load function that can be satisfied,
         # by going through each of the storage backends one at a time:
         # looking for the first that is (a) compatible with a load function,
         # and (b) available (checked via `!isnothing`).
         for storage in dataset.storage
-            for load_fn_sig in load_fn_sigs
-                supported_storage_types = Vector{Type}(
-                    filter(!isnothing, typeify.(storage.type)))
-                valid_storage_types =
-                    filter(stype -> isparamsubtype(stype, load_fn_sig.types[3], load_fn_sig.types[4], as),
-                           supported_storage_types)
-                for storage_type in valid_storage_types
-                    datahandle = open(dataset, storage_type; write = false)
+            for (Tloader_in, Tloader_out) in l_steps
+                s_steps = typesteps(storage, Tloader_in; write = false)
+                for (_, Tstorage_out) in s_steps
+                    datahandle = open(dataset, Tstorage_out; write = false)
                     if !isnothing(datahandle)
-                        result = @advise dataset load(loader, datahandle, as)
+                        result = @advise dataset load(loader, datahandle, Tloader_out)
                         if !isnothing(result)
                             return something(result)
+                        elseif datahandle isa IOStream
+                            close(datahandle)
                         end
                     end
                 end
@@ -259,29 +194,23 @@ function read1(dataset::DataSet, as::Type)
         # Check for a "null storage" option. This is to enable loaders
         # like DataToolkitCommon's `:julia` which can construct information
         # without an explicit storage backend.
-        for load_fn_sig in load_fn_sigs
-            if load_fn_sig.types[3] == Nothing
-                return @advise dataset load(loader, nothing, as)
+        for (Tloader_in, Tloader_out) in l_steps
+            if Tloader_in == Nothing
+                result = @advise dataset load(loader, nothing, as)
+                !isnothing(result) && return something(result)
             end
         end
     end
-    if length(potential_loaders) == 0
-        throw(UnsatisfyableTransformer(dataset, DataLoader, [qtype]))
+    throw(guess_read_failure_cause(dataset, as))
+end
+
+function guess_read_failure_cause(dataset::DataSet, as::Type)
+    loader_steps = [typesteps(loader, as) for loader in dataset.loaders] |> Iterators.flatten |> collect
+    if all(isempty, loader_steps)
+        UnsatisfyableTransformer(dataset, DataLoader, [QualifiedType(as)])
     else
-        loadertypes = map(
-            f -> QualifiedType( # Repeat the logic from `valid_storage_types` / `isparamsubtype`
-                if f.types[3] isa TypeVar
-                    if f.types[4] == Type{f.types[3]}
-                        as
-                    else
-                        f.types[3].ub
-                    end
-                else
-                    f.types[3]
-                end),
-            filter(f -> any(l -> issubtype(l, f.types[2]), potential_loaders),
-                   all_load_fn_sigs)) |> unique
-        throw(UnsatisfyableTransformer(dataset, DataStorage, loadertypes))
+        loader_intypes = map(QualifiedType, map(first, loader_steps) |> unique)
+        UnsatisfyableTransformer(dataset, DataStorage, loader_intypes)
     end
 end
 
@@ -319,6 +248,8 @@ function load end
 
 load((loader, source, as)::Tuple{DataLoader, Any, Type}) =
     load(loader, source, as)
+
+# A selection of fallback methods for various forms of raw file content
 
 """
     open(dataset::DataSet, as::Type; write::Bool=false)
@@ -437,45 +368,3 @@ function save end
 
 save((writer, dest, info)::Tuple{DataWriter, Any, Any}) =
     save(writer, dest, info)
-
-# For use during parsing, see `fromspec` in `model/parser.jl`.
-
-function extracttypes(T::Type)
-    splitunions(T::Type) = if T isa Union Base.uniontypes(T) else (T,) end
-    if T == Type || T == Any
-        (Any,)
-    elseif T isa UnionAll
-        first(Base.unwrap_unionall(T).parameters).ub |> splitunions
-    elseif T isa Union
-        first.(getproperty.(Base.uniontypes(T), :parameters))
-    else
-        T1 = first(T.parameters)
-        if T1 isa TypeVar T1.ub else T1 end |> splitunions
-    end
-end
-
-const genericstore = first(methods(storage, Tuple{DataStorage{Any}, Any}))
-const genericstoreget = first(methods(getstorage, Tuple{DataStorage{Any}, Any}))
-const genericstoreput = first(methods(putstorage, Tuple{DataStorage{Any}, Any}))
-
-supportedtypes(L::Type{<:DataLoader}, T::Type=Any)::Vector{QualifiedType} =
-    map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[4]),
-        sort(methods(load, Tuple{L, T, Any}), by=m->m.primary_world)) |>
-            Iterators.flatten .|> QualifiedType |> unique |> reverse
-
-supportedtypes(W::Type{<:DataWriter}, T::Type=Any)::Vector{QualifiedType} =
-    map(fn -> QualifiedType(Base.unwrap_unionall(fn.sig).types[4]),
-        sort(methods(save, Tuple{W, T, Any}), by=m->m.primary_world)) |>
-            unique |> reverse
-
-supportedtypes(S::Type{<:DataStorage})::Vector{QualifiedType} =
-    map(fn -> extracttypes(Base.unwrap_unionall(fn.sig).types[3]),
-        let ms = filter(m -> m != genericstore,
-                        sort(methods(storage, Tuple{S, Any}), by=m->m.primary_world))
-            if isempty(ms)
-                vcat(filter(m -> m != genericstoreget,
-                            sort(methods(getstorage, Tuple{S, Any}), by=m->m.primary_world)),
-                     filter(m -> m != genericstoreput,
-                            sort(methods(putstorage, Tuple{S, Any}), by=m->m.primary_world)))
-            else ms end
-        end) |> Iterators.flatten .|> QualifiedType |> unique |> reverse

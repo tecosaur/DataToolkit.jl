@@ -43,6 +43,7 @@ include("model/writer.jl")
 include("model/usepkg.jl")
 include("model/dataplugin.jl")
 
+include("interaction/typetransforms.jl")
 include("interaction/externals.jl")
 include("interaction/display.jl")
 include("interaction/manipulation.jl")
