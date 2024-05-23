@@ -10,7 +10,7 @@ export loadcollection!, dataset
 
 # For extension packages
 export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
-    DataSet, DataCollection, QualifiedType, Identifier, FilePath, SmallDict,
+    DataSet, DataCollection, QualifiedType, Identifier, FilePath,
     LintItem, LintReport
 export load, storage, getstorage, putstorage, save, getlayer, resolve, refine,
     parse_ident, supportedtypes, typeify, create, createpriority, lint
@@ -34,7 +34,6 @@ include("model/utils.jl")
 include("model/advice.jl")
 include("model/errors.jl")
 
-include("model/smalldict.jl")
 include("model/qualifiedtype.jl")
 include("model/identification.jl")
 include("model/parameters.jl")

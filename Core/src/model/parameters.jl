@@ -15,11 +15,12 @@ Obtain a form (depending on `action`) of `value`, a property within `source`.
 **`:encode`**  Look for `Identifier`s in `value`, and turn them into DataSet references
   (the inverse of `:extract`).
 """
-function dataset_parameters(collection::DataCollection, action::Val, params::SmallDict{String,Any})
-    SmallDict{String, Any}(
-        keys(params) |> collect,
-        [dataset_parameters(collection, action, value)
-         for value in values(params)])
+function dataset_parameters(collection::DataCollection, action::Val, params::Dict{String,Any})
+    d = newdict(String, Any, length(params))
+    for (key, value) in params
+        d[key] = dataset_parameters(collection, action, value)
+    end
+    d
 end
 
 function dataset_parameters(collection::DataCollection, action::Val, param::Vector)
@@ -80,7 +81,7 @@ end
 add_dataset_refs!(acc::Vector{Identifier}, @nospecialize(adt::AbstractDataTransformer)) =
     add_dataset_refs!(acc, adt.parameters)
 
-add_dataset_refs!(acc::Vector{Identifier}, props::SmallDict) =
+add_dataset_refs!(acc::Vector{Identifier}, props::Dict) =
     for val in values(props)
         add_dataset_refs!(acc, val)
     end

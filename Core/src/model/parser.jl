@@ -88,7 +88,7 @@ function parse_ident(spec::AbstractString)
         parse(QualifiedType, spec[3:end])
     end
     Identifier(collection, something(tryparse(UUID, dataset), dataset),
-                dtype, SmallDict{String,Any}())
+                dtype, newdict(String, Any, 0))
 end
 
 # ---------------
@@ -108,10 +108,10 @@ In some cases, it makes sense for this to be explicitly defined for a particular
 transformer. """
 function supportedtypes end # See `interaction/externals.jl` for method definitions.
 
-supportedtypes(ADT::Type{<:AbstractDataTransformer}, spec::SmallDict{String, Any}, _::DataSet) =
+supportedtypes(ADT::Type{<:AbstractDataTransformer}, spec::Dict{String, Any}, _::DataSet) =
     supportedtypes(ADT, spec)
 
-supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::SmallDict{String, Any}) =
+supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
     supportedtypes(ADT)
 
 (ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
@@ -129,7 +129,7 @@ Create an `ADT` of `dataset` according to `spec`.
 from the `"driver"` key in `spec`.
 """
 function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
-    parameters = smallify(spec)
+    parameters = shrinkdict(spec)
     driver = if ADT isa DataType
         first(ADT.parameters)
     elseif haskey(parameters, "driver")
@@ -171,7 +171,7 @@ end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
                     type::Vector{<:QualifiedType}, priority::Int,
-                    parameters::SmallDict{String, Any}) where {driver} =
+                    parameters::Dict{String, Any}) where {driver} =
                         DataStorage{driver, typeof(dataset)}(dataset, type, priority, parameters)
 
 # ---------------
@@ -180,7 +180,7 @@ DataStorage{driver}(dataset::Union{DataSet, DataCollection},
 
 DataCollection(name::Union{String, Nothing}=nothing; path::Union{String, Nothing}=nothing) =
     DataCollection(LATEST_DATA_CONFIG_VERSION, name, uuid4(), String[],
-                   SmallDict{String, Any}(), DataSet[], path,
+                   Dict{String, Any}(), DataSet[], path,
                    AdviceAmalgamation(String[]), Main)
 
 function DataCollection(spec::Dict{String, Any}; path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
@@ -218,7 +218,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                     uuid4()
                 end)
     plugins::Vector{String} = get(spec, "plugins", String[])
-    parameters = get(spec, "config", Dict{String, Any}()) |> smallify
+    parameters = get(spec, "config", Dict{String, Any}()) |> shrinkdict
     unavailable_plugins = setdiff(plugins, getproperty.(PLUGINS, :name))
     if length(unavailable_plugins) > 0
         @warn string("The ", join(unavailable_plugins, ", ", ", and "),
@@ -263,7 +263,7 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
                     @info "Data set '$name' had no UUID, one has been generated."
                     uuid4()
                 end)
-    parameters = smallify(spec)
+    parameters = shrinkdict(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
         delete!(parameters, reservedname)
     end

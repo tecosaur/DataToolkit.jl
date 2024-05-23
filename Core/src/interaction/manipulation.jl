@@ -305,7 +305,7 @@ When no value is set, `nothing` is returned instead and if `quiet` is unset
 function config_get(collection::DataCollection, propertypath::Vector{String}; quiet::Bool=false)
     config = collection.parameters
     for segment in propertypath
-        config isa AbstractDict || (config = SmallDict{String, Nothing}();)
+        config isa AbstractDict || (config = newdict(String, Nothing, 0);)
         config = get(config, segment, nothing)
         if isnothing(config)
             quiet || printstyled(" unset\n", color=:light_black)
@@ -339,11 +339,11 @@ function config_set(collection::DataCollection, propertypath::Vector{String}, va
     # however this way any plugin-processing of the configuration
     # will be symmetric (i.e. applied at load and write).
     snapshot = convert(Dict, collection)
-    config = get(snapshot, "config", SmallDict{String, Any}())
+    config = get(snapshot, "config", newdict(String, Any, 0))
     window = config
     for segment in propertypath[1:end-1]
         if !haskey(window, segment)
-            window[segment] = SmallDict{String, Any}()
+            window[segment] = newdict(String, Any, 0)
         end
         window = window[segment]
     end
@@ -385,7 +385,7 @@ function config_unset(collection::DataCollection, propertypath::Vector{String};
     # however this way any plugin-processing of the configuration
     # will be symmetric (i.e. applied at load and write).
     snapshot = convert(Dict, collection)
-    config = get(snapshot, "config", SmallDict{String, Any}())
+    config = get(snapshot, "config", newdict(String, Any, 0))
     window = config
     for segment in propertypath[1:end-1]
         if !haskey(window, segment)

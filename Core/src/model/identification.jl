@@ -1,4 +1,4 @@
-Identifier(ident::Identifier, params::SmallDict{String, Any}; replace::Bool=false) =
+Identifier(ident::Identifier, params::Dict{String, Any}; replace::Bool=false) =
     Identifier(ident.collection, ident.dataset, ident.type,
                if replace || isempty(ident.parameters);
                    params
@@ -8,7 +8,7 @@ Identifier(ident::Identifier, params::SmallDict{String, Any}; replace::Bool=fals
 
 Identifier(ident::Identifier, ::Nothing; replace::Bool=false) =
     if replace
-        Identifier(ident, SmallDict{String, Any}(); replace)
+        Identifier(ident, newdict(String, Any, 0); replace)
     else
         ident
     end
@@ -50,7 +50,7 @@ end
 
 # Identifier(spec::AbstractString) = parse(Identifier, spec)
 
-Identifier(spec::AbstractString, params::SmallDict{String, Any}) =
+Identifier(spec::AbstractString, params::Dict{String, Any}) =
     Identifier(parse(Identifier, spec), params)
 
 Base.:(==)(a::Identifier, b::Identifier) =
@@ -176,13 +176,13 @@ resolve(ident::Identifier; resolvetype::Bool=true, stack::Vector{DataCollection}
     end
 
 """
-    resolve(identstr::AbstractString, parameters::Union{SmallDict{String, Any}, Nothing}=nothing;
+    resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
             resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
 
 Attempt to resolve the identifier given by `identstr` and `parameters` against
 each layer of the data `stack` in turn.
 """
-function resolve(identstr::AbstractString, parameters::Union{SmallDict{String, Any}, Nothing}=nothing;
+function resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
                  resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
     isempty(stack) && throw(EmptyStackError())
     if (cname = parse(Identifier, identstr).collection) |> !isnothing

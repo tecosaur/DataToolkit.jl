@@ -151,58 +151,6 @@ end
     deleteat!(PLUGINS, length(PLUGINS)) # remove `plg`
 end
 
-import DataToolkitBase: smallify
-
-@testset "SmallDict" begin
-    @testset "Construction" begin
-        @test SmallDict() == SmallDict{Any, Any}([], [])
-        @test SmallDict{Any, Any}() == SmallDict{Any, Any}([], [])
-        @test SmallDict(:a => 1) == SmallDict{Symbol, Int}([:a], [1])
-        @test SmallDict([:a => 1]) == SmallDict{Symbol, Int}([:a], [1])
-        @test SmallDict{Symbol, Int}(:a => 1) == SmallDict{Symbol, Int}([:a], [1])
-        @test_throws MethodError SmallDict{String, Int}(:a => 1)
-        @test SmallDict(:a => 1, :b => 2) == SmallDict{Symbol, Int}([:a, :b], [1, 2])
-        @test SmallDict(:a => 1, :b => '1') == SmallDict{Symbol, Any}([:a, :b], [1, '1'])
-        @test SmallDict(:a => 1, "b" => '1') == SmallDict{Any, Any}([:a, "b"], [1, '1'])
-    end
-    @testset "Conversion" begin
-        @test convert(SmallDict, Dict(:a => 1)) == SmallDict{Symbol, Int}([:a], [1])
-        @test convert(SmallDict, Dict{Symbol, Any}(:a => 1)) == SmallDict{Symbol, Any}([:a], [1])
-        @test convert(SmallDict, Dict(:a => 1, :b => '1')) == SmallDict{Symbol, Any}([:a, :b], [1, '1'])
-        @test smallify(Dict(:a => Dict(:b => Dict(:c => 3)))) ==
-            SmallDict(:a => SmallDict(:b => SmallDict(:c => 3)))
-    end
-    @testset "AbstractDict interface" begin
-        d = SmallDict{Symbol, Int}()
-        @test length(d) == 0
-        @test haskey(d, :a) == false
-        @test get(d, :a, nothing) === nothing
-        @test iterate(d) === nothing
-        @test (d[:a] = 1) == 1
-        @test d[:a] == 1
-        @test collect(d) == [:a => 1]
-        @test length(d) == 1
-        @test haskey(d, :a) == true
-        @test get(d, :a, nothing) == 1
-        @test iterate(d) == (:a => 1, 2)
-        @test iterate(d, 2) === nothing
-        @test (d[:b] = 2) == 2
-        @test length(d) == 2
-        @test keys(d) == [:a, :b]
-        @test values(d) == [1, 2]
-        @test iterate(d, 2) === (:b => 2, 3)
-        @test Dict(d) == Dict(:a => 1, :b => 2)
-        @test (d[:a] = 3) == 3
-        @test d[:a] == 3
-        @test values(d) == [3, 2]
-        @test_throws KeyError d[:c]
-        delete!(d, :a)
-        @test keys(d) == [:b]
-        delete!(d, :b)
-        @test d == empty(d)
-    end
-end
-
 @testset "QualifiedType" begin
     @testset "Construction" begin
         @test QualifiedType(:a, :b) == QualifiedType(:a, :b, ())
@@ -283,10 +231,10 @@ end
         end
     end
     @testset "Identifiers" begin
-        for (istr, ident) in [("a", Identifier(nothing, "a", nothing, SmallDict{String, Any}())),
-                              ("a:b", Identifier("a", "b", nothing, SmallDict{String, Any}())),
-                              ("a::Main.sometype", Identifier(nothing, "a", QualifiedType(:Main, :sometype), SmallDict{String, Any}())),
-                              ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), SmallDict{String, Any}()))]
+        for (istr, ident) in [("a", Identifier(nothing, "a", nothing, Dict{String, Any}())),
+                              ("a:b", Identifier("a", "b", nothing, Dict{String, Any}())),
+                              ("a::Main.sometype", Identifier(nothing, "a", QualifiedType(:Main, :sometype), Dict{String, Any}())),
+                              ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), Dict{String, Any}()))]
             @test parse_ident(istr) == ident
             @test istr == string(ident)
         end
@@ -332,12 +280,12 @@ end
         function getstorage(storage::DataStorage{:raw}, T::Type)
             get(storage, "value", nothing)::Union{T, Nothing}
         end
-        supportedtypes(::Type{DataStorage{:raw}}, spec::SmallDict{String, Any}) =
+        supportedtypes(::Type{DataStorage{:raw}}, spec::Dict{String, Any}) =
             [QualifiedType(typeof(get(spec, "value", nothing)))]
         function load(::DataLoader{:passthrough}, from::T, ::Type{T}) where {T <: Any}
             from
         end
-        supportedtypes(::Type{DataLoader{:passthrough}}, _::SmallDict{String, Any}, dataset::DataSet) =
+        supportedtypes(::Type{DataLoader{:passthrough}}, _::Dict{String, Any}, dataset::DataSet) =
             reduce(vcat, getproperty.(dataset.storage, :type)) |> unique
     end
     fieldeqn_parent_stack = []
@@ -436,7 +384,7 @@ end
         @test collection.uuid == Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05")
         @test collection.name == "datatest"
         @test collection.parameters ==
-            SmallDict{String, Any}("setting" => 123, "nested" => SmallDict{String, Any}("value" => 4))
+            Dict{String, Any}("setting" => 123, "nested" => Dict{String, Any}("value" => 4))
         @test collection.plugins == String[]
         @test collection.path === nothing
         @test collection.mod == Main
@@ -452,16 +400,16 @@ end
         @test dataset("dataset") isa DataSet
         @test dataset("dataset").name == "dataset"
         @test dataset("dataset").uuid == Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c")
-        @test dataset("dataset").parameters == SmallDict{String, Any}("property" => 456)
+        @test dataset("dataset").parameters == Dict{String, Any}("property" => 456)
     end
     @testset "Store/Load" begin
         @test length(dataset("dataset").storage) == 1
         @test dataset("dataset").storage[1].dataset === dataset("dataset")
-        @test dataset("dataset").storage[1].parameters == SmallDict{String, Any}("value" => [1, 2, 3])
+        @test dataset("dataset").storage[1].parameters == Dict{String, Any}("value" => [1, 2, 3])
         @test dataset("dataset").storage[1].type == [QualifiedType(Vector{Int})]
         @test length(dataset("dataset").loaders) == 1
         @test dataset("dataset").loaders[1].dataset === dataset("dataset")
-        @test dataset("dataset").loaders[1].parameters == SmallDict{String, Any}()
+        @test dataset("dataset").loaders[1].parameters == Dict{String, Any}()
         @test dataset("dataset").loaders[1].type == [QualifiedType(Vector{Int})]
         @test open(dataset("dataset"), Vector{Int}) == [1, 2, 3]
         @test read(dataset("dataset"), Vector{Int}) == [1, 2, 3]
@@ -483,9 +431,9 @@ end
                                   ((:uuid, :name), (Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05"), "dataset")),
                                   ((:name, :uuid), ("datatest", Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c")))]
             ident = Identifier(dataset("dataset"), iargs...)
-            @test ident == Identifier(col, ds, nothing, SmallDict{String, Any}("property" => 456))
+            @test ident == Identifier(col, ds, nothing, Dict{String, Any}("property" => 456))
             @test dataset("dataset") === resolve(ident)
-            @test parse(Identifier, string(ident)) == Identifier(col, ds, nothing, SmallDict{String, Any}())
+            @test parse(Identifier, string(ident)) == Identifier(col, ds, nothing, Dict{String, Any}())
         end
         @test_throws ArgumentError Identifier(dataset("dataset"), :err)
         @test dataset("dataset") == dataset("dataset", "property" => 456)
@@ -508,7 +456,7 @@ end
         @test config_get(collection, ["nested", "value"]) == 4
         @test config_get(collection, ["nested", "nope"]) ===nothing
         @test config_set(["some", "nested", "val"], 5).parameters["some"] ==
-            SmallDict{String, Any}("nested" => SmallDict{String, Any}("val" => 5))
+            Dict{String, Any}("nested" => Dict{String, Any}("val" => 5))
         @test config_get(["some", "nested", "val"]) == 5
         @test get(config_unset(collection, ["some"]), "some") === nothing
     end

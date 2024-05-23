@@ -61,14 +61,13 @@ end
 Return the data set identified by `identstr`, optionally specifying the `collection`
 the data set should be found in and any `parameters` that apply.
 """
-dataset(identstr::AbstractString) = resolve(identstr; resolvetype=false)::DataSet
-dataset(identstr::AbstractString, parameters::SmallDict{String, Any}) =
-    resolve(identstr, parameters; resolvetype=false)::DataSet
-dataset(identstr::AbstractString, parameters::Dict{String, Any}) =
-    dataset(identstr, smallify(parameters))
+dataset(identstr::AbstractString)::DataSet =
+    resolve(identstr; resolvetype=false)
+dataset(identstr::AbstractString, parameters::Dict{String, Any})::DataSet =
+    resolve(identstr, parameters; resolvetype=false)
 
 function dataset(identstr::AbstractString, kv::Pair{<:AbstractString, <:Any}, kvs::Pair{<:AbstractString, <:Any}...)
-    parameters = SmallDict{String, Any}()
+    parameters = newdict(String, Any, length(kvs) + 1)
     parameters[String(first(kv))] = last(kv)
     for (key, value) in kvs
         parameters[String(key)] = value

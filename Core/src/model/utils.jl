@@ -1,6 +1,61 @@
 # Utility functions that don't belong to any particular file
 
 """
+    newdict(K::Type, V::Type, capacity::Int) -> Dict{K, V}
+
+Create a new `Dict{K, V}` sized to hold `capacity` elements, hopefully without
+resizing. Depending on the particular value of `capacity` and the Julia version,
+this can result in substantial memory savings for small dictionaries.
+"""
+function newdict end
+
+@static if VERSION >= v"1.11-alpha1"
+    function newdict(K::Type, V::Type, capacity::Int)
+        size = if capacity < 1; 0
+        elseif capacity == 1; 2
+        elseif capacity == 2; 3
+        elseif 3 <= capacity <= 5; 8
+        else cld(capacity * 3, 2) end
+        slots = Memory{UInt8}(undef, size)
+        fill!(slots, 0x00)
+        Dict{K, V}(slots,
+                   Memory{K}(undef, size),
+                   Memory{V}(undef, size),
+                   0, 0, zero(UInt), max(1, size), 0)
+    end
+else
+    function newdict(K::Type, V::Type, capacity::Int)
+        size = if capacity < 1; 1
+        elseif capacity == 1; 2
+        elseif 2 <= capacity <= 4; 8
+        else cld(capacity * 3, 2) end
+        slots = Vector{UInt8}(undef, size)
+        fill!(slots, 0x00)
+        Dict{K, V}(slots,
+                   Vector{K}(undef, size),
+                   Vector{V}(undef, size),
+                   0, 0, zero(UInt), size, 0)
+    end
+end
+
+"""
+    shrinkdict(dict::Dict) -> Dict
+
+If `dict` looks like it may be smaller if reconstructed using `newdict`, do so.
+"""
+function shrinkdict(dict::Dict{K, V}) where {K, V}
+    if length(dict) <= 6
+        dnew = newdict(K, V, length(dict))
+        for (k, v) in dict
+            dnew[k] = v
+        end
+        dnew
+    else
+        dict
+    end
+end
+
+"""
     natkeygen(key::String)
 
 Generate a sorting key for `key` that when used with `sort` will put the
