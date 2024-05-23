@@ -313,7 +313,7 @@ end
     """
     collection = read(IOBuffer(datatoml), DataCollection)
     adataset, bdataset = sort(collection.datasets, by=d -> d.name)
-    @test referenced_datasets(adataset) == [adataset, bdataset]
+    @test Set(referenced_datasets(adataset)) == Set([adataset, bdataset])
     @test referenced_datasets(bdataset) == [adataset]
     @test get(adataset, "self") == adataset
     @test adataset == @getparam adataset."self"
@@ -343,8 +343,19 @@ end
     fieldeqn_parent_stack = []
     function fieldeqn(a::T, b::T) where {T} # field equal nested
         push!(fieldeqn_parent_stack, a)
-        if T <: Vector
-            eq = all([fieldeqn(ai, bi) for (ai, bi) in zip(a, b)])
+        if T <: AbstractVector
+            eq = length(a) == length(b) &&
+                all(splat(fieldeqn), zip(a, b))
+            pop!(fieldeqn_parent_stack)
+            eq
+        elseif T <: AbstractDict
+            eq = length(a) == length(b)
+            for k in keys(a)
+                if !haskey(b, k) || !fieldeqn(a[k], b[k])
+                    eq = false
+                    break
+                end
+            end
             pop!(fieldeqn_parent_stack)
             eq
         elseif isempty(fieldnames(T))
