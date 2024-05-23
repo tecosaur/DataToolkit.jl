@@ -47,7 +47,6 @@ rhash(::DataCollection, adt::AbstractDataTransformer, h::UInt=zero(UInt)) =
 
 Hash `x` with respect to `collection`, with special behaviour for
 the following types:
-- `SmallDict`
 - `Dict`
 - `Vector`
 - `Pair`
@@ -56,23 +55,19 @@ the following types:
 """ rhash
 
 """
-    rhash(collection::DataCollection, dict::SmallDict, h::UInt=zero(UInt)) # Helper method
+    rhash(collection::DataCollection, dict::Dict, h::UInt=zero(UInt)) # Helper method
 
 Individually hash each entry in `dict`, and then `xor` the results so the
 final value is independant of the ordering.
 """
-rhash(collection::DataCollection, dict::SmallDict, h::UInt=zero(UInt)) =
-    reduce(xor, (rhash(collection, kv, zero(UInt)) for kv in dict),
-           init=h)
-
 rhash(collection::DataCollection, dict::Dict, h::UInt=zero(UInt)) =
     reduce(xor, (rhash(collection, kv, zero(UInt)) for kv in dict),
            init=h)
 
 # For advising
-rhash(@nospecialize(transformer::DataStorage), @nospecialize(dict::SmallDict), h::UInt) =
+rhash(@nospecialize(transformer::DataStorage), @nospecialize(dict::Dict), h::UInt) =
     rhash(transformer.dataset.collection, dict, h)
-rhash(@nospecialize(transformer::DataLoader), @nospecialize(dict::SmallDict), h::UInt) =
+rhash(@nospecialize(transformer::DataLoader), @nospecialize(dict::Dict), h::UInt) =
     rhash(transformer.dataset.collection, dict, h)
 
 rhash(collection::DataCollection, pair::Pair, h::UInt) =

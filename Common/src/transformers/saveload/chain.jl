@@ -21,7 +21,7 @@ function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     end
 end
 
-supportedtypes(::Type{DataLoader{:chain}}, spec::SmallDict{String, Any}) =
+supportedtypes(::Type{DataLoader{:chain}}, spec::Dict{String, Any}) =
     let lastloader = last(@getparam spec."loaders"::Vector [nothing])
         if lastloader isa Dict # { driver="X", ... } form
             explicit_type = @getparam lastloader."type"
@@ -30,8 +30,7 @@ supportedtypes(::Type{DataLoader{:chain}}, spec::SmallDict{String, Any}) =
             elseif explicit_type isa Vector
                 parse.(QualifiedType, explicit_type)
             else
-                supportedtypes(DataLoader{Symbol(lastloader["driver"])},
-                               DataToolkitBase.smallify(lastloader))
+                supportedtypes(DataLoader{Symbol(lastloader["driver"])}, lastloader)
             end
         elseif lastloader isa String # "X" shorthand form
             supportedtypes(DataLoader{Symbol(lastloader)})

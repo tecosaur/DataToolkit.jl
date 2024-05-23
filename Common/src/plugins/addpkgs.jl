@@ -7,7 +7,7 @@ collection `dc`'s configuration.
 Part of `ADDPKGS_PLUGIN`.
 """
 function addpkgs_postparse_a(f::typeof(identity), dc::DataCollection)
-    pkgs = @getparam dc."packages"::SmallDict{String, Any}
+    pkgs = @getparam dc."packages"::Dict{String, Any}
     for (name, uuid_str) in pkgs
         uuid = tryparse(UUID, uuid_str)
         if isnothing(uuid)

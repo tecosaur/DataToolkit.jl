@@ -3,11 +3,11 @@ function _write_csv end # Implemented in `../../../ext/CSVExt.jl`
 
 function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     @require CSV
-    args = @getparam loader."args"::SmallDict{String, Any}
+    args = @getparam loader."args"::Dict{String, Any}
     kwargs = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in args)
     if haskey(kwargs, :types)
         types = kwargs[:types]
-        kwargs[:types] = if types isa SmallDict
+        kwargs[:types] = if types isa Dict
             Dict{eltype(keys(types)), Type}(
                 k => typeify(QualifiedType(v)) for (k, v) in types)
         elseif types isa Vector
@@ -55,7 +55,7 @@ supportedtypes(::Type{DataLoader{:csv}}) =
 function save(writer::DataWriter{:csv}, dest::IO, info)
     @require CSV
     kwargs = Dict(Symbol(k) => v for (k, v) in
-                      @getparam(writer."args"::SmallDict{String, Any}))
+                      @getparam(writer."args"::Dict{String, Any}))
     for charkey in (:quotechar, :openquotechar, :escapechar)
         if haskey(kwargs, charkey)
             kwargs[charkey] = first(kwargs[charkey])

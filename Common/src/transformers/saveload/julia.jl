@@ -25,11 +25,10 @@ end
 function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
     if isempty(@getparam loader."input"::String "")
         loadfn = getactfn(loader)
-        arguments = let args = @getparam(loader."arguments"::SmallDict)
-            SmallDict(Symbol.(keys(args)), Vector{Any}(values(args)))
-        end
+        kwargs = Dict{Symbol, Any}(
+            Symbol(k) => v for (k, v) in @getparam(loader."arguments"::Dict{String, Any}))
         cd(dirof(loader.dataset.collection)) do
-            DataToolkitBase.invokepkglatest(loadfn; arguments...)::R
+            DataToolkitBase.invokepkglatest(loadfn; kwargs...)::R
         end
     end
 end
@@ -39,11 +38,10 @@ function load(loader::DataLoader{:julia}, from::Any, R::Type)
         desired_type = typeify(QualifiedType(@getparam loader."input"::String ""))
         if from isa desired_type
             loadfn = getactfn(loader)
-            arguments = Dict{Symbol,Any}(
-                Symbol(arg) => val
-                for (arg, val) in @getparam(loader."arguments"::SmallDict{String, Any}))
+            kwargs = Dict{Symbol,Any}(
+                Symbol(k) => v for (k, v) in @getparam(loader."arguments"::Dict{String, Any}))
             cd(dirof(loader.dataset.collection)) do
-                DataToolkitBase.invokepkglatest(loadfn, from; arguments...)::R
+                DataToolkitBase.invokepkglatest(loadfn, from; kwargs...)::R
             end
         end
     end
@@ -51,11 +49,10 @@ end
 
 function save(writer::DataWriter{:julia}, dest, info)
     writefn = getactfn(writer)
-    arguments = Dict{Symbol,Any}(
-        Symbol(arg) => val
-        for (arg, val) in @getparam(loader."arguments"::SmallDict{String, Any}))
+    kwargs = Dict{Symbol,Any}(
+        Symbol(k) => v for (k, v) in @getparam(loader."arguments"::Dict{String, Any}))
     cd(dirof(writer.dataset.collection)) do
-        DataToolkitBase.invokepkglatest(writefn, dest, info; arguments...)
+        DataToolkitBase.invokepkglatest(writefn, dest, info; kwargs...)
     end
 end
 

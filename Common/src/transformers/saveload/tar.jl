@@ -56,7 +56,7 @@ end
 load(loader::DataLoader{:tar}, from::FilePath, as::Type) =
     open(io -> load(loader, io, as), string(from))
 
-function supportedtypes(::Type{DataLoader{:tar}}, spec::SmallDict{String, Any})
+function supportedtypes(::Type{DataLoader{:tar}}, spec::Dict{String, Any})
     filetypes =
         [QualifiedType(:Core, :IO, ()),
          QualifiedType(:Core, :Array, (QualifiedType(:Core, :UInt8, ()), 1)),

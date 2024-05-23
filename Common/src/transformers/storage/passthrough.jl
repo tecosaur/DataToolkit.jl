@@ -4,7 +4,15 @@ function getstorage(storage::DataStorage{:passthrough}, T::Type)
     read(resolve(collection, ident, resolvetype=false), T)
 end
 
-function supportedtypes(::Type{DataStorage{:passthrough}}, params::SmallDict{String, Any}, dataset::DataSet)
+# To avoid method ambiguity with the fallback methods
+getstorage(storage::DataStorage{:passthrough}, T::Type{Vector{UInt8}}) =
+    invoke(getstorage, Tuple{typeof(storage), Type}, storage, T)
+getstorage(storage::DataStorage{:passthrough}, T::Type{String}) =
+    invoke(getstorage, Tuple{typeof(storage), Type}, storage, T)
+getstorage(storage::DataStorage{:passthrough}, T::Type{IO}) =
+    invoke(getstorage, Tuple{typeof(storage), Type}, storage, T)
+
+function supportedtypes(::Type{DataStorage{:passthrough}}, params::Dict{String, Any}, dataset::DataSet)
     ident = @advise dataset parse(Identifier, get(params, "source", "")::String)
     if !isnothing(ident.type)
         [ident.type]

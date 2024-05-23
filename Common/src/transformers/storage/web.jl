@@ -144,7 +144,7 @@ end
 function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retries::Int=2)
     @require Downloads
     url = @getparam storage."url"::String
-    headers = @getparam storage."headers"::SmallDict{String, Any}
+    headers = @getparam storage."headers"::Dict{String, Any}
     timeout = @getparam storage."timeout"::Real Inf
     success = false
     for attempt in 1:retries

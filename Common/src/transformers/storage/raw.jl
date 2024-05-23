@@ -3,7 +3,7 @@ const TOMLValue = TOML.Internals.Printer.TOMLValue
 
 function getstorage(storage::DataStorage{:raw}, T::Type{<:TOMLValue})
     if T <: Dict
-        val = @getparam storage."value"::Union{SmallDict, Nothing} nothing
+        val = @getparam storage."value"::Union{Dict, Nothing} nothing
         if !isnothing(val)
             convert(Dict, val)::T
         end
@@ -16,7 +16,7 @@ function putstorage(storage::DataStorage{:raw}, ::Type{<:TOMLValue})
     storage
 end
 
-supportedtypes(::Type{DataStorage{:raw}}, spec::SmallDict{String, Any}) =
+supportedtypes(::Type{DataStorage{:raw}}, spec::Dict{String, Any}) =
     [QualifiedType(typeof(get(spec, "value", nothing)))]
 
 # NOTE This is hacky, but it's a special case

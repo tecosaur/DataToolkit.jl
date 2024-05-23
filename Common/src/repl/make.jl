@@ -250,7 +250,7 @@ function sandbox_dataset(; collection::DataCollection=first(STACK),
     loader = first(dataset.loaders)
 
     if !isempty(datavars)
-        args = SmallDict{String, Any}()
+        args = Dict{String, Any}()
         for (; var, identstr, type) in datavars
             ident = @advise collection parse(Identifier, identstr)
             if isnothing(type)

@@ -1,4 +1,4 @@
-const DEFAULT_DEFAULTS = SmallDict{String, Any}()
+const DEFAULT_DEFAULTS = Dict{String, Any}()
 
 """
     DEFAULTS_ALL
@@ -28,18 +28,18 @@ Get the default parameters of an AbstractDataTransformer of type `ADT` using
 `resolvetype` is set.
 """
 function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
-                     driver::Symbol, spec::SmallDict{String, Any};
+                     driver::Symbol, spec::Dict{String, Any};
                      resolvetype::Bool=true)
-    adt_type = SmallDict(:DataStorage => "storage",
-                         :DataLoader => "loader",
-                         :DataWriter => "writer")[nameof(ADT)]
+    adt_type = Dict(:DataStorage => "storage",
+                    :DataLoader => "loader",
+                    :DataWriter => "writer")[nameof(ADT)]
     concrete_adt = if isconcretetype(ADT) ADT else ADT{driver} end
     # get config.TRANSFORMER.DRIVER values
     transformer_defaults =
         get(get(dataset.collection,
                 "defaults", DEFAULT_DEFAULTS),
-            adt_type, SmallDict{String,Any}())
-    implicit_defaults = SmallDict{String, Any}(
+            adt_type, Dict{String,Any}())
+    implicit_defaults = Dict{String, Any}(
         "priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY)
     if resolvetype
         types = string.(supportedtypes(concrete_adt, spec, dataset))
@@ -47,8 +47,8 @@ function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
             if length(types) == 1 first(types) else types end
     end
     merge(implicit_defaults,
-          get(transformer_defaults, DEFAULTS_ALL, SmallDict{String,Any}()),
-          get(transformer_defaults, String(driver), SmallDict{String,Any}()))
+          get(transformer_defaults, DEFAULTS_ALL, Dict{String,Any}()),
+          get(transformer_defaults, String(driver), Dict{String,Any}()))
 end
 
 """
@@ -65,8 +65,7 @@ getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer};
                             if ADT isa DataType
                                 first(ADT.parameters)
                             else Symbol(get(spec, "driver", "MISSING")) end,
-                            DataToolkitBase.smallify(spec);
-                            resolvetype)
+                            spec; resolvetype)
 
 """
     getdefaults(adt::AbstractDataTransformer)

@@ -407,8 +407,8 @@ optionally followed by an "s", comma, or whitespace. E.g.
 - `4d12h`
 """
 function interpret_lifetime(lifetime::String)
-    period = SmallDict("years" => 0.0, "months" => 0.0, "weeks" => 0.0, "days" => 0.0,
-                       "hours" => 0.0, "minutes" => 0.0, "seconds" => 0.0)
+    period = Dict("years" => 0.0, "months" => 0.0, "weeks" => 0.0, "days" => 0.0,
+                  "hours" => 0.0, "minutes" => 0.0, "seconds" => 0.0)
     iso8061_duration_1 = r"^P(?:(?P<years>\d+)Y)?(?:(?P<months>\d+)M)?(?:(?P<days>\d+)D)?(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?)?$"
     iso8061_duration_2 = r"^P(?P<years>\d\d\d\d)-?(?P<months>\d\d)-?(?P<days>\d\d)(?:T(?P<hours>\d\d):?(?P<minutes>\d\d)?:?(?P<seconds>\d\d)?)?$"
     iso_period = @something(match(iso8061_duration_1, lifetime),

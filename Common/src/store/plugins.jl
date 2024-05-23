@@ -100,14 +100,14 @@ function store_get_a(f::typeof(storage), @nospecialize(storer::DataStorage), as:
 end
 
 """
-    store_epoch_param_a( <rhash(storage::DataStorage, parameters::SmallDict, h::UInt)> )
+    store_epoch_param_a( <rhash(storage::DataStorage, parameters::Dict, h::UInt)> )
 
 The ensures that the epoch of the lifetime parameter, but not the lifetime
 value itself affects the `rhash` of the storage.
 
 Part of `STORE_PLUGIN`.
 """
-function store_epoch_param_a(f::typeof(rhash), @nospecialize(storage::DataStorage), parameters::SmallDict, h::UInt)
+function store_epoch_param_a(f::typeof(rhash), @nospecialize(storage::DataStorage), parameters::Dict{String}, h::UInt)
     delete!(parameters, "save") # Does not impact the final result
     if haskey(parameters, "lifetime")
         delete!(parameters, "lifetime") # Does not impact the final result
@@ -329,13 +329,13 @@ function cache_get_a(f::typeof(load), @nospecialize(loader::DataLoader), source:
 end
 
 """
-    cache_rhash_omit_a( <rhash(loader::DataLoader, parameters::SmallDict, h::UInt)> )
+    cache_rhash_omit_a( <rhash(loader::DataLoader, parameters::Dict, h::UInt)> )
 
 The ensures that the cache parameter does not affect the `rhash` of the loader.
 
 Part of `CACHE_PLUGIN`.
 """
-function cache_rhash_omit_a(f::typeof(rhash), @nospecialize(loader::DataLoader), parameters::SmallDict, h::UInt)
+function cache_rhash_omit_a(f::typeof(rhash), @nospecialize(loader::DataLoader), parameters::Dict{String}, h::UInt)
     delete!(parameters, "cache") # Does not impact the final result
     (f, (loader, parameters, h))
 end
