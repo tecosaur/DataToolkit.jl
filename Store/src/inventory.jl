@@ -308,7 +308,7 @@ Find the `Inventory` that is responsible for `collection`, creating it if
 necessary.
 """
 function getinventory(collection::DataCollection)
-    path = let storepath = get(get(collection, "store", SmallDict{String, Any}()),
+    path = let storepath = get(get(collection, "store", Dict{String, Any}()),
                                "path", nothing)
         joinpath(if !isnothing(storepath)
                      joinpath(dirof(collection), storepath)
