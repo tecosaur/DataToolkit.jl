@@ -36,7 +36,7 @@ end
 Convert `qt` to a `Type` available in `mod`, if possible.
 If this cannot be done, `nothing` is returned instead.
 """
-function typeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)
+function typeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)::Union{Type, Nothing}
     mod = if qt.root === :Main
         mod
     elseif isdefined(mod, qt.root)
