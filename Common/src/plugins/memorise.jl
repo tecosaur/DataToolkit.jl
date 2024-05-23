@@ -11,14 +11,14 @@ loaders of the dataset, and `as` is the type of the loaded data.
 const MEMORISE_CACHE = Dict{Tuple{UUID, UUID, UInt, Type}, Any}()
 
 """
-    memorise_read_a( <_read(dataset::DataSet, as::Type)> )
+    memorise_read_a( <read1(dataset::DataSet, as::Type)> )
 
 This advice keeps in-memory copies of all loaded datasets (that can safely be
 re-used, currently we just avoid non-seekable `IO`), using `MEMORISE_CACHE`.
 
 Part of `MEMORISE_PLUGIN`.
 """
-function memorise_read_a(f::typeof(DataToolkitBase._read), dataset::DataSet, as::Type)
+function memorise_read_a(f::typeof(DataToolkitBase.read1), dataset::DataSet, as::Type)
         memorise = @something(get(dataset, "memorise"), get(dataset, "memorize", false))
         should_memorise = if memorise isa Bool
             memorise
