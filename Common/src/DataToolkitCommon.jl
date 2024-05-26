@@ -62,13 +62,9 @@ include("plugins/log.jl") # Must be early so `should_log_event` is availible.
 include("plugins/versions.jl")
 include("plugins/memorise.jl")
 
-include("repl/REPLcmds.jl")
-
 include("misc/lintrules.jl")
 
 function __init__()
-    REPLcmds.add_repl_cmds()
-
     # Storage
     @addpkg Downloads      "f43a241f-c20a-4ad4-852c-f6b1247861c6"
     @addpkg Git_jll        "f8c6e375-362e-5223-8a59-34ff63f689eb"

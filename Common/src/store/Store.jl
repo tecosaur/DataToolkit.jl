@@ -3,7 +3,7 @@ module Store
 using DataToolkitBase
 using BaseDirs
 using Dates
-using Markdown: MD, @md_str
+using Markdown
 using Serialization
 using TOML
 using UUIDs
@@ -28,14 +28,11 @@ include("inventory.jl")
 include("storage.jl")
 include("plugins.jl")
 
-include("repl.jl")
-
 """
     __init__()
 
 Initialise the data store by:
 - Registering the plugins `STORE_PLUGIN` and `CACHE_PLUGIN`
-- Adding the "store" Data REPL command
 - Loading the user inventory
 - Registering the GC-on-exit hook
 """
@@ -48,10 +45,6 @@ function __init__()
     # Plugins
     @dataplugin STORE_PLUGIN :default
     @dataplugin CACHE_PLUGIN
-    # REPL injection
-    let pos = searchsorted(REPL_CMDS, STORE_REPL_CMD, by=c -> DataToolkitBase.natkeygen(c.trigger))
-        splice!(REPL_CMDS, pos, (STORE_REPL_CMD,))
-    end
     # Inventory loading
     _init_user_inventory!()
     push!(INVENTORIES, load_inventory(USER_INVENTORY))

@@ -1,6 +1,35 @@
-import DataToolkitBase: allcompletions
+module StoreREPL
 
-const REPL_CONFIG_KEYS = ["auto_gc", "max_age", "max_size", "recency_beta", "store_dir", "cache_dir"]
+import REPL.TerminalMenus: request, RadioMenu
+
+import DataToolkitBase: STACK, REPL_CMDS, ReplCmd, add_repl_cmd!, natkeygen
+using DataToolkitCommon.Store: STORE_GC_CONFIG_INFO
+using Markdown: MD, @md_str
+
+# For use in `../src/store/storage.jl`
+
+import DataToolkitCommon.Store.should_overwrite
+
+function should_overwrite(name::String, old::String, new::String)
+    printstyled(" ! ", color=:yellow, bold=true)
+    print("Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
+          "  Expected the checksum to be $(string(checksum)), got $(string(actual_checksum)).\n",
+          "  How would you like to proceed?\n\n")
+    options = ["(o) Overwrite checksum to $(string(actual_checksum))", "(a) Abort and throw an error"]
+    choice = request(RadioMenu(options, keybindings=['o', 'a']))
+    print('\n')
+    choice == 1
+end
+
+# The `store` REPL command
+
+const REPL_CONFIG_KEYS =
+    ["auto_gc",
+     "max_age",
+     "max_size",
+     "recency_beta",
+     "store_dir",
+     "cache_dir"]
 
 function repl_config_get(input::AbstractString)
     inventory = if isempty(STACK)
@@ -135,10 +164,6 @@ function repl_config_reset(input::AbstractString)
     end
 end
 
-allcompletions(::ReplCmd{:store_config_get}) = REPL_CONFIG_KEYS
-allcompletions(::ReplCmd{:store_config_set}) = REPL_CONFIG_KEYS
-allcompletions(::ReplCmd{:store_config_reset}) = REPL_CONFIG_KEYS
-
 function repl_gc(input::AbstractString)
     flags = split(input)
     dryrun = "-d" in flags || "--dryrun" in flags
@@ -150,8 +175,6 @@ function repl_gc(input::AbstractString)
         garbage_collect!(inventory; dryrun)
     end
 end
-
-allcompletions(::ReplCmd{:store_gc}) = ["-d", "--dryrun", "-a", "--all"]
 
 function repl_expunge(input::AbstractString)
     inventory = if isempty(STACK) getinventory()
@@ -175,10 +198,10 @@ function repl_expunge(input::AbstractString)
     println("removed $(length(removed)) items from the store")
 end
 
-function allcompletions(::ReplCmd{:store_expunge})
+function repl_expunge_complete(sofar::AbstractString)
     inventory = if isempty(STACK) getinventory()
     else getinventory(first(STACK)) end
-    getfield.(inventory.collections, :name)
+    [c.name for c in inventory.collection if startswith(c.name, sofar)]
 end
 
 function repl_fetch(input::AbstractString)
@@ -203,56 +226,62 @@ end
 
 const STORE_SUBCMDS =
     ReplCmd[
-        ReplCmd{:store_config}(
-            "config", "Manage configuration",
-            ReplCmd[
-                ReplCmd{:store_config_get}(
-                    "get", MD(md"Get the current configuration",
-                              STORE_GC_CONFIG_INFO),
-                    repl_config_get),
-                ReplCmd{:store_config_set}(
-                    "set", MD(md"Set a configuration parameter",
-                              STORE_GC_CONFIG_INFO),
-                    repl_config_set),
-                ReplCmd{:store_config_reset}(
-                    "reset", MD(md"Set a configuration parameter",
-                                STORE_GC_CONFIG_INFO),
-                    repl_config_reset)]),
-        ReplCmd{:store_expunge}(
-            "expunge",
-            md"""Remove a data collection from the store
-                 ## Usage
+        ReplCmd("config",
+                "Manage configuration",
+                ReplCmd[
+                    ReplCmd("get",
+                            MD(md"Get the current configuration",
+                               STORE_GC_CONFIG_INFO),
+                            repl_config_get,
+                            REPL_CONFIG_KEYS),
+                    ReplCmd("set",
+                            MD(md"Set a configuration parameter",
+                               STORE_GC_CONFIG_INFO),
+                            repl_config_set,
+                            REPL_CONFIG_KEYS),
+                    ReplCmd("reset",
+                            MD(md"Set a configuration parameter",
+                               STORE_GC_CONFIG_INFO),
+                            repl_config_reset,
+                            REPL_CONFIG_KEYS)]),
+        ReplCmd("expunge",
+                md"""Remove a data collection from the store
+                     ## Usage
 
-                     data> expunge [collection name or UUID]""",
-            repl_expunge),
-        ReplCmd{:store_fetch}(
-            "fetch",
-            md"""Fetch data storage sources
+                         data> expunge [collection name or UUID]""",
+                repl_expunge,
+                repl_expunge_complete),
+        ReplCmd("fetch",
+                md"""Fetch data storage sources
 
-               A particular collection or data set can be specified with
+                   A particular collection or data set can be specified with
 
-                   data> fetch [collection or data set name or UUID]
+                       data> fetch [collection or data set name or UUID]
 
-               Without specifying a particular target, all data sets
-               are fetched.""",
-            repl_fetch),
-        ReplCmd{:store_gc}(
-            "gc",
-            md"""Garbage Collect
+                   Without specifying a particular target, all data sets
+                   are fetched.""",
+                repl_fetch),
+        ReplCmd("gc",
+                md"""Garbage Collect
 
-                 Scan the inventory and perform a garbage collection sweep.
+                    Scan the inventory and perform a garbage collection sweep.
 
-                 Optionally provide the `-d`/`--dryrun` flag to prevent
-                 file deletion.""",
-            repl_gc),
-        ReplCmd{:store_stats}(
-            "stats", "Show statistics about the data store",
-            function (_)
-                update_inventory!.(INVENTORIES)
-                printstats()
-            end)]
+                    Optionally provide the `-d`/`--dryrun` flag to prevent
+                    file deletion.""",
+                repl_gc,
+                ["-d", "--dryrun", "-a", "--all"]),
+        ReplCmd("stats",
+                "Show statistics about the data store",
+                function (_)
+                    foreach(update_inventory!, INVENTORIES)
+                    printstats()
+                end)]
 
 const STORE_REPL_CMD =
-    ReplCmd(:store,
-            "Manipulate the data store",
-            STORE_SUBCMDS)
+    ReplCmd("store", "Manipulate the data store", STORE_SUBCMDS)
+
+# For some reason without the try-catch this triggers
+# sporadic precompilation failures.
+__init__() = add_repl_cmd!(STORE_REPL_CMD)
+
+end

@@ -1,5 +1,3 @@
-import REPL.TerminalMenus: request, RadioMenu
-
 const DOWNLOAD_STYLE = (
     textstyle = "\e[90m",
     spinners = ('◐', '◓', '◑', '◒'),

@@ -1,5 +1,3 @@
-import REPL.TerminalMenus: request, RadioMenu
-
 """
     fileextension(storage::DataStorage)
 
@@ -255,14 +253,8 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
     if checksum == actual_checksum
         actual_checksum
     elseif isinteractive() && iswritable(storage.dataset.collection)
-        printstyled(" ! ", color=:yellow, bold=true)
-        print("Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
-                "  Expected the checksum to be $(string(checksum)), got $(string(actual_checksum)).\n",
-                "  How would you like to proceed?\n\n")
-        options = ["(o) Overwrite checksum to $(string(actual_checksum))", "(a) Abort and throw an error"]
-        choice = request(RadioMenu(options, keybindings=['o', 'a']))
-        print('\n')
-        if choice == 1 # Overwrite
+        if hasmethod(should_overwrite, Tuple{String, String, String}) &&
+            should_overwrite(storage.dataset.name, string(checksum), string(actual_checksum))
             storage.parameters["checksum"] = string(actual_checksum)
             write(storage)
             actual_checksum
@@ -275,6 +267,8 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
                         " Expected $(string(checksum)), got $(string(actual_checksum))."))
     end
 end
+
+function should_overwrite end # Implemented in `../../ext/StorageREPL.jl`
 
 """
     storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath}, file::FilePath)
