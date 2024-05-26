@@ -85,7 +85,7 @@ function Base.convert(::Type{StoreSource}, spec::Dict{String, Any})
     checksum = if haskey(spec, "checksum")
         tryparse(Checksum, spec["checksum"]) end
     StoreSource(parse(UInt64, spec["recipe"], base=16),
-                parse.(UUID, spec["references"]),
+                map(UUID, spec["references"]),
                 spec["accessed"], checksum,
                 spec["extension"])
 end
@@ -107,7 +107,7 @@ function Base.convert(::Type{CacheSource}, spec::Dict{String, Any})
     packages = map(pkg -> Base.PkgId(parse(UUID, pkg["uuid"]), pkg["name"]),
                    spec["packages"])
     CacheSource(parse(UInt64, spec["recipe"], base=16),
-                parse.(UUID, spec["references"]),
+                map(UUID, spec["references"]),
                 spec["accessed"],
                 parse.(QualifiedType, spec["types"]) .=>
                     parse.(UInt64, spec["typehashes"], base=16),
