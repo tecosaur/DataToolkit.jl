@@ -2,3 +2,4 @@
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 Org = "587fedb0-ad84-11e9-2bd6-d15ea4be1f9e"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
