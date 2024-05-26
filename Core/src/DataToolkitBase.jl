@@ -53,8 +53,4 @@ include("precompile.jl")
 
 function add_datasets! end # For `ext/AbstractTreesExt.jl`
 
-function __init__()
-    isinteractive() && init_repl()
-end
-
 end

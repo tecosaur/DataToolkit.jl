@@ -25,8 +25,6 @@
     # function load(::DataLoader{:passthrough}, from::T, ::Type{T}) where {T <: Any}
     #     from
     # end
-    Base.active_repl =
-        REPL.LineEditREPL(REPL.Terminals.TTYTerminal("", stdin, stdout, stderr), true)
     @compile_workload begin
         loadcollection!(IOBuffer(datatoml))
         write(devnull, STACK[1])
@@ -36,15 +34,6 @@
         sprint(show, dataset("dataset"), context = :color => true)
         lint(STACK[1])
         @advise STACK[1] sum(1:3)
-        # REPL
-        init_repl()
-        redirect_stdio(stdout=devnull, stderr=devnull) do
-            toplevel_execute_repl_cmd("?")
-            toplevel_execute_repl_cmd("?help")
-            toplevel_execute_repl_cmd("help help")
-            toplevel_execute_repl_cmd("help :")
-        end
-        complete_repl_cmd("help ")
         # Other stuff
         get(dataset("dataset"), "self")
         get(dataset("dataset"), "other")

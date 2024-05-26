@@ -7,15 +7,16 @@ version = "0.9.1"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
 MetaGraphsNext = "fa8bd995-216d-47f1-8a91-f3b68fbeb377"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [extensions]
 GraphExt = "MetaGraphsNext"
+REPLExt = "REPL"
 
 [compat]
 MetaGraphsNext = "0.5, 0.6"
