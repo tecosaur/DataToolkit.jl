@@ -66,15 +66,6 @@ completions(r::ReplCmd, sofar::AbstractString) =
 completions(@nospecialize(r::ReplCmd{<:Any, Vector{ReplCmd}}), sofar::AbstractString) =
     complete_repl_cmd(sofar, commands = r.execute)
 
-"""
-    allcompletions(r::ReplCmd)
-
-Obtain all possible `String` completion candidates for `r`.
-This defaults to the empty vector `String[]`.
-
-`allcompletions` is only called when `completions(r, sofar::AbstractString)` is
-not implemented.
-"""
 allcompletions(::ReplCmd) = String[]
 
 """

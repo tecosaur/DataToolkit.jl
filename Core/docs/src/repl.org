@@ -76,9 +76,6 @@ implementing ~completions(::ReplCmd{:CMD_ID}, sofar::AbstractString)~ or
 
 #+begin_src @docs
 completions
-#+end_src
-
-#+begin_src @docs
 allcompletions
 #+end_src
 
@@ -88,17 +85,8 @@ To create a pleasant user interface, a number of utility functions are provided.
 
 #+begin_src @docs
 prompt
-#+end_src
-
-#+begin_src @docs
 prompt_char
-#+end_src
-
-#+begin_src @docs
 confirm_yn
-#+end_src
-
-#+begin_src @docs
 peelword
 #+end_src
 

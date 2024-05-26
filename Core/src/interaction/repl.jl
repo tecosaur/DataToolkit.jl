@@ -57,6 +57,20 @@ function toplevel_execute_repl_cmd end
 function complete_repl_cmd end
 function init_repl end
 
+# For some reason beyond me, documenter doesn't pick this up
+# if the docstring is left in the DataToolkitREPL extension 😕.
+# REVIEW check to see if this is magically fixed in a newer version
+# of `Documenter`.
+@doc """
+    allcompletions(r::ReplCmd)
+
+Obtain all possible `String` completion candidates for `r`.
+This defaults to the empty vector `String[]`.
+
+`allcompletions` is only called when `completions(r, sofar::AbstractString)` is
+not implemented.
+""" allcompletions
+
 # Interaction utilities
 
 function prompt end
