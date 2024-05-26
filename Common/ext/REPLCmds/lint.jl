@@ -36,8 +36,3 @@ function repl_lint(input::AbstractString)
         end
     end
 end
-
-completions(::ReplCmd{:check}, sofar::AbstractString) =
-    sort(vcat(complete_collection(sofar),
-              complete_dataset(sofar)),
-         by=natkeygen)

@@ -35,6 +35,3 @@ function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(std
         end
     end
 end
-
-allcompletions(::ReplCmd{:list}) =
-    filter(cn -> !isnothing(cn), map(c -> c.name, STACK))

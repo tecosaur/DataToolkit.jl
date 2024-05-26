@@ -1,5 +1,3 @@
-import InteractiveUtils.edit
-
 const EDIT_DOC = md"""
 Edit the specification of a dataset
 
@@ -154,6 +152,3 @@ function repl_edit(input::AbstractString)
     printstyled(" ✓ Edited '$(newdata.name)' ", color=:green)
     printstyled('(', newdata.uuid, ')', '\n', color=:light_black)
 end
-
-completions(::ReplCmd{:edit}, sofar::AbstractString) =
-    complete_dataset(sofar)

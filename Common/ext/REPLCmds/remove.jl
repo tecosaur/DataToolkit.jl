@@ -38,6 +38,3 @@ function remove(input::AbstractString)
     delete!(dataset)
     printstyled(" ✓ Done\n", color=:green)
 end
-
-completions(::ReplCmd{:remove}, sofar::AbstractString) =
-    complete_dataset(sofar)

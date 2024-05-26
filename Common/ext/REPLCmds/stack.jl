@@ -1,3 +1,6 @@
+const STACK_DOC =
+    "Operate on the data collection stack"
+
 """
     stack_list(::AbstractString; maxwidth::Int=displaysize(stdout)[2])
 Print a table listing all of the current data collections on the stack.
@@ -121,12 +124,29 @@ function stack_remove(input::AbstractString)
     end
 end
 
+function complete_stack_load(sofar::AbstractString)
+    pathsofar = first(match(r"^(?:\d+ *)?(.*)$", sofar).captures)
+    currentsegment = reverse(first(split(reverse(pathsofar), '/', limit=2, keepempty=true)))
+    nextsegments = getfield.(first(REPL.REPLCompletions.complete_path(pathsofar, 0)), :path)
+    if all(isspace, sofar) || '/' ∉ sofar
+        append!(nextsegments, complete_collection(sofar))
+        return Vector{String}(nextsegments)
+    elseif isempty(nextsegments)
+        return complete_collection(sofar)
+    end
+    (if !isempty(nextsegments)
+         nextsegments
+     else String[] end,
+     String(currentsegment),
+     !isempty(nextsegments))
+end
+
 # TODO `stack edit`, with some sort of nice interactively re-orderable list
 
 const STACK_SUBCOMMANDS = ReplCmd[
-    ReplCmd{:stack_list}(
-        "", "List the data collections of the data stack", stack_list),
-    ReplCmd{:stack_promote}(
+    ReplCmd(
+        "list", "List the data collections of the data stack", stack_list),
+    ReplCmd(
         "promote",
         md"""Move an entry up the stack
 
@@ -151,8 +171,9 @@ const STACK_SUBCOMMANDS = ReplCmd[
               data> promote mydata
               data> promote mydata 3
               data> promote mydata *""",
-        stack_promote),
-    ReplCmd{:stack_demote}(
+        stack_promote,
+        complete_collection),
+    ReplCmd(
         "demote",
         md"""Move an entry down the stack
 
@@ -177,8 +198,9 @@ const STACK_SUBCOMMANDS = ReplCmd[
               data> demote mydata
               data> demote mydata 3
               data> demote mydata *""",
-        stack_demote),
-    ReplCmd{:stack_load}(
+        stack_demote,
+        complete_collection),
+    ReplCmd(
         "load",
         md"""Load a data collection onto the top of the stack
 
@@ -193,8 +215,9 @@ const STACK_SUBCOMMANDS = ReplCmd[
           ## Examples
               data> load path/to/mydata.toml
               data> load 2 somefolder/""",
-        stack_load),
-    ReplCmd{:stack_remove}(
+        stack_load,
+        complete_stack_load),
+    ReplCmd(
         "remove",
         md"""Remove an entry from the stack
 
@@ -208,31 +231,6 @@ const STACK_SUBCOMMANDS = ReplCmd[
               data> remove 2
               data> remove mydata
               data> remove 853a9f6a-cd5e-4447-a0a4-b4b2793e0a48""",
-        stack_remove),
+        stack_remove,
+        complete_collection),
 ]
-
-function completions(::ReplCmd{:stack_load}, sofar::AbstractString)
-    pathsofar = first(match(r"^(?:\d+ *)?(.*)$", sofar).captures)
-    currentsegment = reverse(first(split(reverse(pathsofar), '/', limit=2, keepempty=true)))
-    nextsegments = getfield.(first(REPL.REPLCompletions.complete_path(pathsofar, 0)), :path)
-    if all(isspace, sofar) || '/' ∉ sofar
-        append!(nextsegments, complete_collection(sofar))
-        return Vector{String}(nextsegments)
-    elseif isempty(nextsegments)
-        return complete_collection(sofar)
-    end
-    (if !isempty(nextsegments)
-         nextsegments
-     else String[] end,
-     String(currentsegment),
-     !isempty(nextsegments))
-end
-
-completions(::ReplCmd{:stack_promote}, sofar::AbstractString) =
-    complete_collection(sofar)
-
-completions(::ReplCmd{:stack_demote}, sofar::AbstractString) =
-    complete_collection(sofar)
-
-completions(::ReplCmd{:stack_remove}, sofar::AbstractString) =
-    complete_collection(sofar)

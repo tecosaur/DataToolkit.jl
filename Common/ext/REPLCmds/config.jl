@@ -1,3 +1,6 @@
+const CONFIG_DOC =
+    "Inspect and modify the current configuration"
+
 """
     config_segments(input::AbstractString)
 Parse a string representation of a TOML-style dotted path into path segments,
@@ -66,52 +69,14 @@ function config_unset(input::AbstractString)
     nothing
 end
 
-const CONFIG_SUBCOMMANDS = ReplCmd[
-    ReplCmd{:config_get}(
-        "get",
-        md"""Get the current configuration
-
-          The parameter to get the configuration of should be given using TOML-style
-          dot seperation.
-
-          ## Examples
-
-              data> get defaults.memorise
-              data> get my.\"special thing\".extra""",
-        config_get),
-    ReplCmd{:config_set}(
-        "set",
-        md"""Set a configuration property
-
-           The parameter to set the configuration of should be given using TOML-style
-           dot seperation.
-
-           Similarly, the new value should be expressed using TOML syntax.
-
-           ##Examples
-
-               data> set defaults.memorise true
-               data> set my.\"special thing\".extra {a=1, b=2}""",
-        config_set),
-    ReplCmd{:config_unset}(
-        "unset",
-        md"""Remove a configuration property
-
-        The parameter to be removed should be given using TOML-style dot seperation.
-
-        ## Examples
-
-            data> unset defaults.memorise
-            data> unset my.\"special thing\".extra""",
-        config_unset),
-]
 
 """
-    config_complete(sofar::AbstractString; collection::DataCollection=first(STACK))
+    complete_config(sofar::AbstractString; collection::DataCollection=first(STACK))
+
 Provide completions for the existing TOML-style property path of `collections`'s
 starting with `sofar`.
 """
-function config_complete(sofar::AbstractString; collection::DataCollection=first(STACK))
+function complete_config(sofar::AbstractString; collection::DataCollection=first(STACK))
     segments, rest = config_segments(sofar)
     if !isempty(rest) # if past path completion
         return String[]
@@ -141,11 +106,42 @@ function config_complete(sofar::AbstractString; collection::DataCollection=first
     end
 end
 
-completions(::ReplCmd{:config_get}, sofar::AbstractString) =
-    config_complete(sofar)
+const CONFIG_SUBCOMMANDS = ReplCmd[
+    ReplCmd(
+        "get",
+        md"""Get the current configuration
 
-completions(::ReplCmd{:config_set}, sofar::AbstractString) =
-    config_complete(sofar)
+          The parameter to get the configuration of should be given using TOML-style
+          dot seperation.
 
-completions(::ReplCmd{:config_unset}, sofar::AbstractString) =
-    config_complete(sofar)
+          ## Examples
+
+              data> get defaults.memorise
+              data> get my.\"special thing\".extra""",
+        config_get, complete_config),
+    ReplCmd(
+        "set",
+        md"""Set a configuration property
+
+           The parameter to set the configuration of should be given using TOML-style
+           dot seperation.
+
+           Similarly, the new value should be expressed using TOML syntax.
+
+           ##Examples
+
+               data> set defaults.memorise true
+               data> set my.\"special thing\".extra {a=1, b=2}""",
+        config_set, complete_config),
+    ReplCmd(
+        "unset",
+        md"""Remove a configuration property
+
+        The parameter to be removed should be given using TOML-style dot seperation.
+
+        ## Examples
+
+            data> unset defaults.memorise
+            data> unset my.\"special thing\".extra""",
+        config_unset, complete_config),
+]

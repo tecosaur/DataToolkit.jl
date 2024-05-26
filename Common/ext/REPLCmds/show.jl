@@ -49,6 +49,3 @@ function show_extra(io::IO, dataset::DataSet)
         print("\e[m\n")
     end
 end
-
-completions(::ReplCmd{:show}, sofar::AbstractString) =
-    complete_dataset(sofar)

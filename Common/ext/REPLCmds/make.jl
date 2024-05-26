@@ -1,5 +1,3 @@
-import InteractiveUtils.edit
-
 const MAKE_DOC = md"""
 Create a new data set from existing information
 

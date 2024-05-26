@@ -31,6 +31,13 @@ function complete_dataset(sofar::AbstractString)
     end |> options -> sort(filter(o -> startswith(o, sofar), options), by=natkeygen)
 end
 
+function complete_dataset_or_collection(sofar::AbstractString)
+    cands = complete_collection(sofar)
+    append!(cands, complete_dataset(sofar))
+    sort!(cands, by=natkeygen)
+    cands
+end
+
 """
     confirm_stack_nonempty(; quiet::Bool=false)
 Return `true` if STACK is non-empty.

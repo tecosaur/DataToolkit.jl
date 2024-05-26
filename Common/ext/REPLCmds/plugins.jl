@@ -1,3 +1,6 @@
+const PLUGIN_DOC =
+    "Inspect and modify the set of plugins used"
+
 """
     plugin_add(input::AbstractString)
 Parse and call the repl-format plugin add command `input`.
@@ -108,27 +111,7 @@ function plugin_list(input::AbstractString)
     end
 end
 
-const PLUGIN_SUBCOMMANDS = ReplCmd[
-    ReplCmd{:plugin_add}(
-        "add", "Add plugins to the first data collection",
-        plugin_add),
-    ReplCmd{:plugin_remove}(
-        "remove", "Remove plugins from the first data collection",
-        plugin_remove),
-    ReplCmd{:plugin_edit}(
-        "edit", "Edit the plugins used by the first data collection",
-        plugin_edit),
-    ReplCmd{:plugin_info}(
-        "info", "Fetch the documentation of a plugin",
-        DataToolkitBase.plugin_info),
-    ReplCmd{:plugin_list}(
-        "list", "List the plugins used by the first data collection
-
-With '-a'/'--availible' all loaded plugins are listed instead.",
-        plugin_list),
-]
-
-completions(::ReplCmd{:plugin_add}, sofar::AbstractString) =
+function complete_plugin_unused(sofar::AbstractString)
     if !isempty(STACK)
         plugins = split(sofar, r", *| +")
         options = filter(p -> startswith(p, last(plugins)),
@@ -141,8 +124,9 @@ completions(::ReplCmd{:plugin_add}, sofar::AbstractString) =
     else
         String[]
     end
+end
 
-completions(::ReplCmd{:plugin_remove}, sofar::AbstractString) =
+function complete_plugin_used(sofar::AbstractString)
     if !isempty(STACK)
         plugins = split(sofar, r", *| +")
         options = setdiff(filter(p -> startswith(p, last(plugins)),
@@ -154,7 +138,27 @@ completions(::ReplCmd{:plugin_remove}, sofar::AbstractString) =
     else
         String[]
     end
+end
 
-allcompletions(::ReplCmd{:plugin_info}) = getfield.(PLUGINS, :name)
+complete_plugin_all(sofar::AbstractString) =
+    [p.name for p in PLUGINS if startswith(p.name, sofar)]
 
-allcompletions(::ReplCmd{:plugin_list}) = ["--availible"]
+const PLUGIN_SUBCOMMANDS = ReplCmd[
+    ReplCmd(
+        "add", "Add plugins to the first data collection",
+        plugin_add, complete_plugin_unused),
+    ReplCmd(
+        "remove", "Remove plugins from the first data collection",
+        plugin_remove, complete_plugin_used),
+    ReplCmd(
+        "edit", "Edit the plugins used by the first data collection",
+        plugin_edit),
+    ReplCmd(
+        "info", "Fetch the documentation of a plugin",
+        DataToolkitBase.plugin_info, complete_plugin_all),
+    ReplCmd("list",
+            """List the plugins used by the first data collection
+
+            With '-a'/'--availible' all loaded plugins are listed instead.""",
+            plugin_list, ["--availible"]),
+]
