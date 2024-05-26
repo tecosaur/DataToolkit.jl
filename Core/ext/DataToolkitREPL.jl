@@ -3,22 +3,38 @@ module DataToolkitREPL
 using REPL, REPL.LineEdit
 using DataToolkitBase: ReplCmd, REPL_KEY, REPL_NAME, REPL_PROMPT,
     REPL_PROMPTSTYLE, REPL_QUESTION_COLOR, REPL_USER_INPUT_COLOUR, REPL_CMDS,
-    TRANSFORMER_DOCUMENTATION, STACK
+    TRANSFORMER_DOCUMENTATION, STACK, issubseq
 
-import DataToolkitBase: help, completions, find_repl_cmd, execute_repl_cmd,
+import DataToolkitBase: help, find_repl_cmd, execute_repl_cmd,
     complete_repl_cmd, init_repl, prompt, prompt_char, confirm_yn, peelword,
-    help_cmd_table, help_show, transformer_docs, transformers_printall
+    displaytable, help_cmd_table, help_show, transformer_docs, transformers_printall
 
 function __init__()
-    isinteractive() && @async init_repl()
+    isinteractive() || return
+    if isdefined(Base, :active_repl)
+        init_repl(Base.active_repl)
+    else
+        atreplinit() do repl
+            if isinteractive() && repl isa REPL.LineEditREPL
+                isdefined(repl, :interface) ||
+                    (repl.interface = REPL.setup_interface(repl))
+                init_repl(repl)
+            end
+        end
+    end
 end
 
 """
     help(r::ReplCmd)
 
 Print the help string for `r`.
+
+When `r` has subcommands, the description will be followed by a table of its
+subcommands.
 """
-function help(r::ReplCmd)
+function help end
+
+function help(r::ReplCmd{Function})
     if r.description isa AbstractString
         for line in eachsplit(rstrip(r.description), '\n')
             println("  ", line)
@@ -28,13 +44,7 @@ function help(r::ReplCmd)
     end
 end
 
-"""
-    help(r::ReplCmd{<:Any, Vector{ReplCmd}})
-
-Print the help string and subcommand table for `r`.
-"""
-function help(r::ReplCmd{<:Any, Vector{ReplCmd}})
-    @nospecialize
+function help(r::ReplCmd{Vector{ReplCmd}})
     if r.description isa AbstractString
         for line in eachsplit(rstrip(r.description), '\n')
             println("  ", line)
@@ -45,28 +55,6 @@ function help(r::ReplCmd{<:Any, Vector{ReplCmd}})
     print('\n')
     help_cmd_table(commands = r.execute, sub=true)
 end
-
-@doc """
-    completions(r::ReplCmd, sofar::AbstractString)
-
-Obtain a list of `String` completion candidates based on `sofar`.
-All candidates should begin with `sofar`.
-
-Should this function not be implemented for the specific ReplCmd `r`,
-`allcompletions(r)` will be called and filter to candidates that begin
-with `sofar`.
-
-If `r` has subcommands, then the subcommand prefix will be removed and
-`completions` re-called on the relevant subcommand.
-""" completions
-
-completions(r::ReplCmd, sofar::AbstractString) =
-    sort(filter(s -> startswith(s, sofar), allcompletions(r)))
-
-completions(@nospecialize(r::ReplCmd{<:Any, Vector{ReplCmd}}), sofar::AbstractString) =
-    complete_repl_cmd(sofar, commands = r.execute)
-
-allcompletions(::ReplCmd) = String[]
 
 """
 The help-string for the help command itself.
@@ -101,7 +89,7 @@ const HELP_CMD_HELP =
 Examine the command string `cmd`, and look for a command from `commands` that is
 uniquely identified. Either the identified command or `nothing` will be returned.
 
-Should `cmd` start with `help` or `?` then a `ReplCmd{:help}` command is returned.
+Should `cmd` start with `help` or `?` then a `ReplCmd("help", ...)` command is returned.
 
 If `cmd` is ambiguous and `warn` is true, then a message listing all potentially
 matching commands is printed.
@@ -114,11 +102,11 @@ those commands are printed as suggestions.
 function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
                        commands::Vector{ReplCmd}=REPL_CMDS,
                        scope::String="Data REPL")
-    replcmds = let candidates = filter(c -> startswith(c.trigger, cmd), commands)
+    replcmds = let candidates = filter(c -> startswith(c.name, cmd), commands)
         if isempty(candidates)
-            candidates = filter(c -> issubseq(cmd, c.trigger), commands)
+            candidates = filter(c -> issubseq(cmd, c.name), commands)
             if !isempty(candidates)
-                char_filtered = filter(c -> startswith(c.trigger, first(cmd)), candidates)
+                char_filtered = filter(c -> startswith(c.name, first(cmd)), candidates)
                 if !isempty(char_filtered)
                     candidates = char_filtered
                 end
@@ -130,29 +118,29 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
     for command in commands
         if command.execute isa Vector{ReplCmd}
             for subcmd in command.execute
-                if haskey(subcommands, subcmd.trigger)
-                    push!(subcommands[subcmd.trigger], command.trigger)
+                if haskey(subcommands, subcmd.name)
+                    push!(subcommands[subcmd.name], command.name)
                 else
-                    subcommands[subcmd.trigger] = [command.trigger]
+                    subcommands[subcmd.name] = [command.name]
                 end
             end
         end
     end
-    all_cmd_names = getproperty.(commands, :trigger)
+    all_cmd_names = map(c -> c.name, commands)
     if cmd == "" && "" in all_cmd_names
         replcmds[findfirst("" .== all_cmd_names)]
     elseif length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd)) || length(cmd) == 0
-        ReplCmd{:help}("help", replace(HELP_CMD_HELP, "<SCOPE>" => scope),
-                       cmd -> help_show(cmd; commands))
+        ReplCmd("help", replace(HELP_CMD_HELP, "<SCOPE>" => scope),
+                cmd -> help_show(cmd; commands))
     elseif length(replcmds) == 1
         first(replcmds)
     elseif length(replcmds) > 1 &&
-        sum(cmd .== getproperty.(replcmds, :trigger)) == 1 # single exact match
-        replcmds[findfirst(c -> c.trigger == cmd, replcmds)]
+        sum(c -> cmd == c.name, replcmds) == 1 # single exact match
+        replcmds[findfirst(c -> c.name == cmd, replcmds)]
     elseif warn && length(replcmds) > 1
         printstyled(" ! ", color=:red, bold=true)
         print("Multiple matching $scope commands: ")
-        candidates = filter(!=(""), getproperty.(replcmds, :trigger))
+        candidates = [c.name for c in replcmds if c.name != ""]
         for cand in candidates
             highlight_lcs(stdout, cand, String(cmd), before="\e[4m", after="\e[24m")
             cand === last(candidates) || print(", ")
@@ -185,7 +173,7 @@ Examine `line` and identify the leading command, then:
 - Show help, if help is asked for (see `help_show`)
 - Call the command's execute function, if applicable
 - Call `execute_repl_cmd` on the argument with `commands`
-  set to the command's subcommands and `scope` set to the command's trigger,
+  set to the command's subcommands and `scope` set to the command's name,
   if applicable
 """
 function execute_repl_cmd(line::AbstractString;
@@ -207,7 +195,7 @@ function execute_repl_cmd(line::AbstractString;
             help_show(Symbol(first(rest_parts)[2:end]))
         elseif length(rest_parts) <= 1
             help_show(rest; commands)
-        elseif find_repl_cmd(rest_parts[1]; commands) isa ReplCmd{<:Any, Vector{ReplCmd}}
+        elseif find_repl_cmd(rest_parts[1]; commands) isa ReplCmd{Vector{ReplCmd}}
             execute_repl_cmd(string(rest_parts[1], " help ", rest_parts[2]);
                              commands, scope)
         else
@@ -216,10 +204,10 @@ function execute_repl_cmd(line::AbstractString;
     else
         repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
         if isnothing(repl_cmd)
-        elseif repl_cmd isa ReplCmd{<:Any, Function}
+        elseif repl_cmd isa ReplCmd{Function}
             repl_cmd.execute(rest)
-        elseif repl_cmd isa ReplCmd{<:Any, Vector{ReplCmd}}
-            execute_repl_cmd(rest, commands = repl_cmd.execute, scope = repl_cmd.trigger)
+        elseif repl_cmd isa ReplCmd{Vector{ReplCmd}}
+            execute_repl_cmd(rest, commands = repl_cmd.execute, scope = repl_cmd.name)
         end
     end
 end
@@ -249,16 +237,17 @@ end
     complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
 
 Return potential completion candidates for `line` provided by `commands`.
-More specifically, the command being completed is identified and
-`completions(cmd::ReplCmd{:cmd}, sofar::AbstractString)` called.
+
+More specifically, the command (`cmd`) being completed is identified and
+`cmd.completions(sofar::AbstractString)` called.
 
 Special behaviour is implemented for the help command.
 """
 function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if isempty(line)
-        (sort(vcat(getfield.(commands, :trigger), "help")),
-         "",
-         true)
+        cands = [c.name for c in commands]
+        push!(cands, "help")
+        (sort(cands), "", true)
     else
         cmd_parts = split(line, limit = 2)
         cmd_name, rest = if length(cmd_parts) == 1
@@ -268,22 +257,22 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
         end
         repl_cmd = find_repl_cmd(cmd_name; commands)
         complete = if !isnothing(repl_cmd) && line != cmd_name
-            if repl_cmd isa ReplCmd{:help}
-                # This can't be a `completions(...)` call because we
+            if repl_cmd.name == "help"
+                # This can't be a `repl_cmd.completions(...)` call because we
                 # need to access `commands`.
                 if startswith(rest, ':') # transformer help
                     filter(t -> startswith(t, rest),
                            string.(':', TRANSFORMER_DOCUMENTATION .|>
                                first .|> last |> unique))
                 else # command help
-                    Vector{String}(filter(ns -> startswith(ns, rest),
-                                          getfield.(commands, :trigger)))
+                    [c.name for c in commands if startswith(c.name, rest)]
                 end
             else
-                completions(repl_cmd, rest)
+                repl_cmd.completions(rest)::Tuple{Vector{String}, String, Bool}
             end
         else
-            all_cmd_names = vcat(getfield.(commands, :trigger), "help")
+            all_cmd_names = map(c -> c.name, commands)
+            push!(all_cmd_names, "help")
             # Keep any ?-prefix if getting help, otherwise it would be nice
             # to end with a space to get straight to the sub-command/argument.
             all_cmd_names = if startswith(cmd_name, "?")
@@ -337,23 +326,8 @@ else
     end
 end
 
-"""
-    init_repl()
-
-Construct the Data REPL `LineEdit.Prompt` and configure it and the REPL to
-behave appropriately. Other than boilerplate, this basically consists of:
-- Setting the prompt style
-- Setting the execution function (`toplevel_execute_repl_cmd`)
-- Setting the completion to use `DataCompletionProvider`
-"""
-function init_repl()
-    # With *heavy* inspiration from <https://github.com/MasonProtter/ReplMaker.jl>
-    repl = Base.active_repl
-    if !isdefined(repl, :interface)
-        repl.interface = REPL.setup_interface(repl)
-    end
-    julia_mode = repl.interface.modes[1]
-    prompt_prefix, prompt_suffix = if repl.hascolor
+function create_data_mode(repl::REPL.AbstractREPL, base_mode::LineEdit.Prompt)
+    prompt_prefix, prompt_suffix = if repl.options.hascolor
         REPL_PROMPTSTYLE, "\e[m"
     else
         "", ""
@@ -367,49 +341,62 @@ function init_repl()
         end;
         prompt_prefix,
         prompt_suffix,
-        keymap_dict = LineEdit.default_keymap_dict,
-        on_enter = LineEdit.default_enter_cb,
         complete = DataCompletionProvider(),
         sticky = true)
-    data_mode.on_done = REPL.respond(toplevel_execute_repl_cmd, repl, data_mode)
 
-    push!(repl.interface.modes, data_mode)
-
-    history_provider = julia_mode.hist
+    data_mode.repl = repl
+    history_provider = base_mode.hist
     history_provider.mode_mapping[REPL_NAME] = data_mode
     data_mode.hist = history_provider
 
+    main_keymap = REPL.mode_keymap(base_mode)
     _, search_keymap = LineEdit.setup_search_keymap(history_provider)
     _, prefix_keymap = LineEdit.setup_prefix_keymap(history_provider, data_mode)
-    julia_keymap = REPL.mode_keymap(julia_mode)
+
+    data_mode.on_done =
+        REPL.respond(toplevel_execute_repl_cmd, repl, data_mode)
 
     data_mode.keymap_dict = LineEdit.keymap(Dict{Any, Any}[
         search_keymap,
-        julia_keymap,
+        main_keymap,
         prefix_keymap,
         LineEdit.history_keymap,
         LineEdit.default_keymap,
         LineEdit.escape_defaults
     ])
 
-    key_alt_action =
-        something(deepcopy(get(julia_mode.keymap_dict, REPL_KEY, nothing)),
-                  (state, args...) -> LineEdit.edit_insert(state, REPL_KEY))
+    data_mode
+end
+
+"""
+    init_repl(repl)
+
+Construct the Data REPL `LineEdit.Prompt` and configure it and the REPL to
+behave appropriately. Other than boilerplate, this basically consists of:
+- Setting the prompt style
+- Setting the execution function (`toplevel_execute_repl_cmd`)
+- Setting the completion to use `DataCompletionProvider`
+"""
+function init_repl(repl::REPL.AbstractREPL)
+    # With *heavy* inspiration from <https://github.com/MasonProtter/ReplMaker.jl>
+    # and Pkg.jl.
+    main_mode = repl.interface.modes[1] # Julia mode
+    data_mode = create_data_mode(repl, main_mode)
+    push!(repl.interface.modes, data_mode)
     function key_action(state, args...)
-                if isempty(state) || position(LineEdit.buffer(state)) == 0
-            function transition_action()
-                LineEdit.state(state, data_mode).input_buffer =
-                    copy(LineEdit.buffer(state))
+        if isempty(state) || position(LineEdit.buffer(state)) == 0
+            buf = copy(LineEdit.buffer(state))
+            LineEdit.transition(state, data_mode) do
+                LineEdit.state(state, data_mode).input_buffer = buf
             end
-            LineEdit.transition(transition_action, state, data_mode)
         else
-            key_alt_action(state, args...)
+            LineEdit.edit_insert(state, REPL_KEY)
         end
     end
-
     data_keymap = Dict{Any, Any}(REPL_KEY => key_action)
-    julia_mode.keymap_dict =
-        LineEdit.keymap_merge(julia_mode.keymap_dict, data_keymap)
+    main_mode.keymap_dict =
+        LineEdit.keymap_merge(main_mode.keymap_dict, data_keymap)
+    nothing
 end
 
 # ------------------
@@ -721,7 +708,7 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2]-2,
                         sub::Bool=false)
     help_headings = [if sub "Subcommand" else "Command" end, "Action"]
     help_lines = map(commands) do replcmd
-        String[replcmd.trigger,
+        String[replcmd.name,
                first(split(string(replcmd.description), '\n'))]
     end
     push!(help_lines, ["help", "Display help text for commands and transformers"])
@@ -822,10 +809,25 @@ end
 using PrecompileTools
 
 @setup_workload begin
-    Base.active_repl =
-        REPL.LineEditREPL(REPL.Terminals.TTYTerminal("", stdin, stdout, stderr), true)
+    struct FakeTerminal <: REPL.Terminals.UnixTerminal
+        in_stream::IOBuffer
+        out_stream::IOBuffer
+        err_stream::IOBuffer
+        hascolor::Bool
+        raw::Bool
+        FakeTerminal() = new(IOBuffer(), IOBuffer(), IOBuffer(), false, true)
+    end
+    REPL.raw!(::FakeTerminal, raw::Bool) = raw
+    term = FakeTerminal()
+    local repl
+    try
+        repl = REPL.LineEditREPL(term, true)
+        REPL.run_repl(repl)
+    catch _
+    end
     @compile_workload begin
-        init_repl()
+        __init__()
+        init_repl(repl)
         redirect_stdio(stdout=devnull, stderr=devnull) do
             toplevel_execute_repl_cmd("?")
             toplevel_execute_repl_cmd("?help")

@@ -305,16 +305,9 @@ struct FilePath path::String end
 Base.string(fp::FilePath) = fp.path
 
 # `ReplCmd` is documented in interaction/repl.jl
-struct ReplCmd{name, E <: Union{Function, Vector}}
-    trigger::String
+struct ReplCmd{E <: Union{Function, Vector}}
+    name::String
     description::Any
     execute::E
-    function ReplCmd{name}(trigger::String, description::Any,
-                           execute::Union{Function, Vector{<:ReplCmd}}) where { name }
-        if execute isa Function
-            new{name, Function}(trigger, description, execute)
-        else
-            new{name, Vector{ReplCmd}}(trigger, description, execute)
-        end
-    end
+    completions::Function
 end
