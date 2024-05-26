@@ -8,8 +8,8 @@ Base.methods(dt::Advice) = methods(dt.f)
 Apply `advice` to the function call `func(args...; kwargs...)`, and return the
 new `(post, func, args, kwargs)` tuple.
 """
-function (dt::Advice{F, C})(callform::Tuple{Function, Function, Tuple, NamedTuple}) where {F, C}
-    @nospecialize callform
+function (dt::Advice)(callform::Tuple{Function, Function, Tuple, NamedTuple})
+    @nospecialize
     post, func, args, kwargs = callform
     # Abstract-y `typeof`.
     atypeof(val::Any) = typeof(val)
@@ -54,30 +54,37 @@ end
 
 
 Base.empty(::Type{AdviceAmalgamation}) =
-    AdviceAmalgamation(identity, Advice[], String[], String[])
+    AdviceAmalgamation(Advice[], String[], String[])
 
-# When getting a property of a `AdviceAmalgamation`, first check
-# if the `:plugins_wanted` field is satisfied. Should it not be,
-# regenerate the `:advisors`, `:adviseall`, and `:plugins_used` fields
-# based on the currently available plugins and `:plugins_wanted`.
-function Base.getproperty(dta::AdviceAmalgamation, prop::Symbol)
-    if getfield(dta, :plugins_wanted) != getfield(dta, :plugins_used)
+"""
+    reinit(dta::AdviceAmalgamation)
+
+Check that `dta` is well initialised before using it.
+
+This does noting if `dta.plugins_wanted` is the same as `dta.plugins_used`.
+
+When they differ, it re-builds the advisors function list based
+on the currently available plugins, and updates `dta.plugins_used`.
+"""
+function reinit(dta::AdviceAmalgamation)
+    if dta.plugins_wanted != dta.plugins_used
         plugins_available =
-            filter(plugin -> plugin.name in getfield(dta, :plugins_wanted), PLUGINS)
-        if getfield.(plugins_available, :name) != getfield(dta, :plugins_used)
-            advisors = getfield.(plugins_available, :advisors) |>
-                Iterators.flatten |> collect |> Vector{Advice}
+            filter(plugin -> plugin.name in dta.plugins_wanted, PLUGINS)
+        if map(p -> p.name, plugins_available) != dta.plugins_used
+            advisors = Advice[]
+            for plg in plugins_available
+                append!(advisors, plg.advisors)
+            end
             sort!(advisors, by = t -> t.priority)
-            setfield!(dta, :advisors, advisors)
-            setfield!(dta, :adviseall, ∘(reverse(advisors)...))
-            setfield!(dta, :plugins_used, getfield.(plugins_available, :name))
+            dta.advisors = advisors
+            dta.plugins_used = map(p -> p.name, plugins_available)
         end
     end
-    getfield(dta, prop)
+    dta
 end
 
 AdviceAmalgamation(plugins::Vector{String}) =
-    AdviceAmalgamation(identity, Advice[], plugins, String[])
+    AdviceAmalgamation(Advice[], plugins, String[])
 
 AdviceAmalgamation(collection::DataCollection) =
     AdviceAmalgamation(collection.plugins)
@@ -87,16 +94,21 @@ AdviceAmalgamation(dta::AdviceAmalgamation) = # for re-building
 
 function AdviceAmalgamation(advisors::Vector{<:Advice})
     advisors = sort(advisors, by = t -> t.priority)
-    AdviceAmalgamation(∘(reverse(advisors)...), advisors, String[], String[])
+    AdviceAmalgamation(advisors, String[], String[])
 end
 
-function (dta::AdviceAmalgamation)(@nospecialize(
-    annotated_func_call::Tuple{Function, Function, Tuple, NamedTuple}))
-    dta.adviseall(annotated_func_call)
+function (dta::AdviceAmalgamation)(annotated_func_call::Tuple{Function, Function, Tuple, NamedTuple})
+    @nospecialize
+    reinit(dta)
+    for adv in dta.advisors
+        annotated_func_call = adv(annotated_func_call)
+    end
+    annotated_func_call
 end
 
 function (dta::AdviceAmalgamation)(func::Function, args...; kwargs...)
-    @nospecialize func args kwargs
+    @nospecialize
+    reinit(dta)
     post::Function, func2::Function, args2::Tuple, kwargs2::NamedTuple =
         dta((identity, func, args, merge(NamedTuple(), kwargs)))
     invokepkglatest(func2, args2...; kwargs2...) |> post

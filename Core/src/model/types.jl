@@ -264,14 +264,12 @@ as a function. However, it also supports the following convenience syntax:
 # Constructors
 
 ```
-AdviceAmalgamation(adviseall::Function, advisors::Vector{Advice},
-                   plugins_wanted::Vector{String}, plugins_used::Vector{String})
+AdviceAmalgamation(advisors::Vector{Advice}, plugins_wanted::Vector{String}, plugins_used::Vector{String})
 AdviceAmalgamation(plugins::Vector{String})
 AdviceAmalgamation(collection::DataCollection)
 ```
 """
 mutable struct AdviceAmalgamation
-    adviseall::Function
     advisors::Vector{Advice}
     plugins_wanted::Vector{String}
     plugins_used::Vector{String}

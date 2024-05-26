@@ -4,7 +4,7 @@ using Test
 import DataToolkitBase: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
     stack_index, plugin_add, plugin_list, plugin_remove, config_get,
-    config_set, config_unset, DATASET_REFERENCE_WRAPPER
+    config_set, config_unset, reinit, DATASET_REFERENCE_WRAPPER
 
 @testset "Utils" begin
     @testset "Doctests" begin
@@ -88,16 +88,12 @@ end
         end
     end
     @testset "Amalgamation" begin
-        amlg12 = AdviceAmalgamation(
-            sump1 ∘ sumx2, [sumx2, sump1], String[], String[])
+        amlg12 = AdviceAmalgamation([sumx2, sump1], String[], String[])
         @test amlg12.advisors == AdviceAmalgamation([sumx2, sump1]).advisors
         @test AdviceAmalgamation(amlg12).advisors == Advice[] # no plugins
-        amlg21 = AdviceAmalgamation(
-            sumx2 ∘ sump1, [sump1, sumx2], String[], String[])
-        amlg321 = AdviceAmalgamation(
-            summ3 ∘ sumx2 ∘ sump1, [sump1, sumx2, summ3], String[], String[])
-        amlg213 = AdviceAmalgamation(
-            sumx2 ∘ sump1 ∘ summ3, [summ3, sump1, sumx2], String[], String[])
+        amlg21 = AdviceAmalgamation([sump1, sumx2], String[], String[])
+        amlg321 = AdviceAmalgamation([sump1, sumx2, summ3], String[], String[])
+        amlg213 = AdviceAmalgamation([summ3, sump1, sumx2], String[], String[])
         @test amlg12((identity, sum, (2,), (;))) == (identity, sum, (5,), (;))
         @test amlg12(sum, 2) == 5
         @test amlg21(sum, 2) == 6
@@ -107,7 +103,6 @@ end
     @testset "Plugin loading" begin
         # Empty state
         amlg = empty(AdviceAmalgamation)
-        @test amlg.adviseall == identity
         @test amlg.advisors == Advice[]
         @test amlg.plugins_wanted == String[]
         @test amlg.plugins_used == String[]
@@ -117,14 +112,14 @@ end
         @test Plugin("", [sumx2.f]).advisors == Plugin("", [sumx2]).advisors
         # Desire the plugin, then check the advice is incorperated correctly
         push!(amlg.plugins_wanted, plg.name)
-        @test amlg.adviseall == sump1 ∘ sumx2
+        @test amlg(identity, 1) == 1 # Should call `reinit`
         @test amlg.advisors == [sumx2, sump1]
         @test amlg.plugins_wanted == [plg.name]
         @test amlg.plugins_used == [plg.name]
-        @test AdviceAmalgamation(amlg).advisors == amlg.advisors
+        @test reinit(AdviceAmalgamation(amlg)).advisors == amlg.advisors
         let cltn = DataCollection()
             push!(cltn.plugins, plg.name)
-            @test AdviceAmalgamation(cltn).advisors == amlg.advisors
+            @test reinit(AdviceAmalgamation(cltn)).advisors == amlg.advisors
         end
         # Display
         @test sprint(show, amlg) == "AdviceAmalgamation($(plg.name) ✔)"
