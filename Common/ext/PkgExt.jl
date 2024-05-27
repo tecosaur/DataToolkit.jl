@@ -1,9 +1,14 @@
 module PkgExt
 
 using Pkg
-import DataToolkitCommon: pkg_semver_spec
+import DataToolkitCommon: best_semver_version
 
-pkg_semver_spec(ver::String) =
-    Pkg.Versions.semver_spec(ver)
+function best_semver_version(spec::String, versions::Vector{VersionNumber})
+    requirement = Pkg.Versions.semver_spec(spec)
+    validmask = [v ∈ requirement for v in versions]
+    if any(validmask)
+        maximum(versions[validmask])
+    end
+end
 
 end

@@ -18,7 +18,7 @@ function versions_ident_parse_a(f::typeof(parse_ident), ident::AbstractString)
     (extractversion!, f, (ident,))
 end
 
-function pkg_semver_spec end # Implemented in `../../ext/PkgExt.jl`
+function best_semver_version end # Implemented in `../../ext/PkgExt.jl`
 
 """
     versions_refine_a( <refine(datasets::Vector{DataSet}, ident::Identifier, ignoreparams::Vector{String})> )
@@ -40,11 +40,10 @@ function versions_refine_a(f::typeof(refine), datasets::Vector{DataSet}, ident::
         if ident.parameters["version"] == "latest"
             datasets = datasets[versions .== maximum(versions)]
         else
-            requirement = invokelatest(
-                pkg_semver_spec, String(ident.parameters["version"]))
-            validmask = [v ∈ requirement for v in versions]
-            datasets = if any(validmask)
-                maxvalid = maximum(versions[validmask])
+            maxvalid = invokelatest(
+                best_semver_version,
+                String(ident.parameters["version"]), versions)::Union{VersionNumber, Nothing}
+            datasets = if !isnothing(maxvalid)
                 datasets[versions .== maxvalid]
             else
                 DataSet[]
