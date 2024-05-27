@@ -13,11 +13,15 @@ using ..DataToolkitCommon: should_log_event, show_extra, dirof, humansize
 const INVENTORY_FILENAME = "Inventory.toml"
 USER_STORE::String = ""
 USER_INVENTORY::String = ""
+
+const PROJECT_SUBPATH = # Handle as const to avoid invalidations (for /some/ reason).
+    BaseDirs.projectpath(BaseDirs.Project("DataToolkit"))
+
 function _init_user_inventory!()
     global USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
         mkpath(ENV["DATATOOLKIT_STORE"])
     else
-        BaseDirs.User.cache(BaseDirs.Project("DataToolkit"), create=true)
+        BaseDirs.User.cache(PROJECT_SUBPATH)
     end
     global USER_INVENTORY = joinpath(USER_STORE, INVENTORY_FILENAME)
 end
@@ -57,5 +61,7 @@ function __init__()
         end
     end
 end
+
+include("precompile.jl")
 
 end
