@@ -9,7 +9,6 @@ using PrecompileTools
 using Compat
 
 using Tables
-using CRC32c: crc32c
 using Dates
 using Markdown: @md_str
 using TOML
