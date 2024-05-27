@@ -3,7 +3,10 @@ module StoreREPL
 import REPL.TerminalMenus: request, RadioMenu
 
 import DataToolkitBase: STACK, REPL_CMDS, ReplCmd, add_repl_cmd!, natkeygen
-using DataToolkitCommon.Store: STORE_GC_CONFIG_INFO
+using DataToolkitCommon.Store: STORE_GC_CONFIG_INFO,
+    DEFAULT_INVENTORY_CONFIG, INVENTORIES,
+    getinventory, update_inventory!, garbage_collect!, expunge!, fetch!,
+    printstats
 using Markdown: MD, @md_str
 
 # For use in `../src/store/storage.jl`
