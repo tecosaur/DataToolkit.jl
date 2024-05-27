@@ -137,7 +137,7 @@ is illustrated in the diagram below.
 TODO explain further
 ```
 """
-function Base.read(dataset::DataSet, as::Type)
+function Base.read(dataset::DataSet, as::Type)::as
     @advise read1(dataset, as)
 end
 

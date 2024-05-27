@@ -42,3 +42,6 @@
     # Base.delete_method(first(methods(load, Tuple{DataLoader{:passthrough}, Any, Any}).ms))
     empty!(STACK)
 end
+
+precompile(add_repl_cmd!, (ReplCmd{Function},))
+precompile(add_repl_cmd!, (ReplCmd{Vector{ReplCmd}},))

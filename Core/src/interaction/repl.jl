@@ -54,11 +54,8 @@ function ReplCmd(name, description, execute, completions::Vector{String})
 end
 
 function add_repl_cmd!(cmd::ReplCmd)
-    @nospecialize cmd
-    pos = searchsortedfirst(map(c -> natkeygen(c.name), REPL_CMDS),
-                            natkeygen(cmd.name))
-    invoke(insert!, Tuple{Vector{ReplCmd}, Int, ReplCmd},
-           REPL_CMDS, pos, cmd)
+    pos = searchsortedfirst(REPL_CMDS, cmd, by = c -> c.name)
+    insert!(REPL_CMDS, pos, cmd)
 end
 
 function help end
