@@ -26,6 +26,13 @@ new data collection.
 const DEFAULT_PLUGINS = String[]
 
 """
+List of `(category::Symbol, named::Symbol) => docs::Any` forms.
+
+`category` can be `:storage`, `:loader`, or `:writer`.
+"""
+const TRANSFORMER_DOCUMENTATION = Pair{Tuple{Symbol, Symbol}, Any}[]
+
+"""
 The set of packages loaded by each module via `@addpkg`, for import with `@require`.
 
 More specifically, when a module M invokes `@addpkg pkg id` then
@@ -135,51 +142,3 @@ const LINT_SEVERITY_MESSAGES =
          0x03 => (:light_yellow, "Suggestion"),
          0x04 => (:light_blue, "Info"),
          0x05 => (:light_black, "Debug"))
-
-# REPL things
-
-"""
-The key that is used to enter the data REPL.
-"""
-const REPL_KEY = '}'
-
-"""
-A symbol identifying the Data REPL. This is used in a few places,
-such as the command history.
-"""
-const REPL_NAME = :data_toolkit
-
-"""
-The REPL prompt shown.
-"""
-const REPL_PROMPT = "data>"
-
-"""
-An ANSI control sequence string that sets the style of the "$REPL_PROMPT"
-REPL prompt.
-"""
-const REPL_PROMPTSTYLE = Base.text_colors[:magenta]
-
-"""
-The color that should be used for question text presented in a REPL context.
-This should be a symbol present in `Base.text_colors`.
-"""
-const REPL_QUESTION_COLOR = :light_magenta
-
-"""
-The color that should be set for user response text in a REPL context.
-This should be a symbol present in `Base.text_colors`.
-"""
-const REPL_USER_INPUT_COLOUR = :light_yellow
-
-"""
-The set of commands available directly in the Data REPL.
-"""
-const REPL_CMDS = ReplCmd[]
-
-"""
-List of `(category::Symbol, named::Symbol) => docs::Any` forms.
-
-`category` can be `:storage`, `:loader`, or `:writer`.
-"""
-const TRANSFORMER_DOCUMENTATION = Pair{Tuple{Symbol, Symbol}, Any}[]

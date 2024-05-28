@@ -25,8 +25,6 @@ export @require, @addpkg, @dataplugin, @advise, @getparam
 # For plugin packages
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
     fromspec, tospec, Advice, AdviceAmalgamation
-export ReplCmd, REPL_CMDS, add_repl_cmd!, help,
-    prompt, prompt_char, confirm_yn, peelword
 
 include("model/types.jl")
 include("model/globals.jl")
@@ -47,7 +45,6 @@ include("interaction/typetransforms.jl")
 include("interaction/externals.jl")
 include("interaction/display.jl")
 include("interaction/manipulation.jl")
-include("interaction/repl.jl")
 include("interaction/lint.jl")
 
 include("precompile.jl")

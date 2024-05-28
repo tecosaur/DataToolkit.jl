@@ -303,11 +303,3 @@ julia> string(FilePath("some/path"))
 """
 struct FilePath path::String end
 Base.string(fp::FilePath) = fp.path
-
-# `ReplCmd` is documented in interaction/repl.jl
-struct ReplCmd{E <: Union{Function, Vector}}
-    name::String
-    description::Any
-    execute::E
-    completions::Function
-end

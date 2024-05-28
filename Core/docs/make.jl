@@ -4,9 +4,6 @@ using Documenter
 using DataToolkitBase
 using Org
 
-using REPL
-const DataToolkitREPL = Base.get_extension(DataToolkitBase, :DataToolkitREPL)
-
 orgfiles = filter(f -> endswith(f, ".org"),
                   readdir(joinpath(@__DIR__, "src"), join=true))
 
@@ -35,13 +32,12 @@ let orgconverted = 0
 end
 
 makedocs(;
-    modules=[DataToolkitBase, DataToolkitREPL],
+    modules=[DataToolkitBase],
     format=Documenter.HTML(),
     pages=[
         "Introduction" => "index.md",
         "Usage" => "usage.md",
         "Data.toml" => "datatoml.md",
-        "REPL" => "repl.md",
         "Extensions" => Any[
             "Transformer backends" => "newtransformer.md",
             "Packages" => "packages.md",

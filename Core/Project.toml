@@ -12,10 +12,8 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
 MetaGraphsNext = "fa8bd995-216d-47f1-8a91-f3b68fbeb377"
-REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [extensions]
-DataToolkitREPL = "REPL"
 GraphExt = "MetaGraphsNext"
 
 [compat]
