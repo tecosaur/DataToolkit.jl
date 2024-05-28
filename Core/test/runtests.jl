@@ -1,7 +1,7 @@
-using DataToolkitBase
+using DataToolkitCore
 using Test
 
-import DataToolkitBase: natkeygen, stringdist, stringsimilarity,
+import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
     stack_index, plugin_add, plugin_list, plugin_remove, config_get,
     config_set, config_unset, reinit, DATASET_REFERENCE_WRAPPER
@@ -125,17 +125,17 @@ end
         @test sprint(show, amlg) == "AdviceAmalgamation($(plg.name) ✔)"
     end
     @testset "Advice macro" begin
-        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func, x)) ==
+        @test :($(GlobalRef(DataToolkitCore, :_dataadvisecall))(func, x)) ==
             @macroexpand @advise func(x)
-        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func, x, y, z)) ==
+        @test :($(GlobalRef(DataToolkitCore, :_dataadvisecall))(func, x, y, z)) ==
             @macroexpand @advise func(x, y, z)
-        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func; a=1, b)) ==
+        @test :($(GlobalRef(DataToolkitCore, :_dataadvisecall))(func; a=1, b)) ==
             @macroexpand @advise func(; a=1, b)
-        @test :($(GlobalRef(DataToolkitBase, :_dataadvisecall))(func, x, y, z; a=1, b)) ==
+        @test :($(GlobalRef(DataToolkitCore, :_dataadvisecall))(func, x, y, z; a=1, b)) ==
             @macroexpand @advise func(x, y, z; a=1, b)
-        @test :(($(GlobalRef(DataToolkitBase, :_dataadvise))(a))(func, x)) ==
+        @test :(($(GlobalRef(DataToolkitCore, :_dataadvise))(a))(func, x)) ==
             @macroexpand @advise a func(x)
-        @test :(($(GlobalRef(DataToolkitBase, :_dataadvise))(source(a)))(func, x)) ==
+        @test :(($(GlobalRef(DataToolkitCore, :_dataadvise))(source(a)))(func, x)) ==
             @macroexpand @advise source(a) func(x)
         @test_throws LoadError eval(:(@advise (1, 2)))
         @test_throws LoadError eval(:(@advise f()))
@@ -154,14 +154,14 @@ end
         @test QualifiedType(IO) == QualifiedType(:Core, :IO, ())
         # This test currently fails due to typevar inequivalence
         # @test QualifiedType(QualifiedType) ==
-        #     QualifiedType(:DataToolkitBase, :QualifiedType, (TypeVar(:T, Union{}, Tuple),))
+        #     QualifiedType(:DataToolkitCore, :QualifiedType, (TypeVar(:T, Union{}, Tuple),))
         @test QualifiedType(QualifiedType(:a, :b)) == QualifiedType(:a, :b, ())
     end
     @testset "Typeification" begin
         @test typeify(QualifiedType(:a, :b)) === nothing
         @test typeify(QualifiedType(:Core, :Int)) == Int
         @test typeify(QualifiedType(:Core, :IO)) == IO
-        @test typeify(QualifiedType(:DataToolkitBase, :QualifiedType, ())) == QualifiedType
+        @test typeify(QualifiedType(:DataToolkitCore, :QualifiedType, ())) == QualifiedType
         @test typeify(QualifiedType(:Core, :Array, (QualifiedType(:Core, :Integer, ()), 1))) ==
             Vector{Integer}
         # Test module expansion with unexported type
@@ -183,7 +183,7 @@ end
     end
 end
 
-import DataToolkitBase: get_package, addpkg
+import DataToolkitCore: get_package, addpkg
 
 @testset "UsePkg" begin
     @testset "add/get package" begin
@@ -196,9 +196,9 @@ import DataToolkitBase: get_package, addpkg
     end
     @testset "@require" begin
         nolinenum(blk) = Expr(:block, filter(e -> !(e isa LineNumberNode), blk.args)...)
-        ref_get_package = GlobalRef(DataToolkitBase, :get_package)
-        ref_isa = GlobalRef(DataToolkitBase, :isa)
-        pkgrereun = GlobalRef(DataToolkitBase, :PkgRequiredRerunNeeded)
+        ref_get_package = GlobalRef(DataToolkitCore, :get_package)
+        ref_isa = GlobalRef(DataToolkitCore, :isa)
+        pkgrereun = GlobalRef(DataToolkitCore, :PkgRequiredRerunNeeded)
         @test quote
             A = $ref_get_package($Main, :A)
             $ref_isa(A, $pkgrereun) && return A
@@ -271,7 +271,7 @@ end
 @testset "Dry run" begin
     # Basic storage/loader implementation for testing
     @eval begin
-        import DataToolkitBase: getstorage, load, supportedtypes
+        import DataToolkitCore: getstorage, load, supportedtypes
         function getstorage(storage::DataStorage{:raw}, T::Type)
             get(storage, "value", nothing)::Union{T, Nothing}
         end

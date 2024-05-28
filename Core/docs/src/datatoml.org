@@ -61,7 +61,7 @@ priority=2
 
 Note that as a consequence of this special table, no data set may be named "config".
 
-DataToolkitBase reserves exactly one config attribute: =locked=. This is used to
+DataToolkitCore reserves exactly one config attribute: =locked=. This is used to
 indicate that the =Data.toml= file should not be modified, and to override it the
 attribute must be changed within the =Data.toml= file. By setting =config.locked =
 true=, you protecct yourself from accidental modifications to the data file.
@@ -94,7 +94,7 @@ Apart from data transformers, there is one recognised data property: =uuid=, a
 UUIDv4 string. Any number of additional properties may be given (so long as they
 do not conflict with the transformer names), they may have special behaviour
 based on plugins or extensions loaded, but will not be treated specially by
-DataToolkitBase.
+DataToolkitCore.
 
 A data set can have any number of data transformers, but at least two are needed
 for a functional data set. Data transformers are instances of an array of tables

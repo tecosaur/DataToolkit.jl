@@ -2,7 +2,7 @@
 
 * Advice
 
-Inspired by Lisp, =DataToolkitBase= comes with a method of completely transforming
+Inspired by Lisp, =DataToolkitCore= comes with a method of completely transforming
 its behaviour at certain defined points. This is essentially a restricted form
 of [[https://en.wikipedia.org/wiki/Aspect-oriented_programming][Aspect-oriented programming]]. At certain declared locations (termed "join
 points"), we consult a list of "advise" functions that modify the execution at

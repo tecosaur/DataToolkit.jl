@@ -1,6 +1,6 @@
 module GraphExt
 
-using DataToolkitBase: DataCollection, DataSet, referenced_datasets, Identifier
+using DataToolkitCore: DataCollection, DataSet, referenced_datasets, Identifier
 
 using MetaGraphsNext
 using MetaGraphsNext.Graphs

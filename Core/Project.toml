@@ -1,5 +1,5 @@
-name = "DataToolkitBase"
-uuid = "e209d0c3-e863-446f-9b45-de6ca9730756"
+name = "DataToolkitCore"
+uuid = "caac3e55-418c-402e-a061-64d454aa8f4f"
 authors = ["TEC <tec@tecosaur.com> and contributors"]
 version = "0.9.1"
 

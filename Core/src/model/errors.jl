@@ -286,7 +286,7 @@ by the current version of $(@__MODULE__).
 julia> fromspec(DataCollection, Dict{String, Any}("data_config_version" => -1))
 ERROR: CollectionVersionMismatch: -1 (specified) ≠ $LATEST_DATA_CONFIG_VERSION (current)
   The data collection specification uses the v-1 data collection format, however
-  the installed DataToolkitBase version expects the v$LATEST_DATA_CONFIG_VERSION version of the format.
+  the installed DataToolkitCore version expects the v$LATEST_DATA_CONFIG_VERSION version of the format.
   In the future, conversion facilities may be implemented, for now though you
   will need to manually upgrade the file to the v$LATEST_DATA_CONFIG_VERSION format.
 Stacktrace: [...]

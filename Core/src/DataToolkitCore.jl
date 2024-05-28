@@ -1,4 +1,4 @@
-module DataToolkitBase
+module DataToolkitCore
 
 using UUIDs, TOML, Dates
 

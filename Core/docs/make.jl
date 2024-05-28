@@ -1,7 +1,7 @@
 #!/usr/bin/env -S julia --startup-file=no
 
 using Documenter
-using DataToolkitBase
+using DataToolkitCore
 using Org
 
 orgfiles = filter(f -> endswith(f, ".org"),
@@ -32,7 +32,7 @@ let orgconverted = 0
 end
 
 makedocs(;
-    modules=[DataToolkitBase],
+    modules=[DataToolkitCore],
     format=Documenter.HTML(),
     pages=[
         "Introduction" => "index.md",
@@ -46,12 +46,12 @@ makedocs(;
         "Internals" => "libinternal.md",
         "Errors" => "errors.md",
     ],
-    sitename="DataToolkitBase.jl",
-    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitBase.jl/graphs/contributors",
+    sitename="DataToolkitCore.jl",
+    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitCore.jl/graphs/contributors",
     warnonly = [:missing_docs],
 )
 
 deploydocs(;
-    repo="github.com/tecosaur/DataToolkitBase.jl",
+    repo="github.com/tecosaur/DataToolkitCore.jl",
     devbranch = "main"
 )

@@ -28,7 +28,7 @@ PLUGINS
 #+end_src
 
 #+begin_src @docs
-DataToolkitBase.EXTRA_PACKAGES
+DataToolkitCore.EXTRA_PACKAGES
 #+end_src
 
 #+begin_src @docs

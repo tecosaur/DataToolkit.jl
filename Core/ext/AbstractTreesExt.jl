@@ -1,10 +1,10 @@
 module AbstractTreesExt
 
-using DataToolkitBase
+using DataToolkitCore
 using AbstractTrees
 
 AbstractTrees.children(dataset::DataSet) =
-    DataToolkitBase.referenced_datasets(dataset)
+    DataToolkitCore.referenced_datasets(dataset)
 
 AbstractTrees.printnode(io::IO, d::DataSet) = print(io, d.name)
 

@@ -7,7 +7,7 @@ Every possibly desired package could be shoved into the list of dependences, but
 this is a somewhat crude approach. A more granular approach is enabled with two
 macros, ~@addpkg~ and ~@require~.
 
-* Letting DataToolkitBase know about extra packages
+* Letting DataToolkitCore know about extra packages
 
 #+begin_src @docs
 @addpkg
@@ -24,7 +24,7 @@ macros, ~@addpkg~ and ~@require~.
 #+begin_src julia
 module DataToolkitExample
 
-using DataToolkitBase
+using DataToolkitCore
 using DataFrame
 
 function __init__()

@@ -61,7 +61,7 @@ end
 Generate a sorting key for `key` that when used with `sort` will put the
 collection in "natural order".
 
-```jldoctest; setup = :(import DataToolkitBase.natkeygen)
+```jldoctest; setup = :(import DataToolkitCore.natkeygen)
 julia> natkeygen.(["A1", "A10", "A02", "A1.5"])
 4-element Vector{Vector{AbstractString}}:
  ["a", "0\\x01"]
@@ -107,7 +107,7 @@ cost half as much.
 
 # Examples
 
-```jldoctest; setup = :(import DataToolkitBase.stringdist)
+```jldoctest; setup = :(import DataToolkitCore.stringdist)
 julia> stringdist("The quick brown fox jumps over the lazy dog",
                   "The quack borwn fox leaps ovver the lzy dog")
 7
@@ -188,7 +188,7 @@ take one. When `halfcase` is true, case switches cost half as much.
 
 # Example
 
-```jldoctest; setup = :(import DataToolkitBase.stringsimilarity)
+```jldoctest; setup = :(import DataToolkitCore.stringsimilarity)
 julia> stringsimilarity("same", "same")
 1.0
 
@@ -213,7 +213,7 @@ with `==` equality defined for their elements.
 
 # Example
 
-```jldoctest; setup = :(import DataToolkitBase.longest_common_subsequence)
+```jldoctest; setup = :(import DataToolkitCore.longest_common_subsequence)
 julia> longest_common_subsequence("same", "same")
 4-element Vector{Int64}:
  1
@@ -263,7 +263,7 @@ Return `true` if `a` is a subsequence of `b`, `false` otherwise.
 
 ## Examples
 
-```jldoctest; setup = :(import DataToolkitBase.issubseq)
+```jldoctest; setup = :(import DataToolkitCore.issubseq)
 julia> issubseq("abc", "abc")
 true
 
