@@ -63,7 +63,7 @@ collection in "natural order".
 
 ```jldoctest; setup = :(import DataToolkitCore.natkeygen)
 julia> natkeygen.(["A1", "A10", "A02", "A1.5"])
-4-element Vector{Vector{AbstractString}}:
+4-element Vector{Vector{String}}:
  ["a", "0\\x01"]
  ["a", "0\\n"]
  ["a", "0\\x02"]
