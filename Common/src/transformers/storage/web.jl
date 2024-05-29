@@ -176,15 +176,14 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
     end
 end
 
+is_store_target(::Any) = false
+
+function approximate_store_dest end
+
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     try
-        if Store.shouldstore(storage)
-            newsource = Store.StoreSource(
-                Store.rhash(storage),
-                [storage.dataset.collection.uuid],
-                now(), nothing, Store.fileextension(storage))
-            inventory = Store.getinventory(storage.dataset.collection)
-            refdest = Store.storefile(inventory, newsource)
+        if is_store_target(storage)
+            refdest = invokelatest(approximate_store_dest, storage)
             miliseconds = round(Int, 1000 * time())
             # We don't technically need to use .part then .download,
             # but I like that it makes it clear what stage of existence
@@ -218,12 +217,6 @@ function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
         @error "Download failed" url err
         nothing
     end
-end
-
-function Store.fileextension(storage::DataStorage{:web})
-    something(match(r"\.\w+(?:\.[bgzx]z|\.[bg]?zip|\.zstd)?$",
-                    @getparam(storage."url"::String)),
-              (; match=".cache")).match[2:end]
 end
 
 getstorage(storage::DataStorage{:web}, ::Type{Vector{UInt8}}) =

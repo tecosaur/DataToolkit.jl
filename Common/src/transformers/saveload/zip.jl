@@ -7,7 +7,11 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
     path = if !isnothing(extract)
         abspath(dirof(loader.dataset.collection), extract)
     else
-        joinpath(tempdir(), "jl_datatoolkit_zip_" * string(Store.rhash(loader), base=16))
+        p = joinpath(tempdir(), "jl_datatoolkit_zip_" * string(rand(UInt64), base=62))
+        @static if isdefined(Base.Filesystem, :temp_cleanup_later)
+            Base.Filesystem.temp_cleanup_later(p)
+        end
+        p
     end
     prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     file = @getparam loader."file"::Union{String, Nothing}

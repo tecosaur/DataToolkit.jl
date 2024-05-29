@@ -37,8 +37,6 @@ function create(::Type{<:DataStorage{:raw}}, source::String)
     end
 end
 
-Store.shouldstore(::DataStorage{:raw}) = false
-
 const RAW_DOC = md"""
 Access (read/write) values encoded in the data TOML file.
 

@@ -29,8 +29,6 @@ createpriority(::Type{DataLoader{:jld2}}) = 10
 create(::Type{DataLoader{:jld2}}, source::String) =
     !isnothing(match(r"\.jld2$"i, source))
 
-Store.shouldstore(::DataLoader{:jld2}, ::Type) = false
-
 const JLD2_DOC = md"""
 Load and write data in the JLD2 format
 

@@ -26,8 +26,6 @@ createpriority(::Type{DataLoader{:passthrough}}) = 20
 create(::Type{DataLoader{:passthrough}}, source::String, dataset::DataSet) =
     any(isa.(dataset.storage, DataStorage{:raw}))
 
-Store.shouldstore(::DataLoader{:passthrough}, ::Type) = false
-
 const PASSTHROUGH_L_DOC = md"""
 Simply passes on data to/from the storage backend
 

@@ -32,18 +32,6 @@ function create(::Type{<:DataStorage{:passthrough}}, source::String)
     end
 end
 
-# Ensure that `passthrough` storage registers dependents in the recursive hashing interface.
-
-# interface, as well as contextual hashing.
-
-function Store.rhash(storage::DataStorage{:passthrough}, h::UInt)
-    ident = @advise storage parse(Identifier, @getparam storage."source"::String)
-    sourceh = Store.rhash(storage.dataset.collection, ident, h)
-    invoke(Store.rhash, Tuple{AbstractDataTransformer, UInt}, storage, sourceh)
-end
-
-Store.shouldstore(::DataStorage{:passthrough}) = false
-
 # TODO putstorage
 
 const PASSTHROUGH_S_DOC = md"""
