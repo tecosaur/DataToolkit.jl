@@ -1,0 +1,33 @@
+#+title: The Inventory
+
+The store needs a way of keeping track of which data sources are actively being
+used, and which are orphaned. To do this, we need to keep track of two things:
+1. The data sources being stored
+2. The data collections using those data sources
+
+Essentially we need a "stock list" for our data sources, or a "data inventory",
+and this is what the =Inventory.toml= file functions as.
+
+* Format of the Inventory file
+The inventory file needs to contain three categories of information:
++ Configuration (e.g. how long data should "expire" after)
++ Known data collections
++ Known data sources
+
+Each of these categories can be represented with a TOML table, and so the
+=Inventory.toml= has the following structure:
+
+#+begin_src toml
+inventory_version = 1
+
+[config]
+# ...
+
+[collections]
+# ...
+
+[sources]
+# ...
+#+end_src
+
+The =config= table simply contains key-value pairs.
