@@ -50,16 +50,24 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
     print(io, ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", ::Advice{F, C}) where {F, C}
-    print(io, "Advice{$F, $C}")
+function Base.show(io::IO, ::MIME"text/plain", a::Advice)
+    print(io, "Advice($(a.f))")
 end
 
 function Base.show(io::IO, p::Plugin)
     print(io, "Plugin(")
     show(io, p.name)
     print(io, ", [")
-    context(::Advice{F, C}) where {F, C} = (F, C)
-    print(io, join(string.(context.(p.advisors)), ", "))
+    function context(a::Advice)
+        validmethods = methods(a.f, Tuple{Function, Any, Vararg{Any}})
+        if length(validmethods) === 0
+            string(a.f)
+        else
+            context = first(validmethods).sig.types[3:end]
+            string(a.f, '(', join(context, ", "), ')')
+        end
+    end
+    join(io, map(context, p.advisors), ", ")
     print(io, "])")
 end
 

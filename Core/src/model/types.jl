@@ -218,17 +218,9 @@ writecommitadvisor = Advice(
     end)
 ```
 """
-struct Advice{func, context} <: Function
+struct Advice <: Function
     priority::Int # REVIEW should this be an Int?
     f::Function
-    function Advice(priority::Int, f::Function)
-        validmethods = methods(f, Tuple{Function, Any, Vararg{Any}})
-        if length(validmethods) === 0
-            throw(ArgumentError("Transducing function $f had no valid methods."))
-        end
-        functype, context = first(validmethods).sig.types[[2, 3:end]]
-        new{functype, Tuple{context...}}(priority, f)
-    end
 end
 
 struct Plugin
@@ -237,7 +229,7 @@ struct Plugin
 end
 
 Plugin(name::String, advisors::Vector{<:Function}) =
-    Plugin(name, Advice.(advisors))
+    Plugin(name, map(Advice, advisors))
 
 Plugin(name::String, advisors::Vector{<:Advice}) =
     Plugin(name, Vector{Advice}(advisors))
