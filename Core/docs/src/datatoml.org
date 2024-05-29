@@ -1,0 +1,119 @@
+#+title: Data.toml
+
+A collection of data sets may be encapsulated in a =Data.toml= file, the structure
+of which is described here.
+
+* Overall structure
+
+#+begin_src toml
+data_config_version=0
+
+name="data collection name"
+uuid="a UUIDv4"
+plugins=["plugin1", "plugin2", ...]
+
+[config]
+# [Properties of the data collection itself]
+
+[[mydataset]]
+uuid="a UUIDv4"
+# other properties...
+
+[[mydataset.TRANSFORMER]]
+driver="transformer driver"
+type=["a QualifiedType", ...]
+priority=1 # (optional)
+# other properties...
+
+[[mydataset]]
+# There may be multiple data sets by the same name,
+# but they must be uniquely identifyable by their properties
+
+[[exampledata]]
+# Another data set
+#+end_src
+
+* Attributes of the data collection
+
+There are four top-level non-[[https://toml.io/en/v1.0.0#table][table]] properties currently recognised.
+
++ =data_config_version= :: The (integer) version of the format. Currently =0= as
+  this project is still in the alpha phase of development, moving towards beta.
++ =name= :: an identifying string. Cannot contain =:=, and characters outside of
+  =[A-Za-z0-9_]= are recommended against.
++ uuid :: a UUIDv4 used to uniquely refer to the data collection, should it be
+  renamed etc.
++ plugins :: a list of plugins which should be used when working with this data collection
+
+In addition to these four, a special table of the name =config= is recognised. This
+holds custom attributes of the data collection, e.g.
+
+#+begin_src toml
+[config]
+mykey="value"
+
+[config.defaults]
+description="Ooops, somebody forgot to describe this."
+
+[config.defaults.storage.filesystem]
+priority=2
+#+end_src
+
+Note that as a consequence of this special table, no data set may be named "config".
+
+DataToolkitCore reserves exactly one config attribute: =locked=. This is used to
+indicate that the =Data.toml= file should not be modified, and to override it the
+attribute must be changed within the =Data.toml= file. By setting =config.locked =
+true=, you protecct yourself from accidental modifications to the data file.
+
+This functionality is provided here rather than in DataToolkitsCommon etc.
+because it supported via the implementation of
+~Base.iswritable(::DataCollection)~, and so downstream packages would only be able
+to support this by overriding this method.
+
+* Structure of a data set
+
+#+begin_src toml
+[[mydataset]]
+uuid="a UUIDv4"
+# other properties...
+
+[[mydataset.TRANSFORMER]]
+driver="transformer driver"
+type=["a QualifiedType", ...] # probably optional
+type="a QualifiedType" # single-value alternative form
+priority=1 # (optional)
+# other properties...
+#+end_src
+
+A data set is a top-level instance of an [[https://toml.io/en/v1.0.0#array-of-tables][array of tables]], with any name other
+than =config=. Data set names need not be unique, but should be able to be uniquely
+identified by the combination of their name and parameters.
+
+Apart from data transformers, there is one recognised data property: =uuid=, a
+UUIDv4 string. Any number of additional properties may be given (so long as they
+do not conflict with the transformer names), they may have special behaviour
+based on plugins or extensions loaded, but will not be treated specially by
+DataToolkitCore.
+
+A data set can have any number of data transformers, but at least two are needed
+for a functional data set. Data transformers are instances of an array of tables
+(like data sets), but directly under the data set table.
+
+* Structure of a data transformer
+
+There are three data transformers types, with the following names:
++ =storage=
++ =loader=
++ =writer=
+
+All transformers recognise three properties:
++ =driver=, the transformer driver name, as a string
++ =type=, a single ~QualifiedType~ string, or an array of them
++ =priority=, an integer which sets the order in which multiple transformers
+  should be considered
+
+The =driver= property is mandatory. =type= and =priority= can be omitted, in which
+case they will adopt the default values. The default =type= value is either
+determined dynamically from the available methods, or set for that particular
+transformer.
