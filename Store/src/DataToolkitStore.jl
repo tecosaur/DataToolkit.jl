@@ -1,14 +1,13 @@
-module Store
+module DataToolkitStore
 
-using DataToolkitBase
+using DataToolkitCore
 using BaseDirs
 using Dates
-using Markdown
 using Serialization
 using TOML
 using UUIDs
 
-using ..DataToolkitCommon: should_log_event, show_extra, dirof, humansize
+# using ..DataToolkitCommon: should_log_event, show_extra, dirof, humansize
 
 const INVENTORY_FILENAME = "Inventory.toml"
 USER_STORE::String = ""

@@ -1,4 +1,4 @@
-const STORE_GC_CONFIG_INFO = md"""
+const STORE_GC_CONFIG_INFO = """
 A few (system-wide) settings determine garbage collection behaviour:
 - `auto_gc` (default $(DEFAULT_INVENTORY_CONFIG.auto_gc)): How often to
   automatically run garbage collection (in hours). Set to a non-positive value
@@ -124,45 +124,17 @@ interactively with the defaults package active.
 
 Part of `STORE_PLUGIN`.
 """
-function store_init_checksum_a(f::typeof(DataToolkitBase.init), dc::DataCollection)
+function store_init_checksum_a(f::typeof(DataToolkitCore.init), dc::DataCollection)
     if "defaults" in dc.plugins && isinteractive() &&
         confirm_yn(" Use checksums by default?", true)
-        dc = DataToolkitBase.config_set(
+        dc = DataToolkitCore.config_set(
             dc, ["defaults", "storage", "_", "checksum"], "auto";
             quiet = true)
     end
     (f, (dc,))
 end
 
-"""
-    store_extra_info_a( <show_extra(io::IO, dataset::DataSet)> )
-
-This advice adds information about stored files when showing `dataset`
-in the Data REPL.
-
-Part of `STORE_PLUGIN`.
-"""
-function store_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
-    if any(shouldstore, dataset.storage)
-        print(io, "  Stored:  ")
-        inventory = getinventory(dataset.collection) |> update_inventory!
-        files = map(s -> if shouldstore(s) storefile(inventory, s) end,
-                    dataset.storage)
-        filter!(!isnothing, files)
-        filter!(isfile, files)
-        if isempty(files)
-            printstyled(io, "no", color=:yellow)
-        else
-            printstyled("yes", color=:green)
-            if length(files) > 1
-                printstyled('(', length(files), ')', color=:green)
-            end
-            print(' ', join(humansize(sum(filesize, files)), ' '))
-        end
-        print(io, '\n')
-    end
-    (f, (io, dataset))
-end
+function store_extra_info_a end
 
 """
 Cache IO from data storage backends, by saving the contents to the disk.
@@ -178,7 +150,7 @@ configuration parameter.
 config.store.path = "relative/to/datatoml"
 ```
 
-The system default is `$(Base.Filesystem.contractuser(Store.BaseDirs.User.cache(Store.BaseDirs.Project("DataToolkit"))))`,
+The system default is `$(Base.Filesystem.contractuser(BaseDirs.User.cache(BaseDirs.Project("DataToolkit"))))`,
 which can be overriden with the `DATATOOLKIT_STORE` environment variable.
 
 #### Disabling on a per-storage basis
@@ -281,7 +253,7 @@ const STORE_PLUGIN =
         store_get_a,
         store_epoch_param_a,
         store_init_checksum_a,
-        store_extra_info_a,])
+        store_extra_info_a])
 
 # ------------
 # Cache plugin
@@ -304,7 +276,7 @@ function cache_get_a(f::typeof(load), @nospecialize(loader::DataLoader), source:
         # types have the same structure, before loading.
         if !isnothing(file)
             for pkg in cache.packages
-                DataToolkitBase.get_package(pkg)
+                DataToolkitCore.get_package(pkg)
             end
             if !all(@. rhash(typeify(first(cache.types))) == last(cache.types))
                 file = nothing
@@ -340,37 +312,7 @@ function cache_rhash_omit_a(f::typeof(rhash), @nospecialize(loader::DataLoader),
     (f, (loader, parameters, h))
 end
 
-"""
-    cache_extra_info_a( <show_extra(io::IO, dataset::DataSet)> )
-
-This advice adds information about cached files when showing a dataset.
-
-Part of `CACHE_PLUGIN`.
-"""
-function cache_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
-    forms = [(s, t) for s in dataset.loaders for t in typeify.(s.type)
-                    if !isnothing(t)]
-    filter!(Base.splat(shouldstore), forms)
-    if !isempty(forms)
-        print(io, "  Cached:  ")
-        inventory = getinventory(dataset.collection) |> update_inventory!
-        files = map(((s, t),) -> storefile(inventory, getsource(inventory, s, t)),
-                    forms)
-        filter!(!isnothing, files)
-        filter!(isfile, files)
-        if isempty(files)
-            printstyled(io, "no", color=:yellow)
-        else
-            printstyled("yes", color=:green)
-            if length(files) > 1
-                printstyled('(', length(files), ')', color=:green)
-            end
-            print(' ', join(humansize(sum(filesize, files)), ' '))
-        end
-        print(io, '\n')
-    end
-    (f, (io, dataset))
-end
+function cache_extra_info_a end
 
 """
 Cache the results of data loaders using the `Serialisation` standard library. Cache keys

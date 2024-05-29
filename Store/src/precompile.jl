@@ -29,16 +29,16 @@ using PrecompileTools
         uuid = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
     """
     @compile_workload begin
-        Store.__init__()
+        __init__()
         tempfile, tempio = mktemp()
         write(tempio, invtoml)
         close(tempio)
-        push!(Store.INVENTORIES, Store.load_inventory(tempfile))
-        write(IOBuffer(), last(Store.INVENTORIES))
-        Store.garbage_collect!(; log=false, trimmsg=false, dryrun=true)
-        Store.rhash(Store.Inventory)
-        Store.rhash(first(Store.INVENTORIES))
-        pop!(Store.INVENTORIES)
+        push!(INVENTORIES, load_inventory(tempfile))
+        write(IOBuffer(), last(INVENTORIES))
+        garbage_collect!(; log=false, trimmsg=false, dryrun=true)
+        rhash(Inventory)
+        rhash(first(INVENTORIES))
+        pop!(INVENTORIES)
     end
     empty!(INVENTORIES)
 end

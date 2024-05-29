@@ -1,0 +1,23 @@
+#+title: Repl
+#+author: TEC
+#+date: 2024-05-28
+
+#+begin_src @eval
+Main.datarepl("?store")
+#+end_src
+
+#+begin_src @eval
+Main.datareplhelp("store config")
+#+end_src
+
+#+begin_src @eval
+Main.datareplhelp("store expunge")
+#+end_src
+
+#+begin_src @eval
+Main.datareplhelp("store gc")
+#+end_src
+
+#+begin_src @eval
+Main.datareplhelp("store stats")
+#+end_src

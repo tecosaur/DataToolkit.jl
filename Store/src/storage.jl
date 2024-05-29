@@ -225,7 +225,7 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
         alg = if csumval == "auto"
             CHECKSUM_DEFAULT_SCHEME
         else Symbol(csumval) end
-        checksum = DataToolkitBase.invokepkglatest(getchecksum, file, alg)
+        checksum = DataToolkitCore.invokepkglatest(getchecksum, file, alg)
         if isnothing(checksum)
             @warn "Checksum scheme '$csumval' is not known, skipping"
             return
@@ -245,7 +245,7 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
     if checksum.alg === :auto
         checksum = Checksum(CHECKSUM_DEFAULT_SCHEME, checksum.hash)
     end
-    actual_checksum = DataToolkitBase.invokepkglatest(getchecksum, file, checksum.alg)
+    actual_checksum = DataToolkitCore.invokepkglatest(getchecksum, file, checksum.alg)
     if isnothing(actual_checksum)
         @warn "Checksum scheme '$(checksum.alg)' is not known, skipping"
         return
