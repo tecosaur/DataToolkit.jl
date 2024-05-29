@@ -21,8 +21,8 @@ function supportedtypes(::Type{DataStorage{:passthrough}}, params::Dict{String, 
     end
 end
 
-DataToolkitBase.add_dataset_refs!(acc::Vector{Identifier}, storage::DataStorage{:passthrough}) =
-    DataToolkitBase.add_dataset_refs!(acc, parse(Identifier, get(storage, "source")))
+DataToolkitCore.add_dataset_refs!(acc::Vector{Identifier}, storage::DataStorage{:passthrough}) =
+    DataToolkitCore.add_dataset_refs!(acc, parse(Identifier, get(storage, "source")))
 
 createpriority(::Type{<:DataStorage{:passthrough}}) = 60
 

@@ -45,8 +45,8 @@ end
 
 Core.eval(DataToolkitCommon,
           quote
-              tdocs(args...) = DataToolkitBase.transformer_docs(args...) |> string |> $Markdown.parse
-              pdocs(name) = DataToolkitBase.plugin_info(name) |> string |> $Markdown.parse
+              tdocs(args...) = DataToolkitCore.transformer_docs(args...) |> string |> $Markdown.parse
+              pdocs(name) = DataToolkitCore.plugin_info(name) |> string |> $Markdown.parse
           end)
 
 makedocs(;

@@ -40,7 +40,7 @@ function getdefaults(dataset::DataSet, ADT::Type{<:AbstractDataTransformer},
                 "defaults", DEFAULT_DEFAULTS),
             adt_type, Dict{String,Any}())
     implicit_defaults = Dict{String, Any}(
-        "priority" => DataToolkitBase.DEFAULT_DATATRANSFORMER_PRIORITY)
+        "priority" => DataToolkitCore.DEFAULT_DATATRANSFORMER_PRIORITY)
     if resolvetype
         types = string.(supportedtypes(concrete_adt, spec, dataset))
         implicit_defaults["type"] =

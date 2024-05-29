@@ -1,9 +1,9 @@
-using DataToolkitBase
+using DataToolkitCore
 using DataToolkitCommon
 using DataFrames
 using Test
 
-DataToolkitBase.loadcollection!("Data.toml")
+DataToolkitCore.loadcollection!("Data.toml")
 
 @testset "Storage" begin
 end

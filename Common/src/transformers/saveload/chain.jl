@@ -16,7 +16,7 @@ function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     types = loadtypepath(subloaders, typeof(from), T)
     if !isnothing(types)
         reduce((value, (subloader, as)) ->
-            DataToolkitBase.invokepkglatest(load, subloader, value, as),
+            DataToolkitCore.invokepkglatest(load, subloader, value, as),
                zip(subloaders, types), init=from)::Union{T, Nothing}
     end
 end
@@ -65,10 +65,10 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                     # It may be the case that the loader requires a lazy loaded
                     # package, in this case it may be a good idea to just /try/
                     # requiring it and seeing what happens.
-                    pkg = DataToolkitBase.get_package(
+                    pkg = DataToolkitCore.get_package(
                         toploader.dataset.collection.mod,
                         iqtype.root)
-                    if pkg isa DataToolkitBase.PkgRequiredRerunNeeded
+                    if pkg isa DataToolkitCore.PkgRequiredRerunNeeded
                         typeify(iqtype)
                     else
                         # If no rerun is raised, then then the package is
@@ -123,8 +123,8 @@ function create(::Type{DataLoader{:chain}}, source::String, dataset::DataSet)
             if !isnothing(innerloader)
                 minimalspec(template) = Dict{String, Any}(
                     "driver" => template["driver"])
-                ospec = DataToolkitBase.@advise dataset tospec(outerloader)
-                ispec = DataToolkitBase.@advise dataset tospec(innerloader)
+                ospec = DataToolkitCore.@advise dataset tospec(outerloader)
+                ispec = DataToolkitCore.@advise dataset tospec(innerloader)
                 ["loaders" =>
                     if ospec == minimalspec(ospec) && ispec == minimalspec(ispec)
                         [ospec["driver"], ispec["driver"]]

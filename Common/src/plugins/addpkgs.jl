@@ -13,7 +13,7 @@ function addpkgs_postparse_a(f::typeof(identity), dc::DataCollection)
         if isnothing(uuid)
             @warn "Unable to register $name [$uuid_str], invalid UUID"
         else
-            DataToolkitBase.addpkg(
+            DataToolkitCore.addpkg(
                 dc.mod, Symbol(name), uuid)
         end
     end

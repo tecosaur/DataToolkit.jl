@@ -62,9 +62,9 @@ function supportedtypes(::Type{DataLoader{:tar}}, spec::Dict{String, Any})
          QualifiedType(:Core, :Array, (QualifiedType(:Core, :UInt8, ()), 1)),
          QualifiedType(:Core, :String, ())]
     dirtypes =
-        [QualifiedType(:Base, :Dict, (QualifiedType(:DataToolkitBase, :FilePath, ()), QualifiedType(:Core, :IO, ()))),
-         QualifiedType(:Base, :Dict, (QualifiedType(:DataToolkitBase, :FilePath, ()), QualifiedType(:Core, :Array, (QualifiedType(:Core, :UInt8, ()), 1)))),
-         QualifiedType(:Base, :Dict, (QualifiedType(:DataToolkitBase, :FilePath, ()), QualifiedType(:Core, :String, ()))),
+        [QualifiedType(:Base, :Dict, (QualifiedType(:DataToolkitCore, :FilePath, ()), QualifiedType(:Core, :IO, ()))),
+         QualifiedType(:Base, :Dict, (QualifiedType(:DataToolkitCore, :FilePath, ()), QualifiedType(:Core, :Array, (QualifiedType(:Core, :UInt8, ()), 1)))),
+         QualifiedType(:Base, :Dict, (QualifiedType(:DataToolkitCore, :FilePath, ()), QualifiedType(:Core, :String, ()))),
          QualifiedType(:Base, :Dict, (QualifiedType(:Core, :String, ()), QualifiedType(:Core, :IO, ()))),
          QualifiedType(:Base, :Dict, (QualifiedType(:Core, :String, ()), QualifiedType(:Core, :Array, (QualifiedType(:Core, :UInt8, ()), 1)))),
          QualifiedType(:Base, :Dict, (QualifiedType(:Core, :String, ()), QualifiedType(:Core, :String, ())))]

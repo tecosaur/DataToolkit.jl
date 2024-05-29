@@ -1,7 +1,7 @@
 module ArrowExt
 
 using Arrow
-using DataToolkitBase: QualifiedType
+using DataToolkitCore: QualifiedType
 import DataToolkitCommon: _read_arrow, _write_arrow
 
 function _read_arrow(io::IO, sink::Type; kwargs...)

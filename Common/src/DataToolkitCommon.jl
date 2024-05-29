@@ -1,7 +1,7 @@
 module DataToolkitCommon
 
-using DataToolkitBase
-import DataToolkitBase: load, save, storage,
+using DataToolkitCore
+import DataToolkitCore: load, save, storage,
     getstorage, putstorage, supportedtypes,
     create, createpriority, lint
 
@@ -99,7 +99,7 @@ function __init__()
     @dataplugin VERSIONS_PLUGIN
     @dataplugin MEMORISE_PLUGIN :default
 
-    append!(DataToolkitBase.TRANSFORMER_DOCUMENTATION,
+    append!(DataToolkitCore.TRANSFORMER_DOCUMENTATION,
             [(:storage, :filesystem) => FILESYSTEM_DOC,
              (:storage, :git) => GIT_DOC,
              (:storage, :null) => NULL_S_DOC,

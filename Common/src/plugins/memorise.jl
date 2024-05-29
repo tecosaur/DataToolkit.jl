@@ -18,7 +18,7 @@ re-used, currently we just avoid non-seekable `IO`), using `MEMORISE_CACHE`.
 
 Part of `MEMORISE_PLUGIN`.
 """
-function memorise_read_a(f::typeof(DataToolkitBase.read1), dataset::DataSet, as::Type)
+function memorise_read_a(f::typeof(DataToolkitCore.read1), dataset::DataSet, as::Type)
         memorise = @something(get(dataset, "memorise"), get(dataset, "memorize", false))
         should_memorise = if memorise isa Bool
             memorise

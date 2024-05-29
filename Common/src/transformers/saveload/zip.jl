@@ -42,7 +42,7 @@ end
 function load(loader::DataLoader{:zip}, from::IO, ::Type{Dict{String, IO}})
     Dict{String, IO}(
         string(fname) => io for (fname, io) in
-            DataToolkitBase.invokepkglatest(load, loader, from, Dict{FilePath, IO}))
+            DataToolkitCore.invokepkglatest(load, loader, from, Dict{FilePath, IO}))
 end
 
 function load(loader::DataLoader{:zip}, from::FilePath,
