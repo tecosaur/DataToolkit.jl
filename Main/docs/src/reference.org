@@ -1,0 +1,76 @@
+#+title: Reference
+
+This is the public API for DataToolkit. Some symbols have been exported for
+convenience, others need to be specifically imported or accessed with =DataToolkit.<thing>=.
+
+* Exported Symbols
+** Macros
+*** DataToolkit
+
+#+begin_src @docs
+@d_str
+@data_cmd
+#+end_src
+
+*** DataToolkitBase
+
+#+begin_src @docs
+DataToolkitBase.@import
+#+end_src
+
+** Functions
+
+*** DataToolkitBase
+
+#+begin_src @docs
+DataToolkitBase.dataset
+DataToolkitBase.loadcollection!
+#+end_src
+
+** Types
+*** DataToolkitBase
+
+#+begin_src @docs
+# DataToolkitBase.DataSet
+#+end_src
+
+* Unexported Symbols
+** Modules
+
+=DataToolkitBase= and =DataToolkitCommon= are available as =Base= and =Common= respectively.
+
+** Macros
+*** DataToolkit
+
+#+begin_src @docs
+DataToolkit.@addpkgs
+DataToolkitBase.@addpkg
+#+end_src
+
+** Functions
+*** DataToolkit
+
+#+begin_src @docs
+DataToolkit.init
+DataToolkit.plugins
+DataToolkit.addpkgs
+#+end_src
+
+*** DataToolkitBase
+
+#+begin_src @docs
+DataToolkitBase.getlayer
+#+end_src
+
+** Types
+*** DataToolkitBase
+
+#+begin_src @docs
+# DataToolkitBase.DataCollection
+# DataToolkitBase.DataSet
+# DataToolkitBase.DataStorage
+# DataToolkitBase.DataLoader
+# DataToolkitBase.DataWriter
+DataToolkitBase.Identifier
+# DataToolkitBase.Plugin
+#+end_src
