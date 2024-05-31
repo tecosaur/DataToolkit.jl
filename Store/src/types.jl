@@ -22,9 +22,9 @@ end
 
 abstract type SourceInfo end
 
-struct Checksum{length}
+struct Checksum
     alg::Symbol
-    hash::NTuple{length, UInt8}
+    hash::Vector{UInt8} # REVIEW Use static Memory{UInt8} when possible
 end
 
 struct StoreSource <: SourceInfo
@@ -52,13 +52,16 @@ mutable struct Inventory
     last_gc::DateTime
 end
 
+Base.:(==)(a::Checksum, b::Checksum) =
+    a.alg == b.alg && a.hash == b.hash
+
 ≃(a::CollectionInfo, b::CollectionInfo) = a.uuid == b.uuid
 ≃(a::DataCollection, b::CollectionInfo) = a.uuid == b.uuid
 ≃(a::CollectionInfo, b::DataCollection) = b ≃ a
 
 ≃(a::SourceInfo, b::SourceInfo) = false
 ≃(a::StoreSource, b::StoreSource) =
-    a.recipe == b.recipe && a.checksum === b.checksum &&
+    a.recipe == b.recipe && a.checksum == b.checksum &&
     a.extension == b.extension
 ≃(a::CacheSource, b::CacheSource) =
     a.recipe == b.recipe && a.types == b.types

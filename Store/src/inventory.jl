@@ -44,13 +44,12 @@ Parse a string representation of a checksum in the format `"type:value"`.
 
 ```jldoctest; setup = :(import DataToolkitCommon.Store.Checksum)
 julia> parse(Checksum, "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4")
-Checksum{16}(:k12, (0xcf, 0xb9, 0xa6, 0xa3, 0x02, 0xf5, 0x8e, 0x5a, 0x9b, 0x0c, 0x81, 0x5b, 0xb7, 0xe8, 0xef, 0xb4))
+Checksum(:k12, [0xcf, 0xb9, 0xa6, 0xa3, 0x02, 0xf5, 0x8e, 0x5a, 0x9b, 0x0c, 0x81, 0x5b, 0xb7, 0xe8, 0xef, 0xb4])
 ```
 """
 function Base.parse(::Type{Checksum}, checksum::String)
     typestr, valstr = split(checksum, ':', limit=2)
-    hash = NTuple{ncodeunits(valstr) ÷ 2, UInt8}(
-       map(byte -> parse(UInt8, byte, base=16), Iterators.partition(valstr, 2)))
+    hash = map(byte -> parse(UInt8, byte, base=16), Iterators.partition(valstr, 2))
     Checksum(Symbol(typestr), hash)
 end
 
@@ -59,10 +58,8 @@ function Base.tryparse(::Type{Checksum}, checksum::String)
     typestr, valstr = split(checksum, ':', limit=2)
     all(c -> '0' <= c <= '9' || 'a' <= c <= 'f', valstr)
     ncodeunits(valstr) % 2 == 0 || return
-    hash = NTuple{ncodeunits(valstr) ÷ 2, UInt8}(
-        # This is slightly overcomplicated for 1.8 compat
-        map(byteind -> parse(UInt8, view(valstr, byteind), base=16),
-            Iterators.partition(1:ncodeunits(valstr), 2)))
+    hash = map(byteind -> parse(UInt8, view(valstr, byteind), base=16),
+               Iterators.partition(1:ncodeunits(valstr), 2))
     Checksum(Symbol(typestr), hash)
 end
 

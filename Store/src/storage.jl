@@ -44,7 +44,7 @@ function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
         thechecksum = tryparse(Checksum, checksum)
         isnothing(thechecksum) && return
         for record in inventory.stores
-            if record.recipe === recipe && record.checksum === thechecksum
+            if record.recipe === recipe && record.checksum == thechecksum
                 return record
             end
         end
@@ -170,35 +170,36 @@ Method should be one of:
 Should `method` not be recognised, `nothing` is returned.
 """
 function getchecksum(file::String, method::Symbol)
-    len, hash = if method === :k12
+    hash = if method === :k12
         @require KangarooTwelve
         res = open(KangarooTwelve.k12, file)::UInt128
-        16, reinterpret(UInt8, [hton(res)]) |> collect
+        # REVIEW change to reinterpret(NTuple{16, UInt8}, ...) with Julia 1.10+
+        reinterpret(UInt8, [hton(res)]) |> collect
     elseif method === :sha512
         @require SHA
-        64, open(SHA.sha512, file)::Vector{UInt8}
+        open(SHA.sha512, file)::Vector{UInt8}
     elseif method === :sha384
         @require SHA
-        48, open(SHA.sha384, file)::Vector{UInt8}
+        open(SHA.sha384, file)::Vector{UInt8}
     elseif method === :sha256
         @require SHA
-        32, open(SHA.sha256, file)::Vector{UInt8}
+        open(SHA.sha256, file)::Vector{UInt8}
     elseif method === :sha224
         @require SHA
-        28, open(SHA.sha224, file)::Vector{UInt8}
+        open(SHA.sha224, file)::Vector{UInt8}
     elseif method === :sha1
         @require SHA
-        20, open(SHA.sha1, file)::Vector{UInt8}
+        open(SHA.sha1, file)::Vector{UInt8}
     elseif method === :md5
         @require MD5
-        16, collect(open(MD5.md5, file))::Vector{UInt8}
+        collect(open(MD5.md5, file))::Vector{UInt8}
     elseif method === :crc32c
         @require CRC32c
-        4, reinterpret(UInt8, [hton(open(CRC32c.crc32c, file)::UInt32)]) |> collect
+        reinterpret(UInt8, [hton(open(CRC32c.crc32c, file)::UInt32)]) |> collect
     else
         return
     end
-    Checksum(method, NTuple{len, UInt8}(hash))
+    Checksum(method, hash)
 end
 
 """
