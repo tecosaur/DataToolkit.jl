@@ -48,8 +48,11 @@ macro log_do(category::String, message, expr::Union{Expr, Nothing} = nothing)
         let log_task = wait_maybe_log(
                 $category, $(esc(message));
                 mod=@__MODULE__, file=$(String(__source__.file)), line=$(__source__.line))
-            result = fetch(@spawn $(esc(expr)))
-            isnothing(log_task) || close(log_task)
+            result = try
+                fetch(@spawn $(esc(expr)))
+            finally
+                isnothing(log_task) || close(log_task)
+            end
             result
         end
     end
