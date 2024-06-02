@@ -253,11 +253,11 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
             actual_checksum
         else
             error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                            " Expected $(string(checksum)), got $(string(actual_checksum))."))
+                         " Expected $(string(checksum)), got $(string(actual_checksum))."))
         end
     else
         error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                        " Expected $(string(checksum)), got $(string(actual_checksum))."))
+                     " Expected $(string(checksum)), got $(string(actual_checksum))."))
     end
 end
 
