@@ -77,7 +77,7 @@ function store_get_a(f::typeof(storage), @nospecialize(storer::DataStorage), as:
         # Try to get it as a file, because that avoids
         # some potential memory issues (e.g. large downloads
         # which exceed memory limits).
-        tryfile = storage(storer, FilePath; write)
+        tryfile = DataToolkitCore.invokepkglatest(storage, storer, FilePath; write)
         if !isnothing(tryfile)
             io = open(storesave(inventory, storer, FilePath, tryfile).path, "r")
             (identity, (if as ∈ (IO, IOStream)
