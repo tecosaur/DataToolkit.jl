@@ -1,33 +1,54 @@
 module StoreREPL
 
-using DataToolkitREPL
-using DataToolkitREPL: Markdown, show_extra
-using Markdown: MD, @md_str
+import DataToolkitCore: STACK, DataCollection, DataSet, config_set,
+    init, getlayer, resolve
+
+using DataToolkitREPL: Markdown, REPL_CMDS, ReplCmd, add_repl_cmd!,
+    show_extra, confirm_yn
+using .Markdown: MD, @md_str
 
 import REPL.TerminalMenus: request, RadioMenu
 
-import DataToolkitCore: STACK, REPL_CMDS, ReplCmd, add_repl_cmd!, natkeygen
 using DataToolkitStore: STORE_GC_CONFIG_INFO,
     DEFAULT_INVENTORY_CONFIG, INVENTORIES,
     getinventory, update_inventory!, garbage_collect!, expunge!, fetch!,
     shouldstore, storefile, printstats
 
-import DataToolkitStore: should_overwrite, store_extra_info_a, cache_extra_info_a
+import DataToolkitStore: should_overwrite, store_init_checksum_a,
+    store_extra_info_a, cache_extra_info_a
 
 # For use in `../src/store/storage.jl`
 
 function should_overwrite(name::String, old::String, new::String)
     printstyled(" ! ", color=:yellow, bold=true)
-    print("Checksum mismatch with $(storage.dataset.name)'s url storage.\n",
-          "  Expected the checksum to be $(string(checksum)), got $(string(actual_checksum)).\n",
+    print("Checksum mismatch with $name's url storage.\n",
+          "  Expected the checksum to be $old, got $new.\n",
           "  How would you like to proceed?\n\n")
-    options = ["(o) Overwrite checksum to $(string(actual_checksum))", "(a) Abort and throw an error"]
+    options = ["(o) Overwrite checksum to $new", "(a) Abort and throw an error"]
     choice = request(RadioMenu(options, keybindings=['o', 'a']))
     print('\n')
     choice == 1
 end
 
 # Implementing methods in `../src/plugins.jl`
+
+"""
+    store_init_checksum_a( <init(dc::DataCollection)> )
+
+This advice prompts the user to enable checksums by default when run
+interactively with the defaults package active.
+
+Part of `STORE_PLUGIN`.
+"""
+function store_init_checksum_a(f::typeof(init), dc::DataCollection)
+    if "defaults" in dc.plugins && isinteractive() &&
+        confirm_yn(" Use checksums by default?", true)
+        dc = config_set(
+            dc, ["defaults", "storage", "_", "checksum"], "auto";
+            quiet = true)
+    end
+    (f, (dc,))
+end
 
 """
     store_extra_info_a( <show_extra(io::IO, dataset::DataSet)> )

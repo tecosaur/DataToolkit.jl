@@ -2,6 +2,8 @@ module DataToolkitREPL
 
 using PrecompileTools
 
+using Markdown
+
 export ReplCmd, REPL_CMDS, add_repl_cmd!, help,
     prompt, prompt_char, confirm_yn, peelword
 
@@ -138,6 +140,10 @@ function prompt end
 function prompt_char end
 function confirm_yn end
 function peelword end
+
+# Extensible API
+
+function show_extra end
 
 # Private functions, but might as well
 

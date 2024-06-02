@@ -9,7 +9,8 @@ using TOML
 using UUIDs
 
 using DataToolkitCore
-using DataToolkitCore: STACK, TRANSFORMER_DOCUMENTATION, issubseq
+using DataToolkitCore: STACK, TRANSFORMER_DOCUMENTATION, issubseq,
+    getlayer, highlight_lcs
 
 using DataToolkitREPL: ReplCmd, REPL_KEY, REPL_NAME, REPL_PROMPT,
     REPL_PROMPTSTYLE, REPL_QUESTION_COLOR, REPL_USER_INPUT_COLOUR, REPL_CMDS,
@@ -17,7 +18,8 @@ using DataToolkitREPL: ReplCmd, REPL_KEY, REPL_NAME, REPL_PROMPT,
 
 import DataToolkitREPL: help, find_repl_cmd, execute_repl_cmd,
     complete_repl_cmd, init_repl, prompt, prompt_char, confirm_yn, peelword,
-    displaytable, help_cmd_table, help_show, transformer_docs, transformers_printall
+    show_extra, displaytable, help_cmd_table, help_show, transformer_docs,
+    transformers_printall
 
 include("utils.jl")
 include("help.jl")

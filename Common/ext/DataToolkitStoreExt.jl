@@ -1,13 +1,14 @@
 module DataToolkitStoreExt
 
 using DataToolkitCore
+using Dates: now
 
-using DataToolkitStore: Inventory, StoreSource, getinventory,
-    getchecksum, getsource, shouldstore, storefile, update_source!
-import DataToolkitStore: rhash, storesave, fileextension
+using DataToolkitStore: Inventory, StoreSource,
+    getinventory, getchecksum, getsource, update_source!
+import DataToolkitStore: rhash, shouldstore, storesave, storefile, fileextension
 
 using DataToolkitCommon: dirof
-import DataToolkitCommon: is_store_target
+import DataToolkitCommon: is_store_target, approximate_store_dest
 
 is_store_target(storage::DataStorage) = shouldstore(storage)
 

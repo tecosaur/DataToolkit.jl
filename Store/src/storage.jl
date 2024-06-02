@@ -202,6 +202,8 @@ function getchecksum(file::String, method::Symbol)
     Checksum(method, hash)
 end
 
+should_log_event(::Any, ::Any) = false
+
 """
     getchecksum(storage::DataStorage, file::String)
 

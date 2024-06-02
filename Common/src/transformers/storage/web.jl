@@ -197,7 +197,7 @@ function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
                 Base.Filesystem.temp_cleanup_later(partfile)
             end
             isdir(dirname(partfile)) || mkpath(dirname(partfile))
-            download_to(storage, partfile)
+            DataToolkitCore.invokepkglatest(download_to, storage, partfile)
             tmpfile = string(refdest, '-', miliseconds, ".download")
             mv(partfile, tmpfile)
             @static if isdefined(Base.Filesystem, :temp_cleanup_forget)
@@ -209,7 +209,7 @@ function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
             FilePath(tmpfile)
         else
             tmpfile = tempname()
-            download_to(storage, tmpfile)
+            DataToolkitCore.invokepkglatest(download_to, storage, tmpfile)
             FilePath(tmpfile)
         end
     catch err

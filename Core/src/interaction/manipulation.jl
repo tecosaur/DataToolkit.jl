@@ -552,19 +552,22 @@ function create(T::Type{<:AbstractDataTransformer}, driver::Symbol, source::Stri
         final_spec
     end
     if driver == :*
-        alldrivers = if T == DataStorage
+        relevant_methods = if T == DataStorage
             vcat(methods(storage), methods(getstorage))
         elseif T == DataLoader
             methods(load)
         elseif T == DataWriter
             methods(save)
-        end |>
-            ms -> map(f -> Base.unwrap_unionall(
-                Base.unwrap_unionall(f.sig).types[2]).parameters[1], ms) |>
-            ds -> filter(d -> d isa Symbol, ds) |> unique |>
-            ds -> sort(ds, by=driver -> createpriority(T{driver})) |>
-            ds -> filter(driver ->
-                minpriority <= createpriority(T{driver}) <= maxpriority, ds)
+        end
+        alldrivers = Symbol[]
+        for m in relevant_methods
+            arg1 = Base.unwrap_unionall(Base.unwrap_unionall(m.sig).types[2])
+            if arg1 isa DataType && first(arg1.parameters) isa Symbol &&
+                minpriority <= createpriority(T{arg1}) <= maxpriority
+                push!(alldrivers, first(arg1.parameters))
+            end
+        end
+        sort!(alldrivers, by = drv -> createpriority(T{drv}))
         for drv in alldrivers
             spec = create(T{drv}, source, dataset)
             spec isa Bool && (spec = ifelse(spec, [], nothing))

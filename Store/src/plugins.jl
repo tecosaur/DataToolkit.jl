@@ -116,23 +116,7 @@ function store_epoch_param_a(f::typeof(rhash), @nospecialize(storage::DataStorag
     (f, (storage, parameters, h))
 end
 
-"""
-    store_init_checksum_a( <init(dc::DataCollection)> )
-
-This advice prompts the user to enable checksums by default when run
-interactively with the defaults package active.
-
-Part of `STORE_PLUGIN`.
-"""
-function store_init_checksum_a(f::typeof(DataToolkitCore.init), dc::DataCollection)
-    if "defaults" in dc.plugins && isinteractive() &&
-        confirm_yn(" Use checksums by default?", true)
-        dc = DataToolkitCore.config_set(
-            dc, ["defaults", "storage", "_", "checksum"], "auto";
-            quiet = true)
-    end
-    (f, (dc,))
-end
+function store_init_checksum_a end
 
 function store_extra_info_a end
 

@@ -27,5 +27,4 @@
     empty!(PLUGINS_DOCUMENTATION)
     empty!(DEFAULT_PLUGINS)
     empty!(DataToolkitCore.EXTRA_PACKAGES)
-    empty!(REPL_CMDS)
 end
