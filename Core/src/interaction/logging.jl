@@ -3,19 +3,18 @@
 
 Determine whether a message should be logged based on its `category`.
 
-`category` should either be a single string, or a category and subcategory
-separated by a semicolon.
+The category string can contain any number of subcategories separated by
+colons. If any parent category is enabled, the subcategory is also enabled.
 """
 function should_log(category::String)
     condition = @load_preference("log", true)
-    shouldlog = if condition isa Bool && condition
-        true
-    elseif condition isa Vector{String}
-        category in condition ||
-            first(split(category, ';')) in condition
-    else
-        false
+    condition isa Bool && return condition
+    category in condition && return true
+    while ':' in category
+        category = chopsuffix(category, r":[^:]+$")
+        category in condition && return true
     end
+    false
 end
 
 """
