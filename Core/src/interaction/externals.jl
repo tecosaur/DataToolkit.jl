@@ -274,8 +274,8 @@ Storage ◀────▶ Data          Information
 """
 function Base.open(data::DataSet, as::Type; write::Bool=false)
     for storage_provider in data.storage
-        if any(t -> ⊆(as, t, mod=data.collection.mod), storage_provider.type)
-            result = @advise data storage(storage_provider, as; write)
+        for (_, Tout) in typesteps(storage_provider, as; write)
+            result = @advise data storage(storage_provider, Tout; write)
             if !isnothing(result)
                 return something(result)
             end
