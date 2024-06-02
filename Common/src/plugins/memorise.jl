@@ -41,9 +41,6 @@ function memorise_read_a(f::typeof(DataToolkitCore.read1), dataset::DataSet, as:
         dskey = (dataset.collection.uuid, dataset.uuid, as)
         lhash = mapreduce(hash, xor, dataset.loaders)
         if haskey(MEMORISE_CACHE, dskey) && stillvalid(MEMORISE_CACHE[dskey], lhash)
-            if should_log_event("memorise", dataset)
-                @info "Loading '$(dataset.name)' (as $as) from memory copy"
-            end
             cache = MEMORISE_CACHE[dskey]
             (identity, (cache,))
         else

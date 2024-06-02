@@ -142,3 +142,12 @@ const LINT_SEVERITY_MESSAGES =
          0x03 => (:light_yellow, "Suggestion"),
          0x04 => (:light_blue, "Info"),
          0x05 => (:light_black, "Debug"))
+
+# Logging
+
+"""
+The delay in seconds before a log message is displayed.
+
+When zero or less, log messages are displayed immediately.
+"""
+const DEFAULT_LOG_DELAY = 1.0

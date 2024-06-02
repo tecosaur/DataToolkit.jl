@@ -57,20 +57,16 @@ function store_get_a(f::typeof(storage), @nospecialize(storer::DataStorage), as:
         # as a reference.
         update_source!(inventory, source, storer.dataset.collection)
         if as === IO || as === IOStream
-            should_log_event("store", storer) &&
-                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
             (identity, (open(file, "r"),))
         elseif as === FilePath
-            should_log_event("store", storer) &&
-                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
             (identity, (FilePath(file),))
         elseif as === Vector{UInt8}
-            should_log_event("store", storer) &&
-                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
             (identity, (read(file),))
         elseif as === String
-            should_log_event("store", storer) &&
-                @info "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
             (identity, (read(file, String),))
         else
             (f, (storer, as), (; write))
@@ -267,14 +263,14 @@ function cache_get_a(f::typeof(load), @nospecialize(loader::DataLoader), source:
             end
         end
         if !isnothing(file) && isfile(file)
-            if should_log_event("cache", loader)
-                ds_name = sprint(io -> show(
-                    io, MIME("text/plain"), Identifier(loader.dataset);
-                    collection=loader.dataset.collection))
-                @info "Loading $as form of $(ds_name) from the store"
-            end
+            ds_name = sprint(io -> show(
+                io, MIME("text/plain"), Identifier(loader.dataset);
+                collection=loader.dataset.collection))
             update_source!(inventory, cache, loader.dataset.collection)
-            info = Base.invokelatest(deserialize, file)
+            info = @log_do(
+                "cache:load",
+                "Loading $as form of $(ds_name) from the store",
+                Base.invokelatest(deserialize, file))
             (identity, (info,))
         else
             (storesave(inventory, loader), f, (loader, source, as))

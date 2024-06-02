@@ -88,7 +88,6 @@ makedocs(;
             "plugins/addpkgs.md",
             "plugins/cache.md",
             "plugins/defaults.md",
-            "plugins/log.md",
             "plugins/memorise.md",
             "plugins/store.md",
             "plugins/versions.md",

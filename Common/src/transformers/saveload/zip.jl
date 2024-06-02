@@ -17,11 +17,12 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
     file = @getparam loader."file"::Union{String, Nothing}
     filepath = if !isnothing(file) prefix * file end
     if !isdir(path) || (!isnothing(file) && !isfile(joinpath(path, file)))
-        invokelatest(unzip,
-                     from, path;
-                     recursive = @getparam(loader."recursive"::Bool, false),
-                     log = should_log_event("unzip", loader),
-                     onlyfile = filepath)
+        @log_do("load:unzip",
+                "Extracting zip archive for $(loader.dataset.name)",
+                invokelatest(
+                    unzip, from, path;
+                    recursive = @getparam(loader."recursive"::Bool, false),
+                    onlyfile = filepath))
     end
     if isnothing(file)
         FilePath(path)

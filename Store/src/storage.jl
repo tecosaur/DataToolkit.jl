@@ -140,14 +140,6 @@ function storefile(inventory::Inventory, @nospecialize(loader::DataLoader), as::
 end
 
 """
-The file size threshold (in bytes) above which an info message should be printed
-when calculating the threshold, no matter what the `checksum` log setting is.
-
-`$(1024^3)` bytes = 1024³ bytes = 1 GiB
-"""
-const CHECKSUM_AUTO_LOG_SIZE = 1024^3
-
-"""
 The checksum scheme used when `auto` is specified. Must be recognised by `checksum`.
 """
 const CHECKSUM_DEFAULT_SCHEME = :k12
@@ -202,8 +194,6 @@ function getchecksum(file::String, method::Symbol)
     Checksum(method, hash)
 end
 
-should_log_event(::Any, ::Any) = false
-
 """
     getchecksum(storage::DataStorage, file::String)
 
@@ -222,13 +212,13 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
             @warn "Could not update checksum, data collection is not writable"
             return
         end
-        if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
-            @info "Calculating checksum of $(storage.dataset.name)'s source"
-        end
         alg = if csumval == "auto"
             CHECKSUM_DEFAULT_SCHEME
         else Symbol(csumval) end
-        checksum = DataToolkitCore.invokepkglatest(getchecksum, file, alg)
+        checksum = @log_do(
+            "store:checksum",
+            "Calculating checksum of $(storage.dataset.name)'s source",
+            DataToolkitCore.invokepkglatest(getchecksum, file, alg))
         if isnothing(checksum)
             @warn "Checksum scheme '$csumval' is not known, skipping"
             return
@@ -242,13 +232,13 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
         @warn "Checksum value '$checksum' is invalid, ignoring"
         return
     end
-    if filesize(file) > CHECKSUM_AUTO_LOG_SIZE || should_log_event("checksum", storage)
-        @info "Calculating checksum of $(storage.dataset.name)'s source"
-    end
     if checksum.alg === :auto
         checksum = Checksum(CHECKSUM_DEFAULT_SCHEME, checksum.hash)
     end
-    actual_checksum = DataToolkitCore.invokepkglatest(getchecksum, file, checksum.alg)
+    actual_checksum = @log_do(
+        "store:checksum",
+        "Calculating checksum of $(storage.dataset.name)'s source",
+        DataToolkitCore.invokepkglatest(getchecksum, file, checksum.alg))
     if isnothing(actual_checksum)
         @warn "Checksum scheme '$(checksum.alg)' is not known, skipping"
         return
@@ -289,9 +279,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
         [storage.dataset.collection.uuid],
         now(), checksum, fileextension(storage))
     dest = storefile(inventory, newsource)
-    if should_log_event("store", storage)
-        @info "Writing $(sprint(show, storage.dataset.name)) to storage"
-    end
+    @log_do "store:save" "Transferring $(sprint(show, storage.dataset.name)) to storage"
     isdir(dirname(dest)) || mkpath(dirname(dest))
     if startswith(file.path, tempdir())
         mv(file.path, dest, force=true)
@@ -330,7 +318,9 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     @static if isdefined(Base.Filesystem, :temp_cleanup_later)
         Base.Filesystem.temp_cleanup_later(partfile)
     end
-    write(partfile, from)
+    @log_do("store:save",
+            "Writing $(sprint(show, storage.dataset.name)) to the store",
+            write(partfile, from))
     @static if isdefined(Base.Filesystem, :temp_cleanup_forget)
         Base.Filesystem.temp_cleanup_forget(partfile)
     end
@@ -534,10 +524,9 @@ function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), valu
     isdir(dirname(dest)) || mkpath(dirname(dest))
     isfile(dest) && rm(dest, force=true)
     isfile(tempdest) && rm(tempdest, force=true)
-    if should_log_event("cache", loader)
-        @info "Saving $T form of $(sprint(show, loader.dataset.name)) to the store"
-    end
-    Base.invokelatest(serialize, tempdest, value)
+    @log_do("cache:save",
+            "Saving $T form of $(sprint(show, loader.dataset.name)) to the store",
+            Base.invokelatest(serialize, tempdest, value))
     chmod(tempdest, 0o100444 & filemode(inventory.file.path)) # Make read-only
     mv(tempdest, dest, force=true)
     update_source!(inventory, newsource, loader.dataset.collection)

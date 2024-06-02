@@ -141,7 +141,9 @@ their declared types, and the implemented methods. If a method exists that can l
 declared in `dataset`'s `loaders` are preferred.
 """
 function Base.read(dataset::DataSet, as::Type)::as
-    @advise read1(dataset, as)
+    @log_do("read",
+            "Reading $(dataset.name) as $as",
+            @advise read1(dataset, as))
 end
 
 function Base.read(dataset::DataSet)
@@ -160,7 +162,7 @@ function Base.read(dataset::DataSet)
         throw(TransformerError(
             "Data set $(sprint(show, dataset.name)) could not be loaded in any form.\n $helpfulextra"))
     end
-    @advise read1(dataset, as)
+    read(dataset, as)
 end
 
 """

@@ -1,5 +1,0 @@
-#+title: Log
-
-#+begin_src @eval
-Main.DataToolkitCommon.pdocs("log")
-#+end_src

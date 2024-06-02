@@ -14,9 +14,6 @@ using Markdown: @md_str
 using TOML
 using UUIDs
 
-# Defined in `plugins/log.jl`, but also wanted for the store plugins.
-function should_log_event end
-
 include("misc/collectiondir.jl")
 include("misc/humansize.jl")
 
@@ -54,7 +51,6 @@ include("transformers/saveload/zip.jl")
 
 include("plugins/addpkgs.jl")
 include("plugins/defaults.jl")
-include("plugins/log.jl") # Must be early so `should_log_event` is availible.
 include("plugins/versions.jl")
 include("plugins/memorise.jl")
 
@@ -95,7 +91,6 @@ function __init__()
 
     @dataplugin ADDPKGS_PLUGIN
     @dataplugin DEFAULTS_PLUGIN :default
-    @dataplugin LOG_PLUGIN
     @dataplugin VERSIONS_PLUGIN
     @dataplugin MEMORISE_PLUGIN :default
 

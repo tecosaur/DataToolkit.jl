@@ -3,7 +3,8 @@ module DataToolkitCore
 using UUIDs, TOML, Dates
 
 using PrecompileTools
-using Compat
+using Preferences
+using Base.Threads
 
 # For general usage
 export loadcollection!, dataset
@@ -20,7 +21,7 @@ export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     ReadonlyCollection, TransformerError, UnsatisfyableTransformer,
     OrphanDataSet, InvalidParameterType
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
-export @require, @addpkg, @dataplugin, @advise, @getparam
+export @require, @addpkg, @dataplugin, @advise, @getparam, @log_do
 
 # For plugin packages
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
@@ -41,6 +42,7 @@ include("model/writer.jl")
 include("model/usepkg.jl")
 include("model/dataplugin.jl")
 
+include("interaction/logging.jl") # Need to be loaded early
 include("interaction/typetransforms.jl")
 include("interaction/externals.jl")
 include("interaction/display.jl")
