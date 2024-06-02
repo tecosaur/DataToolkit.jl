@@ -105,7 +105,7 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
                     [c.name for c in commands if startswith(c.name, rest)]
                 end
             else
-                repl_cmd.completions(rest)::Tuple{Vector{String}, String, Bool}
+                repl_cmd.completions(rest)
             end
         else
             all_cmd_names = map(c -> c.name, commands)
