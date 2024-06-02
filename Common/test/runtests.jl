@@ -6,6 +6,9 @@ using Test
 DataToolkitCore.loadcollection!("Data.toml")
 
 @testset "Storage" begin
+    @test "AWS S3" begin
+        @test open(dataset("iris-s3"), FilePath) isa FilePath
+    end
 end
 
 @testset "Loaders/Writers" begin

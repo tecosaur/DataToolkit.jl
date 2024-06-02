@@ -60,6 +60,7 @@ makedocs(;
             "storage/null.md",
             "storage/passthrough.md",
             "storage/raw.md",
+            "storage/s3.md",
             "storage/web.md",
         ],
         "Loaders/Writers" => Any[

@@ -20,10 +20,11 @@ include("misc/humansize.jl")
 include("transformers/storage/generic.jl")
 
 include("transformers/storage/filesystem.jl")
+include("transformers/storage/git.jl")
 include("transformers/storage/null.jl")
 include("transformers/storage/passthrough.jl")
-include("transformers/storage/git.jl")
 include("transformers/storage/raw.jl")
+include("transformers/storage/s3.jl")
 include("transformers/storage/web.jl")
 
 include("transformers/saveload/arrow.jl")
@@ -63,6 +64,7 @@ function __init__()
     @addpkg Downloads      "f43a241f-c20a-4ad4-852c-f6b1247861c6"
     @addpkg Git_jll        "f8c6e375-362e-5223-8a59-34ff63f689eb"
     # Loaders
+    @addpkg AWS            "fbe9abb3-538b-5e4e-ba9e-bc94f4f92ebc"
     @addpkg ArchGDAL       "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
     @addpkg Arrow          "69666777-d1a9-59fb-9406-91d4454c9d45"
     @addpkg CSV            "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -102,6 +104,7 @@ function __init__()
              (:storage, :null) => NULL_S_DOC,
              (:storage, :passthrough) => PASSTHROUGH_S_DOC,
              (:storage, :raw) => RAW_DOC,
+             (:storage, :s3) => S3_DOC,
              (:storage, :web) => WEB_DOC,
              (:loader, :arrow) => ARROW_DOC,
              (:loader, :chain) => CHAIN_DOC,

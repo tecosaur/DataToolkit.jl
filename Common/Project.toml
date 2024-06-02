@@ -16,6 +16,7 @@ Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
+AWS = "fbe9abb3-538b-5e4e-ba9e-bc94f4f92ebc"
 ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
 Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -47,6 +48,7 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [extensions]
+AWSExt = "AWS"
 ArchGDALExt = "ArchGDAL"
 ArrowExt = "Arrow"
 CSVExt = "CSV"
@@ -124,4 +126,4 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DBInterface", "DataFrames", "DataToolkitBase", "DelimitedFiles", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "WebP", "XLSX", "YAML", "ZipFile"]
+test = ["AWS", "ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DBInterface", "DataFrames", "DataToolkitCore", "DelimitedFiles", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "XLSX", "YAML", "ZipFile"]

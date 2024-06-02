@@ -163,6 +163,19 @@ uuid = "cf3933a3-b5f7-4443-86f1-66e46adcb317"
     driver = "jld2"
     key = "data"
 
+[[iris-s3]]
+uuid = "f6b47016-b430-4e48-8de4-ec182ee6ea29"
+
+    [[iris-s3.storage]]
+    driver = "s3"
+    bucket = "sagemaker-example-files-prod-us-west-2"
+    checksum = "k12:9b24c43372e405738599e7cfa9e4a503"
+    object = "datasets/tabular/iris/iris.data"
+    region = "us-west-2"
+
+    [[iris-s3.loader]]
+    driver = "csv"
+
 [[iris-tar]]
 uuid = "0d0b54d8-bdd1-4d08-b7be-872d074a7e4f"
 
