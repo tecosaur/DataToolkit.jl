@@ -18,6 +18,7 @@ include("misc/collectiondir.jl")
 include("misc/humansize.jl")
 
 include("transformers/storage/filesystem.jl")
+include("transformers/storage/generic.jl")
 include("transformers/storage/null.jl")
 include("transformers/storage/passthrough.jl")
 include("transformers/storage/git.jl")
