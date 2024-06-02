@@ -10,7 +10,7 @@ using UUIDs
 
 using DataToolkitCore
 using DataToolkitCore: STACK, TRANSFORMER_DOCUMENTATION, issubseq,
-    getlayer, highlight_lcs
+    getlayer, highlight_lcs, natkeygen
 
 using DataToolkitREPL: ReplCmd, REPL_KEY, REPL_NAME, REPL_PROMPT,
     REPL_PROMPTSTYLE, REPL_QUESTION_COLOR, REPL_USER_INPUT_COLOUR, REPL_CMDS,
