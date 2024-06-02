@@ -34,7 +34,7 @@ using PrecompileTools
         write(tempio, invtoml)
         close(tempio)
         push!(INVENTORIES, load_inventory(tempfile))
-        write(IOBuffer(), last(INVENTORIES))
+        write(devnull, last(INVENTORIES))
         garbage_collect!(; log=false, trimmsg=false, dryrun=true)
         rhash(Inventory)
         rhash(first(INVENTORIES))
