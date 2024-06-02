@@ -13,8 +13,7 @@ being thrown.
 """
 function get_package(pkg::Base.PkgId)
     if !Base.root_module_exists(pkg)
-        fmtpkg = string(pkg.name, '[', pkg.uuid, ']')
-        @info "Lazy-loading $fmtpkg"
+        @info "Lazy-loading $(pkg.name) [$(pkg.uuid)])]"
         try
             Base.require(pkg)
             true
