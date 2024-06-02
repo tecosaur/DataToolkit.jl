@@ -176,42 +176,9 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
     end
 end
 
-is_store_target(::Any) = false
-
-function approximate_store_dest end
-
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     try
-        if is_store_target(storage)
-            refdest = invokelatest(approximate_store_dest, storage)
-            miliseconds = round(Int, 1000 * time())
-            # We don't technically need to use .part then .download,
-            # but I like that it makes it clear what stage of existence
-            # the file is at.
-            partfile = string(refdest, '-', miliseconds, ".part")
-            # In case the user aborts the download, let's try to clean up the
-            # files. This is just a nice extra, so we'll speculatively use Base
-            # internals for now, and revisit this approach if it becomes a
-            # problem.
-            @static if isdefined(Base.Filesystem, :temp_cleanup_later)
-                Base.Filesystem.temp_cleanup_later(partfile)
-            end
-            isdir(dirname(partfile)) || mkpath(dirname(partfile))
-            DataToolkitCore.invokepkglatest(download_to, storage, partfile)
-            tmpfile = string(refdest, '-', miliseconds, ".download")
-            mv(partfile, tmpfile)
-            @static if isdefined(Base.Filesystem, :temp_cleanup_forget)
-                Base.Filesystem.temp_cleanup_forget(partfile)
-            end
-            @static if isdefined(Base.Filesystem, :temp_cleanup_later)
-                Base.Filesystem.temp_cleanup_later(tmpfile)
-            end
-            FilePath(tmpfile)
-        else
-            tmpfile = tempname()
-            DataToolkitCore.invokepkglatest(download_to, storage, tmpfile)
-            FilePath(tmpfile)
-        end
+        savetofile(f -> DataToolkitCore.invokepkglatest(download_to, storage, f), storage)
     catch err
         url = @getparam(storage."url"::String)
         @error "Download failed" url err
