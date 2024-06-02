@@ -15,9 +15,9 @@ function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(std
         println("The data collection stack is empty")
     else
         collection = if isempty(collection_str)
-            DataToolkitCore.getlayer(nothing)
+            getlayer(nothing)
         else
-            DataToolkitCore.getlayer(collection_str)
+            getlayer(collection_str)
         end
         table_rows = displaytable(
             ["Dataset", "Description"],

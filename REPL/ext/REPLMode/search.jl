@@ -16,7 +16,7 @@ function search(input::AbstractString)
         caseinsensitive = all(!isuppercase, input)
         if ':' in input
             collection, _ = split(input, ':', limit=2)
-            searchstack = [DataToolkitCore.getlayer(if !isempty(collection) collection end)]
+            searchstack = [getlayer(if !isempty(collection) collection end)]
         end
         for collection in STACK
             for dataset in collection.datasets

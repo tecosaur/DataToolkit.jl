@@ -20,11 +20,11 @@ function complete_dataset(sofar::AbstractString)
             filter(o -> startswith(o, sofar),
                    string.(layer, ':',
                            unique(getproperty.(
-                               DataToolkitCore.getlayer(layer).datasets, :name))))
+                               getlayer(layer).datasets, :name))))
         else
             filter(o -> startswith(o, sofar),
                    vcat(getproperty.(STACK, :name) .* ':',
-                        getproperty.(DataToolkitCore.getlayer(nothing).datasets, :name) |> unique))
+                        getproperty.(getlayer(nothing).datasets, :name) |> unique))
         end
     catch _
         String[]

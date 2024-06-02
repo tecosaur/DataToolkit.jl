@@ -25,7 +25,7 @@ function repl_lint(input::AbstractString)
         dolint(first(STACK))
     else
         try
-            collection = DataToolkitCore.getlayer(
+            collection = getlayer(
                 @something(tryparse(Int, input),
                            tryparse(UUID, input),
                            String(input)))

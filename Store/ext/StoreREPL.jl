@@ -303,7 +303,7 @@ function repl_fetch(input::AbstractString)
         foreach(fetch!, STACK)
     else
         try
-            collection = DataToolkitCore.getlayer(
+            collection = getlayer(
                 @something(tryparse(Int, input),
                            tryparse(UUID, input),
                            String(input)))

@@ -77,7 +77,7 @@ function stack_load(input::AbstractString)
     file = if !isempty(path)
         if !endswith(path, ".toml") && !isdir(path) &&
             !isnothing(findfirst(c -> c.name == path, STACK))
-            DataToolkitCore.getlayer(path).path
+            getlayer(path).path
         else
             abspath(expanduser(path))
         end
