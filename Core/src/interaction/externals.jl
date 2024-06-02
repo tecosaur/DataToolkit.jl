@@ -133,9 +133,12 @@ is illustrated in the diagram below.
 
   ─ the load path used
   ┄ an option not taken
-
-TODO explain further
 ```
+
+The types that a `DataSet` can be loaded as are determined by the `loaders`,
+their declared types, and the implemented methods. If a method exists that can load
+`dataset` to a subtype of `as`, it will be used. Methods that produce a type
+declared in `dataset`'s `loaders` are preferred.
 """
 function Base.read(dataset::DataSet, as::Type)::as
     @advise read1(dataset, as)
