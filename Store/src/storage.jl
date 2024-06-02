@@ -218,7 +218,7 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
         checksum = @log_do(
             "store:checksum",
             "Calculating checksum of $(storage.dataset.name)'s source",
-            DataToolkitCore.invokepkglatest(getchecksum, file, alg))
+            invokepkglatest(getchecksum, file, alg))
         if isnothing(checksum)
             @warn "Checksum scheme '$csumval' is not known, skipping"
             return
@@ -238,7 +238,7 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
     actual_checksum = @log_do(
         "store:checksum",
         "Calculating checksum of $(storage.dataset.name)'s source",
-        DataToolkitCore.invokepkglatest(getchecksum, file, checksum.alg))
+        invokepkglatest(getchecksum, file, checksum.alg))
     if isnothing(actual_checksum)
         @warn "Checksum scheme '$(checksum.alg)' is not known, skipping"
         return

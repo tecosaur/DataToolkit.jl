@@ -16,7 +16,7 @@ function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     types = loadtypepath(subloaders, typeof(from), T)
     if !isnothing(types)
         reduce((value, (subloader, as)) ->
-            DataToolkitCore.invokepkglatest(load, subloader, value, as),
+            invokepkglatest(load, subloader, value, as),
                zip(subloaders, types), init=from)::Union{T, Nothing}
     end
 end

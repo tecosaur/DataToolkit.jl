@@ -14,7 +14,7 @@ export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataCollection, QualifiedType, Identifier, FilePath,
     LintItem, LintReport
 export load, storage, getstorage, putstorage, save, getlayer, resolve, refine,
-    parse_ident, supportedtypes, typeify, create, createpriority, lint
+    parse_ident, supportedtypes, typeify, create, createpriority, lint, invokepkglatest
 export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     PackageException, UnregisteredPackage, MissingPackage,
     DataOperationException, CollectionVersionMismatch, EmptyStackError,

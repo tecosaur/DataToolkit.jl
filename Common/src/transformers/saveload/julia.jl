@@ -28,7 +28,7 @@ function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
         kwargs = Dict{Symbol, Any}(
             Symbol(k) => v for (k, v) in @getparam(loader."arguments"::Dict{String, Any}))
         cd(dirof(loader.dataset.collection)) do
-            DataToolkitCore.invokepkglatest(loadfn; kwargs...)::R
+            invokepkglatest(loadfn; kwargs...)::R
         end
     end
 end
@@ -41,7 +41,7 @@ function load(loader::DataLoader{:julia}, from::Any, R::Type)
             kwargs = Dict{Symbol,Any}(
                 Symbol(k) => v for (k, v) in @getparam(loader."arguments"::Dict{String, Any}))
             cd(dirof(loader.dataset.collection)) do
-                DataToolkitCore.invokepkglatest(loadfn, from; kwargs...)::R
+                invokepkglatest(loadfn, from; kwargs...)::R
             end
         end
     end
@@ -52,7 +52,7 @@ function save(writer::DataWriter{:julia}, dest, info)
     kwargs = Dict{Symbol,Any}(
         Symbol(k) => v for (k, v) in @getparam(loader."arguments"::Dict{String, Any}))
     cd(dirof(writer.dataset.collection)) do
-        DataToolkitCore.invokepkglatest(writefn, dest, info; kwargs...)
+        invokepkglatest(writefn, dest, info; kwargs...)
     end
 end
 

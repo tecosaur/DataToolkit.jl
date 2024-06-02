@@ -178,7 +178,7 @@ end
 
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     try
-        savetofile(f -> DataToolkitCore.invokepkglatest(download_to, storage, f), storage)
+        savetofile(f -> invokepkglatest(download_to, storage, f), storage)
     catch err
         url = @getparam(storage."url"::String)
         @error "Download failed" url err
