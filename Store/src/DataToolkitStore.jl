@@ -16,7 +16,7 @@ USER_INVENTORY::String = ""
 const PROJECT_SUBPATH = # Handle as const to avoid invalidations (for /some/ reason).
     BaseDirs.projectpath(BaseDirs.Project("DataToolkit"))
 
-function _init_user_inventory!()
+function init_user_inventory!()
     global USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
         mkpath(ENV["DATATOOLKIT_STORE"])
     else
@@ -49,7 +49,7 @@ function __init__()
     @dataplugin STORE_PLUGIN :default
     @dataplugin CACHE_PLUGIN
     # Inventory loading
-    _init_user_inventory!()
+    init_user_inventory!()
     push!(INVENTORIES, load_inventory(USER_INVENTORY))
     atexit() do
         for inv in INVENTORIES
