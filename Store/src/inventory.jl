@@ -134,36 +134,39 @@ function Base.convert(::Type{Pair}, cinfo::CollectionInfo)
 end
 
 function Base.convert(::Type{Dict}, sinfo::StoreSource)
-    d = Dict{String, Any}("recipe" => string(sinfo.recipe, base=16),
-                          "references" => string.(sinfo.references),
-                          "accessed" => sinfo.accessed,
-                          "extension" => sinfo.extension)
+    d = Dict{String, Any}(
+        "recipe" => string(sinfo.recipe, base=16),
+        "references" => map(string, sinfo.references),
+        "accessed" => sinfo.accessed,
+        "extension" => sinfo.extension)
     if !isnothing(sinfo.checksum)
         d["checksum"] = string(sinfo.checksum)
     end
     d
 end
 
-function Base.convert(::Type{Dict}, sinfo::CacheSource)
-    Dict{String, Any}("recipe" => string(sinfo.recipe, base=16),
-                      "references" => string.(sinfo.references),
-                      "accessed" => sinfo.accessed,
-                      "types" => string.(first.(sinfo.types)),
-                      "typehashes" => string.(last.(sinfo.types), base=16),
-                      "packages" =>
-                          map(p -> Dict("name" => p.name,
-                                        "uuid" => string(p.uuid)),
-                              sinfo.packages))
+function Base.convert(::Type{Dict}, cinfo::CacheSource)
+    Dict{String, Any}(
+        "recipe" => string(cinfo.recipe, base=16),
+        "references" => map(string, cinfo.references),
+        "accessed" => cinfo.accessed,
+        # FIXME the below line causes load time increases with Julia 1.11+:
+        "types" => map(string ∘ first, cinfo.types),
+        "typehashes" => map(t -> string(t, base=16), map(last, cinfo.types)),
+        "packages" =>
+            map(p -> Dict{String, Any}("name" => p.name, "uuid" => string(p.uuid)),
+                cinfo.packages))
 end
 
 function Base.convert(::Type{Dict}, inv::Inventory)
-    Dict{String, Any}("inventory_version" => INVENTORY_VERSION,
-                      "inventory_last_gc" => inv.last_gc,
-                      "config" => convert(Dict, inv.config),
-                      "collections" => Dict{String, Any}(
-                          convert(Pair, cinfo) for cinfo in inv.collections),
-                      "store" => convert.(Dict, inv.stores),
-                      "cache" => convert.(Dict, inv.caches))
+    Dict{String, Any}(
+        "inventory_version" => INVENTORY_VERSION,
+        "inventory_last_gc" => inv.last_gc,
+        "config" => convert(Dict, inv.config),
+        "collections" => Dict{String, Any}(
+            convert(Pair, cinfo) for cinfo in inv.collections),
+        "store" => map(s -> convert(Dict, s), inv.stores),
+        "cache" => map(c -> convert(Dict, c), inv.caches))
 end
 
 """
