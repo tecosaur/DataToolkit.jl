@@ -139,7 +139,7 @@ function download_eta(io::IO, remaining::Integer, bps::Number)
           end)
 end
 
-function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retries::Int=2)
+function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retries::Int=3)
     @require Downloads
     url = @getparam storage."url"::String
     headers = @getparam storage."headers"::Dict{String, Any}
