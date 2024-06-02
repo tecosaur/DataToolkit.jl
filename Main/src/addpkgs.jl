@@ -5,7 +5,7 @@ For each named package, register it with `DataToolkitBase`.
 Each package must be a dependency of the current module, recorded in its
 Project.toml.
 
-This allows the packages to be used with `DataToolkitBase.@import`.
+This allows the packages to be used with `DataToolkitBase.@require`.
 
 Instead of providing a list of packages, the symbol `*` can be provided to
 register all dependencies.

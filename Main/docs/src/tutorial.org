@@ -480,8 +480,8 @@ Now we can create the =boston (clean)= dataset with the =make= command.
 #+begin_src julia-repl
 (tutorial) data> make boston (clean)
 
-(data) julia> @import StatsBase.quantile
-quantile (generic function with 6 methods)
+(data) julia> @require StatsBase
+StatsBase
 
 (data) julia> proportion = 0.8
 0.8
@@ -491,7 +491,7 @@ quantile (generic function with 6 methods)
 (data) julia> vals = d"boston"[!, column]
 506-element Vector{Float64}:
 
-(data) julia> minval, maxval = quantile(vals, [0.5 - proportion/2, 0.5 + proportion/2])
+(data) julia> minval, maxval = StatsBase.quantile(vals, [0.5 - proportion/2, 0.5 + proportion/2])
 2-element Vector{Float64}:
  12.75
  34.8
@@ -524,11 +524,11 @@ description = "Cleaned Boston Housing data"
     driver = "julia"
     function = '''
 function (; var"data#boston")
-    @import StatsBase.quantile
+    @require StatsBase
     proportion = 0.8
     column = "MedV"
     vals = var"data#boston"[!, column]
-    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
     mask = minval .<= vals .<= maxval
     var"data#boston"[mask, :]
 end
@@ -550,9 +550,9 @@ Now we'll create another derived data set with =make=.
 #+begin_src julia-repl
 (tutorial) data> make boston Rm ~ MedV
 
-(data) julia> @import GLM: @formula, lm
+(data) julia> @require GLM
 
-(data) julia> lm(@formula(Rm ~ MedV), d"boston (clean)")
+(data) julia> GLM.lm(GLM.@formula(Rm ~ MedV), d"boston (clean)")
 
 ^D
 
@@ -607,9 +607,9 @@ your text editor of choice. In this file, change the function to:
 
 #+begin_src julia
 function (; var"data#boston", proportion, column)
-    @import StatsBase.quantile
+    @require StatsBase
     vals = var"data#boston"[!, column]
-    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
     mask = minval .<= vals .<= maxval
     var"data#boston"[mask, :]
 end
@@ -636,7 +636,7 @@ make this change (we do).
        + Added column
        + Added proportion
      ~ Modified function:
-       "function (; var\"data#boston\")\n    @import StatsBase.quantile\n    proportion = 0.9\n    column = \"MedV\"\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n" ~> "function (; var\"data#boston\", proportion, column)\n    @import StatsBase.quantile\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n"
+       "function (; var\"data#boston\")\n    @require StatsBase\n    proportion = 0.9\n    column = \"MedV\"\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n" ~> "function (; var\"data#boston\", proportion, column)\n    @require StatsBase\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n"
  Does this look correct? [y/N]: y
  ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
 #+end_src
@@ -731,9 +731,9 @@ description = "Cleaned Boston Housing data"
     driver = "julia"
     function = '''
 function (; var"data#boston", proportion, column)
-    @import StatsBase.quantile
+    @require StatsBase
     vals = var"data#boston"[!, column]
-    (minval, maxval) = quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
     mask = minval .<= vals .<= maxval
     var"data#boston"[mask, :]
 end
@@ -753,7 +753,7 @@ description = "A linear model for the relation between Rm and MedV"
     driver = "julia"
     function = """
 function (; var\"data#boston (clean)\")
-    @import GLM
+    @require GLM
     GLM.lm(GLM.@formula(Rm ~ MedV), var\"data#boston (clean)\")
 end
 """

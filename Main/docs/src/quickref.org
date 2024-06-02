@@ -80,9 +80,9 @@ DataToolkit.init()
 
 * Using a package within a =julia= loader script
 
-Use =@import ...= instead of =import ...= (and don't use =using=).
+Use =@require SomePkg= instead of =import SomePkg= (and don't use =using=).
 
-* Registering a package for use with =@import=
+* Registering a package for use with =@require=
 
 Call =DataToolkit.@addpkgs A B C...=, or to make all direct dependencies of the
 current module available: =DataToolkit.@addpkgs *=.

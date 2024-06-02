@@ -15,7 +15,7 @@ convenience, others need to be specifically imported or accessed with =DataToolk
 *** DataToolkitBase
 
 #+begin_src @docs
-DataToolkitBase.@import
+DataToolkitBase.@require
 #+end_src
 
 ** Functions
