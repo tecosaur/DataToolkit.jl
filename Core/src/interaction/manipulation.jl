@@ -269,7 +269,11 @@ function plugin_info(plugin::AbstractString; quiet::Bool=false)
         documentation = get(PLUGINS_DOCUMENTATION, plugin, nothing)
         if !isnothing(documentation)
             quiet || printstyled("  The $plugin plugin\n\n", color=:blue, bold=true)
-            documentation
+            if documentation isa Base.Docs.DocStr
+                Base.Docs.parsedoc(documentation)
+            else
+                documentation
+            end
         else
             if !quiet
                 printstyled(" ! ", color=:yellow, bold=true)
