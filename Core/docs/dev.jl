@@ -1,5 +1,8 @@
 #!/usr/bin/env -S julia --startup-file=no
 
+using Pkg
+Pkg.activate(@__DIR__)
+
 function cleanup()
     rm(joinpath(@__DIR__, "build"), force=true, recursive=true)
     for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
@@ -12,17 +15,11 @@ function cleanup()
 end
 cleanup()
 
-using Pkg
-Pkg.activate(@__DIR__)
-Pkg.develop(PackageSpec(; path=dirname(@__DIR__)))
-Pkg.instantiate()
-
 using LiveServer
 
 Base.exit_on_sigint(false)
 try
     servedocs(doc_env=true, foldername=@__DIR__)
 finally
-    Pkg.rm(PackageSpec(; path=dirname(@__DIR__)))
     cleanup()
 end

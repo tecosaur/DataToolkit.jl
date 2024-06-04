@@ -42,9 +42,9 @@ Parse a string representation of a checksum in the format `"type:value"`.
 
 ### Example
 
-```jldoctest; setup = :(import DataToolkitCommon.Store.Checksum)
+```jldoctest; setup = :(import DataToolkitStore.Checksum)
 julia> parse(Checksum, "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4")
-Checksum(:k12, [0xcf, 0xb9, 0xa6, 0xa3, 0x02, 0xf5, 0x8e, 0x5a, 0x9b, 0x0c, 0x81, 0x5b, 0xb7, 0xe8, 0xef, 0xb4])
+Checksum(:k12, UInt8[0xcf, 0xb9, 0xa6, 0xa3, 0x02, 0xf5, 0x8e, 0x5a, 0x9b, 0x0c, 0x81, 0x5b, 0xb7, 0xe8, 0xef, 0xb4])
 ```
 """
 function Base.parse(::Type{Checksum}, checksum::String)
@@ -372,7 +372,7 @@ recognised, but "KiB" and "miB" are not.
 
 ## Examples
 
-```jldoctest; setup = :(import DataToolkitCommon.Store.parsebytesize)
+```jldoctest; setup = :(import DataToolkitStore.parsebytesize)
 julia> parsebytesize("123B")
 123
 

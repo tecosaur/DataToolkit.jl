@@ -18,7 +18,7 @@ const var"@require" = DataToolkitBase.var"@require"
 const var"@addpkg" = DataToolkitBase.var"@addpkg"
 
 map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
-     :Identifier, :Plugin, :getlayer)) do var
+     :Identifier, :Plugin, :dataset, :getlayer)) do var
          @eval const $var = DataToolkitBase.$var
 end
 

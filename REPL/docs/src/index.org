@@ -62,21 +62,7 @@ To register a command, one simply needs to push a ~ReplCmd~ onto ~REPL_CMDS~.
 
 #+begin_src @docs
 REPL_CMDS
-#+end_src
-
-#+begin_src @docs
 ReplCmd
-#+end_src
-
-** Completion
-
-As hinted by the ~ReplCmd~ docstring, completions can be implemented by
-implementing ~completions(::ReplCmd{:CMD_ID}, sofar::AbstractString)~ or
-~allcompletions~.
-
-#+begin_src @docs
-completions
-allcompletions
 #+end_src
 
 ** Helper functions
@@ -105,13 +91,14 @@ function cowsay_repl(input::AbstractString)
     end
 end
 
-push!(REPL_CMDS, ReplCmd(:cowsay3,
-                         "Hear what the cow has to say
+cowsay3 = ReplCmd(
+    "cowsay3",
+    "Hear what the cow has to say
 \n Call with no argument to obtain a fortune.",
-                         cowsay_repl))
+    cowsay_repl,
+    ["Improve your data management with DataToolkits & co."])
 
-DataToolkitCore.allcompletions(::ReplCmd{:cowsay}) =
-    ["Improve your data management with DataToolkits & co."]
+push!(REPL_CMDS, cowsay3)
 #+end_src
 
 If you enter the Data REPL, you will be able to note that:

@@ -1,5 +1,5 @@
 #+title: S3
 
 #+begin_src @eval
-Main.DataToolkitCommon.DataToolkitCore.transformer_docs(:s3)
+Main.DataToolkitCommon.tdocs(:s3)
 #+end_src

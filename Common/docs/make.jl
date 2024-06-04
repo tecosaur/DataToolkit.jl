@@ -1,16 +1,23 @@
+#!/usr/bin/env -S julia --startup-file=no
+
+include("../../Core/docs/setup.jl")
+@setupdev "../../Core" "../../REPL" ".."
+
 using Documenter
 using DataToolkitCommon
+using DataToolkitREPL, REPL
 using Markdown
+
+Core.eval(DataToolkitCommon,
+          quote
+              tdocs(args...) = $DataToolkitREPL.transformer_docs(args...) |> string |> $Markdown.parse
+              pdocs(name) = DataToolkitCore.plugin_info(name) |> string |> $Markdown.parse
+          end)
+
 using Org
 
-let orgconverted = 0
-    html2utf8entity_dirty(text) = # Remove as soon as unnecesary
-        replace(text,
-                "&hellip;" => "…",
-                "&mdash;" => "—",
-                "&mdash;" => "–",
-                "&shy;" => "-")
-    editfile(orgfile) = if basename(dirname(orgfile)) ∈ ("storage", "saveload")
+function editfile(orgfile)
+    if basename(dirname(orgfile)) ∈ ("storage", "saveload")
         name = first(splitext(basename(orgfile)))
         jfile = joinpath(dirname(@__DIR__), "src", "transformers", basename(dirname(orgfile)), "$name.jl")
         if isfile(jfile)
@@ -26,7 +33,11 @@ let orgconverted = 0
     else
         orgfile
     end
-    for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
+end
+
+function org2md_jl(dir::String)
+    orgconverted = 0
+    for (root, _, files) in walkdir(dir)
         orgfiles = joinpath.(root, filter(f -> endswith(f, ".org"), files))
         for orgfile in orgfiles
             mdfile = replace(orgfile, r"\.org$" => ".md")
@@ -37,17 +48,14 @@ let orgconverted = 0
                 s -> replace(s, r"\.org]" => ".md]") |>
                 m -> string("```@meta\nEditURL=\"$(editfile(orgfile))\"\n```\n\n", m) |>
                 m -> write(mdfile, m)
+            push!(MdFiles, mdfile)
         end
         orgconverted += length(orgfiles)
     end
     @info "Converted $orgconverted files from .org to .md"
 end
 
-Core.eval(DataToolkitCommon,
-          quote
-              tdocs(args...) = DataToolkitCore.transformer_docs(args...) |> string |> $Markdown.parse
-              pdocs(name) = DataToolkitCore.plugin_info(name) |> string |> $Markdown.parse
-          end)
+org2md_jl(joinpath(@__DIR__, "src"))
 
 makedocs(;
     modules=[DataToolkitCommon],
@@ -90,17 +98,19 @@ makedocs(;
             "plugins/cache.md",
             "plugins/defaults.md",
             "plugins/memorise.md",
-            "plugins/store.md",
             "plugins/versions.md",
         ],
     ],
-    repo="https://github.com/tecosaur/DataToolkitCommon.jl/blob/{commit}{path}#L{line}",
+    repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkitCommon.jl",
-    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkitCommon.jl/graphs/contributors",
+    authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
     warnonly = [:missing_docs],
 )
 
+md2rm()
+
 deploydocs(;
-    repo="github.com/tecosaur/DataToolkitCommon.jl",
-    devbranch = "main"
+    repo="github.com/tecosaur/DataToolkit.jl",
+    devbranch = "main",
+    dirname = "Common",
 )

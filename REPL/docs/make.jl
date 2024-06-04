@@ -1,29 +1,23 @@
 #!/usr/bin/env -S julia --startup-file=no
 
-include("setup.jl")
-@setupdev ".."
+include("../../Core/docs/setup.jl")
+@setupdev "../../Core" ".."
 
 using Org
 org2md(joinpath(@__DIR__, "src"))
 
 using Documenter
-using DataToolkitCore
+using DataToolkitREPL, REPL
+const REPLMode = Base.get_extension(DataToolkitREPL, :REPLMode)
 
 makedocs(;
-    modules=[DataToolkitCore],
+    modules=[DataToolkitREPL, REPLMode],
     format=Documenter.HTML(),
     pages=[
         "Introduction" => "index.md",
-        "Usage" => "usage.md",
-        "Extensions" => Any[
-            "Transformer backends" => "newtransformer.md",
-            "Packages" => "packages.md",
-            "Data Advice" => "advising.md",
-        ],
-        "Internals" => "libinternal.md",
-        "Errors" => "errors.md",
+        "Commands" => "commands.md",
     ],
-    sitename="DataToolkitCore.jl",
+    sitename="DataToolkitREPL.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
     warnonly = [:missing_docs],
 )
@@ -33,5 +27,5 @@ md2rm()
 deploydocs(;
     repo="github.com/tecosaur/DataToolkit.jl",
     devbranch = "main",
-    dirname = "Core",
+    dirname = "REPL",
 )

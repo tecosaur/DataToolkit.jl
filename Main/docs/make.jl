@@ -1,39 +1,35 @@
-using Documenter
-using DataToolkit, DataToolkit.DataToolkitBase
+#!/usr/bin/env -S julia --startup-file=no
+
+include("../../Core/docs/setup.jl")
+@setupdev "../../Core" "../../Common" "../../Store" "../../Base" "../../REPL" ".."
+
 using Org
+org2md(joinpath(@__DIR__, "src"))
+
+using Documenter
+using DataToolkit, DataToolkitBase, DataToolkitCore
 
 # Ugly fix
 Core.eval(Documenter, quote
-              getdocs(binding::Docs.Binding, typesig::Type = Union{}; kwargs...) =
-                  ((@info "b: $binding" ); Base.Docs.doc(binding, typesig))
+              function DocSystem.getdocs(binding::Docs.Binding, typesig::Type = Union{}; kwargs...)
+                  binding = Base.Docs.aliasof(binding)
+                  results = Base.Docs.DocStr[]
+                  for mod in Base.Docs.modules
+                      dict = Base.Docs.meta(mod; autoinit=false)
+                      isnothing(dict) && continue
+                      if haskey(dict, binding)
+                          multidoc = dict[binding]
+                          for msig in multidoc.order
+                              typesig <: msig && push!(results, multidoc.docs[msig])
+                          end
+                      end
+                  end
+                  results
+              end
           end)
 
-let orgconverted = 0
-    html2utf8entity_dirty(text) = # Remove as soon as unnecesary
-        replace(text,
-                "&hellip;" => "…",
-                "&mdash;" => "—",
-                "&mdash;" => "–",
-                "&shy;" => "-")
-    for (root, _, files) in walkdir(joinpath(@__DIR__, "src"))
-        orgfiles = joinpath.(root, filter(f -> endswith(f, ".org"), files))
-        for orgfile in orgfiles
-            mdfile = replace(orgfile, r"\.org$" => ".md")
-            read(orgfile, String) |>
-                c -> Org.parse(OrgDoc, c) |>
-                o -> sprint(markdown, o) |>
-                html2utf8entity_dirty |>
-                s -> replace(s, r"\.org]" => ".md]") |>
-                m -> string("```@meta\nEditURL=\"$(basename(orgfile))\"\n```\n\n", m) |>
-                m -> write(mdfile, m)
-        end
-        orgconverted += length(orgfiles)
-    end
-    @info "Converted $orgconverted files from .org to .md"
-end
-
 makedocs(;
-    modules=[DataToolkit, DataToolkitBase],
+    modules=[DataToolkit, DataToolkitBase, DataToolkitCore],
     format=Documenter.HTML(),
     pages=[
         "Introduction" => "index.md",

@@ -3,147 +3,61 @@
 All of the relevant help for the REPL can be accessed from inside the REPL. They
 are repeated here verbatim.
 
-#+begin_src @eval
-using Markdown
-Core.eval(Main, quote
-              function datarepl(cmd)
-                  Markdown = $Markdown
-                  pipe = Pipe()
-                  started = Base.Event()
-                  writer = @async redirect_stdio(stdout=pipe, stderr=pipe) do
-                      notify(started)
-                      DataToolkitCommon.DataToolkitBase.execute_repl_cmd(cmd)
-                      close(Base.pipe_writer(pipe))
-                  end
-                  wait(started)
-                  result = read(pipe, String)
-                  wait(writer)
-                  Markdown.MD([
-                      Markdown.Header{2}([Markdown.Code("$cmd")]),
-                      Markdown.Code("ansi", replace(result, r"\e\[\d+m" => "")),
-                      Markdown.HorizontalRule()])
-              end
-              function datareplhelp(cmd::String; postrule::Bool=true)
-                  Markdown = $Markdown
-                  repl_cmd = DataToolkitCommon.DataToolkitBase.find_repl_cmd(first(eachsplit(cmd, ' ')))
-                  for subcmd in last(Iterators.peel(eachsplit(cmd, ' ')))
-                      repl_cmd = DataToolkitCommon.DataToolkitBase.find_repl_cmd(subcmd, commands = repl_cmd.execute)
-                  end
-                  header = Markdown.Header{2}([Markdown.Code("?$cmd")])
-                  desc = if repl_cmd.description isa Markdown.MD
-                      mdreformat(h::$Markdown.Header{n}) where {n} = $Markdown.Header{n+2}(h.text)
-                      mdreformat(md::Any) = md
-                      Markdown.MD(map(mdreformat, repl_cmd.description.content))
-                  else
-                      Markdown.Code("ansi", string(repl_cmd.description))
-                  end
-                  Markdown.MD(vcat([header, desc], ifelse(postrule, [Markdown.HorizontalRule()], []))) |>
-                      string |> Markdown.parse
-              end
-          end)
-nothing
+#+begin_src @datarepl
+help
 #+end_src
 
-#+begin_src @eval
-Main.datarepl("help")
+#+begin_src @datareplhelp
+add
+check
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("add")
+#+begin_src @datarepl
+?config
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("check")
+#+begin_src @datareplhelp
+config get
+config set
+config unset
 #+end_src
 
-#+begin_src @eval
-Main.datarepl("?config")
+#+begin_src @datareplhelp
+edit
+init
+list
+make
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("config get")
+#+begin_src @datarepl
+?plugin
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("config set")
+#+begin_src @datareplhelp
+plugin add
+plugin remove
+plugin edit
+plugin info
+plugin list
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("config unset")
+#+begin_src @datareplhelp
+remove
+search
+show
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("edit")
+#+begin_src @datarepl
+?stack
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("init")
+#+begin_src @datareplhelp
+stack promote
+stack demote
+stack load
+stack remove
 #+end_src
 
-#+begin_src @eval
-Main.datareplhelp("list")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("make")
-#+end_src
-
-#+begin_src @eval
-Main.datarepl("?plugin")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("plugin add")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("plugin remove")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("plugin edit")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("plugin info")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("plugin list")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("remove")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("search")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("show")
-#+end_src
-
-#+begin_src @eval
-Main.datarepl("?stack")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("stack promote")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("stack demote")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("stack load")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("stack remove")
-#+end_src
-
-#+begin_src @eval
-Main.datareplhelp("help", postrule=false)
+#+begin_src @datareplhelp
+help
 #+end_src
