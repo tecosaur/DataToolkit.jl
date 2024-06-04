@@ -2,7 +2,7 @@
 
 Data collections are represented on-disk as =Data.toml= files. While =DataToolkit=
 can be used at a basic level without any knowledge of the structure of the file,
-a little knowledge goes a long way (for instance when =edit=​ing a dataset).
+a little knowledge goes a long way (for instance when editing a dataset).
 
 * Overall structure
 
@@ -45,10 +45,15 @@ priority=1 # (optional)
 
 ** Global setup
 
-The global setup must specify:
-- The =Data.toml= format version
-- The name and UUID of the data collection
-- The plugins used by the data collection
+There are four top-level non-[[https://toml.io/en/v1.0.0#table][table]] properties currently recognised:
++ The =Data.toml= format version (~data_config_version~)
++ The name (~name~) and UUID (~uuid~) of the data collection:
+  - ~name~ is a string that provides a nice human-readable label for the data collection.
+    It may contain any character but =:=, however sticking to =[A-Za-z0-9_]= is recommended.
+  - ~uuid~ is a UUIDv4 that canonically identifies the data collection
++ The plugins used by the data collection (~plugins~): a list of strings.
+
+This should all be set as a matter of course.
 
 ** Configuration
 
@@ -68,12 +73,28 @@ priority=2
 
 As a consequence of this, no dataset may be named ="config"=.
 
+*** Reserved configuration attributes
+
+The =config.locked= attribute is used by =DataToolkitCore= to indicate that the
+=Data.toml= file should not be modified, and to override it the attribute must be
+changed within the =Data.toml= file. By setting src_toml{config.locked = true},
+you protect yourself from accidental modifications to the data file.
+
+#+begin_notes
+This functionality is part of =DataToolkitCore= because it is taken into account
+in the implementation of ~Base.iswritable(::DataCollection)~.
+#+end_notes
+
+Other attributes may be used by plugins to affect their behaviour. For instance,
+the =defaults= plugin uses the =config.defaults= attribute, and both the =store= and
+=cache= plugins use the =config.store= attribute.
+
 ** Datasets
 
 All datasets are represented using an /[[https://toml.io/en/v1.0.0#array-of-tables][array of tables]]/. This allows multiple
 datasets to have the same name, and be distinguished by other attributes (e.g.
-version information). All datasets must have a =uuid= key, this is important for
-providing a canonical unique reference to a particular dataset.
+version information). The dataset name can be any string that does not contain a
+colon (=:=), other than =config=.
 
 #+begin_src toml
 [[mydataset]]
@@ -81,14 +102,28 @@ uuid="a UUIDv4"
 # other properties...
 #+end_src
 
-The storage/loader/writer transformers of a dataset are specified using
-sub-tables, i.e.
+Besides =uuid=, the attributes =storage=, =loader=, and =writer= are reserved for
+specifying transformers. All datasets must have a =uuid= key, this is important
+for providing a canonical unique reference to a particular dataset. All other
+attributes are free to be used by plugins or to add arbitrary metadata.
+
+** Data transformers
+
+The transformers of a dataset (=storage=, =loader=, and =writer=) are specified using
+sub-tables of the dataset. Any number of transformers can be specified, and the
+first applicable (sorted by priority, lowest winning) will be used.
 
 #+begin_src toml
 [[mydataset.TRANSFORMER]]
 driver="transformer driver"
+type = ["list", "of", "types"] # (optional)
+priority=1 # (optional)
 # other properties...
 #+end_src
+
+The =type= attribute (either a single type, or a list) is given a default value
+inferred from loaded code relating to the transformer. In situations where this
+is unsatisfactory, it can be explicitly specified.
 
 All transformers /must/ set the =driver= key. All attributes other than =driver=,
 =type=, and =priority= are free to be used by the transformer and plugins.

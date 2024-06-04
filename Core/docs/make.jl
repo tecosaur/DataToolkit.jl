@@ -37,7 +37,6 @@ makedocs(;
     pages=[
         "Introduction" => "index.md",
         "Usage" => "usage.md",
-        "Data.toml" => "datatoml.md",
         "Extensions" => Any[
             "Transformer backends" => "newtransformer.md",
             "Packages" => "packages.md",
