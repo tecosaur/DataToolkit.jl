@@ -14,13 +14,15 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
 DataToolkitREPL = "c58528a0-97a2-40a0-9a44-056fe1196995"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [extensions]
-StoreREPL = "DataToolkitREPL"
+StoreREPL = ["DataToolkitREPL", "REPL"]
 
 [compat]
 BaseDirs = "1"
-DataToolkitCore = "0.10"
+DataToolkitCore = "~0.10"
+DataToolkitREPL = "~0.10"
 Dates = "1.9"
 PrecompileTools = "1.2"
 Serialization = "1.9"

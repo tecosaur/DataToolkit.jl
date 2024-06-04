@@ -1,7 +1,7 @@
 name = "DataToolkitREPL"
 uuid = "c58528a0-97a2-40a0-9a44-056fe1196995"
 authors = ["TEC <git@tecosaur.net>"]
-version = "0.1.0"
+version = "0.10.0"
 
 [deps]
 DataToolkitCore = "caac3e55-418c-402e-a061-64d454aa8f4f"

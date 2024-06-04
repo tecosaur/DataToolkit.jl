@@ -1,7 +1,7 @@
 name = "DataToolkitCore"
 uuid = "caac3e55-418c-402e-a061-64d454aa8f4f"
 authors = ["TEC <tec@tecosaur.com> and contributors"]
-version = "0.9.1"
+version = "0.10.0"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
