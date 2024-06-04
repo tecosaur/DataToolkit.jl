@@ -5,6 +5,7 @@ version = "0.10.0"
 
 [deps]
 BaseDirs = "18cc8868-cbac-4acf-b575-c8ff214dc66f"
+Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 DataToolkitCore = "caac3e55-418c-402e-a061-64d454aa8f4f"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
@@ -21,6 +22,7 @@ StoreREPL = ["DataToolkitREPL", "REPL"]
 
 [compat]
 BaseDirs = "1"
+Compat = "4.10"
 DataToolkitCore = "~0.10"
 DataToolkitREPL = "~0.10"
 Dates = "1.9"

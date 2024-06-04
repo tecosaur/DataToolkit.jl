@@ -14,3 +14,10 @@ The management will be based on an "Inventory file" that contains all the
 requisite information on the data collections being stored. Management will
 occur automatically when the interacting with the store, but management
 functions will also be made available in the form of an API, and REPL commands.
+
+* API
+
+#+begin_src @docs
+DataToolkitStore.load_inventory
+DataToolkitStore.fetch!
+#+end_src
