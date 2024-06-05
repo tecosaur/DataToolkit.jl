@@ -1,0 +1,38 @@
+#+title: JLD2
+
+* Description
+
+The =jld2= driver enables the *parsing* and *serialisation* of JSON data.
+
+* Input/output
+
+The =jld2= driver expects data to be provided via ~IO~.
+
+It will parse to a number of types depending on the input:
++ =JSON3.Object=
++ =JSON3.Array=
++ =String=
++ =Number=
++ =Boolean=
++ =Nothing=
+
+If you do not wish to impose any expectations on the parsed type, you can ask
+for the data of type ~Any~.
+
+When writing, any type compatible with ~JSON3.write~ can be used directly, with
+any storage backend supporting ~IO~.
+
+* Required packages
+
++ =JSON3=
+
+* Parameters
+
++ pretty :: Whether to use ~JSON3.pretty~ when writing
+
+* Usage examples
+
+#+begin_src toml
+[[sample.loader]]
+driver = "json"
+#+end_src

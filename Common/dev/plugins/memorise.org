@@ -1,0 +1,5 @@
+#+title: Memorise
+
+#+begin_src @eval
+Main.DataToolkitCommon.pdocs("memorise")
+#+end_src
