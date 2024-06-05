@@ -1,0 +1,24 @@
+name: Docs
+on:
+  push:
+    branches:
+      - main
+    tags: '*'
+  pull_request:
+jobs:
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v1
+      - run: Core/docs/make.jl
+      - run: Store/docs/make.jl
+      - run: Common/docs/make.jl
+      - run: REPL/docs/make.jl
+      - run: Main/docs/make.jl
