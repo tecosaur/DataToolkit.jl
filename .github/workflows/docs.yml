@@ -22,3 +22,9 @@ jobs:
       - run: Common/docs/make.jl
       - run: REPL/docs/make.jl
       - run: Main/docs/make.jl
+      - name: MultiDocs
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          julia --project=MultiDocs -e 'using Pkg; Pkg.instantiate()'
+          julia --project=MultiDocs MultiDocs/make-multi.jl
