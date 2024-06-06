@@ -2,6 +2,7 @@ module DataToolkit
 
 import Base as JLBase
 
+using DataToolkitCore
 using DataToolkitBase: DataToolkitBase, loadproject!
 using DataToolkitREPL
 
@@ -19,7 +20,7 @@ const var"@addpkg" = DataToolkitBase.var"@addpkg"
 
 map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
      :Identifier, :Plugin, :dataset, :getlayer)) do var
-         @eval const $var = DataToolkitBase.$var
+         @eval const $var = DataToolkitCore.$var
 end
 
 """

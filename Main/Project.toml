@@ -5,6 +5,7 @@ version = "0.10.0"
 
 [deps]
 DataToolkitBase = "e209d0c3-e863-446f-9b45-de6ca9730756"
+DataToolkitCore = "caac3e55-418c-402e-a061-64d454aa8f4f"
 DataToolkitREPL = "c58528a0-97a2-40a0-9a44-056fe1196995"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 
