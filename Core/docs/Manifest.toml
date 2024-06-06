@@ -2,7 +2,7 @@
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "bb2e82a29884572666a801f8d964bc981c4f92ad"
+project_hash = "da12070e99840415f4a75c747ad4972771acc8a8"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -45,6 +45,12 @@ version = "2.4.1"
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 
+[[deps.DocInventories]]
+deps = ["CodecZlib", "Downloads", "TOML"]
+git-tree-sha1 = "e97cfa8680a39396924dcdca4b7ff1014ed5c499"
+uuid = "43dc2714-ed3b-44b5-b226-857eda1aa7de"
+version = "1.0.0"
+
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
 git-tree-sha1 = "2fb1e02f2b635d0845df5d7c167fec4dd739b00d"
@@ -56,6 +62,18 @@ deps = ["ANSIColoredPrinters", "AbstractTrees", "Base64", "CodecZlib", "Dates", 
 git-tree-sha1 = "5461b2a67beb9089980e2f8f25145186b6d34f91"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 version = "1.4.1"
+
+[[deps.DocumenterInterLinks]]
+deps = ["CodecZlib", "DocInventories", "Documenter", "DocumenterInventoryWritingBackport", "Markdown", "MarkdownAST", "TOML"]
+git-tree-sha1 = "00dceb038f6cb24f4d8d6a9f2feb85bbe58305fd"
+uuid = "d12716ef-a0f6-4df4-a9f1-a5a34e75c656"
+version = "1.0.0"
+
+[[deps.DocumenterInventoryWritingBackport]]
+deps = ["CodecZlib", "Documenter", "TOML"]
+git-tree-sha1 = "1b89024e375353961bb98b9818b44a4e38961cc4"
+uuid = "195adf08-069f-4855-af3e-8933a2cdae94"
+version = "0.1.0"
 
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]

@@ -3,7 +3,7 @@
 include("../../Core/docs/setup.jl")
 @setupdev "../../Core" "../../REPL" ".."
 
-using Documenter
+using Documenter, DocumenterInterLinks
 using DataToolkitCommon
 using DataToolkitREPL, REPL
 using Markdown
@@ -57,6 +57,8 @@ end
 
 org2md_jl(joinpath(@__DIR__, "src"))
 
+const interlinks = @all_interlinks;
+
 makedocs(;
     modules=[DataToolkitCommon],
     format=Documenter.HTML(assets = ["assets/favicon.ico"]),
@@ -105,6 +107,7 @@ makedocs(;
     sitename="DataToolkitCommon.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
     warnonly = [:missing_docs],
+    plugins = [interlinks],
 )
 
 md2rm()

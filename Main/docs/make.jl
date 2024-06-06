@@ -6,7 +6,7 @@ include("../../Core/docs/setup.jl")
 using Org
 org2md(joinpath(@__DIR__, "src"))
 
-using Documenter
+using Documenter, DocumenterInterLinks
 using DataToolkit, DataToolkitBase, DataToolkitCore
 
 # Ugly fix
@@ -28,6 +28,8 @@ Core.eval(Documenter, quote
               end
           end)
 
+const interlinks = @all_interlinks;
+
 makedocs(;
     modules=[DataToolkit, DataToolkitBase, DataToolkitCore],
     format=Documenter.HTML(assets = ["assets/favicon.ico"]),
@@ -41,6 +43,7 @@ makedocs(;
     sitename="DataToolkit.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
     warnonly = [:missing_docs],
+    plugins = [interlinks],
 )
 
 deploydocs(;

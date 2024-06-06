@@ -6,7 +6,7 @@ include("../../Core/docs/setup.jl")
 using Org
 org2md(joinpath(@__DIR__, "src"))
 
-using Documenter
+using Documenter, DocumenterInterLinks
 using DataToolkitStore
 using DataToolkitREPL, REPL
 using Markdown
@@ -15,6 +15,8 @@ Core.eval(DataToolkitStore,
           quote
               pdocs(name) = DataToolkitCore.plugin_info(name) |> string |> $Markdown.parse
           end)
+
+const interlinks = @all_interlinks;
 
 makedocs(;
     modules=[DataToolkitStore],
@@ -32,6 +34,7 @@ makedocs(;
     sitename="DataToolkitStore.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
     warnonly = [:missing_docs],
+    plugins = [interlinks],
 )
 
 md2rm()

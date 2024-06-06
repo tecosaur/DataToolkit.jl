@@ -6,9 +6,11 @@ include("../../Core/docs/setup.jl")
 using Org
 org2md(joinpath(@__DIR__, "src"))
 
-using Documenter
+using Documenter, DocumenterInterLinks
 using DataToolkitREPL, REPL
 const REPLMode = Base.get_extension(DataToolkitREPL, :REPLMode)
+
+const interlinks = @all_interlinks;
 
 makedocs(;
     modules=[DataToolkitREPL, REPLMode],
@@ -20,6 +22,7 @@ makedocs(;
     sitename="DataToolkitREPL.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
     warnonly = [:missing_docs],
+    plugins = [interlinks],
 )
 
 md2rm()

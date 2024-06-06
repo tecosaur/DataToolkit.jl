@@ -82,3 +82,36 @@ function org2md(dir::String)
 end
 
 md2rm() = foreach(rm, MdFiles)
+
+# ---
+
+macro all_interlinks()
+    quote
+        InterLinks(
+            "DataToolkitCore" => (
+                "https://tecosaur.github.io/DataToolkit.jl/core/",
+                joinpath(dirname(dirname(@__DIR__)), "Core", "docs", "build", "objects.inv")
+            ),
+            "DataToolkitREPL" => (
+                "https://tecosaur.github.io/DataToolkit.jl/repl/",
+                joinpath(dirname(dirname(@__DIR__)), "REPL", "docs", "build", "objects.inv")
+            ),
+            "DataToolkitStore" => (
+                "https://tecosaur.github.io/DataToolkit.jl/store/",
+                joinpath(dirname(dirname(@__DIR__)), "Store", "docs", "build", "objects.inv")
+            ),
+            "DataToolkitCommon" => (
+                "https://tecosaur.github.io/DataToolkit.jl/common/",
+                joinpath(dirname(dirname(@__DIR__)), "Common", "docs", "build", "objects.inv")
+            ),
+            "DataToolkitBase" => (
+                "https://tecosaur.github.io/DataToolkit.jl/base/",
+                joinpath(dirname(dirname(@__DIR__)), "Base", "docs", "build", "objects.inv")
+            ),
+            "DataToolkit" => (
+                "https://tecosaur.github.io/DataToolkit.jl/main/",
+                joinpath(dirname(dirname(@__DIR__)), "Main", "docs", "build", "objects.inv")
+            ),
+        )
+    end |> esc
+end
