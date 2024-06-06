@@ -1,7 +1,17 @@
 using MultiDocumenter
 import MultiDocumenter: MultiDocRef
 
-clonedir = mktempdir()
+# GitHub pages doesn't like symlinks
+for (root, dirs, files) in walkdir(".")
+    for file in files
+        filepath = joinpath(root, file)
+        if islink(filepath)
+            linktarget = abspath(dirname(filepath), readlink(filepath))
+            rm(filepath)
+            cp(linktarget, filepath; force=true)
+        end
+    end
+end
 
 docs = [
     MultiDocRef(upstream = joinpath(dirname(@__DIR__), "Main", "docs", "build"),
