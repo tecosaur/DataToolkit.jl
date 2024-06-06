@@ -59,7 +59,7 @@ org2md_jl(joinpath(@__DIR__, "src"))
 
 makedocs(;
     modules=[DataToolkitCommon],
-    format=Documenter.HTML(),
+    format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
         "Storage" => Any[

@@ -18,7 +18,7 @@ Core.eval(DataToolkitStore,
 
 makedocs(;
     modules=[DataToolkitStore],
-    format=Documenter.HTML(),
+    format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
         "The Inventory" => "inventory.md",

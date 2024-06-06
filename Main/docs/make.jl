@@ -30,7 +30,7 @@ Core.eval(Documenter, quote
 
 makedocs(;
     modules=[DataToolkit, DataToolkitBase, DataToolkitCore],
-    format=Documenter.HTML(),
+    format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
         "Tutorial" => "tutorial.md",

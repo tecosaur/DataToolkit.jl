@@ -12,7 +12,7 @@ const REPLMode = Base.get_extension(DataToolkitREPL, :REPLMode)
 
 makedocs(;
     modules=[DataToolkitREPL, REPLMode],
-    format=Documenter.HTML(),
+    format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
         "Commands" => "commands.md",

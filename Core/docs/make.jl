@@ -11,7 +11,7 @@ using DataToolkitCore
 
 makedocs(;
     modules=[DataToolkitCore],
-    format=Documenter.HTML(),
+    format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
         "Usage" => "usage.md",
