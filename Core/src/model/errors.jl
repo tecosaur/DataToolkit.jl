@@ -401,7 +401,7 @@ function Base.showerror(io::IO, err::UnsatisfyableTransformer)
           sprint(show, err.dataset.name), " that can provide a ",
           join(string.(err.wanted), ", ", ", or "),
           ".\n The defined $(transformer_type)s are as follows:")
-    transformers = if err.transformer isa DataLoader
+    transformers = if err.transformer <: DataLoader
         err.dataset.loaders
     else
         err.dataset.storage
