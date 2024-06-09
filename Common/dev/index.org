@@ -1,10 +1,10 @@
 #+title: Introduction
 
-DataToolkitCommon takes the skeleton provided by DataToolkitCore and builds the
-basic functionality needed to make DataToolkit actually useful.
+DataToolkitCommon takes the skeleton provided by [[https://tecosaur.github.io/DataToolkit.jl/core/][DataToolkitCore]] and builds the
+basic functionality needed to make [[https://tecosaur.github.io/DataToolkit.jl/main/][DataToolkit]] actually useful.
 
 To gain an understanding of how these two components fit together, it is
-recommended the DataToolkitCore docs be looked at first to understand the
+recommended the [[https://tecosaur.github.io/DataToolkit.jl/core/][DataToolkitCore]] docs be looked at first to understand the
 system, and then these docs for useful transformers and plugins to actually work
 with your data.
 
