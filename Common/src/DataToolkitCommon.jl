@@ -3,7 +3,7 @@ module DataToolkitCommon
 using DataToolkitCore
 import DataToolkitCore: load, save, storage,
     getstorage, putstorage, supportedtypes,
-    create, createpriority, lint
+    create, createpriority
 
 using PrecompileTools
 using Compat
@@ -56,8 +56,6 @@ include("plugins/addpkgs.jl")
 include("plugins/defaults.jl")
 include("plugins/versions.jl")
 include("plugins/memorise.jl")
-
-include("misc/lintrules.jl")
 
 function __init__()
     # Storage

@@ -229,57 +229,17 @@ function lintfix(report::LintReport, manualfix::Bool=false)
             print('\n')
         end
     end
-    # Manual fixes
-    if !isempty(fixprompt) && (isinteractive() || manualfix)
-        printstyled(length(fixprompt), color=:light_white)
-        print(ifelse(length(fixprompt) == 1, " issue (", " issues ("))
-        for fixitem in fixprompt
-            i, lintitem = fixitem
-            printstyled(i, color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
-            fixitem === last(fixprompt) || print(", ")
-        end
-        print(") can be manually fixed.\n")
-        if manualfix || isinteractive() &&
-            confirm_yn("Would you like to try?", true)
-            lastsource::Any = nothing
-            objinfo(c::DataCollection) =
-                printstyled("• ", c.name, '\n', color=:blue, bold=true)
-            function objinfo(d::DataSet)
-                printstyled("• ", d.name, color=:blue, bold=true)
-                printstyled(" ", d.uuid, "\n", color=:light_black)
-            end
-            objinfo(a::A) where {A <: AbstractDataTransformer} =
-                printstyled("• ", first(A.parameters), ' ',
-                            join(lowercase.(split(string(nameof(A)), r"(?=[A-Z])")), ' '),
-                            " for ", a.dataset.name, '\n', color=:blue, bold=true)
-            objinfo(::DataLoader{driver}) where {driver} =
-                printstyled("• ", driver, " loader\n", color=:blue, bold=true)
-            objinfo(::DataWriter{driver}) where {driver} =
-                printstyled("• ", driver, " writer\n", color=:blue, bold=true)
-            for (i, lintitem) in fixprompt
-                if lintitem.source !== lastsource
-                    objinfo(lintitem.source)
-                    lastsource = lintitem.source
-                end
-                printstyled("  [", i, "]: ", bold=true,
-                            color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
-                print(first(split(lintitem.message, '\n')), '\n')
-                try
-                    lintitem.fixer(lintitem)
-                catch e
-                    if e isa InterruptException
-                        printstyled("!", color=:red, bold=true)
-                        print(" Aborted\n")
-                    else
-                        rethrow()
-                    end
-                end
-            end
-            write(report.collection)
-        end
-    end
     if !isempty(autofixed)
         write(report.collection)
     end
+    # Manual fixes
+    if !isempty(fixprompt) &&
+        (isinteractive() || manualfix) &&
+        hasmethod(linttryfix, Tuple{typeof(fixprompt)})
+        linttryfix(fixprompt) && write(report.collection)
+    end
     nothing
 end
+
+# Implemented in the REPL package, see `../../../REPL/ext/REPLMode/lint.jl`.
+function linttryfix end

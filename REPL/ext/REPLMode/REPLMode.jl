@@ -38,6 +38,8 @@ include("lint.jl")
 include("make.jl")
 include("edit.jl")
 
+include("lint_rules.jl")
+
 function __init__()
     new_cmds = ReplCmd[
         ReplCmd("add",    ADD_DOC,    add),

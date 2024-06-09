@@ -1,3 +1,5 @@
+import DataToolkitCore.lint
+
 function lint(ds::DataSet, ::Val{:has_description})
     if isnothing(get(ds, "description"))
         LintItem(ds, :suggestion, :has_description,
