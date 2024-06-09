@@ -25,15 +25,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="2.9531034"
-     inkscape:cx="232.63662"
-     inkscape:cy="59.090379"
+     inkscape:zoom="1.4765517"
+     inkscape:cx="418.54274"
+     inkscape:cy="115.47174"
      inkscape:window-width="3129"
      inkscape:window-height="1475"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="g6" />
   <defs
      id="defs2">
     <linearGradient
@@ -366,7 +366,7 @@
        x2="0.4512825"
        y2="27.471567"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(0,5.271205)" />
+       gradientTransform="translate(-1.8042299,5.271205)" />
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient8"
@@ -614,39 +614,6 @@
        sodipodi:nodetypes="cc" />
     <text
        xml:space="preserve"
-       style="font-style:italic;font-variant:normal;font-stretch:normal;font-size:3.7931px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#9558b2;stroke-width:0.158046"
-       x="101.86304"
-       y="28.665821"
-       id="text193-6-4-6-4-7"><tspan
-         sodipodi:role="line"
-         id="tspan191-1-7-2-7-0"
-         style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#9558b2;stroke-width:0.158046"
-         x="101.86304"
-         y="28.665821">User-facing</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:italic;font-variant:normal;font-stretch:normal;font-size:3.7931px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#1969cc;stroke-width:0.158046"
-       x="43.980103"
-       y="28.665821"
-       id="text193-6-4-6-4-7-6"><tspan
-         sodipodi:role="line"
-         id="tspan191-1-7-2-7-0-0"
-         style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#1969cc;stroke-width:0.158046"
-         x="43.980103"
-         y="28.665821">DataToolkit-facing</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:italic;font-variant:normal;font-stretch:normal;font-size:3.7931px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#389826;stroke-width:0.158046"
-       x="-13.403335"
-       y="28.665821"
-       id="text193-6-4-6-4-7-9"><tspan
-         sodipodi:role="line"
-         id="tspan191-1-7-2-7-0-3"
-         style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#389826;stroke-width:0.158046"
-         x="-13.403335"
-         y="28.665821">Package-facing</tspan></text>
-    <text
-       xml:space="preserve"
        style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4c9cff;stroke-width:0.158046"
        x="42.876328"
        y="94.149673"
@@ -728,29 +695,74 @@
          style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#d5635b;stroke-width:0.158046"
          x="-8.710351"
          y="92.18718" /></text>
-    <path
-       style="fill:url(#linearGradient7);fill-rule:nonzero;stroke:none;stroke-width:0.316;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m 41.336328,29.945454 h 36.766503 l -2.16902,2.797318 H 43.505346 Z"
-       id="path5-2" />
-    <path
-       style="fill:url(#linearGradient9);fill-rule:nonzero;stroke:none;stroke-width:0.316;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m 93.489778,29.945454 h 36.766502 l -2.16902,2.797318 H 95.658796 Z"
-       id="path5-2-3" />
-    <path
-       style="fill:none;stroke:#4c9cff;stroke-width:0.4;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 41.336328,29.945454 H 78.102831"
-       id="path1-8" />
-    <path
-       style="fill:none;stroke:#be9bc8;stroke-width:0.4;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 93.489781,29.945454 H 130.25628"
-       id="path1-6" />
-    <path
-       style="opacity:1;fill:url(#linearGradient6);fill-rule:nonzero;stroke:none;stroke-width:0.316;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m -17.931968,29.945454 h 36.766503 l -2.16902,2.797318 H -15.76295 Z"
-       id="path5" />
-    <path
-       style="opacity:1;fill:none;stroke:#88c190;stroke-width:0.4;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M -17.931968,29.945454 H 18.834535"
-       id="path1" />
+    <g
+       id="g6">
+      <text
+         xml:space="preserve"
+         style="font-style:italic;font-variant:normal;font-stretch:normal;font-size:3.7931px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#1969cc;stroke-width:0.158046"
+         x="43.980103"
+         y="28.665821"
+         id="text193-6-4-6-4-7-6"><tspan
+           sodipodi:role="line"
+           id="tspan191-1-7-2-7-0-0"
+           style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#1969cc;stroke-width:0.158046"
+           x="43.980103"
+           y="28.665821">DataToolkit-facing</tspan></text>
+      <path
+         style="fill:url(#linearGradient7);fill-rule:nonzero;stroke:none;stroke-width:0.316;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="m 41.336328,29.945454 h 36.766503 l 1.937806,2.797318 H 39.398522 Z"
+         id="path5-2"
+         sodipodi:nodetypes="ccccc" />
+      <path
+         style="fill:none;stroke:#4c9cff;stroke-width:0.4;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="M 41.336328,29.945454 H 78.102831"
+         id="path1-8" />
+    </g>
+    <g
+       id="g5">
+      <text
+         xml:space="preserve"
+         style="font-style:italic;font-variant:normal;font-stretch:normal;font-size:3.7931px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#9558b2;stroke-width:0.158046"
+         x="101.86304"
+         y="28.665821"
+         id="text193-6-4-6-4-7"><tspan
+           sodipodi:role="line"
+           id="tspan191-1-7-2-7-0"
+           style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#9558b2;stroke-width:0.158046"
+           x="101.86304"
+           y="28.665821">User-facing</tspan></text>
+      <path
+         style="fill:url(#linearGradient9);fill-rule:nonzero;stroke:none;stroke-width:0.316;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="m 93.489778,29.945454 h 36.766502 l 0.2,2.639318 -38.904296,0.158 z"
+         id="path5-2-3"
+         sodipodi:nodetypes="ccccc" />
+      <path
+         style="fill:none;stroke:#be9bc8;stroke-width:0.4;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="M 93.489781,29.945454 H 130.25628"
+         id="path1-6" />
+    </g>
+    <g
+       id="g4">
+      <text
+         xml:space="preserve"
+         style="font-style:italic;font-variant:normal;font-stretch:normal;font-size:3.7931px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#389826;stroke-width:0.158046"
+         x="-15.207564"
+         y="28.665821"
+         id="text193-6-4-6-4-7-9"><tspan
+           sodipodi:role="line"
+           id="tspan191-1-7-2-7-0-3"
+           style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.7931px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans,  weight=450 Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#389826;stroke-width:0.158046"
+           x="-15.207564"
+           y="28.665821">Package-facing</tspan></text>
+      <path
+         style="opacity:1;fill:url(#linearGradient6);fill-rule:nonzero;stroke:none;stroke-width:0.316;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="m -19.736198,29.945454 h 36.766503 l 1.937806,2.797318 -38.904309,-0.06098 z"
+         id="path5"
+         sodipodi:nodetypes="ccccc" />
+      <path
+         style="opacity:1;fill:none;stroke:#88c190;stroke-width:0.4;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="M -19.736198,29.945454 H 17.030305"
+         id="path1" />
+    </g>
   </g>
 </svg>
