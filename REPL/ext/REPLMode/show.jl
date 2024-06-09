@@ -28,6 +28,15 @@ function repl_show(input::AbstractString)
     if dataset isa DataSet
         print("  UUID:    ")
         printstyled(dataset.uuid, '\n', color=:light_magenta)
+        if !isempty(dataset.parameters)
+            println("  Parameters:")
+            pkeys = collect(keys(dataset.parameters))
+            pkeypad = maximum(textwidth, pkeys)
+            for key in sort(pkeys, by=natkeygen)
+                print("    ", lpad(key, pkeypad), ' ')
+                printstyled(dataset.parameters[key], '\n', color=:light_cyan)
+            end
+        end
         @advise show_extra(stdout, dataset)
     end
     nothing
