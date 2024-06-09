@@ -4,11 +4,14 @@
 #+html: <a href="https://tecosaur.github.io/DataToolkitDocs/ref/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
 #+html: <a href="https://tecosaur.github.io/DataToolkit.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
 
-This is the user-facing entry-point for the skeletal [[file:Core][DataToolkitCore]] package and
-the set of useful transformers and plugins provided by [[file:Common][DataToolkitCommon]], along
-with a few trivial niceties.
+DataToolkit is a batteries-included family of packages for robustly managing
+data. The particular package(s) you want to use will depend on the project.
 
-This aims to provide a foundation for robust data management.
++ Use [[https://tecosaur.github.io/DataToolkit.jl/main/][DataToolkit]] for analysis projects and scripts
++ Use [[https://tecosaur.github.io/DataToolkit.jl/base/][DataToolkitBase]] when making a package that needs data
+  - Optionally, use [[https://github.com/tecosaur/DataToolkitDocumenter.jl][DataToolkitDocumenter]] too to document the datasets
++ Use [[https://tecosaur.github.io/DataToolkit.jl/core/][DataToolkitCore]] when making a package extending DataToolkit, and possibly
+  [[https://tecosaur.github.io/DataToolkit.jl/store/][DataToolkitStore]] too.
 
 For now, this set of packages around the beta stage of development. No major
 changes to the core functionality or structure are anticipated, but small
