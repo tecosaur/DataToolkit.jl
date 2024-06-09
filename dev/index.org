@@ -1,10 +1,17 @@
 #+title: Introduction
 
-=DataToolkit= is a batteries-included framework for robustly managing data.
+DataToolkit is a batteries-included family of packages for robustly managing
+data. The particular package(s) you want to use will depend on the project.
 
-For details on the fundamental system, see the [[https://tecosaur.github.io/DataToolkitDocs/base][DataToolkitBase]] docs; for details
-on the transformers and plugins available see the [[https://tecosaur.github.io/DataToolkitDocs/common/][DataToolkitCommon]] docs. The
-separation between packages makes it easier to just depend on what you need.
++ Use =DataToolkit= for analysis projects and scripts
++ Use [[https://tecosaur.github.io/DataToolkit.jl/base/][DataToolkitBase]] when making a package that needs data
+  - Optionally, use [[https://github.com/tecosaur/DataToolkitDocumenter.jl][DataToolkitDocumenter]] too to document the datasets
++ Use [[https://tecosaur.github.io/DataToolkit.jl/core/][DataToolkitCore]] when making a package extending DataToolkit, and possibly
+  [[https://tecosaur.github.io/DataToolkit.jl/store/][DataToolkitStore]] too.
+
+Whether using =DataToolkit= or =DataToolkitBase=, to see what storage providers and
+formats are supported out-of-the-box, look at the [[https://tecosaur.github.io/DataToolkit.jl/common/][DataToolkitCommon]]
+documentation.
 
 [[file:assets/package-structure.svg]]
 
