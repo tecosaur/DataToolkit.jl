@@ -56,7 +56,8 @@ function Base.showerror(io::IO, ex::LogTaskError, bt; backtrace=true)
         # no issue with the logging itself, and so we may
         # as well remove the `@log_do` involvement from the
         # backtrace.
-        filter!(sf -> sf.file != Symbol(@__FILE__), bt_merged)
+        SIMPLIFY_STACKTRACES[] &&
+            filter!(sf -> sf.file != Symbol(@__FILE__), bt_merged)
         showerror(io, exc1, bt_merged; backtrace)
     elseif backtrace
         Base.show_backtrace(io, bt)

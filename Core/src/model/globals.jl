@@ -151,3 +151,11 @@ The delay in seconds before a log message is displayed.
 When zero or less, log messages are displayed immediately.
 """
 const DEFAULT_LOG_DELAY = 1.0
+
+# Errors
+
+"""
+Whether stacktraces should be simplified by removing likely incidental
+DataToolkit-internals frames when displayed.
+"""
+const SIMPLIFY_STACKTRACES = Ref(true)

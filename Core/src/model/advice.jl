@@ -133,13 +133,7 @@ _dataadvise(col::DataCollection) = col.advise
 _dataadvise(ds::DataSet) = _dataadvise(ds.collection)
 _dataadvise(adt::AbstractDataTransformer) = _dataadvise(adt.dataset)
 
-"""
-    _dataadvisecall(func::Function, args...; kwargs...)
-
-Identify the first data-like argument of `args` (i.e. a `DataCollection`,
-`DataSet`, or `AbstractDataTransformer`), obtain its advise, and perform
-an advised call of `func(args...; kwargs...)`.
-"""
+const DATA_ADVISE_CALL_LOC = 1 + @__LINE__
 @generated function _dataadvisecall(func::Function, args...; kwargs...)
     dataarg = findfirst(
         a -> a <: DataCollection || a <: DataSet || a <: AbstractDataTransformer,
@@ -153,6 +147,45 @@ an advised call of `func(args...; kwargs...)`.
     else
         :(_dataadvise(args[$dataarg])(func, args...; kwargs...))
     end
+end
+
+@doc """
+    _dataadvisecall(func::Function, args...; kwargs...)
+
+Identify the first data-like argument of `args` (i.e. a `DataCollection`,
+`DataSet`, or `AbstractDataTransformer`), obtain its advise, and perform
+an advised call of `func(args...; kwargs...)`.
+""" _dataadvisecall
+
+"""
+    strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
+
+Remove stack frames related to `@advise` and `invokepkglatest` from `st`.
+"""
+function strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
+    SIMPLIFY_STACKTRACES[] || return st
+    i, in_advice_region = length(st), false
+    while i > 0
+        if st[i].file === Symbol(@__FILE__) && st[i].line == DATA_ADVISE_CALL_LOC
+            in_advice_region = true
+            deleteat!(st, i)
+        elseif in_advice_region && st[i].file ∈
+            (Symbol(joinpath(@__DIR__, "advice.jl")),
+             Symbol(joinpath(@__DIR__, "usepkg.jl")))
+            deleteat!(st, i)
+        elseif in_advice_region && st[i].func == :invokelatest
+            if i > 1 && st[i-1].file == st[i].file
+                deleteat!(st, i-1:i)
+                i -= 1
+            else
+                deleteat!(st, i)
+            end
+        elseif in_advice_region
+            in_advice_region = false
+        end
+        i -= 1
+    end
+    st
 end
 
 """
