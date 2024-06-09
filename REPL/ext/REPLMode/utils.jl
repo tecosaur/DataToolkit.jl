@@ -115,6 +115,7 @@ function prompt(question::AbstractString, default::AbstractString="";
     keymap = REPL.LineEdit.keymap([
         Dict{Any, Any}(
             "^C" => (_...) -> throw(InterruptException()),
+            "^D" => (_...) -> throw(InterruptException()),
             # Backspace
             '\b' => function (s::REPL.LineEdit.MIState, o...)
                 if firstinput && cleardefault
