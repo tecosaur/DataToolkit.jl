@@ -308,17 +308,24 @@ Find the `Inventory` that is responsible for `collection`, creating it if
 necessary.
 """
 function getinventory(collection::DataCollection)
-    path = let storepath = get(get(collection, "store", Dict{String, Any}()),
-                               "path", nothing)
-        joinpath(if !isnothing(storepath)
-                     joinpath(dirof(collection), storepath)
-                 else
-                     USER_STORE
-                 end, INVENTORY_FILENAME)
+    storepath = get(get(collection, "store", Dict{String, Any}()),
+                    "path", nothing)
+    storepathabs = if isnothing(storepath)
+        USER_STORE
+    else
+        cdir = if isnothing(collection.path)
+            pwd()
+        elseif  collection.path |> dirname |> basename == "Data.d"
+            collection.path |> dirname |> dirname
+        else
+            collection.path |> dirname
+        end
+        joinpath(cdir, storepath)
     end
-    index = findfirst(inv -> inv.file.path == path, INVENTORIES)
+    invpath = joinpath(storepathabs, INVENTORY_FILENAME)
+    index = findfirst(inv -> inv.file.path == invpath, INVENTORIES)
     if isnothing(index)
-        push!(INVENTORIES, load_inventory(path)) |> last
+        push!(INVENTORIES, load_inventory(invpath)) |> last
     else
         INVENTORIES[index]
     end
@@ -393,6 +400,22 @@ function parsebytesize(size::AbstractString)
     else
         parse(Int, num) * ifelse(isempty(ibi), 1000, 1024)^exponent
     end
+end
+
+"""
+    humansize(bytes::Integer; digits::Int=2) -> (Int, String)
+
+Copied from `DataToolkitCommon`, which see.
+"""
+function humansize(bytes::Integer; digits::Int=2)
+    units = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
+    magnitude = floor(Int, log(1024, max(1, bytes)))
+    if 1024 <= bytes < 10.0^(digits-1) * 1024^magnitude
+        magdigits = floor(Int, log10(bytes / 1024^magnitude)) + 1
+        round(bytes / 1024^magnitude; digits = digits - magdigits)
+    else
+        round(Int, bytes / 1024^magnitude)
+    end, units[1+magnitude]
 end
 
 """

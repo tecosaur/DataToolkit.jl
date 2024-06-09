@@ -8,8 +8,6 @@ using TOML
 using UUIDs
 using Compat
 
-# using ..DataToolkitCommon: show_extra, dirof, humansize
-
 @compat public load_inventory, fetch!
 
 const INVENTORY_FILENAME = "Inventory.toml"

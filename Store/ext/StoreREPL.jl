@@ -12,7 +12,7 @@ import REPL.TerminalMenus: request, RadioMenu
 using DataToolkitStore: STORE_GC_CONFIG_INFO,
     DEFAULT_INVENTORY_CONFIG, INVENTORIES,
     getinventory, update_inventory!, garbage_collect!, expunge!, fetch!,
-    shouldstore, storefile, printstats
+    shouldstore, storefile, printstats, humansize
 
 import DataToolkitStore: should_overwrite, store_init_checksum_a,
     store_extra_info_a, cache_extra_info_a
