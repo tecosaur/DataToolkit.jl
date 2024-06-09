@@ -16,8 +16,8 @@ AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 MetaGraphsNext = "fa8bd995-216d-47f1-8a91-f3b68fbeb377"
 
 [extensions]
-GraphExt = "MetaGraphsNext"
 AbstractTreesExt = "AbstractTrees"
+MetaGraphsNextExt = "MetaGraphsNext"
 
 [compat]
 AbstractTrees = "0.2, 0.3, 0.4"

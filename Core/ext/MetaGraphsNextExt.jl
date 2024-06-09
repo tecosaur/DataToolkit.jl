@@ -1,4 +1,4 @@
-module GraphExt
+module MetaGraphsNextExt
 
 using DataToolkitCore: DataCollection, DataSet, referenced_datasets, Identifier
 
