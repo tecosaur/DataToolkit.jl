@@ -3,8 +3,12 @@ function getpath(storage::DataStorage{:filesystem})
     abspath(dirof(storage.dataset.collection), expanduser(spath))
 end
 
-storage(storage::DataStorage{:filesystem}, ::Type{FilePath}; write::Bool) =
-    FilePath(getpath(storage))
+function storage(storage::DataStorage{:filesystem}, ::Type{FilePath}; write::Bool)
+    path = getpath(storage)
+    if @advise storage isfile(path)
+        FilePath(path)
+    end
+end
 
 supportedtypes(::Type{<:DataStorage{:filesystem, <:Any}}) =
     QualifiedType.([IO, Vector{UInt8}, String, FilePath])
