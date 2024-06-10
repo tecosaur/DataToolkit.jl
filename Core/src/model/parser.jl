@@ -170,7 +170,7 @@ end
 # end
 
 DataStorage{driver}(dataset::Union{DataSet, DataCollection},
-                    type::Vector{<:QualifiedType}, priority::Int,
+                    type::Vector{QualifiedType}, priority::Int,
                     parameters::Dict{String, Any}) where {driver} =
                         DataStorage{driver, typeof(dataset)}(dataset, type, priority, parameters)
 

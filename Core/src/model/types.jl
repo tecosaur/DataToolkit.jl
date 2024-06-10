@@ -81,7 +81,7 @@ function, i.e. `parse(Identifier, "mycollection:dataset")`.
 struct Identifier
     collection::Union{AbstractString, UUID, Nothing}
     dataset::Union{AbstractString, UUID}
-    type::Union{<:QualifiedType, Nothing}
+    type::Union{QualifiedType, Nothing}
     parameters::Dict{String, Any}
 end
 
@@ -104,7 +104,7 @@ Each subtype takes a `Symbol` type parameter designating
 the driver which should be used to perform the data operation.
 In addition, each subtype has the following fields:
 - `dataset::DataSet`, the data set the method operates on
-- `type::Vector{<:QualifiedType}`, the Julia types the method supports
+- `type::Vector{QualifiedType}`, the Julia types the method supports
 - `priority::Int`, the priority with which this method should be used,
   compared to alternatives. Lower values have higher priority.
 - `parameters::Dict{String, Any}`, any parameters applied to the method.
@@ -113,21 +113,21 @@ abstract type AbstractDataTransformer{driver} end
 
 struct DataStorage{driver, T} <: AbstractDataTransformer{driver}
     dataset::T
-    type::Vector{<:QualifiedType}
+    type::Vector{QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end
 
 struct DataLoader{driver} <: AbstractDataTransformer{driver}
     dataset
-    type::Vector{<:QualifiedType}
+    type::Vector{QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end
 
 struct DataWriter{driver} <: AbstractDataTransformer{driver}
     dataset
-    type::Vector{<:QualifiedType}
+    type::Vector{QualifiedType}
     priority::Int
     parameters::Dict{String, Any}
 end

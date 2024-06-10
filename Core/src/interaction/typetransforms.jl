@@ -72,7 +72,7 @@ function paramtypebound(T::Union{Type, TypeVar}, Tparam::Union{Type, TypeVar}, p
 end
 
 """
-    targettypes(types::Vector{<:QualifiedType}, desired::Type) -> Vector{Type}
+    targettypes(types::Vector{QualifiedType}, desired::Type) -> Vector{Type}
     targettypes(transformer::AbstractDataTransformer, desired::Type) -> Vector{Type}
 
 Return all `Type`s that one might hope to produce from `types` or `transformer`.
@@ -84,7 +84,7 @@ Priority order is preserved.
 """
 function targettypes end
 
-function targettypes(types::Vector{<:QualifiedType}, desired::Type; mod::Module = Main)
+function targettypes(types::Vector{QualifiedType}, desired::Type; mod::Module = Main)
     @nospecialize
     targets = Type[]
     for typ in types
