@@ -1,4 +1,4 @@
-struct InventoryFile
+struct MonitoredFile
     path::String
     recency::Float64 # mtime
     writable::Bool
@@ -44,7 +44,7 @@ struct CacheSource <: SourceInfo
 end
 
 mutable struct Inventory
-    const file::InventoryFile
+    const file::MonitoredFile
     config::InventoryConfig
     collections::Vector{CollectionInfo}
     stores::Vector{StoreSource}

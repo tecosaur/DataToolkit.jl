@@ -221,7 +221,7 @@ function load_inventory(path::String, create::Bool=true)
         elseif data["inventory_version"] != INVENTORY_VERSION
             error("Incompatable inventory version!")
         end
-        file = InventoryFile(path)
+        file = MonitoredFile(path)
         last_gc = get(data, "inventory_last_gc", unix2datetime(0))
         config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
         collections = [convert(CollectionInfo, key => val)
@@ -231,7 +231,7 @@ function load_inventory(path::String, create::Bool=true)
         Inventory(file, config, collections, stores, caches, last_gc)
     elseif create
         inventory = Inventory(
-            InventoryFile(path),
+            MonitoredFile(path),
             convert(InventoryConfig, Dict{String, Any}()),
             CollectionInfo[], StoreSource[],
             CacheSource[], now())
@@ -243,7 +243,7 @@ function load_inventory(path::String, create::Bool=true)
     end
 end
 
-function InventoryFile(path)
+function MonitoredFile(path)
     recency = if isfile(path) mtime(path) else time() end
     writable = !isfile(path) || try
         open(io -> iswritable(io), path, "a")
@@ -254,7 +254,7 @@ function InventoryFile(path)
             rethrow()
         end
     end
-    InventoryFile(path, recency, writable)
+    MonitoredFile(path, recency, writable)
 end
 
 """
