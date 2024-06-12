@@ -65,3 +65,17 @@ Base.:(==)(a::Checksum, b::Checksum) =
     a.extension == b.extension
 ≃(a::CacheSource, b::CacheSource) =
     a.recipe == b.recipe && a.types == b.types
+
+function MonitoredFile(path)
+    recency = if isfile(path) mtime(path) else time() end
+    writable = !isfile(path) || try
+        open(io -> iswritable(io), path, "a")
+    catch e
+        if e isa SystemError
+            false
+        else
+            rethrow()
+        end
+    end
+    MonitoredFile(path, recency, writable)
+end

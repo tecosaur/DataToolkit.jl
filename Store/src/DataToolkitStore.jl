@@ -10,6 +10,16 @@ using Compat
 
 @compat public load_inventory, fetch!
 
+include("types.jl")
+
+const INVENTORY_VERSION = 0
+
+const INVENTORIES = Vector{Inventory}()
+
+const DEFAULT_INVENTORY_CONFIG =
+    InventoryConfig(2, 30, 50*1024^3, 1, "store", "cache")
+const MSG_LABEL_WIDTH = 10
+
 const INVENTORY_FILENAME = "Inventory.toml"
 USER_STORE::String = ""
 USER_INVENTORY::String = ""
@@ -26,8 +36,8 @@ function init_user_inventory!()
     global USER_INVENTORY = joinpath(USER_STORE, INVENTORY_FILENAME)
 end
 
-include("types.jl")
 include("rhash.jl")
+include("invtoml.jl")
 include("inventory.jl")
 include("storage.jl")
 include("plugins.jl")
