@@ -1,6 +1,6 @@
-struct MonitoredFile
-    path::String
-    recency::Float64 # mtime
+mutable struct MonitoredFile
+    const path::String
+    mtime::Float64
     writable::Bool
 end
 

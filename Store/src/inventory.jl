@@ -277,7 +277,7 @@ function update_inventory!(path::String)
 end
 
 function update_inventory!(inventory::Inventory)
-    if mtime(inventory.file.path) > inventory.file.recency
+    if mtime(inventory.file.path) > inventory.file.mtime
         (; config, collections, stores, caches, last_gc) =
             load_inventory(inventory.file.path)
         inventory.config = config
