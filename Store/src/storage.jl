@@ -1,7 +1,7 @@
 """
     fileextension(storage::DataStorage)
 
-Determine the apropriate file extension for a file caching the contents of
+Determine the appropriate file extension for a file caching the contents of
 `storage`, "cache" by default.
 """
 fileextension(@nospecialize(::DataStorage)) = "cache"

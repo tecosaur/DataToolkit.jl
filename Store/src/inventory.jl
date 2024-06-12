@@ -17,7 +17,7 @@ function load_inventory(path::String, create::Bool=true)
                 error("$path does not seem to be an inventory file")
             end
         elseif data["inventory_version"] != INVENTORY_VERSION
-            error("Incompatable inventory version!")
+            error("Incompatible inventory version!")
         end
         file = MonitoredFile(path)
         last_gc = get(data, "inventory_last_gc", unix2datetime(0))
@@ -157,7 +157,7 @@ end
 Parse a string representation of `size` bytes into an integer.
 
 This accepts any decimal value before an SI-prefixed "B" / "iB" unit
-(case-insensitive) with the "B" optionally omitted, seperated and surrounded by
+(case-insensitive) with the "B" optionally omitted, separated and surrounded by
 any amount of whitespace.
 
 Note that the SI prefixes are case sensitive, e.g. "kiB" and "MiB" are
@@ -538,7 +538,7 @@ hash and the known recipe hashes.
 Sources with no references after this update are considered orphaned and removed.
 
 The result is a named tuple giving a list of orphaned sources and the number of
-recipe checks that occured.
+recipe checks that occurred.
 """
 function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UInt64}},
                           inactive_collections::Set{UUID}, dryrun::Bool=false)
