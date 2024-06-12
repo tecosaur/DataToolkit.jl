@@ -145,11 +145,14 @@ The checksum scheme used when `auto` is specified. Must be recognised by `checks
 const CHECKSUM_DEFAULT_SCHEME = :k12
 
 """
-    checksum(file::String, method::Symbol)
+    checksum(algorithm::Symbol, data::Union{<:IO, Vector{UInt8}, String})
 
-Calculate the checksum of `file` with `method`, returning the `Unsigned` result.
+Calculate the checksum of `data` with `algorithm`, returning the `Checksum` result.
 
-Method should be one of:
+This function can be curried with the method `checksum(algorithm::Symbol)`.
+
+The specified algorithm should be one of:
+- `auto` (alias of `$CHECKSUM_DEFAULT_SCHEME`)
 - `k12`
 - `sha512`
 - `sha384`
@@ -159,39 +162,71 @@ Method should be one of:
 - `md5`
 - `crc32c`
 
-Should `method` not be recognised, `nothing` is returned.
+Should `algorithm` not be recognised, `nothing` is returned.
 """
-function getchecksum(file::String, method::Symbol)
-    hash = if method === :k12
+function checksum end
+
+checksum(algorithm::Symbol, data::Union{<:IO, Vector{UInt8}, String}) =
+    invokepkglatest(_checksum, algorithm, data)
+
+checksum(algorithm::Symbol) = Base.Fix1(checksum, algorithm)
+
+function _checksum(algorithm::Symbol, data::Union{<:IO, Vector{UInt8}, String})
+    algorithm === :auto && return _checksum(CHECKSUM_DEFAULT_SCHEME, data)
+    hash = if algorithm === :k12
         @require KangarooTwelve
-        res = open(KangarooTwelve.k12, file)::UInt128
+        res = KangarooTwelve.k12(data)::UInt128
         # REVIEW change to reinterpret(NTuple{16, UInt8}, ...) with Julia 1.10+
         reinterpret(UInt8, [hton(res)]) |> collect
-    elseif method === :sha512
+    elseif algorithm === :sha512
         @require SHA
-        open(SHA.sha512, file)::Vector{UInt8}
-    elseif method === :sha384
+        SHA.sha512(data)::Vector{UInt8}
+    elseif algorithm === :sha384
         @require SHA
-        open(SHA.sha384, file)::Vector{UInt8}
-    elseif method === :sha256
+        SHA.sha384(data)::Vector{UInt8}
+    elseif algorithm === :sha256
         @require SHA
-        open(SHA.sha256, file)::Vector{UInt8}
-    elseif method === :sha224
+        SHA.sha256(data)::Vector{UInt8}
+    elseif algorithm === :sha224
         @require SHA
-        open(SHA.sha224, file)::Vector{UInt8}
-    elseif method === :sha1
+        SHA.sha224(data)::Vector{UInt8}
+    elseif algorithm === :sha1
         @require SHA
-        open(SHA.sha1, file)::Vector{UInt8}
-    elseif method === :md5
+        SHA.sha1(data)::Vector{UInt8}
+    elseif algorithm === :md5
         @require MD5
-        collect(open(MD5.md5, file))::Vector{UInt8}
-    elseif method === :crc32c
+        collect(MD5.md5(data))::Vector{UInt8}
+    elseif algorithm === :crc32c
         @require CRC32c
-        reinterpret(UInt8, [hton(open(CRC32c.crc32c, file)::UInt32)]) |> collect
+        reinterpret(UInt8, [hton(CRC32c.crc32c(data)::UInt32)]) |> collect
     else
         return
     end
-    Checksum(method, hash)
+    Checksum(algorithm, hash)
+end
+
+struct ChecksumMismatch <: Exception
+    target::String
+    expected::Checksum
+    actual::Checksum
+end
+
+function Base.showerror(io::IO, e::ChecksumMismatch)
+    println(io, "Expected $target checksum $(string(e.expected)), got $(string(e.actual))")
+end
+
+function checksumalgorithm(@nospecialize(storage::DataStorage))
+    csumval = @getparam storage."checksum"::Union{Bool, String} false
+    csumval == false && return
+    csumval == "auto" &&
+        return if !haskey(storage.parameters, "lifetime")
+            CHECKSUM_DEFAULT_SCHEME end
+    schecksum = tryparse(Checksum, csumval)
+    if isnothing(schecksum)
+        schecksum.alg
+    elseif csumval isa String && !occursin(':', csumval)
+        Symbol(csumval)
+    end
 end
 
 """
@@ -204,60 +239,55 @@ The checksum of `file` is checked against the recorded checksum in `storage`, if
 it exists.
 """
 function getchecksum(@nospecialize(storage::DataStorage), file::String)
+    alg = checksumalgorithm(storage)
+    isnothing(alg) && return
     csumval = @getparam storage."checksum"::Union{Bool, String} false
-    csumval == false && return
-    csumval == "auto" && haskey(storage.parameters, "lifetime") && return
     if csumval isa String && !occursin(':', csumval) # name of method, or auto
         if !iswritable(storage.dataset.collection)
             @warn "Could not update checksum, data collection is not writable"
             return
         end
-        alg = if csumval == "auto"
-            CHECKSUM_DEFAULT_SCHEME
-        else Symbol(csumval) end
-        checksum = @log_do(
+        schecksum = @log_do(
             "store:checksum",
             "Calculating checksum of $(storage.dataset.name)'s source",
-            invokepkglatest(getchecksum, file, alg))
-        if isnothing(checksum)
+            open(checksum(alg), file))
+        if isnothing(schecksum)
             @warn "Checksum scheme '$csumval' is not known, skipping"
             return
         end
-        storage.parameters["checksum"] = string(checksum)
+        storage.parameters["checksum"] = string(schecksum)
         write(storage)
-        return checksum
+        return schecksum
     end
-    checksum = tryparse(Checksum, csumval)
-    if isnothing(checksum)
-        @warn "Checksum value '$checksum' is invalid, ignoring"
+    schecksum = tryparse(Checksum, csumval)
+    if isnothing(schecksum)
+        @warn "Checksum value '$schecksum' is invalid, ignoring"
         return
     end
-    if checksum.alg === :auto
-        checksum = Checksum(CHECKSUM_DEFAULT_SCHEME, checksum.hash)
+    if schecksum.alg === :auto
+        schecksum = Checksum(CHECKSUM_DEFAULT_SCHEME, schecksum.hash)
     end
     actual_checksum = @log_do(
         "store:checksum",
         "Calculating checksum of $(storage.dataset.name)'s source",
-        invokepkglatest(getchecksum, file, checksum.alg))
+        open(checksum(alg), file))
     if isnothing(actual_checksum)
-        @warn "Checksum scheme '$(checksum.alg)' is not known, skipping"
+        @warn "Checksum scheme '$(alg)' is not known, skipping"
         return
     end
-    if checksum == actual_checksum
+    if schecksum == actual_checksum
         actual_checksum
     elseif isinteractive() && iswritable(storage.dataset.collection)
         if hasmethod(should_overwrite, Tuple{String, String, String}) &&
-            should_overwrite(storage.dataset.name, string(checksum), string(actual_checksum))
+            should_overwrite(storage.dataset.name, string(schecksum), string(actual_checksum))
             storage.parameters["checksum"] = string(actual_checksum)
             write(storage)
             actual_checksum
         else
-            error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                         " Expected $(string(checksum)), got $(string(actual_checksum))."))
+            throw(ChecksumMismatch(storage.dataset.name, schecksum, actual_checksum))
         end
     else
-        error(string("Checksum mismatch with $(storage.dataset.name)'s url storage!",
-                     " Expected $(string(checksum)), got $(string(actual_checksum))."))
+        throw(ChecksumMismatch(storage.dataset.name, schecksum, actual_checksum))
     end
 end
 
