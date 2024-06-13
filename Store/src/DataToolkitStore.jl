@@ -27,6 +27,11 @@ USER_INVENTORY::String = ""
 const PROJECT_SUBPATH = # Handle as const to avoid invalidations (for /some/ reason).
     BaseDirs.projectpath(BaseDirs.Project("DataToolkit"))
 
+"""
+The checksum scheme used when `auto` is specified. Must be recognised by `checksum`.
+"""
+const CHECKSUM_DEFAULT_SCHEME = :k12
+
 function init_user_inventory!()
     global USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
         mkpath(ENV["DATATOOLKIT_STORE"])

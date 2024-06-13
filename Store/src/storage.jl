@@ -140,11 +140,6 @@ function storefile(inventory::Inventory, @nospecialize(loader::DataLoader), as::
 end
 
 """
-The checksum scheme used when `auto` is specified. Must be recognised by `checksum`.
-"""
-const CHECKSUM_DEFAULT_SCHEME = :k12
-
-"""
     checksum(algorithm::Symbol, data::Union{<:IO, Vector{UInt8}, String})
 
 Calculate the checksum of `data` with `algorithm`, returning the `Checksum` result.
@@ -166,43 +161,61 @@ Should `algorithm` not be recognised, `nothing` is returned.
 """
 function checksum end
 
-checksum(algorithm::Symbol, data::Union{<:IO, Vector{UInt8}, String}) =
-    invokepkglatest(_checksum, algorithm, data)
+function checksum(algorithm::Symbol, data::Union{<:IO, Vector{UInt8}, String})
+    func = checksum(algorithm)
+    isnothing(func) && return
+    func(data)::Checksum
+end
 
-checksum(algorithm::Symbol) = Base.Fix1(checksum, algorithm)
+function checksum(algorithm::Symbol)
+    invokepkglatest(_checksum, algorithm)::Union{Function, Nothing}
+end
 
-function _checksum(algorithm::Symbol, data::Union{<:IO, Vector{UInt8}, String})
+function _checksum(algorithm::Symbol)
     algorithm === :auto && return _checksum(CHECKSUM_DEFAULT_SCHEME, data)
     hash = if algorithm === :k12
         @require KangarooTwelve
-        res = KangarooTwelve.k12(data)::UInt128
-        # REVIEW change to reinterpret(NTuple{16, UInt8}, ...) with Julia 1.10+
-        reinterpret(UInt8, [hton(res)]) |> collect
+        let k12 = KangarooTwelve.k12
+            data -> Checksum(algorithm, reinterpret(
+                UInt8, [hton(invokelatest(k12, data)::UInt128)]) |> collect)
+        end
     elseif algorithm === :sha512
         @require SHA
-        SHA.sha512(data)::Vector{UInt8}
+        let sha512 = SHA.sha512
+            data -> Checksum(algorithm, invokelatest(sha512, data)::Vector{UInt8})
+        end
     elseif algorithm === :sha384
         @require SHA
-        SHA.sha384(data)::Vector{UInt8}
+        let sha384 = SHA.sha384
+            data -> Checksum(algorithm, invokelatest(sha384, data)::Vector{UInt8})
+        end
     elseif algorithm === :sha256
         @require SHA
-        SHA.sha256(data)::Vector{UInt8}
+        let sha256 = SHA.sha256
+            data -> Checksum(algorithm, invokelatest(sha256, data)::Vector{UInt8})
+        end
     elseif algorithm === :sha224
         @require SHA
-        SHA.sha224(data)::Vector{UInt8}
+        let sha224 = SHA.sha224
+            data -> Checksum(algorithm, invokelatest(sha224, data)::Vector{UInt8})
+        end
     elseif algorithm === :sha1
         @require SHA
-        SHA.sha1(data)::Vector{UInt8}
+        let sha1 = SHA.sha1
+            data -> Checksum(algorithm, invokelatest(sha1, data)::Vector{UInt8})
+        end
     elseif algorithm === :md5
         @require MD5
-        collect(MD5.md5(data))::Vector{UInt8}
+        let md5 = MD5.md5
+            data -> Checksum(algorithm, invokelatest(md5, data)::Vector{UInt8})
+        end
     elseif algorithm === :crc32c
         @require CRC32c
-        reinterpret(UInt8, [hton(CRC32c.crc32c(data)::UInt32)]) |> collect
-    else
-        return
+        let crc32c = CRC32c.crc32c
+            data -> Checksum(algorithm, reinterpret(
+                UInt8, [hton(invokelatest(crc32c, data)::UInt32)]) |> collect)
+        end
     end
-    Checksum(algorithm, hash)
 end
 
 struct ChecksumMismatch <: Exception
@@ -222,7 +235,7 @@ function checksumalgorithm(@nospecialize(storage::DataStorage))
         return if !haskey(storage.parameters, "lifetime")
             CHECKSUM_DEFAULT_SCHEME end
     schecksum = tryparse(Checksum, csumval)
-    if isnothing(schecksum)
+    if !isnothing(schecksum)
         schecksum.alg
     elseif csumval isa String && !occursin(':', csumval)
         Symbol(csumval)
