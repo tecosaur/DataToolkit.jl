@@ -77,13 +77,18 @@ Returns the full path for `source` in `inventory`, regardless of whether the
 path exists or not.
 """
 function storefile(inventory::Inventory, source::StoreSource)
+    basename = if isnothing(source.checksum)
+        string("R-", string(source.recipe, base=16))
+    else
+        string(source.checksum)
+    end
+    ext = fileextension(source)
     joinpath(dirname(inventory.file.path), inventory.config.store_dir,
-             string(if isnothing(source.checksum)
-                        string("R-", string(source.recipe, base=16))
-                    else
-                        string(source.checksum)
-                    end,
-                    '.', fileextension(source)))
+             if ext == "/" # dir
+                 basename
+             else
+                 string(basename, '.', ext)
+             end)
 end
 
 function storefile(inventory::Inventory, source::CacheSource)
@@ -243,17 +248,21 @@ function checksumalgorithm(@nospecialize(storage::DataStorage))
 end
 
 """
-    getchecksum(storage::DataStorage, file::String)
+    getchecksum(inventory::Inventory, storage::DataStorage, path::Union{FilePath, DirPath})
 
-Returns the `Checksum` for the `file` backing `storage`, or `nothing` if there
+Returns the `Checksum` for the `path` backing `storage`, or `nothing` if there
 is no checksum.
 
-The checksum of `file` is checked against the recorded checksum in `storage`, if
+The checksum of `path` is checked against the recorded checksum in `storage`, if
 it exists.
 """
-function getchecksum(@nospecialize(storage::DataStorage), file::String)
+function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), path::Union{FilePath, DirPath})
     alg = checksumalgorithm(storage)
     isnothing(alg) && return
+    if !ispath(string(path))
+        @warn "Path $(path) does not exist"
+        return
+    end
     csumval = @getparam storage."checksum"::Union{Bool, String} false
     if csumval isa String && !occursin(':', csumval) # name of method, or auto
         if !iswritable(storage.dataset.collection)
@@ -263,7 +272,13 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
         schecksum = @log_do(
             "store:checksum",
             "Calculating checksum of $(storage.dataset.name)'s source",
-            open(checksum(alg), file))
+            if path isa FilePath
+                open(checksum(alg), path.path)
+            else # path isa DirPath
+                mtree = merkle(inventory.merkles, path.path, alg)
+                isnothing(mtree) && return
+                mtree.checksum
+            end)
         if isnothing(schecksum)
             @warn "Checksum scheme '$csumval' is not known, skipping"
             return
@@ -283,7 +298,14 @@ function getchecksum(@nospecialize(storage::DataStorage), file::String)
     actual_checksum = @log_do(
         "store:checksum",
         "Calculating checksum of $(storage.dataset.name)'s source",
-        open(checksum(alg), file))
+        if path isa FilePath
+            open(checksum(alg), path.path)
+        else # path isa DirPath
+            mtree = merkle(inventory.merkles, path.path, alg;
+                           last_checksum = schecksum)
+            isnothing(mtree) && return
+            mtree.checksum
+        end)
     if isnothing(actual_checksum)
         @warn "Checksum scheme '$(alg)' is not known, skipping"
         return
@@ -307,29 +329,30 @@ end
 function should_overwrite end # Implemented in `../../ext/StorageREPL.jl`
 
 """
-    storesave(inventory::Inventory, storage::DataStorage, ::Type{FilePath}, file::FilePath)
+    storesave(inventory::Inventory, storage::DataStorage, ::Type{typeof(path)}, path::SystemPath)
 
-Save the `file` representing `storage` into `inventory`.
+Save the `path` representing `storage` into `inventory`.
 """
-function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::Type{FilePath}, file::FilePath)
-    inventory.file.writable || return file
+function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::Type{T}, path::T) where {T <: SystemPath}
+    inventory.file.writable || return path
     # The checksum must be calculated first because it will likely affect the
     # `rhash` result, should the checksum property be modified and included
     # in the hashing.
-    checksum = getchecksum(storage, file.path)
+    checksum = getchecksum(inventory, storage, path)
+    ext = if T == DirPath "/" else fileextension(storage) end
     newsource = StoreSource(
         rhash(storage),
         [storage.dataset.collection.uuid],
-        now(), checksum, fileextension(storage))
+        now(), checksum, ext)
     dest = storefile(inventory, newsource)
     @log_do "store:save" "Transferring $(sprint(show, storage.dataset.name)) to storage"
     isdir(dirname(dest)) || mkpath(dirname(dest))
-    if startswith(file.path, tempdir())
-        mv(file.path, dest, force=true)
+    if startswith(path.path, tempdir())
+        mv(path.path, dest, force=true)
     else
-        cp(file.path, dest, force=true)
+        cp(path.path, dest, force=true)
     end
-    chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
+    chmod(dest, 0o100444 & filemode(inventory.path.path)) # Make read-only
     update_source!(inventory, newsource, storage.dataset.collection)
     FilePath(dest)
 end

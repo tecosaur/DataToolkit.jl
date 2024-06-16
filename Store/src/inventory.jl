@@ -22,14 +22,19 @@ function load_inventory(path::String, create::Bool=true)
         file = MonitoredFile(path)
         last_gc = get(data, "inventory_last_gc", unix2datetime(0))
         config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
+        cmerkle = CachedMerkles(MonitoredFile(
+            joinpath(dirname(path), config.store_dir, MERKLE_FILENAME)), [])
+        cmerkle.file.mtime = 0.0 # To trigger refresh
         collections = [convert(CollectionInfo, key => val)
                     for (key, val) in get(data, "collections", Dict{String, Any}[])]
-        stores = convert.(StoreSource, get(data, "store", Dict{String, Any}[]))
-        caches = convert.(CacheSource, get(data, "cache", Dict{String, Any}[]))
-        Inventory(file, config, collections, stores, caches, last_gc)
+        stores = map(s -> convert(StoreSource, s), get(data, "store", Dict{String, Any}[]))
+        caches = map(c -> convert(CacheSource, c), get(data, "cache", Dict{String, Any}[]))
+        Inventory(file, cmerkle, config, collections, stores, caches, last_gc)
     elseif create
         inventory = Inventory(
             MonitoredFile(path),
+            CachedMerkles(MonitoredFile(
+                joinpath(dirname(path), DEFAULT_INVENTORY_CONFIG.store_dir, MERKLE_FILENAME)), []),
             convert(InventoryConfig, Dict{String, Any}()),
             CollectionInfo[], StoreSource[],
             CacheSource[], now())
@@ -145,9 +150,10 @@ Return all files referenced by `inventory`.
 function files(inv::Inventory)
     fs = [inv.file.path,
           joinpath(dirname(inv.file.path), inv.config.store_dir),
-          joinpath(dirname(inv.file.path), inv.config.cache_dir)]
-    append!(fs, storefile.(Ref(inv), inv.stores))
-    append!(fs, storefile.(Ref(inv), inv.caches))
+          joinpath(dirname(inv.file.path), inv.config.cache_dir),
+          joinpath(dirname(inv.file.path), inv.config.store_dir, MERKLE_FILENAME)]
+    append!(fs, map(Base.Fix1(storefile, inv), inv.stores))
+    append!(fs, map(Base.Fix1(storefile, inv), inv.caches))
     fs
 end
 

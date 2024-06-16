@@ -43,8 +43,21 @@ struct CacheSource <: SourceInfo
     packages::Vector{Base.PkgId}
 end
 
+struct MerkleTree
+    path::String
+    mtime::Float64
+    checksum::Checksum
+    children::Union{Nothing, Vector{MerkleTree}}
+end
+
+struct CachedMerkles
+    file::MonitoredFile
+    merkles::Vector{MerkleTree}
+end
+
 mutable struct Inventory
     const file::MonitoredFile
+    const merkles::CachedMerkles
     config::InventoryConfig
     collections::Vector{CollectionInfo}
     stores::Vector{StoreSource}

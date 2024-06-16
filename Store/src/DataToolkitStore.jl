@@ -27,6 +27,8 @@ USER_INVENTORY::String = ""
 const PROJECT_SUBPATH = # Handle as const to avoid invalidations (for /some/ reason).
     BaseDirs.projectpath(BaseDirs.Project("DataToolkit"))
 
+const MERKLE_FILENAME = "Merkles.txt"
+
 """
 The checksum scheme used when `auto` is specified. Must be recognised by `checksum`.
 """
@@ -43,6 +45,7 @@ end
 
 include("rhash.jl")
 include("invtoml.jl")
+include("merkle.jl")
 include("inventory.jl")
 include("storage.jl")
 include("plugins.jl")

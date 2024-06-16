@@ -11,8 +11,8 @@ export loadcollection!, dataset
 
 # For extension packages
 export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
-    DataSet, DataCollection, QualifiedType, Identifier, FilePath,
-    LintItem, LintReport
+    DataSet, DataCollection, QualifiedType, Identifier,
+    SystemPath, FilePath, DirPath, LintItem, LintReport
 export load, storage, getstorage, putstorage, save, getlayer, resolve, refine,
     parse_ident, supportedtypes, typeify, create, createpriority, lint, invokepkglatest
 export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,

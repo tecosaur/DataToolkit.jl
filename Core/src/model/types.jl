@@ -279,8 +279,11 @@ struct DataCollection
     mod::Module
 end
 
+abstract type SystemPath end
+
 """
-    struct FilePath path::String end
+    struct FilePath <: SystemPath path::String end
+
 Crude stand in for a file path type, which is strangely absent from Base.
 
 This allows for load/write method dispatch, and the distinguishing of
@@ -293,5 +296,27 @@ julia> string(FilePath("some/path"))
 "some/path"
 ```
 """
-struct FilePath path::String end
+struct FilePath <: SystemPath
+    path::String
+end
 Base.string(fp::FilePath) = fp.path
+
+"""
+    struct DirPath <: SystemPath path::String end
+
+Signifies that a given string is in fact a path to a directory.
+
+This allows for load/write method dispatch, and the distinguishing of
+file content (as a String) from file paths.
+
+# Examples
+
+```julia-repl
+julia> string(DirPath("some/path"))
+"some/path"
+```
+"""
+struct DirPath <: SystemPath
+    path::String
+end
+Base.string(dp::DirPath) = dp.path

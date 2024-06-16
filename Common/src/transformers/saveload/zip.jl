@@ -1,7 +1,7 @@
 function unzip end # Implemented in `../../../ext/TOMLExt.jl`
 function _read_zip end # Implemented in `../../../ext/TOMLExt.jl`
 
-function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
+function load(loader::DataLoader{:zip}, from::IO, as::Union{Type{FilePath}, Type{DirPath}})
     @require ZipFile
     extract = @getparam loader."extract"::Union{String, Nothing}
     path = if !isnothing(extract)
@@ -24,9 +24,9 @@ function load(loader::DataLoader{:zip}, from::IO, ::Type{FilePath})
                     recursive = @getparam(loader."recursive"::Bool, false),
                     onlyfile = filepath))
     end
-    if isnothing(file)
-        FilePath(path)
-    else
+    if isnothing(file) && as == DirPath
+        DirPath(path)
+    elseif as == FilePath
         FilePath(joinpath(path, file))
     end
 end
@@ -79,8 +79,9 @@ The `zip` driver expects data to be provided via `IO` or a `FilePath`.
 It can load the contents to the following formats:
 - `Dict{FilePath, IO}`,
 - `Dict{String, IO}`,
-- `IO`, and
-- an unzipped `FilePath`.
+- `IO`,
+- an unzipped `FilePath`,
+- an unzipped `DirPath`.
 
 # Required packages
 

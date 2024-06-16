@@ -71,7 +71,7 @@ function store_get_a(f::typeof(storage), @nospecialize(storer::DataStorage), as:
         else
             (f, (storer, as), (; write))
         end
-    elseif as === FilePath
+    elseif as <: SystemPath
         (storesave(inventory, storer, as), f, (storer, as), (; write))
     elseif as ∈ (IO, IOStream, Vector{UInt8}, String)
         # Try to get it as a file, because that avoids

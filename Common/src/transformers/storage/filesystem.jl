@@ -10,13 +10,30 @@ function storage(storage::DataStorage{:filesystem}, ::Type{FilePath}; write::Boo
     end
 end
 
-supportedtypes(::Type{<:DataStorage{:filesystem, <:Any}}) =
-    QualifiedType.([IO, Vector{UInt8}, String, FilePath])
+function storage(storage::DataStorage{:filesystem}, ::Type{DirPath}; write::Bool)
+    path = getpath(storage)
+    if @advise storage isdir(path)
+        DirPath(path)
+    end
+end
+
+function supportedtypes(::Type{<:DataStorage{:filesystem, <:Any}}, params::Dict{String, Any}, dataset::DataSet)
+    blind_default = QualifiedType.([IO, Vector{UInt8}, String, FilePath, DirPath])
+    !haskey(params, "path") && return blind_default
+    path = abspath(dirof(dataset.collection), expanduser(params["path"]))
+    if isfile(path)
+        QualifiedType.([IO, Vector{UInt8}, String, FilePath])
+    elseif isdir(path)
+        [QualifiedType(DirPath)]
+    else
+        blind_default
+    end
+end
 
 createpriority(::Type{<:DataStorage{:filesystem}}) = 70
 
 function create(::Type{<:DataStorage{:filesystem}}, source::String, dataset::DataSet)
-    if isfile(abspath(dirof(dataset.collection), expanduser(source)))
+    if ispath(abspath(dirof(dataset.collection), expanduser(source)))
         ["path" => source]
     end
 end
