@@ -36,7 +36,7 @@ Parse a string representation of a checksum in the format `"type:value"`.
 
 ```jldoctest; setup = :(import DataToolkitStore.Checksum)
 julia> parse(Checksum, "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4")
-Checksum(:k12, UInt8[0xcf, 0xb9, 0xa6, 0xa3, 0x02, 0xf5, 0x8e, 0x5a, 0x9b, 0x0c, 0x81, 0x5b, 0xb7, 0xe8, 0xef, 0xb4])
+Checksum(k12:cfb9a6a302f58e5a9b0c815bb7e8efb4)
 ```
 """
 function Base.parse(::Type{Checksum}, checksum::String)
@@ -56,7 +56,17 @@ function Base.tryparse(::Type{Checksum}, checksum::String)
 end
 
 function Base.string(checksum::Checksum)
-    string(checksum.alg, ':', join(map(b -> lpad(string(b, base=16), 2, '0'), checksum.hash)))
+    iob = IOBuffer()
+    print(iob, checksum.alg, ':')
+    for b in checksum.hash
+        print(iob, lpad(string(b, base=16), 2, '0'))
+    end
+    String(take!(iob))
+end
+
+function Base.show(io::IO, ::MIME"text/plain", checksum::Checksum)
+    show(io, Checksum)
+    print(io, "(", string(checksum), ')')
 end
 
 function Base.convert(::Type{StoreSource}, spec::Dict{String, Any})
