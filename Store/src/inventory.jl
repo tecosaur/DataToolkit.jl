@@ -302,32 +302,34 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
                 ifelse(nsources == 1, "", "s"),
                 " (", num_recipe_checks, " recipe check",
                 ifelse(num_recipe_checks == 1, "", "s"), ")")
-        orphan_files = let fs = readdir(dirname(inv.file.path), join=true)
-            storedir = joinpath(dirname(inv.file.path), inv.config.store_dir)
-            isdir(storedir) && append!(fs, readdir(storedir, join=true))
-            cachedir = joinpath(dirname(inv.file.path), inv.config.cache_dir)
-            isdir(cachedir) && append!(fs, readdir(cachedir, join=true))
-            setdiff(fs, files(inv))
-        end
-        deleted_bytes = 0
-        for f in orphan_files
-            if dirname(f) == dirname(inv.file.path)
-                @warn "Found an unexpected $(ifelse(isdir(f), "subfolder", "file")) in the inventory folder, \
+    end
+    orphan_files = let fs = readdir(dirname(inv.file.path), join=true)
+        storedir = joinpath(dirname(inv.file.path), inv.config.store_dir)
+        isdir(storedir) && append!(fs, readdir(storedir, join=true))
+        cachedir = joinpath(dirname(inv.file.path), inv.config.cache_dir)
+        isdir(cachedir) && append!(fs, readdir(cachedir, join=true))
+        setdiff(fs, files(inv))
+    end
+    deleted_bytes = 0
+    for f in orphan_files
+        if dirname(f) == dirname(inv.file.path)
+            @warn "Found an unexpected $(ifelse(isdir(f), "subfolder", "file")) in the inventory folder, \
                     this is quite irregular ($(relpath(f, inv.file.path))) \
                     — $(ifelse(dryrun, "would remove", "removing"))"
-            end
-            if isdir(f)
-                dryrun || rm(f, force=true, recursive=true)
-            else
-                deleted_bytes += stat(f).size
-                dryrun || rm(f, force=true)
-            end
         end
-        truncated_sources, truncsource_bytes = garbage_trim_size!(inv; dryrun)
-        dryrun || for source in truncated_sources
-            file = storefile(inv, source)
-            isfile(file) && rm(file, force=true)
+        if isdir(f)
+            dryrun || rm(f, force=true, recursive=true)
+        else
+            deleted_bytes += stat(f).size
+            dryrun || rm(f, force=true)
         end
+    end
+    truncated_sources, truncsource_bytes = garbage_trim_size!(inv; dryrun)
+    dryrun || for source in truncated_sources
+        file = storefile(inv, source)
+        isfile(file) && rm(file, force=true)
+    end
+    if log
         if !isempty(truncated_sources) && trimmsg
             printstyled("Data Toolkit Store", color=:magenta, bold=true)
             println(" trimmed ", length(truncated_sources), " items (",
