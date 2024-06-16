@@ -74,7 +74,9 @@ function __init__()
         for inv in INVENTORIES
             hours_since = (now() - inv.last_gc).value / (1000 * 60 * 60)
             if inv.config.auto_gc > 0 && hours_since > inv.config.auto_gc
-                garbage_collect!(inv; log=false, trimmsg=true)
+                @log_do("store:gc",
+                        "Garbage collecting inventory ($(dirname(inv.file.path)))",
+                        garbage_collect!(inv; log=false, trimmsg=true))
             end
         end
     end
