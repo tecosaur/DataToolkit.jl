@@ -54,7 +54,9 @@ end
 function write_merkle(cm::CachedMerkles)
     dir = dirname(cm.file.path)
     isdir(dir) || mkpath(dir)
-    open(Base.Fix2(write_merkle, cm), cm.file.path, "w")
+    tempfile = cm.file.path * ".new"
+    open(Base.Fix2(write_merkle, cm), tempfile, "w")
+    mv(tempfile, cm.file.path; force=true)
     cm.file.mtime = mtime(cm.file.path)
 end
 
