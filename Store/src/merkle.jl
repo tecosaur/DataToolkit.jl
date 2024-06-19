@@ -123,7 +123,8 @@ The constructed `MerkleTree` can use any hashing `algorithm` recognised
 by `checksum`.
 """
 function merkle(root::String, path::String, algorithm::Symbol = CHECKSUM_DEFAULT_SCHEME)
-    _merkle(root, path, algorithm, checksum(algorithm))
+    _merkle(String(rstrip(root, ('/', '\\'))), String(rstrip(path, ('/', '\\'))), algorithm, checksum(algorithm),
+            (Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}(), ReentrantLock()), String[])
 end
 
 merkle(path::String, algorithm::Symbol) = merkle("", path, algorithm)
@@ -139,11 +140,44 @@ and should return `Checksum`s for the given `algorithm`.
 Returns the constructed `MerkleTree` or `nothing` if the path does not exist,
 or cannot be checksummed for some reason.
 """
-function _merkle(root::String, path::String, algorithm::Symbol, checksum_fn::F) where {F <: Function}
+function _merkle(root::String, path::String, algorithm::Symbol, checksum_fn::F,
+                 (symlinks, symlinks_lock)::Tuple{Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}, ReentrantLock},
+                 symlink_descent::Vector{String}) where {F <: Function}
     fullpath = joinpath(root, path)
     pathstat = stat(fullpath)
     if !isreadable(fullpath)
         nothing
+    elseif islink(lstat(fullpath))
+        target = abspath(dirname(fullpath), readlink(fullpath))
+        tindex = findfirst(==(target), symlink_descent)
+        if !isnothing(tindex)
+            cycle_io = IOBuffer()
+            for i in tindex:length(symlink_descent)
+                println(cycle_io, symlink_descent[i], UInt8(i - tindex))
+            end
+            return MerkleTree(path, mtime(pathstat), checksum_fn(seekstart(cycle_io)), MerkleTree[])
+        end
+        lock(symlinks_lock)
+        if haskey(symlinks, target)
+            mtree = symlinks[target]
+            unlock(symlinks_lock)
+            if mtree isa ReentrantLock
+                @lock mtree symlinks[target]
+            elseif mtree isa MerkleTree
+                MerkleTree(path, mtree.mtime, mtree.checksum, mtree.children)
+            end
+        else
+            mlock = ReentrantLock()
+            lock(mlock)
+            symlinks[target] = mlock
+            unlock(symlinks_lock)
+            mtree = _merkle("", target, algorithm, checksum_fn, (symlinks, symlinks_lock), vcat(symlink_descent, target))
+            symlinks[target] = mtree
+            unlock(mlock)
+            if mtree isa MerkleTree
+                MerkleTree(path, mtree.mtime, mtree.checksum, mtree.children)
+            end
+        end
     elseif isfile(pathstat)
         MerkleTree(path, mtime(fullpath), open(checksum_fn, fullpath), nothing)
     elseif isdir(pathstat)
@@ -151,7 +185,7 @@ function _merkle(root::String, path::String, algorithm::Symbol, checksum_fn::F) 
         childtrees = Tuple{Int, MerkleTree}[]
         ctreelock = SpinLock()
         @threads for (i, child) in childnames
-            ctree = merkle(fullpath, child, algorithm)
+            ctree = _merkle(fullpath, child, algorithm, checksum_fn, (symlinks, symlinks_lock), symlink_descent)
             isnothing(ctree) || @lock ctreelock push!(childtrees, (i, ctree))
         end
         children = MerkleTree[]
@@ -168,7 +202,9 @@ end
 
 function merkle(original::MerkleTree, root::String, path::String, algorithm::Symbol = original.checksum.alg)
     if original.checksum.alg == algorithm
-        _merkle(original, root, path, original.checksum.alg, checksum(original.checksum.alg))
+        _merkle(original, String(rstrip(root, ('/', '\\'))), String(rstrip(path, ('/', '\\'))),
+                original.checksum.alg, checksum(original.checksum.alg),
+                (Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}(), ReentrantLock()), String[])
     else
         merkle(root, path, original.checksum.alg)
     end
@@ -176,7 +212,9 @@ end
 
 merkle(original::MerkleTree, path::String, algorithm::Symbol) = merkle(original, "", path, algorithm)
 
-function _merkle(original::MerkleTree, root::String, path::String, algorithm::Symbol, checksum_fn::F) where {F <: Function}
+function _merkle(original::MerkleTree, root::String, path::String, algorithm::Symbol, checksum_fn::F,
+                 (symlinks, symlinks_lock)::Tuple{Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}, ReentrantLock},
+                 symlink_descent::Vector{String}) where {F <: Function}
     fullpath = joinpath(root, path)
     pathstat = stat(fullpath)
     if !isreadable(fullpath)
@@ -211,9 +249,9 @@ function _merkle(original::MerkleTree, root::String, path::String, algorithm::Sy
                 end
             end
             ctree, changed = if !isnothing(origchild)
-                _merkle(origchild, fullpath, child, algorithm, checksum_fn)
+                _merkle(origchild, fullpath, child, algorithm, checksum_fn, (symlinks, symlinks_lock), symlink_descent)
             else
-                _merkle(fullpath, child, algorithm, checksum_fn), true
+                _merkle(fullpath, child, algorithm, checksum_fn, (symlinks, symlinks_lock), symlink_descent), true
             end
             isnothing(ctree) || @lock ctreelock push!(childtrees, (i, ctree, changed))
         end
@@ -244,7 +282,10 @@ function merkle(cm::CachedMerkles, root::String, path::String, algorithm::Symbol
             entry = get(mt, last_checksum, nothing)
         end
         isnothing(entry) && continue
-        entry, updated = @log_do "store:merkle:check" "Checking MerkleTree hash of $path" merkle(entry, root, path)
+        entry, updated = @log_do(
+            "store:merkle:check",
+            "Checking MerkleTree hash of $path",
+            merkle(entry, root, path))
         if updated
             if isnothing(entry)
                 deleteat!(cm.merkles, i)
