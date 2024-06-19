@@ -1,0 +1,5 @@
+#+title: Compression
+
+#+begin_src @eval
+Main.DataToolkitCommon.tdocs(:gzip)
+#+end_src

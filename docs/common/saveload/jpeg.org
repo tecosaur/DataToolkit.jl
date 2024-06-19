@@ -1,0 +1,5 @@
+#+title: JPEG
+
+#+begin_src @eval
+Main.DataToolkitCommon.tdocs(:jpeg)
+#+end_src

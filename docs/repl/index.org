@@ -1,0 +1,140 @@
+#+title: The Data REPL
+
+* General design
+
+An extensible "Data REPL" is provided to make directly interacting with the
+=Data.toml= a bit more convenient. It can be entered by pressing =}= on an empty
+=julia>= REPL line.
+
+#+begin_example
+julia> # type }
+data>
+data> help
+ Command  Action
+ ───────────────────────────────────────────────────────────
+ help     Display help information on the available commands
+#+end_example
+
+The foremost data collection is also listed in the prompt in much the same
+manner as =(environment) pkg>=, i.e.
+
+#+begin_example
+(⋅) data>        # No currently loaded data collections
+(example) data>  # The top data collection is "example"
+#+end_example
+
+Commands (and sub-commands) can be triggered by typing them out in full (i.e.
+=cmd args...=) but also abbreviated up to the unique stem. For instance if =cmd= is
+the only command starting with =c=, then it can be called with any of
++ =data> cmd args...=
++ =data> cm args...=
++ =data> c args...=
+However, should a command =conflict= also exist, then =c= is no longer a unique stem
+and so =c args...= will produce an error message like so:
+
+#+begin_example
+data> c args...
+ ! Multiple matching Data REPL commands: cmd, conflict
+#+end_example
+
+* The help command
+
+=help= is implemented specially in the Data REPL. It can be invoked normally (i.e.
+=help cmd=) but also with =?= prefix (i.e. =?cmd=). Furthermore, all commands with
+sub-commands with automatically have a =help= sub-command added. Overall, =help=
+supports the following usage patterns.
+
+#+begin_example
+data> help             # List available commands.
+data> help cmd         # Obtain the help for cmd, or
+data> help cmd         # list available sub-command (if applicable).
+data> ?cmd             # Obtain the help for cmd.
+data> help cmd subcmd  # Obtain the help for subcmd.
+data> ?cmd subcmd      # Obtain the help for subcmd.
+data> cmd help subcmd  # Obtain the help for subcmd.
+data> cmd ?subcmd      # Obtain the help for subcmd.
+#+end_example
+
+* Extending the Data REPL
+** Registering commands
+
+To register a command, one simply needs to push a ~ReplCmd~ onto ~REPL_CMDS~.
+
+#+begin_src @docs
+REPL_CMDS
+ReplCmd
+#+end_src
+
+** Helper functions
+
+To create a pleasant user interface, a number of utility functions are provided.
+
+#+begin_src @docs
+prompt
+prompt_char
+confirm_yn
+peelword
+#+end_src
+
+** Simple example
+
+In the below example we will extend the Data REPL by adding a command =cowsay=
+which simply call the (assumed to be installed) system ~cowsay~ executable.
+
+#+begin_src julia
+function cowsay_repl(input::AbstractString)
+    if isempty(input)
+        confirm_yn("Are you ready to hear your fortune?", true) &&
+            cowsay_repl(read(`fortune`, String))
+    else
+        println(read(`cowsay $input`, String))
+    end
+end
+
+cowsay3 = ReplCmd(
+    "cowsay3",
+    "Hear what the cow has to say
+\n Call with no argument to obtain a fortune.",
+    cowsay_repl,
+    ["Improve your data management with DataToolkits & co."])
+
+push!(REPL_CMDS, cowsay3)
+#+end_src
+
+If you enter the Data REPL, you will be able to note that:
++ =cowsay= is listed in =data> help=
++ running =cowsay= with no arguments results in a Y/n prompt to show a fortune
++ pressing =TAB= after =cowsay= fills in the sole completion, =Improve your data
+  management with DataToolkits & co.=.
+
+#+begin_example
+(⋅) data> help
+ Command  Action
+ ───────────────────────────────────────────────────────────
+ cowsay   Hear what the cow has to say
+ help     Display help information on the available commands
+
+(⋅) data> ?cowsay3
+ Hear what the cow has to say
+
+ Call with no argument to obtain a fortune.
+
+(⋅) data> cowsay
+Are you ready to hear your fortune? [Y/n]: y
+ _________________________________________
+/ (1) A sheet of paper is an ink-lined    \
+| plane. (2) An inclined plane is a slope |
+| up. (3) A slow pup is a lazy dog.       |
+|                                         |
+| QED: A sheet of paper is a lazy dog.    |
+|                                         |
+| -- Willard Espy, "An Almanac of Words   |
+\ at Play"                                /
+ -----------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
+#+end_example

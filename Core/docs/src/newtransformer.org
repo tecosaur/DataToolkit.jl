@@ -1,0 +1,24 @@
+#+title: Creating a new data transformer
+
+As mentioned before, there are three types of data transformer:
+- =storage=
+- =loader=
+- =writer=
+
+The three corresponding Julia types are:
+- =DataStorage=
+- =DataLoader=
+- =DataWriter=
+
+All three types accept a =driver= (symbol) type parameter. For example, a storage
+transformer using a "filesystem" driver would be of the type
+=DataStorage{:filesystem}=.
+
+Adding support for a new driver is a simple as adding method implementations for
+the three key data transformer methods:
+
+#+begin_src @docs
+load
+storage
+save
+#+end_src

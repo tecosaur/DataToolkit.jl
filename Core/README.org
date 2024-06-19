@@ -1,0 +1,9 @@
+#+title: DataToolkitCore
+#+author: tecosaur
+
+#+html: <a href="https://tecosaur.github.io/DataToolkitDocs/base/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
+#+html: <a href="https://tecosaur.github.io/DataToolkitCore.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
+#+html: <a href="https://github.com/tecosaur/DataToolkitCore.jl/actions?query=workflow%3ACI"><img src="https://github.com/tecosaur/DataToolkitCore.jl/workflows/CI/badge.svg"></a>
+#+html: <a href="https://coveralls.io/github/tecosaur/DataToolkitCore.jl"><img src="https://coveralls.io/repos/github/tecosaur/DataToolkitCore.jl/badge.svg"></a>
+
+Prototype foundation for a data management framework.
