@@ -13,10 +13,10 @@ function QualifiedType(::Type{T0}) where {T0}
     parents = Symbol[]
     root = parentmodule(T)
     while root != parentmodule(root)
-        push!(parents, Symbol(root))
+        push!(parents, nameof(root))
         root = parentmodule(root)
     end
-    QualifiedType(Symbol(root), parents, nameof(T), Tuple(params))
+    QualifiedType(nameof(root), parents, nameof(T), Tuple(params))
 end
 
 Base.:(==)(a::QualifiedType, b::QualifiedType) =
@@ -95,7 +95,7 @@ Base.issubset(a::Type, b::QualifiedType; mod::Module=Main) =
 const QUALIFIED_TYPE_SHORTHANDS = let forward =
     Dict{String, QualifiedType}(
         "FilePath" => QualifiedType(FilePath),
-        "DataSet" => QualifiedType(Symbol(@__MODULE__), :DataSet),
+        "DataSet" => QualifiedType(nameof(@__MODULE__), :DataSet),
         "DataFrame" => QualifiedType(:DataFrames, :DataFrame))
     (; forward, reverse = Dict(val => key for (key, val) in forward))
 end

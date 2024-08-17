@@ -18,7 +18,7 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
                 if haskey(QUALIFIED_TYPE_SHORTHANDS.forward, string(param))
                     QUALIFIED_TYPE_SHORTHANDS.forward[string(param)]
                 else
-                    QualifiedType(Symbol(Base.binding_module(Main, param)),
+                    QualifiedType(nameof(Base.binding_module(Main, param)),
                                   Symbol[], param, Tuple{}())
                 end
             elseif Meta.isexpr(param, :.)
@@ -49,7 +49,7 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
     end
     root, parents, name = if length(components) == 1
         n = Symbol(components[1])
-        Symbol(Base.binding_module(Main, n)), Symbol[], n
+        nameof(Base.binding_module(Main, n)), Symbol[], n
     elseif length(components) == 2
         Symbol(components[1]), Symbol[], Symbol(components[2])
     else
