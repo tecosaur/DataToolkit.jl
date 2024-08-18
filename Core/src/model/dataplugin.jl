@@ -14,20 +14,19 @@ PLUGINS_DOCUMENTATION[myplugin.name] = @doc myplugin
 push!(DEFAULT_PLUGINS, myplugin.name) # when also adding to defaults
 ```
 """
-macro dataplugin(pluginvar::QuoteNode)
-    quote
-        push!(PLUGINS, $(esc(pluginvar.value)))
-        PLUGINS_DOCUMENTATION[$(esc(pluginvar.value)).name] = @doc($(esc(pluginvar.value)))
-    end
-end
-
 macro dataplugin(pluginvar::Symbol)
-    :(@dataplugin($(QuoteNode(esc(pluginvar)))))
+    quote
+        push!(PLUGINS, $(esc(pluginvar)))
+        PLUGINS_DOCUMENTATION[$(esc(pluginvar)).name] =
+            Base.Docs.Binding(@__MODULE__, $(QuoteNode(pluginvar)))
+    end
 end
 
 macro dataplugin(pluginvar::Symbol, usebydefault::QuoteNode)
     quote
-        @dataplugin($(QuoteNode(esc(pluginvar))))
+        push!(PLUGINS, $(esc(pluginvar)))
+        PLUGINS_DOCUMENTATION[$(esc(pluginvar)).name] =
+            Base.Docs.Binding(@__MODULE__, $(QuoteNode(pluginvar)))
         $(if usebydefault.value == :default
               :(push!(DEFAULT_PLUGINS, $(esc(pluginvar)).name))
           end)
