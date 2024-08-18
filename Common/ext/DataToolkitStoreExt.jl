@@ -7,7 +7,7 @@ using DataToolkitStore: Inventory, StoreSource,
     getinventory, getchecksum, getsource, update_source!
 import DataToolkitStore: rhash, shouldstore, storesave, storefile, fileextension
 
-using DataToolkitCommon: dirof
+using DataToolkitCommon: dirof, getpath
 import DataToolkitCommon: is_store_target, approximate_store_dest
 
 is_store_target(storage::DataStorage) = shouldstore(storage)
@@ -54,19 +54,20 @@ end
 # Variant on the generic `storesave` implementation that copies the file.
 # Instead, we create a symlink so we can make use of the checksum metadata.
 # We just need to check the symlink is no older than the original file.
-function storesave(inventory::Inventory, storage::DataStorage{:filesystem}, ::Type{FilePath}, file::FilePath)
-    inventory.file.writable || return file
-    checksum = getchecksum(storage, file.path)
+function storesave(inventory::Inventory, storage::DataStorage{:filesystem}, ::Type{T}, path::T) where {T <: SystemPath}
+    inventory.file.writable || return path
+    checksum = getchecksum(inventory, storage, path)
+    ext = if T == DirPath "/" else last(splitext(string(path)))[2:end] end
     newsource = StoreSource(
         rhash(storage),
         [storage.dataset.collection.uuid],
-        now(), checksum, last(splitext(file.path))[2:end])
-    linkfile = storefile(inventory, newsource)
-    isfile(linkfile) && rm(linkfile)
-    isdir(dirname(linkfile)) || mkpath(dirname(linkfile))
-    symlink(file.path, linkfile)
+        now(), checksum, ext)
+    linkpath = storefile(inventory, newsource)
+    ispath(linkpath) && rm(linkpath, force=true, recursive=true)
+    isdir(dirname(linkpath)) || mkpath(dirname(linkpath))
+    symlink(string(path), linkpath)
     update_source!(inventory, newsource, storage.dataset.collection)
-    FilePath(linkfile)
+    T(linkpath)
 end
 
 # Similarly, we need a variant on the generic `storefile` implementation to
@@ -75,13 +76,24 @@ end
 function storefile(inventory::Inventory, storage::DataStorage{:filesystem})
     source = getsource(inventory, storage)
     if !isnothing(source)
-        linkfile = storefile(inventory, source)
-        if isfile(linkfile)
+        linkpath = storefile(inventory, source)
+        if isfile(linkpath)
             file = getpath(storage)
-            if isfile(file) && lstat(linkfile).ctime > mtime(file)
-                return linkfile
+            if isfile(file) && lstat(linkpath).ctime > mtime(file)
+                return linkpath
             else
-                rm(linkfile)
+                rm(linkpath)
+            end
+        elseif isdir(linkpath)
+            dir = getpath(storage)
+            maxmtime = 0.0
+            for (root, dirs, files) in walkdir(dir), file in files
+                maxmtime = max(maxmtime, mtime(joinpath(root, file)))
+            end
+            if isdir(dir) && lstat(linkpath).ctime > maxmtime
+                return linkpath
+            else
+                rm(linkpath)
             end
         end
         # Symlink never existed, or has been removed, so ensure
