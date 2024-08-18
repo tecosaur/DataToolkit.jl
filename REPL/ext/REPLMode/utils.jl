@@ -63,12 +63,12 @@ Unless `quiet` is set, should this not be the case a warning message is emmited.
 confirm_stack_first_writable(; quiet::Bool=false) =
     confirm_stack_nonempty(; quiet) &&
     (iswritable(first(STACK)) || begin
-        if !quiet
-            printstyled(" ! ", color=:red, bold=true)
-            println("The first item on the data collection stack is not writable")
-        end
-        false
-    end)
+         if !quiet
+             printstyled(" ! ", color=:red, bold=true)
+             println("The first item on the data collection stack is not writable")
+         end
+         false
+     end)
 
 # ------------------
 # Interaction utilities
@@ -103,8 +103,8 @@ What colour is the sky? Blue
 ```
 """
 function prompt(question::AbstractString, default::AbstractString="";
-                 allowempty::Bool=false, cleardefault::Bool=true,
-                 multiline::Bool=false)
+                allowempty::Bool=false, cleardefault::Bool=true,
+                multiline::Bool=false)
     firstinput = true
     # Set `:color` to `false` in the stdout, so that the
     # terminal doesn't report color support, and the
