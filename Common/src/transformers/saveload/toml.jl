@@ -8,7 +8,8 @@ function save(writer::DataWriter{:toml}, dest::IO, info::AbstractDict)
     TOML.print(dest, info, sorted=true)
 end
 
-create(::Type{DataLoader{:toml}}, source::String) = endswith(source, ".toml")
+createauto(::Type{DataLoader{:toml}}, source::String) =
+    endswith(source, ".toml")
 
 const TOML_DOC = md"""
 Parse and serialize TOML data

@@ -57,7 +57,7 @@ end
 
 createpriority(::Type{DataLoader{:zip}}) = 10
 
-function create(::Type{DataLoader{:zip}}, source::String)
+function createinteractive(::Type{DataLoader{:zip}}, source::String)
     if !isnothing(match(r"\.zip$"i, source))
         ["prefix" => (; prompt="Prefix: ", type=String, optional=true),
          "file" => (; prompt="File: ", type=String, optional=true),

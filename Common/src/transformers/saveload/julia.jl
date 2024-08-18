@@ -58,11 +58,11 @@ end
 
 createpriority(::Type{DataLoader{:julia}}) = 10
 
-function create(::Type{DataLoader{:julia}}, source::String)
+function createauto(::Type{DataLoader{:julia}}, source::String)
     if !isnothing(match(r"\.jl$"i, source)) &&
         (!isempty(STACK) && isfile(abspath(dirof(first(STACK)), expanduser(source))) ||
         isfile(expanduser(source)))
-        ["path" => source]
+        Dict("path" => source)
     end
 end
 

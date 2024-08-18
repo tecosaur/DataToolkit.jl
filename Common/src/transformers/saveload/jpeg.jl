@@ -16,10 +16,10 @@ function save(writer::DataWriter{:jpeg}, dest::IO, info::Matrix)
     invokelatest(_write_jpeg, dest, info)
 end
 
-create(::Type{DataLoader{:jpeg}}, source::String) =
+createauto(::Type{DataLoader{:jpeg}}, source::String) =
     !isnothing(match(r"\.jpe?g$"i, source))
 
-create(::Type{DataWriter{:jpeg}}, source::String) =
+createauto(::Type{DataWriter{:jpeg}}, source::String) =
     !isnothing(match(r"\.jpe?g$"i, source))
 
 const JPEG_DOC = md"""

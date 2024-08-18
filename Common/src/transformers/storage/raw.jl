@@ -28,12 +28,12 @@ end
 
 createpriority(::Type{<:DataStorage{:raw}}) = 90
 
-function create(::Type{<:DataStorage{:raw}}, source::String)
+function createauto(::Type{<:DataStorage{:raw}}, source::String)
     value = try
         TOML.parse(string("value = ", source))["value"]
     catch end
     if !isnothing(value)
-        ["value" => value]
+        Dict("value" => value)
     end
 end
 

@@ -66,7 +66,7 @@ end
 
 createpriority(::Type{DataLoader{:csv}}) = 10
 
-create(::Type{DataLoader{:csv}}, source::String) =
+createauto(::Type{DataLoader{:csv}}, source::String) =
     !isnothing(match(r"\.[ct]sv$"i, source))
 
 function lint(loader::DataLoader{:csv}, ::Val{:non_list_csv_args})

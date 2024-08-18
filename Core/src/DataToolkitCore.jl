@@ -14,7 +14,8 @@ export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataCollection, QualifiedType, Identifier,
     SystemPath, FilePath, DirPath, LintItem, LintReport
 export load, storage, getstorage, putstorage, save, getlayer, resolve, refine,
-    parse_ident, supportedtypes, typeify, create, createpriority, lint, invokepkglatest
+    parse_ident, supportedtypes, typeify, create, create!, createauto,
+    createinteractive, createpriority, lint, invokepkglatest
 export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     PackageException, UnregisteredPackage, MissingPackage,
     DataOperationException, CollectionVersionMismatch, EmptyStackError,
@@ -45,7 +46,7 @@ include("model/dataplugin.jl")
 include("interaction/logging.jl") # Need to be loaded early
 include("interaction/typetransforms.jl")
 include("interaction/externals.jl")
-include("interaction/display.jl")
+include("interaction/creation.jl")
 include("interaction/manipulation.jl")
 include("interaction/lint.jl")
 

@@ -32,9 +32,9 @@ end
 
 createpriority(::Type{<:DataStorage{:filesystem}}) = 70
 
-function create(::Type{<:DataStorage{:filesystem}}, source::String, dataset::DataSet)
+function createauto(::Type{<:DataStorage{:filesystem}}, source::String, dataset::DataSet)
     if ispath(abspath(dirof(dataset.collection), expanduser(source)))
-        ["path" => source]
+        Dict("path" => source)
     end
 end
 

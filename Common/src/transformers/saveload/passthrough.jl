@@ -3,9 +3,9 @@ function load(::DataLoader{:passthrough}, from::T, ::Type{T}) where {T <: Any}
 end
 
 # To avoid method ambiguity with the fallback methods
-load(::DataLoader{:passthrough}, from::String, T::Type{IO}) =
+load(::DataLoader{:passthrough}, from::IO, T::Type{IO}) =
     Some(from)
-load(::DataLoader{:passthrough}, from::String, T::Type{Vector{UInt8}}) =
+load(::DataLoader{:passthrough}, from::Vector{UInt8}, T::Type{Vector{UInt8}}) =
     Some(from)
 load(::DataLoader{:passthrough}, from::String, T::Type{String}) =
     Some(from)
@@ -23,7 +23,7 @@ supportedtypes(::Type{DataLoader{:passthrough}}, ::Dict{String, Any}, dataset::D
 
 createpriority(::Type{DataLoader{:passthrough}}) = 20
 
-create(::Type{DataLoader{:passthrough}}, source::String, dataset::DataSet) =
+createauto(::Type{DataLoader{:passthrough}}, source::String, dataset::DataSet) =
     any(isa.(dataset.storage, DataStorage{:raw}))
 
 const PASSTHROUGH_L_DOC = md"""

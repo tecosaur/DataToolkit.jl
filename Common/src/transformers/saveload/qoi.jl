@@ -13,10 +13,10 @@ function save(writer::DataWriter{:qoi}, dest::FilePath, info::Matrix)
     invokelatest(_write_qoi, dest, info)
 end
 
-create(::Type{DataLoader{:qoi}}, source::String) =
+createauto(::Type{DataLoader{:qoi}}, source::String) =
     !isnothing(match(r"\.qoi$"i, source))
 
-create(::Type{DataWriter{:qoi}}, source::String) =
+createauto(::Type{DataWriter{:qoi}}, source::String) =
     !isnothing(match(r"\.qoi$"i, source))
 
 const QOI_DOC = md"""

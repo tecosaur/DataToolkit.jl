@@ -16,7 +16,7 @@ supportedtypes(::Type{DataLoader{:geopackage}}) =
 
 createpriority(::Type{DataLoader{:geopackage}}) = 10
 
-create(::Type{DataLoader{:geopackage}}, source::String) =
+createauto(::Type{DataLoader{:geopackage}}, source::String) =
     !isnothing(match(r"\.gpkg$"i, source))
 
 const GEOPACKAGE_DOC = md"""

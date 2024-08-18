@@ -112,25 +112,26 @@ end
 
 createpriority(::Type{DataLoader{:chain}}) = 5
 
-function create(::Type{DataLoader{:chain}}, source::String, dataset::DataSet)
+function createauto(::Type{DataLoader{:chain}}, source::String, dataset::DataSet)
     # Prompted by compressed file types, e.g. ".csv.gz"
     if !isnothing(match(r"\.\w+\.\w+$", source)) && isnothing(match(r"\.git$", source))
         base, inner, outer = match(r"^(.*)\.(\w+)\.(\w+)$", source).captures
-        outerloader = create(DataLoader, :*, source, dataset;
-                             minpriority=1+createpriority(DataLoader{:chain}))
+        outerloader = DataToolkitCore.trycreateauto(
+            dataset, DataLoader, :*, source; minpriority=1+createpriority(DataLoader{:chain}))
         if !isnothing(outerloader)
-            innerloader = create(DataLoader, :*, "$base.$inner", dataset)
+            innerloader = DataToolkitCore.trycreateauto(
+                dataset, DataLoader, :*, "$base.$inner")
             if !isnothing(innerloader)
                 minimalspec(template) = Dict{String, Any}(
                     "driver" => template["driver"])
                 ospec = DataToolkitCore.@advise dataset tospec(outerloader)
                 ispec = DataToolkitCore.@advise dataset tospec(innerloader)
-                ["loaders" =>
+                Dict("loaders" =>
                     if ospec == minimalspec(ospec) && ispec == minimalspec(ispec)
                         [ospec["driver"], ispec["driver"]]
-                    else
+                     else
                         [ospec, ispec]
-                    end]
+                     end)
             end
         end
     end
