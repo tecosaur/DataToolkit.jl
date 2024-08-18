@@ -23,6 +23,10 @@ map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
          @eval const $var = DataToolkitCore.$var
 end
 
+const Core = DataToolkitCore
+const Base = DataToolkitBase
+const REPL = DataToolkitREPL
+
 """
     plugins()
 
