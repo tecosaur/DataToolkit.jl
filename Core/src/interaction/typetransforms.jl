@@ -115,13 +115,30 @@ Compares two "type paths" `a` and `b`, returning whether
 Each "type path" is a tuple of the form:
 
     (Tin::Type => Tout::Type, index::Int, transformer::Type{<:AbstractDataTransformer})
+
+This operates on the following rules:
+1. The path with the lower index is preferred.
+2. If the indices are equal, the path with the more specific output type is preferred.
+3. If the output types are equally specific, the path with the more specific loader is preferred.
+4. If the loaders are equally specific, the more similar data transformation (`Tin => Tout`) is preferred.
 """
 function ispreferredpath(((a_in, a_out), a_ind, a_ldr)::Tuple{Pair{Type, Type}, Int, Type},
                          ((b_in, b_out), b_ind, b_ldr)::Tuple{Pair{Type, Type}, Int, Type})
+    function ncommonparents(A::Type, B::Type)::Int
+        a_parents, b_parents = Type[A], Type[B]
+        while first(a_parents) != Any
+            pushfirst!(a_parents, supertype(first(a_parents)))
+        end
+        while first(b_parents) != Any
+            pushfirst!(b_parents, supertype(first(b_parents)))
+        end
+        sum(splat(==), zip(a_parents, b_parents))
+    end
     @nospecialize
     a_ind < b_ind ||
         Base.morespecific(a_out, b_out) ||
-        Base.morespecific(a_ldr, b_ldr)
+        Base.morespecific(a_ldr, b_ldr) ||
+        ncommonparents(a_in, a_out) > ncommonparents(b_in, b_out)
 end
 
 """
