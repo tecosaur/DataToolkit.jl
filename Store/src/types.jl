@@ -90,5 +90,5 @@ function MonitoredFile(path)
             rethrow()
         end
     end
-    MonitoredFile(path, recency, writable)
+    MonitoredFile(abspath(path), recency, writable)
 end
