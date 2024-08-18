@@ -17,7 +17,7 @@ function repl_show(input::AbstractString)
         println("Could not resolve identifier: $input")
         if err isa IdentifierException
             print(' ')
-            showerror(stdout, err)
+            showerror(stdout, err, backtrace(), backtrace = false)
             print('\n')
             return
         else
