@@ -68,6 +68,9 @@ end
 Base.:(==)(a::Checksum, b::Checksum) =
     a.alg == b.alg && a.hash == b.hash
 
+Base.hash(c::Checksum, h::UInt) =
+    hash(c.alg, hash(c.hash, h))
+
 ≃(a::CollectionInfo, b::CollectionInfo) = a.uuid == b.uuid
 ≃(a::DataCollection, b::CollectionInfo) = a.uuid == b.uuid
 ≃(a::CollectionInfo, b::DataCollection) = b ≃ a
