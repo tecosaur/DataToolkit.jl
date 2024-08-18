@@ -28,7 +28,7 @@ supportedtypes(::Type{DataLoader{:arrow}}) =
     [QualifiedType(:DataFrames, :DataFrame),
      QualifiedType(:Arrow, :Table)]
 
-create(::Type{DataLoader{:arrow}}, source::String) =
+createauto(::Type{DataLoader{:arrow}}, source::String) =
     !isnothing(match(r"\.arrow$"i, source))
 
 createpriority(::Type{DataLoader{:arrow}}) = 10

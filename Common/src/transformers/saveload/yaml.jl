@@ -11,7 +11,7 @@ function save(writer::DataWriter{:yaml}, dest::IO, info::AbstractDict)
     invokelatest(_write_yaml, dest, info)
 end
 
-create(::Type{DataLoader{:yaml}}, source::String) =
+createauto(::Type{DataLoader{:yaml}}, source::String) =
     endswith(source, r".ya?ml")
 
 const YAML_DOC = md"""

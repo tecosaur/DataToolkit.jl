@@ -11,10 +11,10 @@ function save(writer::DataWriter{:webp}, dest::IO, info::Matrix)
     invokelatest(_write_webp, dest, info)
 end
 
-create(::Type{DataLoader{:webp}}, source::String) =
+createauto(::Type{DataLoader{:webp}}, source::String) =
     !isnothing(match(r"\.webp$"i, source))
 
-create(::Type{DataWriter{:webp}}, source::String) =
+createauto(::Type{DataWriter{:webp}}, source::String) =
     !isnothing(match(r"\.webp$"i, source))
 
 const WEBP_DOC = md"""

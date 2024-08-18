@@ -17,7 +17,7 @@ end
 
 createpriority(::Type{DataLoader{:json}}) = 10
 
-create(::Type{DataLoader{:json}}, source::String) =
+createauto(::Type{DataLoader{:json}}, source::String) =
     !isnothing(match(r"\.json$"i, source))
 
 const JSON_DOC = md"""

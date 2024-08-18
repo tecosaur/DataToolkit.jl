@@ -47,13 +47,14 @@ function add(input::AbstractString)
         return nothing
     end
     confirm_stack_first_writable() || return nothing
+    collection = first(STACK)
     name, rest = if isnothing(match(r"^(?:v|via|f|from)\b|^\s*$|^https?://", input)) &&
         !isfile(first(peelword(input)))
         peelword(input)
     else
         prompt(" Name: "), String(input)
     end
-    if name in getproperty.(first(STACK).datasets, :name)
+    if any(d -> d.name == name, collection.datasets)
         confirm_yn(" '$name' names an existing data set, continue anyway?", false) ||
             return nothing
         printstyled(" i ", color=:cyan, bold=true)
@@ -87,7 +88,9 @@ function add(input::AbstractString)
         prompt(" From: ", allowempty=true)
     end |> String
     spec = prompt_attributes()
-    DataToolkitCore.add(DataSet, name, spec, from; via...)
+    dataset = create!(collection, DataSet, name, spec)
+    addtransformers!(dataset, from; via...)
+    iswritable(collection) && write(collection)
 end
 
 """
@@ -112,4 +115,38 @@ function prompt_attributes()
     end
     print("\e[A\e[G\e[K")
     spec
+end
+
+# Transformer creation
+
+"""
+    addtransformers!(dataset::DataSet;
+        storage::Vector{Symbol}=Symbol[], loaders::Vector{Symbol}=Symbol[],
+        writers::Vector{Symbol}=Symbol[], quiet::Bool=false)
+
+Create a new DataSet with a `name` and `spec`, and add it to `collection`.  The
+data transformers will be constructed with each of the backends listed in
+`storage`, `loaders`, and `writers` from `source`. If the symbol `*` is given,
+all possible drivers will be searched and the highest priority driver available
+(according to `createpriority`) used. Should no transformer of the specified
+driver and type exist, it will be skipped.
+"""
+function addtransformers!(dataset::DataSet, source::String;
+             storage::Vector{Symbol}=Symbol[], loaders::Vector{Symbol}=Symbol[],
+             writers::Vector{Symbol}=Symbol[], quiet::Bool=false)
+    for (transformer, slot, drivers) in ((DataStorage, :storage, storage),
+                                         (DataLoader, :loaders, loaders),
+                                         (DataWriter, :writers, writers))
+        for driver in drivers
+            dt = trycreateauto(dataset, transformer, driver, source)
+            if isnothing(dt)
+                printstyled(" ! ", color=:yellow, bold=true)
+                println("Failed to create '$driver' $(string(nameof(transformer))[5:end])")
+            else
+                push!(getproperty(dataset, slot), dt)
+            end
+        end
+    end
+    quiet || printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
+    dataset
 end

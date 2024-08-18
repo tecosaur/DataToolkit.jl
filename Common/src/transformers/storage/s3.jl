@@ -38,10 +38,10 @@ function getstorage(storage::DataStorage{:s3}, ::Type{FilePath})
     end
 end
 
-function create(::Type{<:DataStorage{:s3}}, source::String)
+function createauto(::Type{<:DataStorage{:s3}}, source::String)
     if startswith(source, "s3://")
         bucket, object = split(chopprefix(source, "s3://"), '/', limit=2)
-        ["bucket" => bucket, "object" => object]
+        Dict("bucket" => bucket, "object" => object)
     end
 end
 

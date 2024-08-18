@@ -11,10 +11,10 @@ function save(writer::DataWriter{:netpbm}, dest::IO, info::AbstractArray)
     invokelatest(_write_netpbm, dest, info)
 end
 
-create(::Type{DataLoader{:netpbm}}, source::String) =
+createauto(::Type{DataLoader{:netpbm}}, source::String) =
     !isnothing(match(r"\.(?:pbm|pgm|ppm)$"i, source))
 
-create(::Type{DataWriter{:netpbm}}, source::String) =
+createauto(::Type{DataWriter{:netpbm}}, source::String) =
     !isnothing(match(r"\.(?:pbm|pgm|ppm)$"i, source))
 
 const NETPBM_DOC = md"""

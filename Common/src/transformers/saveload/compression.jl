@@ -31,7 +31,7 @@ for (lib, name, ext) in
 
              createpriority(::Type{DataLoader{$(QuoteNode(name))}}) = 10
 
-             create(::Type{DataLoader{$(QuoteNode(name))}}, source::String) =
+             createauto(::Type{DataLoader{$(QuoteNode(name))}}, source::String) =
                  !isnothing(match($ext, source))
 
              function save(::DataWriter{$(QuoteNode(name))}, dest::IO, info)

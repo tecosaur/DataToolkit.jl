@@ -39,10 +39,10 @@ function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
     invokelatest(_read_png, dest, info; kwargs...)
 end
 
-create(::Type{DataLoader{:png}}, source::String) =
+createauto(::Type{DataLoader{:png}}, source::String) =
     !isnothing(match(r"\.png$"i, source))
 
-create(::Type{DataWriter{:png}}, source::String) =
+createauto(::Type{DataWriter{:png}}, source::String) =
     !isnothing(match(r"\.png$"i, source))
 
 const PNG_DOC = md"""

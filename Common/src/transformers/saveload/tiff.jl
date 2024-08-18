@@ -11,10 +11,10 @@ function save(writer::DataWriter{:tiff}, dest::IO, info::AbstractMatrix)
     invokelatest(_write_tiff, dest, info)
 end
 
-create(::Type{DataLoader{:tiff}}, source::String) =
+createauto(::Type{DataLoader{:tiff}}, source::String) =
     !isnothing(match(r"\.tiff$"i, source))
 
-create(::Type{DataWriter{:tiff}}, source::String) =
+createauto(::Type{DataWriter{:tiff}}, source::String) =
     !isnothing(match(r"\.tiff$"i, source))
 
 const TIFF_DOC = md"""

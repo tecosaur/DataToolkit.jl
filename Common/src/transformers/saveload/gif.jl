@@ -11,10 +11,10 @@ function save(writer::DataWriter{:gif}, dest::FilePath, info::Matrix)
     invokelatest(_write_gif, dest.path, info)
 end
 
-create(::Type{DataLoader{:gif}}, source::String) =
+createauto(::Type{DataLoader{:gif}}, source::String) =
     !isnothing(match(r"\.gif$"i, source))
 
-create(::Type{DataWriter{:gif}}, source::String) =
+createauto(::Type{DataWriter{:gif}}, source::String) =
     !isnothing(match(r"\.gif$"i, source))
 
 const GIF_DOC = md"""

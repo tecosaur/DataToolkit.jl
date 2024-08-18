@@ -3,7 +3,7 @@ module DataToolkitCommon
 using DataToolkitCore
 import DataToolkitCore: load, save, storage,
     getstorage, putstorage, supportedtypes,
-    create, createpriority
+    createinteractive, createauto, createpriority
 
 using PrecompileTools
 using Compat

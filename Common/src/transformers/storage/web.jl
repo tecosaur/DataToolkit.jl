@@ -14,10 +14,10 @@ const DOWNLOAD_STYLE = (
 struct DownloadProgress <: Function
     io::IO
     filename::String
-    recieved_bytes::Ref{Int}
+    recieved_bytes::Base.RefValue{Int}
     start::Float64
-    last_update::Ref{Float64}
-    iters::Ref{Int}
+    last_update::Base.RefValue{Float64}
+    iters::Base.RefValue{Int}
     speed_buckets::Vector{Float64}
     state::NamedTuple{(:show_eta, :eta_now), Tuple{Ref{Bool}, Ref{Bool}}}
 end
@@ -197,9 +197,9 @@ supportedtypes(::Type{<:DataStorage{:web, <:Any}}) =
 
 createpriority(::Type{<:DataStorage{:web}}) = 30
 
-function create(::Type{<:DataStorage{:web}}, source::String)
+function createauto(::Type{<:DataStorage{:web}}, source::String)
     if !isnothing(match(r"^(?:https?|ftps?)://", source))
-        ["url" => source]
+        Dict("url" => source)
     end
 end
 
