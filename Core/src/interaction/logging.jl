@@ -31,8 +31,15 @@ function wait_maybe_log(category::String, message::AbstractString; mod::Module, 
         @info message _module=mod _file=file _line=line
         Timer(0)
     else
-        Timer(delay) do _
-            @info message _module=mod _file=file _line=line
+        initialworld = Base.get_world_counter()
+        Timer(delay; interval = delay) do tmr
+            if Base.get_world_counter() > initialworld
+                # We don't want to show a log just because of compilation time.
+                initialworld = Base.get_world_counter()
+            else
+                @info message _module=mod _file=file _line=line
+                close(tmr)
+            end
         end
     end
 end
