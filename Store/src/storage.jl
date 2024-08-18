@@ -352,7 +352,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     else
         cp(path.path, dest, force=true)
     end
-    chmod(dest, 0o100444 & filemode(inventory.path.path)) # Make read-only
+    chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
     update_source!(inventory, newsource, storage.dataset.collection)
     FilePath(dest)
 end
