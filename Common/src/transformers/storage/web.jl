@@ -168,7 +168,7 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
     try
         io = IOBuffer()
         download_to(storage, io)
-        io
+        seekstart(io)
     catch err
         url = @getparam(storage."url"::String)
         @error "Download failed" url err
