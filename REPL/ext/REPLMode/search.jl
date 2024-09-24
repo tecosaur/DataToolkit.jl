@@ -46,7 +46,8 @@ function search(input::AbstractString)
                   ifelse(length(candidates) == 1, "", "s"), ":")
             for (dataset, _, _) in candidates
                 print("\n  ")
-                show(stdout, MIME("text/plain"), Identifier(dataset); collection=dataset.collection)
+                show(IOContext(stdout, :data_collection => dataset.collection),
+                     MIME("text/plain"), Identifier(dataset))
             end
             print('\n')
         end
