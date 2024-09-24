@@ -10,7 +10,7 @@ using Base.Threads
 export loadcollection!, dataset
 
 # For extension packages
-export AbstractDataTransformer, DataStorage, DataLoader, DataWriter,
+export DataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataCollection, QualifiedType, Identifier,
     SystemPath, FilePath, DirPath, LintItem, LintReport
 export load, storage, getstorage, putstorage, save, getlayer, resolve, refine,

@@ -38,11 +38,11 @@ dataset!(collection::DataCollection, name::String, parameters::Pair{String, <:An
 
 # Transformer creation (pure)
 
-function create(parent::DataSet, T::Type{<:AbstractDataTransformer}, spec::Dict{String, <:Any})
+function create(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any})
     T <: DataStorage || T <: DataLoader || T <: DataWriter ||
         throw(ArgumentError("Unknown transformer type: $T"))
-    tdriver(::Type{<:AbstractDataTransformer}) = nothing
-    tdriver(::Type{<:AbstractDataTransformer{D}}) where D = D
+    tdriver(::Type{<:DataTransformer}) = nothing
+    tdriver(::Type{<:DataTransformer{_kind, D}}) where {_kind, D} = D
     if !haskey(spec, "driver")
         driver = tdriver(T)
         if !isnothing(driver)
@@ -57,15 +57,15 @@ function create(parent::DataSet, T::Type{<:AbstractDataTransformer}, spec::Dict{
     @advise fromspec(T, parent, Dict{String, Any}(spec))
 end
 
-create(parent::DataSet, T::Type{<:AbstractDataTransformer}, driver::Symbol, spec::Dict{String, <:Any} = Dict{String, Any}()) =
+create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{String, <:Any} = Dict{String, Any}()) =
     create(parent, T, merge(spec, Dict("driver" => String(driver))))
 
-create(parent::DataSet, T::Type{<:AbstractDataTransformer}, driver::Symbol, specs::Pair{String, <:Any}...) =
+create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, specs::Pair{String, <:Any}...) =
     create(parent, T, driver, Dict{String, Any}(specs))
 
 # Transformer creation (modifying)
 
-function create!(parent::DataSet, T::Type{<:AbstractDataTransformer}, spec::Dict{String, <:Any})
+function create!(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any})
     dslist = if T <: DataStorage
         parent.storage
     elseif T <: DataLoader
@@ -80,13 +80,13 @@ function create!(parent::DataSet, T::Type{<:AbstractDataTransformer}, spec::Dict
     transformer
 end
 
-create!(parent::DataSet, T::Type{<:AbstractDataTransformer}, driver::Symbol, spec::Dict{String, <:Any} = Dict{String, Any}()) =
+create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{String, <:Any} = Dict{String, Any}()) =
     create!(parent, T, merge(spec, Dict("driver" => String(driver))))
 
-create!(parent::DataSet, T::Type{<:AbstractDataTransformer{D}}, spec::Dict{String, <:Any} = Dict{String, Any}()) where D =
+create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, spec::Dict{String, <:Any} = Dict{String, Any}()) where {_kind, D} =
     create!(parent, T, D, spec)
 
-create!(parent::DataSet, T::Type{<:AbstractDataTransformer{D}}, driver::Symbol, specs::Pair{String, <:Any}...) where D =
+create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, driver::Symbol, specs::Pair{String, <:Any}...) where {_kind, D} =
     create!(parent, T, D, driver, Dict{String, Any}(specs))
 
 # Dedicated storage/loader/writer creation (modifying)
@@ -112,7 +112,7 @@ writer!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...) =
 # Interactive/specialised transformer creation
 
 """
-    trycreateauto(parent::DataSet, T::Type{<:AbstractDataTransformer{driver}}, arg::String; interactive::Bool=isinteractive())
+    trycreateauto(parent::DataSet, T::Type{<:DataTransformer{_kind, driver}}, arg::String; interactive::Bool=isinteractive())
 
 Attempts to create a data transformer of type `T` associated with the `parent`
 dataset using the specified `arg`. The function can operate in both interactive
@@ -131,8 +131,8 @@ returns a valid specification, the transformer is created accordingly.
 The function returns the created transformer if successful, or `nothing` if the
 creation process fails in both interactive and non-interactive modes.
 """
-function trycreateauto(parent::DataSet, T::Type{<:AbstractDataTransformer{driver}}, arg::String;
-                       interactive::Bool=isinteractive()) where {driver}
+function trycreateauto(parent::DataSet, T::Type{<:DataTransformer{_kind, driver}}, arg::String;
+                       interactive::Bool=isinteractive()) where {_kind, driver}
     @nospecialize
     if interactive
         paramspec = createinteractive(parent, T, arg)
@@ -154,7 +154,7 @@ function trycreateauto(parent::DataSet, T::Type{<:AbstractDataTransformer{driver
 end
 
 """
-    trycreateauto(parent::DataSet, T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String;
+    trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, source::String;
                 minpriority::Int=-100, maxpriority::Int=100, interactive::Bool=isinteractive())
 
 Attempt to create a new `T` with driver `driver` from `parent`.
@@ -166,7 +166,7 @@ a priority outside `minpriority`–`maxpriority` will not be considered.
 The created data transformer is returned, unless the given `driver` is not
 valid, in which case `nothing` is returned instead.
 """
-function trycreateauto(parent::DataSet, T::Type{<:AbstractDataTransformer}, driver::Symbol, source::String;
+function trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, source::String;
                        minpriority::Int=-100, maxpriority::Int=100, interactive::Bool=isinteractive())
     @nospecialize
     if driver !== :*
@@ -195,7 +195,7 @@ function trycreateauto(parent::DataSet, T::Type{<:AbstractDataTransformer}, driv
 end
 
 """
-    createinteractive([dataset::DataSet], T::Type{<:AbstractDataTransformer}, source::String)
+    createinteractive([dataset::DataSet], T::Type{<:DataTransformer}, source::String)
 
 Attempts to create a data transformer of type `T` with user interaction, using
 `source` and `dataset`. Prompts the user for additional information if required.
@@ -229,9 +229,9 @@ consider using `createauto`.
 """
 function createinteractive end
 
-createinteractive(::DataSet, T::Type{<:AbstractDataTransformer}, arg::String) =
+createinteractive(::DataSet, T::Type{<:DataTransformer}, arg::String) =
     createinteractive(T, arg)
-createinteractive(::Type{<:AbstractDataTransformer}, ::String) = nothing
+createinteractive(::Type{<:DataTransformer}, ::String) = nothing
 
 """
     interactiveparams(spec::Vector, prefix::AbstractString = " ")
@@ -256,7 +256,7 @@ interactiveparams(_display::Any, _spec::Vector, _promptprefix::AbstractString) =
     nothing
 
 """
-    createauto([dataset::DataSet], T::Type{<:AbstractDataTransformer}, source::String)
+    createauto([dataset::DataSet], T::Type{<:DataTransformer}, source::String)
 
 Automatically attempts to create a data transformer of type `T` using `source`
 and optionally `dataset`, without requiring user interaction. Returns either a
@@ -279,17 +279,17 @@ information use `createinteractive`.
 """
 function createauto end
 
-createauto(::DataSet, T::Type{<:AbstractDataTransformer}, arg::String) =
+createauto(::DataSet, T::Type{<:DataTransformer}, arg::String) =
     createauto(T, arg)
-createauto(::Type{<:AbstractDataTransformer}, ::Any) = nothing
+createauto(::Type{<:DataTransformer}, ::Any) = nothing
 
 # `createpriority` isn't actually used anywhere in DTkCore,
 # but it needs to be defined somewhere fairly central to
 # make it easy to be extended and used across packages.
 """
-    createpriority(T::Type{<:AbstractDataTransformer})
+    createpriority(T::Type{<:DataTransformer})
 
 The priority with which a transformer of type `T` should be created.
 This can be any integer, but try to keep to -100–100 (see `create`).
 """
-createpriority(T::Type{<:AbstractDataTransformer}) = 0
+createpriority(T::Type{<:DataTransformer}) = 0

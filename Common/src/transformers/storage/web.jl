@@ -192,12 +192,12 @@ getstorage(storage::DataStorage{:web}, ::Type{Vector{UInt8}}) =
 getstorage(storage::DataStorage{:web}, ::Type{String}) =
     read(getstorage(storage, IO), String)
 
-supportedtypes(::Type{<:DataStorage{:web, <:Any}}) =
+supportedtypes(::Type{DataStorage{:web}}) =
     QualifiedType.([IO, Vector{UInt8}, String, FilePath])
 
-createpriority(::Type{<:DataStorage{:web}}) = 30
+createpriority(::Type{DataStorage{:web}}) = 30
 
-function createauto(::Type{<:DataStorage{:web}}, source::String)
+function createauto(::Type{DataStorage{:web}}, source::String)
     if !isnothing(match(r"^(?:https?|ftps?)://", source))
         Dict("url" => source)
     end

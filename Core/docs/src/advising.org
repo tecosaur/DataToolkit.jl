@@ -24,7 +24,7 @@ Advice
 
 ** Parsing and serialisation of data sets and collections
 
-~DataCollection~​s, ~DataSet~​s, and ~AbstractDataTransformer~​s are advised at two
+~DataCollection~​s, ~DataSet~​s, and ~DataTransformer~​s are advised at two
 stages during parsing:
 1. When calling ~fromspec~ on the ~Dict~ representation, at the start of parsing
 2. At the end of the ~fromspec~ function, calling ~identity~ on the object
@@ -46,9 +46,9 @@ tospec(dataset::DataSet)::Dict
 #+end_src
 
 #+begin_src julia
-fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})::ADT
-identity(adt::AbstractDataTransformer)::AbstractDataTransformer
-tospec(adt::AbstractDataTransformer)::Dict
+fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})::DT
+identity(dt::DataTransformer)::DataTransformer
+tospec(dt::DataTransformer)::Dict
 #+end_src
 
 ** Processing identifiers

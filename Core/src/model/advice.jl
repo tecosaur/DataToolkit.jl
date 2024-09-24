@@ -122,7 +122,7 @@ end
     _dataadvise(thing::Advice)
     _dataadvise(thing::DataCollection)
     _dataadvise(thing::DataSet)
-    _dataadvise(thing::AbstractDataTransformer)
+    _dataadvise(thing::DataTransformer)
 
 Obtain the relevant `AdviceAmalgamation` for `thing`.
 """
@@ -131,12 +131,12 @@ _dataadvise(advs::Vector{<:Advice}) = AdviceAmalgamation(advs)
 _dataadvise(adv::Advice) = AdviceAmalgamation([adv])
 _dataadvise(col::DataCollection) = col.advise
 _dataadvise(ds::DataSet) = _dataadvise(ds.collection)
-_dataadvise(adt::AbstractDataTransformer) = _dataadvise(adt.dataset)
+_dataadvise(dt::DataTransformer) = _dataadvise(dt.dataset::DataSet)
 
 const DATA_ADVISE_CALL_LOC = 1 + @__LINE__
 @generated function _dataadvisecall(func::Function, args...; kwargs...)
     dataarg = findfirst(
-        a -> a <: DataCollection || a <: DataSet || a <: AbstractDataTransformer,
+        a -> a <: DataCollection || a <: DataSet || a <: DataTransformer,
         args)
     if isnothing(dataarg)
         @warn """Attempted to generate advised function call for $(func.instance),
@@ -153,7 +153,7 @@ end
     _dataadvisecall(func::Function, args...; kwargs...)
 
 Identify the first data-like argument of `args` (i.e. a `DataCollection`,
-`DataSet`, or `AbstractDataTransformer`), obtain its advise, and perform
+`DataSet`, or `DataTransformer`), obtain its advise, and perform
 an advised call of `func(args...; kwargs...)`.
 """ _dataadvisecall
 
@@ -195,7 +195,7 @@ Convert a function call `f(args...; kwargs...)` to an *advised* function call,
 where the advise collection is obtained from `source` or the first data-like\\*
 value of `args`.
 
-\\* i.e. a `DataCollection`, `DataSet`, or `AbstractDataTransformer`
+\\* i.e. a `DataCollection`, `DataSet`, or `DataTransformer`
 
 For example, `@advise myfunc(other, somedataset, rest...)` is equivalent to
 `somedataset.collection.advise(myfunc, other, somedataset, rest...)`.

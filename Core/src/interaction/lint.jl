@@ -79,7 +79,7 @@ lint function is invoked and the results combined.
     See the documentation on `LintItem` for more information on how it should be
     constructed.
 """
-function lint(obj::T) where {T <: Union{DataCollection, DataSet, <:AbstractDataTransformer}}
+function lint(obj::T) where {T <: Union{DataCollection, DataSet, <:DataTransformer}}
     linters = methods(lint, Tuple{T, Val}).ms
     @advise lint(obj, linters)
 end
@@ -108,8 +108,8 @@ function LintReport(collection::DataCollection)
     for dataset in collection.datasets
         push!(results, lint(dataset))
         for adtfield in (:storage, :loaders, :writers)
-            for adt in getfield(dataset, adtfield)
-                push!(results, lint(adt))
+            for dt in getfield(dataset, dtfield)
+                push!(results, lint(dt))
             end
         end
     end
@@ -120,8 +120,8 @@ function LintReport(dataset::DataSet)
     results = Vector{Vector{LintItem}}()
     push!(results, lint(dataset))
     for adtfield in (:storage, :loaders, :writers)
-        for adt in getfield(dataset, adtfield)
-            push!(results, lint(adt))
+        for dt in getfield(dataset, dtfield)
+            push!(results, lint(dt))
         end
     end
     LintReport(dataset.collection,
@@ -143,10 +143,10 @@ function Base.show(io::IO, report::LintReport)
         printstyled(io, "\n• ", d.name, color=:blue, bold=true)
         printstyled(io, " ", d.uuid, color=:light_black)
     end
-    function objinfo(a::A) where {A <: AbstractDataTransformer}
+    function objinfo(a::A) where {A <: DataTransformer}
         if lastsource isa DataSet
             lastsource == a.dataset
-        elseif lastsource isa AbstractDataTransformer
+        elseif lastsource isa DataTransformer
             lastsource.dataset == a.dataset
         else
             false
@@ -157,7 +157,7 @@ function Base.show(io::IO, report::LintReport)
     end
     indentlevel(::DataCollection) = 0
     indentlevel(::DataSet) = 2
-    indentlevel(::AbstractDataTransformer) = 4
+    indentlevel(::DataTransformer) = 4
     for (i, lintitem) in enumerate(report.results)
         if lintitem.source !== lastsource
             objinfo(lintitem.source)

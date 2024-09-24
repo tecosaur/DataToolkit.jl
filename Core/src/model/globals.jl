@@ -44,7 +44,7 @@ const EXTRA_PACKAGES = Dict{Module, Dict{Symbol, Base.PkgId}}()
 # For use in construction
 
 """
-The default `priority` field value for instances of `AbstractDataTransformer`.
+The default `priority` field value for instances of `DataTransformer`.
 """
 const DEFAULT_DATATRANSFORMER_PRIORITY = 1
 
@@ -73,12 +73,12 @@ const DATASET_REFERENCE_REGEX =
 
 """
 The data specification TOML format constructs a DataCollection, which itself
-contains DataSets, comprised of metadata and AbstractDataTransformers.
+contains DataSets, comprised of metadata and DataTransformers.
 ```
 DataCollection
 ├─ DataSet
-│  ├─ AbstractDataTransformer
-│  └─ AbstractDataTransformer
+│  ├─ DataTransformer
+│  └─ DataTransformer
 ├─ DataSet
 ⋮
 ```
@@ -87,7 +87,7 @@ Within each scope, there are certain reserved attributes. They are listed in
 this Dict under the following keys:
 - `:collection` for `DataCollection`
 - `:dataset` for `DataSet`
-- `:transformer` for `AbstractDataTransformer`
+- `:transformer` for `DataTransformer`
 """
 const DATA_CONFIG_RESERVED_ATTRIBUTES =
     Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "config"],

@@ -26,9 +26,9 @@ function save(::DataWriter{:passthrough}, dest::DataStorage{:raw}, info::Any)
     true
 end
 
-createpriority(::Type{<:DataStorage{:raw}}) = 90
+createpriority(::Type{DataStorage{:raw}}) = 90
 
-function createauto(::Type{<:DataStorage{:raw}}, source::String)
+function createauto(::Type{DataStorage{:raw}}, source::String)
     value = try
         TOML.parse(string("value = ", source))["value"]
     catch end

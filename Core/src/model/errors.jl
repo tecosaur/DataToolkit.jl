@@ -409,7 +409,7 @@ ERROR: UnsatisfyableTransformer: There are no loaders for "empty" that can provi
 Stacktrace: [...]
 ```
 """
-struct UnsatisfyableTransformer{T} <: DataOperationException where { T <: AbstractDataTransformer }
+struct UnsatisfyableTransformer{T} <: DataOperationException where { T <: DataTransformer }
     dataset::DataSet
     transformer::Type{T}
     wanted::Vector{QualifiedType}
@@ -481,16 +481,17 @@ function Base.showerror(io::IO, err::ImpossibleTypeException, bt; backtrace=true
     backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
-struct InvalidParameterType{T <: Union{<:AbstractDataTransformer, DataSet, DataCollection}}
+struct InvalidParameterType{T <: Union{<:DataTransformer, DataSet, DataCollection}}
     thing::T
     parameter::String
     type::Type
 end
 
-function Base.showerror(io::IO, err::InvalidParameterType{<:AbstractDataTransformer}, bt; backtrace=true)
+function Base.showerror(io::IO, err::InvalidParameterType{DataTransformer{kind, driver}}, bt; backtrace=true) where {kind, driver}
+    @nospecialize err
     print(io, "InvalidParameterType: '", err.parameter, "' parameter of ",
-          err.thing.dataset.name, "'s ", nameof(typeof(err.thing)),
-          "{:", string(first(typeof(err.thing).parameters)), "} must be a ",
+          err.thing.dataset.name, "'s ", sprint(show, DataTransformer{kind}),
+          "{:", string(driver), "} must be a ",
           string(err.type), " not a ",
           string(typeof(get(err.thing, err.parameter))), ".")
     backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))

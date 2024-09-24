@@ -96,9 +96,9 @@ end
 # ---------------
 
 """
-    supportedtypes(ADT::Type{<:AbstractDataTransformer})::Vector{QualifiedType}
+    supportedtypes(DT::Type{<:DataTransformer})::Vector{QualifiedType}
 
-Return a list of types supported by the data transformer `ADT`.
+Return a list of types supported by the data transformer `DT`.
 
 This is used as the default value for the `type` key in the Data TOML.
 The list of types is dynamically generated based on the available methods for
@@ -108,52 +108,52 @@ In some cases, it makes sense for this to be explicitly defined for a particular
 transformer. """
 function supportedtypes end # See `interaction/externals.jl` for method definitions.
 
-supportedtypes(ADT::Type{<:AbstractDataTransformer}, spec::Dict{String, Any}, _::DataSet) =
-    supportedtypes(ADT, spec)
+supportedtypes(DT::Type{<:DataTransformer}, spec::Dict{String, Any}, _::DataSet) =
+    supportedtypes(DT, spec)
 
-supportedtypes(ADT::Type{<:AbstractDataTransformer}, _::Dict{String, Any}) =
-    supportedtypes(ADT)
+supportedtypes(DT::Type{<:DataTransformer}, _::Dict{String, Any}) =
+    supportedtypes(DT)
 
-(ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
-    @advise fromspec(ADT, dataset, spec)
+(DT::Type{<:DataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
+    @advise fromspec(DT, dataset, spec)
 
-(ADT::Type{<:AbstractDataTransformer})(dataset::DataSet, spec::String) =
-    ADT(dataset, Dict{String, Any}("driver" => spec))
+(DT::Type{<:DataTransformer})(dataset::DataSet, driver::String) =
+    DT(dataset, Dict{String, Any}("driver" => driver))
 
 """
-    fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
+    fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})
 
-Create an `ADT` of `dataset` according to `spec`.
+Create an `DT` of `dataset` according to `spec`.
 
-`ADT` can either contain the driver name as a type parameter, or it will be read
+`DT` can either contain the driver name as a type parameter, or it will be read
 from the `"driver"` key in `spec`.
 """
-function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::Dict{String, Any})
+function fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})
     parameters = shrinkdict(spec)
-    driver = if ADT isa DataType
-        first(ADT.parameters)
+    driver = if DT isa DataType
+        first(DT.parameters)
     elseif haskey(parameters, "driver")
         Symbol(lowercase(parameters["driver"]))
     else
-        @warn "$ADT for $(sprint(show, dataset.name)) has no driver!"
+        @warn "$DT for $(sprint(show, dataset.name)) has no driver!"
         :MISSING
     end
-    if !(ADT isa DataType)
-        ADT = ADT{driver}
+    if !(DT isa DataType)
+        DT = DT{driver}
     end
     ttype = let spec_type = get(parameters, "type", nothing)
         if isnothing(spec_type)
-            supportedtypes(ADT, parameters, dataset)
+            supportedtypes(DT, parameters, dataset)
         elseif spec_type isa Vector
             parse.(QualifiedType, spec_type)
         elseif spec_type isa String
             [parse(QualifiedType, spec_type)]
         else
-            @warn "Invalid ADT type '$spec_type', ignoring"
+            @warn "Invalid DT type '$spec_type', ignoring"
         end
     end
     if isempty(ttype)
-        @warn """Could not find any types that $ADT of $(sprint(show, dataset.name)) supports.
+        @warn """Could not find any types that $DT of $(sprint(show, dataset.name)) supports.
                  Consider adding a 'type' parameter."""
     end
     priority = get(parameters, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
@@ -161,18 +161,13 @@ function fromspec(ADT::Type{<:AbstractDataTransformer}, dataset::DataSet, spec::
     delete!(parameters, "type")
     delete!(parameters, "priority")
     @advise dataset identity(
-        ADT(dataset, ttype, priority,
+        DT(dataset, ttype, priority,
             dataset_parameters(dataset, Val(:extract), parameters)))
 end
 
-# function (ADT::Type{<:AbstractDataTransformer})(collection::DataCollection, spec::Dict{String, Any})
-#     @advise fromspec(ADT, collection, spec)
+# function (DT::Type{<:DataTransformer})(collection::DataCollection, spec::Dict{String, Any})
+#     @advise fromspec(DT, collection, spec)
 # end
-
-DataStorage{driver}(dataset::Union{DataSet, DataCollection},
-                    type::Vector{QualifiedType}, priority::Int,
-                    parameters::Dict{String, Any}) where {driver} =
-                        DataStorage{driver, typeof(dataset)}(dataset, type, priority, parameters)
 
 # ---------------
 # DataCollection

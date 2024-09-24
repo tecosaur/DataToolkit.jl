@@ -28,14 +28,15 @@ function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier;
     end
 end
 
-function Base.show(io::IO, adt::AbstractDataTransformer)
-    adtt = typeof(adt)
-    get(io, :omittype, false) || print(io, nameof(adtt), '{')
-    printstyled(io, first(adtt.parameters), color=:green)
+function Base.show(io::IO, dt::DataTransformer{kind, driver}) where {kind, driver}
+    @nospecialize
+    dtt = typeof(dt)
+    get(io, :omittype, false) || print(io, "Data", titlecase(String(kind)), '{')
+    printstyled(io, driver, color=:green)
     get(io, :omittype, false) || print(io, '}')
     print(io, "(")
-    for qtype in adt.type
-        type = typeify(qtype, mod=adt.dataset.collection.mod)
+    for qtype in dt.type
+        type = typeify(qtype, mod=dt.dataset.collection.mod)
         if !isnothing(type)
             printstyled(io, type, color=:yellow)
         else
@@ -45,7 +46,7 @@ function Base.show(io::IO, adt::AbstractDataTransformer)
                             color=:yellow)
             end
         end
-        qtype === last(adt.type) || print(io, ", ")
+        qtype === last(dt.type) || print(io, ", ")
     end
     print(io, ")")
 end
