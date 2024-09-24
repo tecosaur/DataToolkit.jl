@@ -9,12 +9,12 @@ function load(loader::DataLoader{:tar}, from::IO, ::Type{IO})
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Vector{UInt8}})
-    io = load(loader, from, IO)
+    io = invokepkglatest(load, loader, from, IO)
     take!(io)
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{String})
-    io = load(loader, from, IO)
+    io = invokepkglatest(load, loader, from, IO)
     String(take!(io))
 end
 
@@ -26,35 +26,35 @@ end
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{String, IO}})
     Dict{String, IO}(
         path => IOBuffer(bytes) for (path, bytes) in
-            load(loader, from, Dict{String, Vector{UInt8}}))
+            invokepkglatest(load, loader, from, Dict{String, Vector{UInt8}}))
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{String, String}})
     Dict{String, String}(
         path => String(bytes) for (path, bytes) in
-            load(loader, from, Dict{String, Vector{UInt8}}))
+            invokepkglatest(load, loader, from, Dict{String, Vector{UInt8}}))
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{FilePath, Vector{UInt8}}})
     Dict{String, Vector{UInt8}}(
         FilePath(path) => bytes for (path, bytes) in
-            load(loader, from, Dict{String, Vector{UInt8}}))
+            invokepkglatest(load, loader, from, Dict{String, Vector{UInt8}}))
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{FilePath, IO}})
     Dict{FilePath, IO}(
         FilePath(path) => IOBuffer(bytes) for (path, bytes) in
-            load(loader, from, Dict{String, Vector{UInt8}}))
+            invokepkglatest(load, loader, from, Dict{String, Vector{UInt8}}))
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{FilePath, String}})
     Dict{FilePath, String}(
         FilePath(path) => String(bytes) for (path, bytes) in
-            load(loader, from, Dict{String, Vector{UInt8}}))
+            invokepkglatest(load, loader, from, Dict{String, Vector{UInt8}}))
 end
 
 load(loader::DataLoader{:tar}, from::FilePath, as::Type) =
-    open(io -> load(loader, io, as), string(from))
+    open(io -> invokepkglatest(load, loader, io, as), string(from))
 
 function supportedtypes(::Type{DataLoader{:tar}}, spec::Dict{String, Any})
     filetypes =
