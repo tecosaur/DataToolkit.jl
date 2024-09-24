@@ -48,6 +48,7 @@ include("interaction/typetransforms.jl")
 include("interaction/externals.jl")
 include("interaction/creation.jl")
 include("interaction/manipulation.jl")
+include("interaction/display.jl")
 include("interaction/lint.jl")
 
 include("precompile.jl")
