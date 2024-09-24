@@ -1,5 +1,5 @@
-function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier;
-                   collection::Union{DataCollection, Nothing}=nothing)
+function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier)
+    collection = get(io, :data_collection, nothing)
     printstyled(io, if isnothing(dsi.collection)
                     '□'
                 elseif !isempty(STACK) && ((dsi.collection isa UUID && dsi.collection == first(STACK).uuid) ||

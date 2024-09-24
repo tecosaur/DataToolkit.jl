@@ -11,7 +11,8 @@ function MetaGraph(datasets::Vector{DataSet})
     labels = Dict{DataSet, String}()
     function getlabel(ds::DataSet)
         get!(labels, ds) do
-            replace(sprint(io -> show(io, MIME("text/plain"), Identifier(ds); collection=ds.collection)),
+            replace(sprint(io -> show(IOContext(io, :data_collection => ds.collection),
+                                      MIME("text/plain"), Identifier(ds))),
                     "■:" => "")
         end
     end

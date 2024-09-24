@@ -264,8 +264,8 @@ function cache_get_a(f::typeof(load), @nospecialize(loader::DataLoader), source:
         end
         if !isnothing(file) && isfile(file)
             ds_name = sprint(io -> show(
-                io, MIME("text/plain"), Identifier(loader.dataset);
-                collection=loader.dataset.collection))
+                IOContext(io, :data_collection => loader.dataset.collection),
+                MIME("text/plain"), Identifier(loader.dataset)))
             update_source!(inventory, cache, loader.dataset.collection)
             info = @log_do(
                 "cache:load",

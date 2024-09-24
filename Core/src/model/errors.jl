@@ -174,7 +174,8 @@ function Base.showerror(io::IO, err::AmbiguousIdentifier{DataSet, I}, bt; backtr
             ident = Identifier(dataset, ifelse(err.collection === dataset.collection,
                                             nothing, :name))
             print(io, "\n    ")
-            show(io, MIME("text/plain"), ident; collection=dataset.collection)
+            show(IOContext(io, :data_collection => dataset.collection),
+                 MIME("text/plain"), ident)
             printstyled(io, " [", dataset.uuid, ']', color=:light_black)
         end
     else
