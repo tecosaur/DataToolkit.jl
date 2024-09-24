@@ -47,26 +47,30 @@ function Base.string(q::QualifiedType)
     end
 end
 
-function Base.convert(::Type{Dict}, adt::AbstractDataTransformer)
-    @advise tospec(adt)
+function Base.convert(::Type{Dict}, dt::DataTransformer)
+    @advise tospec(dt)
 end
 
 """
-    tospec(thing::AbstractDataTransformer)
+    tospec(thing::DataTransformer)
     tospec(thing::DataSet)
     tospec(thing::DataCollection)
 
 Return a `Dict` representation of `thing` for writing as TOML.
 """
-function tospec(adt::AbstractDataTransformer)
-    merge(Dict("driver" => string(first(typeof(adt).parameters)),
-               "type" => if length(adt.type) == 1
-                   string(first(adt.type))
+function tospec(dt::DataTransformer)
+    function drivername(::DataTransformer{_kind, D}) where {_kind, D}
+        @nospecialize
+        D
+    end
+    merge(Dict("driver" => string(drivername(dt)),
+               "type" => if length(dt.type) == 1
+                   string(first(dt.type))
                else
-                   string.(adt.type)
+                   string.(dt.type)
                end,
-               "priority" => adt.priority),
-          dataset_parameters(adt.dataset, Val(:encode), adt.parameters))
+               "priority" => dt.priority),
+          dataset_parameters(dt.dataset, Val(:encode), dt.parameters))
 end
 
 function Base.convert(::Type{Dict}, ds::DataSet)
@@ -174,4 +178,4 @@ function Base.write(dc::DataCollection)
 end
 
 Base.write(ds::DataSet) = write(ds.collection)
-Base.write(adt::AbstractDataTransformer) = write(adt.dataset)
+Base.write(dt::DataTransformer) = write(dt.dataset)

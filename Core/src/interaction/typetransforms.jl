@@ -73,7 +73,7 @@ end
 
 """
     targettypes(types::Vector{QualifiedType}, desired::Type) -> Vector{Type}
-    targettypes(transformer::AbstractDataTransformer, desired::Type) -> Vector{Type}
+    targettypes(transformer::DataTransformer, desired::Type) -> Vector{Type}
 
 Return all `Type`s that one might hope to produce from `types` or `transformer`.
 
@@ -114,7 +114,7 @@ Compares two "type paths" `a` and `b`, returning whether
 
 Each "type path" is a tuple of the form:
 
-    (Tin::Type => Tout::Type, index::Int, transformer::Type{<:AbstractDataTransformer})
+    (Tin::Type => Tout::Type, index::Int, transformer::Type{<:DataTransformer})
 
 This operates on the following rules:
 1. The path with the lower index is preferred.
@@ -142,7 +142,7 @@ function ispreferredpath(((a_in, a_out), a_ind, a_ldr)::Tuple{Pair{Type, Type}, 
 end
 
 """
-    transformersigs(transformer::Type{<:AbstractDataTransformer}, desired::Type)
+    transformersigs(transformer::Type{<:DataTransformer}, desired::Type)
 
 Return processed signatures of the transformation methods implemented for
 `transformer` that could produce/provide a subtype of `desired`.

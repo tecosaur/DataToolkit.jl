@@ -55,7 +55,7 @@ function DataToolkitCore.linttryfix(fixprompt::Vector{Tuple{Int, DataToolkitCore
             printstyled("• ", d.name, color=:blue, bold=true)
             printstyled(" ", d.uuid, "\n", color=:light_black)
         end
-        objinfo(a::A) where {A <: AbstractDataTransformer} =
+        objinfo(a::A) where {A <: DataTransformer} =
             printstyled("• ", first(A.parameters), ' ',
                         join(lowercase.(split(string(nameof(A)), r"(?=[A-Z])")), ' '),
                         " for ", a.dataset.name, '\n', color=:blue, bold=true)

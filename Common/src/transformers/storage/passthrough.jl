@@ -24,9 +24,9 @@ end
 DataToolkitCore.add_dataset_refs!(acc::Vector{Identifier}, storage::DataStorage{:passthrough}) =
     DataToolkitCore.add_dataset_refs!(acc, parse(Identifier, get(storage, "source")))
 
-createpriority(::Type{<:DataStorage{:passthrough}}) = 60
+createpriority(::Type{DataStorage{:passthrough}}) = 60
 
-function createauto(::Type{<:DataStorage{:passthrough}}, source::String)
+function createauto(::Type{DataStorage{:passthrough}}, source::String)
     if try resolve(source); true catch _ false end
         Dict("source" => source)
     end

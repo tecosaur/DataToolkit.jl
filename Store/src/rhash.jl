@@ -39,8 +39,8 @@ function rhash(@nospecialize(storage::DataStorage{driver}), h::UInt=zero(UInt)) 
     h
 end
 
-rhash(::DataCollection, adt::AbstractDataTransformer, h::UInt=zero(UInt)) =
-    rhash(adt, h)
+rhash(::DataCollection, dt::DataTransformer, h::UInt=zero(UInt)) =
+    rhash(dt, h)
 
 @doc """
     rhash(collection::DataCollection, x, h::UInt)

@@ -40,7 +40,7 @@ function getstorage(storage::DataStorage{:git}, ::Type{IO})
     error("Git archive produced unrecognised output")
 end
 
-function createinteractive(T::Type{<:DataStorage{:git}}, source::String)
+function createinteractive(T::Type{DataStorage{:git}}, source::String)
     autospec = createauto(T, source)
     if !isnothing(autospec)
         prompts = [
@@ -53,7 +53,7 @@ function createinteractive(T::Type{<:DataStorage{:git}}, source::String)
     end
 end
 
-function createauto(::Type{<:DataStorage{:git}}, source::String)
+function createauto(::Type{DataStorage{:git}}, source::String)
     if !isnothing(match(r"^git://|^git(?:ea)?@|\w+@git\.|\.git$", source))
         Dict("remote" => source)
     end

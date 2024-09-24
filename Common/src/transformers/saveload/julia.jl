@@ -6,7 +6,7 @@
 # function = "(; inp) -> length(inp)"
 # arguments = { inp = "📇DATASET<<somelist::Vector>>" }
 
-function getactfn(transformer::AbstractDataTransformer)
+function getactfn(transformer::DataTransformer)
     path = @getparam transformer."path"::Union{String, Nothing}
     fnstr = @getparam transformer."function"::Union{String, Nothing}
     loadfn = if !isnothing(path)

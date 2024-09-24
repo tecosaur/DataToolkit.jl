@@ -1,5 +1,5 @@
 """
-    dataset_parameters(source::Union{DataCollection, DataSet, AbstractDataTransformer},
+    dataset_parameters(source::Union{DataCollection, DataSet, DataTransformer},
                        action::Val{:extract|:resolve|:encode}, value::Any)
 
 Obtain a form (depending on `action`) of `value`, a property within `source`.
@@ -32,8 +32,8 @@ dataset_parameters(::DataCollection, ::Val, value::Any) = value
 dataset_parameters(dataset::DataSet, action::Val, params::Any) =
     dataset_parameters(dataset.collection, action, params)
 
-dataset_parameters(adt::AbstractDataTransformer, action::Val, params::Any) =
-    dataset_parameters(adt.dataset.collection, action, params)
+dataset_parameters(dt::DataTransformer, action::Val, params::Any) =
+    dataset_parameters(dt.dataset.collection, action, params)
 
 function dataset_parameters(collection::DataCollection, ::Val{:extract}, param::String)
     dsid_match = match(DATASET_REFERENCE_REGEX, param)
@@ -54,7 +54,7 @@ function dataset_parameters(collection::DataCollection, ::Val{:encode}, param::I
            DATASET_REFERENCE_WRAPPER[2])
 end
 
-function Base.get(dataobj::Union{DataSet, DataCollection, <:AbstractDataTransformer},
+function Base.get(dataobj::Union{DataSet, DataCollection, <:DataTransformer},
                   property::AbstractString, default=nothing)
     if haskey(dataobj.parameters, property)
         dataset_parameters(dataobj, Val(:resolve), dataobj.parameters[property])
@@ -63,7 +63,7 @@ function Base.get(dataobj::Union{DataSet, DataCollection, <:AbstractDataTransfor
     end
 end
 
-Base.get(dataobj::Union{DataSet, DataCollection, <:AbstractDataTransformer},
+Base.get(dataobj::Union{DataSet, DataCollection, <:DataTransformer},
          ::typeof(:)) =
     dataset_parameters(dataobj, Val(:resolve), dataobj.parameters)
 
@@ -78,8 +78,8 @@ function referenced_datasets(dataset::DataSet)
     map(r -> resolve(dataset.collection, r, resolvetype=false), dataset_references) |> unique!
 end
 
-add_dataset_refs!(acc::Vector{Identifier}, @nospecialize(adt::AbstractDataTransformer)) =
-    add_dataset_refs!(acc, adt.parameters)
+add_dataset_refs!(acc::Vector{Identifier}, @nospecialize(dt::DataTransformer)) =
+    add_dataset_refs!(acc, dt.parameters)
 
 add_dataset_refs!(acc::Vector{Identifier}, props::Dict) =
     for val in values(props)
