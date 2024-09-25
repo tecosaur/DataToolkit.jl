@@ -188,6 +188,9 @@ function strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
     st
 end
 
+strip_stacktrace_advice!(st::Vector{Union{Ptr{Nothing}, Base.InterpreterIP}}) =
+    strip_stacktrace_advice!(stacktrace(st))
+
 """
     @advise [source] f(args...; kwargs...)
 
