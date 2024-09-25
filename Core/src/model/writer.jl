@@ -3,18 +3,23 @@
 
 Check whether a data collection is backed by a writable file.
 """
-Base.iswritable(dc::DataCollection) =
-    !isnothing(dc.path) &&
-    get(dc, "locked", false) !== true &&
-    try # why is this such a hassle?
-        open(io -> iswritable(io), dc.path, "a")
-    catch e
-        if e isa SystemError
-            false
-        else
-            rethrow()
+function Base.iswritable(dc::DataCollection)
+    !isnothing(dc.path) || return false
+    get(dc, "locked", false) !== true || return false
+    @static if VERSION >= v"1.11"
+        iswritable(dc.path)
+    else
+        try # why is this such a hassle?
+            open(io -> iswritable(io), dc.path, "a")
+        catch e
+            if e isa SystemError
+                false
+            else
+                rethrow()
+            end
         end
     end
+end
 
 function Base.string(q::QualifiedType)
     if haskey(QUALIFIED_TYPE_SHORTHANDS.reverse, q)
