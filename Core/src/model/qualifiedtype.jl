@@ -12,7 +12,7 @@ function QualifiedType(::Type{T0}) where {T0}
                  T.parameters)
     parents = Symbol[]
     root = parentmodule(T)
-    while root != parentmodule(root)
+    while root != parentmodule(root) && root ∉ (Base, Core)
         push!(parents, nameof(root))
         root = parentmodule(root)
     end
