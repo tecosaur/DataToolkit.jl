@@ -21,23 +21,23 @@ function load(loader::DataLoader{:chain}, from::Any, ::Type{T}) where {T}
     end
 end
 
-supportedtypes(::Type{DataLoader{:chain}}, spec::Dict{String, Any}) =
-    let lastloader = last(@getparam spec."loaders"::Vector [nothing])
-        if lastloader isa Dict # { driver="X", ... } form
-            explicit_type = @getparam lastloader."type"
-            if explicit_type isa String
-                [parse(QualifiedType, explicit_type)]
-            elseif explicit_type isa Vector
-                parse.(QualifiedType, explicit_type)
-            else
-                supportedtypes(DataLoader{Symbol(lastloader["driver"])}, lastloader)
-            end
-        elseif lastloader isa String # "X" shorthand form
-            supportedtypes(DataLoader{Symbol(lastloader)})
+function supportedtypes(::Type{DataLoader{:chain}}, spec::Dict{String, Any})
+    lastloader = last(@getparam spec."loaders"::Vector [nothing])
+    if lastloader isa Dict # { driver="X", ... } form
+        explicit_type = @getparam lastloader."type"
+        if explicit_type isa String
+            [parse(QualifiedType, explicit_type)]
+        elseif explicit_type isa Vector
+            parse.(QualifiedType, explicit_type)
         else
-            QualifiedType[]
+            supportedtypes(DataLoader{Symbol(lastloader["driver"])}, lastloader)
         end
+    elseif lastloader isa String # "X" shorthand form
+        supportedtypes(DataLoader{Symbol(lastloader)}, Dict{String, Any}())
+    else
+        QualifiedType[]
     end
+end
 
 """
     loadtypepath(subloaders::Vector{DataLoader}, targettype::Type)
