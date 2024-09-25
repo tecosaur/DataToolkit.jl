@@ -3,7 +3,7 @@ function _write_dlm end # Implemented in `../../../ext/DelimitedFilesExt.jl`
 
 function load(loader::DataLoader{:delim}, from::IO, ::Type{Matrix})
     @require DelimitedFiles
-    dtype::Type = something(typeify(QualifiedType(@getparam loader."type"::String "Any")), Any)
+    dtype::Type = something(typeify(QualifiedType(@getparam loader."type"::String "Any"), mod=loader.dataset.collection.mod), Any)
     delim::Char = first(@getparam loader."delim"::String ",")
     eol::Char = first(@getparam loader."eol"::String "\n")
     header::Bool = @getparam loader."header"::Bool false

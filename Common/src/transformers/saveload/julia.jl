@@ -34,8 +34,9 @@ function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
 end
 
 function load(loader::DataLoader{:julia}, from::Any, R::Type)
-    if !isempty(@getparam loader."input"::String "")
-        desired_type = typeify(QualifiedType(@getparam loader."input"::String ""))
+    intype = @getparam loader."input"::Union{String, Nothing}
+    if !isnothing(intype)
+        desired_type = typeify(parse(QualifiedType, intype), mod=loader.dataset.collection.mod)
         if from isa desired_type
             loadfn = getactfn(loader)
             kwargs = Dict{Symbol,Any}(
