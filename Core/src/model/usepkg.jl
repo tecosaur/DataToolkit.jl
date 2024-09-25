@@ -33,13 +33,13 @@ const PKG_ID = Base.PkgId(Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pk
 @static if VERSION > v"1.11-alpha1"
     function try_install_pkg(pkg::Base.PkgId)
         Pkg = try
-            @something get(Base.loaded_modules, PKG_ID, nothing) Base.require(PKG_ID)
+            @something get(Base.loaded_modules, PKG_ID, nothing) Base.require_stdlib(PKG_ID)
         catch _ end
         isnothing(Pkg) && return false
         repl_ext = Base.get_extension(Pkg, :REPLExt)
         !isnothing(repl_ext) &&
             isdefined(repl_ext, :try_prompt_pkg_add) &&
-            Base.get_extension(Pkg, :REPLExt).try_prompt_pkg_add([Symbol(pkg.name)])
+            invokelatest(repl_ext.try_prompt_pkg_add, [Symbol(pkg.name)])
     end
 else
     function try_install_pkg(pkg::Base.PkgId)
