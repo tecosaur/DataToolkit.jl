@@ -5,15 +5,17 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     @require CSV
     args = @getparam loader."args"::Dict{String, Any}
     kwargs = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in args)
+    mod = loader.dataset.collection.mod
     if haskey(kwargs, :types)
         types = kwargs[:types]
         kwargs[:types] = if types isa Dict
             Dict{eltype(keys(types)), Type}(
-                k => typeify(QualifiedType(v)) for (k, v) in types)
+                k => typeify(QualifiedType(v); mod)
+                for (k, v) in types)
         elseif types isa Vector
-            typeify.(QualifiedType.(types))
+            [typeify(QualifiedType(t); mod) for t in types]
         elseif types isa String
-            typeify(QualifiedType(types))
+            typeify(QualifiedType(types); mod)
         else
         end
         if isnothing(kwargs[:types])
@@ -23,11 +25,12 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
     end
     if haskey(kwargs, :typemap)
         kwargs[:typemap] = Dict{Type, Type}(
-            typeify(QualifiedType(k)) => typeify(QualifiedType(v))
+            typeify(QualifiedType(k); mod) => typeify(QualifiedType(v); mod)
             for (k, v) in kwargs[:typemap])
     end
     if haskey(kwargs, :stringtype)
-        kwargs[:stringtype] = typeify.(QualifiedType.(kwargs[:stringtype]))
+        kwargs[:stringtype] =
+            [typeify(QualifiedType(t); mod) for t in kwargs[:stringtype]]
     end
     invokelatest(_read_csv, from; NamedTuple(kwargs)...) |>
         if sink == Any || QualifiedType(sink) == QualifiedType(:CSV, :File)
