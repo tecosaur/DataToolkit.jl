@@ -305,7 +305,7 @@ function typesteps(store::DataStorage, desired::Type; write::Bool)
             for ttype in target_types
                 target_ind = something(findfirst(qt -> qt <: Tout, target_types),
                                        length(target_types) + 1)
-                push!(path_infos, ((Nothing => Tout), target_ind, Tstor))
+                push!(path_infos, ((Nothing => ttype), target_ind, Tstor))
             end
         else
             target_ind = something(findfirst(qt -> qt <: Tout, target_types),
