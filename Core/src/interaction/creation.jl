@@ -1,10 +1,41 @@
 # For programmatic creation of DataCollection elements
 
-DataCollection(name::Union{String, Nothing}=nothing, config::Dict{String, <:Any} = Dict{String, Any}();
-               path::Union{String, Nothing}=nothing) =
-    DataCollection(LATEST_DATA_CONFIG_VERSION, name, uuid4(), String[],
-                   Dict{String, Any}(config), DataSet[], path,
-                   AdviceAmalgamation(String[]), Main)
+function DataCollection(name::Union{String, Nothing}, config::Dict{String, <:Any};
+                        path::Union{String, Nothing}=nothing, uuid::UUID=uuid4(),
+                        plugins::Vector{String}=String[], mod::Module=Base.Main)
+    collection = DataCollection(
+        LATEST_DATA_CONFIG_VERSION, name, uuid, plugins,
+        Dict{String, Any}(config), DataSet[], path,
+        AdviceAmalgamation(plugins), mod)
+    @advise identity(collection)
+end
+
+DataCollection(name::Union{String, Nothing}=nothing;
+               path::Union{String, Nothing}=nothing, uuid::UUID = uuid4(),
+               plugins::Vector{String}=String[], mod::Module=Base.Main,
+               kwargs...) =
+    DataCollection(name, Dict{String, Any}(String(k) => v for (k, v) in kwargs);
+                   path, uuid, plugins, mod)
+
+# Creating safe toml values from API-passed values
+
+"""
+    toml_safe(value)
+
+Recursively convert `value` to a form that DataToolkit can safely encode to TOML.
+"""
+function toml_safe end
+
+toml_safe(c::DataCollection, v::Vector) = Vector{Any}(map(Base.Fix1(toml_safe, c), v))
+toml_safe(c::DataCollection, d::Dict) = Dict{String, Any}(string(k) => toml_safe(c, v) for (k, v) in d)
+toml_safe(_::DataCollection, q::QualifiedType) = string(q)
+toml_safe(c::DataCollection, T::DataType) = toml_safe(c, QualifiedType(T))
+toml_safe(c::DataCollection, i::Identifier) = dataset_parameters(c, Val(:encode), i)
+toml_safe(c::DataCollection, d::DataSet) = toml_safe(c, Identifier(d))
+toml_safe(_::DataCollection, x::TOML.Internals.Printer.TOMLValue) = x
+toml_safe(_::DataCollection, x::Any) = string(x)
+toml_safe(d::DataSet, x) = toml_safe(d.collection, x)
+toml_safe(t::DataTransformer, x) = toml_safe(t.dataset, x)
 
 # DataSet creation
 
@@ -13,7 +44,7 @@ function create(parent::DataCollection, ::Type{DataSet}, name::AbstractString, s
         spec = merge(spec, Dict("uuid" => uuid4()))
     end
     uuid = if haskey(spec, "uuid") UUID(spec["uuid"]) else uuid4() end
-    dataset = @advise fromspec(DataSet, parent, String(name), Dict{String, Any}(spec))
+    dataset = @advise fromspec(DataSet, parent, String(name), toml_safe(parent, spec))
 end
 
 function create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, spec::Dict{String, <:Any})
@@ -27,14 +58,14 @@ create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, specs::Pa
 
 function dataset!(collection::DataCollection, name::String, parameters::Dict{String, <:Any})
     dataset = DataSet(collection, name, uuid4(),
-                      Dict{String, Any}(parameters),
+                      toml_safe(collection, parameters),
                       DataStorage[], DataLoader[], DataWriter[])
     push!(collection.datasets, dataset)
     dataset
 end
 
 dataset!(collection::DataCollection, name::String, parameters::Pair{String, <:Any}...) =
-    dataset!(collection, name, Dict{String, Any}(parameters))
+    dataset!(collection, name, toml_safe(collection, parameters))
 
 # Transformer creation (pure)
 
@@ -49,19 +80,17 @@ function create(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, 
             spec = merge(spec, Dict("driver" => String(driver)))
         end
     end
-    if haskey(spec, "type") && typeof(spec["type"]) == QualifiedType
-        spec = merge(spec, Dict{String, Any}("type" => string(spec["type"])))
-    elseif haskey(spec, "type") && typeof(spec["type"]) == Vector{QualifiedType}
-        spec = merge(spec, Dict{String, Any}("type" => map(string, spec["type"])))
+    if !isempty(spec)
+        spec = toml_safe(parent, spec)
     end
-    @advise fromspec(T, parent, Dict{String, Any}(spec))
+    @advise fromspec(T, parent, toml_safe(parent, spec))
 end
 
 create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{String, <:Any} = Dict{String, Any}()) =
-    create(parent, T, merge(spec, Dict("driver" => String(driver))))
+    create(parent, T, merge(toml_safe(parent, spec), Dict("driver" => String(driver))))
 
 create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, specs::Pair{String, <:Any}...) =
-    create(parent, T, driver, Dict{String, Any}(specs))
+    create(parent, T, driver, toml_safe(parent, specs))
 
 # Transformer creation (modifying)
 
@@ -101,13 +130,13 @@ writer!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any}) =
     create!(dataset, DataWriter, driver, parameters)
 
 storage!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...) =
-    storage!(dataset, driver, Dict{String, Any}(parameters))
+    storage!(dataset, driver, toml_safe(dataset, Dict{String, Any}(parameters)))
 
 loader!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...) =
-    loader!(dataset, driver, Dict{String, Any}(parameters))
+    loader!(dataset, driver, toml_safe(dataset, Dict{String, Any}(parameters)))
 
 writer!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...) =
-    writer!(dataset, driver, Dict{String, Any}(parameters))
+    writer!(dataset, driver, toml_safe(dataset, Dict{String, Any}(parameters)))
 
 # Interactive/specialised transformer creation
 
@@ -141,8 +170,8 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer{_kind, driver}
         end
         if paramspec ∉ (false, nothing)
             prefix = " $(string(nameof(T))[5])($driver) "
-            spec = interactiveparams(paramspec, prefix)
-            return create(parent, T, Dict{String, Any}(spec))
+            spec = Dict{String, Any}(interactiveparams(paramspec, prefix))
+            return create(parent, T, toml_safe(parent, spec))
         end
     end
     spec = createauto(parent, T, arg)::Union{Dict{String, <:Any}, Bool, Nothing}
@@ -150,7 +179,7 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer{_kind, driver}
     if spec === true
         spec = Dict{String, Any}()
     end
-    create(parent, T, Dict{String, Any}(spec))
+    create(parent, T, toml_safe(parent, spec))
 end
 
 """
