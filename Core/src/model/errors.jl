@@ -430,7 +430,12 @@ function Base.showerror(io::IO, err::UnsatisfyableTransformer, bt; backtrace=tru
     for transformer in transformers
         print(io, "\n   ")
         show(io, transformer)
-        print(io, " -> [", join(map(last, typesteps(transformer, Any)), ", "), ']')
+        tsteps = if transformer isa DataStorage
+            typesteps(transformer, Any, write=false)
+        else
+            typesteps(transformer, Any)
+        end
+        print(io, " -> [", join(map(last, tsteps), ", "), ']')
     end
     backtrace && println(io)
     backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
