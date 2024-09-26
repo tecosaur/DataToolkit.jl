@@ -71,15 +71,8 @@ function savetofile(savefn::Function, storage::DataStorage)
         # files. This is just a nice extra, so we'll speculatively use Base
         # internals for now, and revisit this approach if it becomes a
         # problem.
-        @static if isdefined(Base.Filesystem, :temp_cleanup_later)
-            Base.Filesystem.temp_cleanup_later(partfile)
-        end
-        isdir(dirname(partfile)) || mkpath(dirname(partfile))
-        savefn(partfile)
-        mv(partfile, tmpfile)
-        @static if isdefined(Base.Filesystem, :temp_cleanup_forget)
-            Base.Filesystem.temp_cleanup_forget(partfile)
-        end
+        isdir(dirname(tmpfile)) || mkpath(dirname(tmpfile))
+        atomic_write(savefn, String, tmpfile, partfile)
         @static if isdefined(Base.Filesystem, :temp_cleanup_later)
             Base.Filesystem.temp_cleanup_later(tmpfile)
         end
