@@ -56,6 +56,48 @@ function shrinkdict(dict::Dict{K, V}) where {K, V}
 end
 
 """
+    atomic_write(f::Function, as::IO|String, dest::AbstractString; temp::AbstractString = dest * "_XXXX.part")
+
+Atomically write to `dest` with `f`, via `temp`.
+
+Calls the function `f` that writes to `temp`, with `temp` given as an `IO`
+handle or a `String` depending on `as`. Upon completion, `temp` is renamed to
+`dest`.
+
+The file `dest` is not touched until the write is complete, and if the write to
+`dest` is interrupted or fails for any reason, no data is written to `temp`.
+"""
+function atomic_write end
+
+function atomic_write(f::Function, as::Union{Type{IO}, Type{String}}, dest::AbstractString, temp::AbstractString)
+    try
+        if as == IO
+            open(f, temp, "w")
+        else # String
+            f(temp)
+        end
+    catch
+        rm(temp, force=true)
+        rethrow()
+    end
+    mv(temp, dest, force=true)
+end
+
+function atomic_write(f::Function, as::Union{Type{IO}, Type{String}}, dest::AbstractString)
+    miliseconds = round(Int, 1000 * time()) % 1000 * 60 * 60 * 24
+    suffix = string('-', string(miliseconds, base=36), ".part")
+    atomic_write(f, as, dest, dest * suffix)
+end
+
+"""
+    atomic_write(dest::AbstractString, content)
+
+Atomically write `content` to `dest`, leaving no trace of incomplete/failed writes.
+"""
+atomic_write(dest::AbstractString, content) =
+    atomic_write(Base.Fix2(write, content), IO, dest)
+
+"""
     natkeygen(key::String)
 
 Generate a sorting key for `key` that when used with `sort` will put the
