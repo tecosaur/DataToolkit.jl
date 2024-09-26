@@ -6,25 +6,37 @@ using PrecompileTools
 using Preferences
 using Base.Threads
 
-# For general usage
-export loadcollection!, dataset
+# NOTE: We export so many symbols because this package is
+# specifically intended as a dependency for other packages
+# that are building a more general-purpose DataToolkit package.
+# This means we want to prioritise convenience over avoiding
+# concerns about namespace pollution, since this huge list of
+# exports will not be visible to indirect users of this package.
 
-# For extension packages
+# Useful types
 export DataTransformer, DataStorage, DataLoader, DataWriter,
     DataSet, DataCollection, QualifiedType, Identifier,
     SystemPath, FilePath, DirPath, LintItem, LintReport
-export load, storage, getstorage, putstorage, save, getlayer, resolve, refine,
-    parse_ident, supportedtypes, typeify, create, create!, createauto,
-    createinteractive, createpriority, lint, invokepkglatest
+# Overload targets
+export load, save, storage, getstorage, putstorage, supportedtypes,
+    cerateinteractive, createauto, createpriority
+# Retrieval functions
+export loadcollection!, getlayer, dataset, resolve, refine, parse_ident, typeify
+# Creation functions
+export create, create!, dataset!, storage!, loader!, writer!
+# Useful utils
+export invokepkglatest, atomic_write, @log_do
+# Custom exceptions
 export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     PackageException, UnregisteredPackage, MissingPackage,
     DataOperationException, CollectionVersionMismatch, EmptyStackError,
     ReadonlyCollection, TransformerError, UnsatisfyableTransformer,
     OrphanDataSet, InvalidParameterType
+# Key variables
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
-export @require, @addpkg, @dataplugin, @advise, @getparam, @log_do
-
-# For plugin packages
+# Key macros
+export @require, @addpkg, @dataplugin, @advise, @getparam
+# Plugin system components
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
     fromspec, tospec, Advice, AdviceAmalgamation
 
