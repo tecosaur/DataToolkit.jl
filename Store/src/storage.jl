@@ -378,19 +378,9 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     miliseconds = round(Int, 1000 * time())
     partfile = string(refdest, '-', miliseconds, ".part")
     dumpfile = string(refdest, '-', miliseconds, ".dump")
-    # In case the user aborts the `write` operation, let's try to clean up
-    # the dumpfile. This is just a nice extra, so we'll speculatively use
-    # Base internals for now, and revisit this approach if it becomes a problem.
-    @static if isdefined(Base.Filesystem, :temp_cleanup_later)
-        Base.Filesystem.temp_cleanup_later(partfile)
-    end
     @log_do("store:save",
             "Writing $(sprint(show, storage.dataset.name)) to the store",
-            write(partfile, from))
-    @static if isdefined(Base.Filesystem, :temp_cleanup_forget)
-        Base.Filesystem.temp_cleanup_forget(partfile)
-    end
-    mv(partfile, dumpfile, force=true)
+            atomic_write(dumpfile, from))
     open(storesave(inventory, storage, FilePath, FilePath(dumpfile)).path, "r")
 end
 
