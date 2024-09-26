@@ -179,7 +179,7 @@ function Base.write(dc::DataCollection)
             throw(ReadonlyCollection(dc))
         end
     end
-    write(dc.path, dc)
+    atomic_write(dc.path, dc)
 end
 
 Base.write(ds::DataSet) = write(ds.collection)
