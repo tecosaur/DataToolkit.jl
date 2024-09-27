@@ -24,7 +24,7 @@ function complete_dataset(sofar::AbstractString)
         else
             filter(o -> startswith(o, sofar),
                    vcat(getproperty.(STACK, :name) .* ':',
-                        getproperty.(getlayer(nothing).datasets, :name) |> unique))
+                        getproperty.(getlayer().datasets, :name) |> unique))
         end
     catch _
         String[]

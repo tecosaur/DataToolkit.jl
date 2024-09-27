@@ -1,9 +1,9 @@
 """
-    getlayer(::Nothing)
+    getlayer([::Nothing])
 
 Return the first `DataCollection` on the `STACK`.
 """
-function getlayer(::Nothing)
+function getlayer(::Nothing = nothing)
     length(STACK) == 0 && throw(EmptyStackError())
     first(STACK)
 end

@@ -15,7 +15,7 @@ function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(std
         println("The data collection stack is empty")
     else
         collection = if isempty(collection_str)
-            getlayer(nothing)
+            getlayer()
         else
             getlayer(collection_str)
         end
