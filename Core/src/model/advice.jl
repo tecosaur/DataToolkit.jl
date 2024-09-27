@@ -124,7 +124,7 @@ end
     _dataadvise(thing::DataSet)
     _dataadvise(thing::DataTransformer)
 
-Obtain the relevant `AdviceAmalgamation` for `thing`.
+Obtain the relevant [`AdviceAmalgamation`](@ref) for `thing`.
 """
 _dataadvise(amalg::AdviceAmalgamation) = amalg
 _dataadvise(advs::Vector{<:Advice}) = AdviceAmalgamation(advs)
@@ -152,15 +152,15 @@ end
 @doc """
     _dataadvisecall(func::Function, args...; kwargs...)
 
-Identify the first data-like argument of `args` (i.e. a `DataCollection`,
-`DataSet`, or `DataTransformer`), obtain its advise, and perform
+Identify the first data-like argument of `args` (i.e. a [`DataCollection`](@ref),
+[`DataSet`](@ref), or [`DataTransformer`](@ref)), obtain its advise, and perform
 an advised call of `func(args...; kwargs...)`.
 """ _dataadvisecall
 
 """
     strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
 
-Remove stack frames related to `@advise` and `invokepkglatest` from `st`.
+Remove stack frames related to [`@advise`](@ref) and [`invokepkglatest`](@ref) from `st`.
 """
 function strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
     SIMPLIFY_STACKTRACES[] || return st
@@ -198,7 +198,7 @@ Convert a function call `f(args...; kwargs...)` to an *advised* function call,
 where the advise collection is obtained from `source` or the first data-like\\*
 value of `args`.
 
-\\* i.e. a `DataCollection`, `DataSet`, or `DataTransformer`
+\\* i.e. a [`DataCollection`](@ref), [`DataSet`](@ref), or [`DataTransformer`](@ref)
 
 For example, `@advise myfunc(other, somedataset, rest...)` is equivalent to
 `somedataset.collection.advise(myfunc, other, somedataset, rest...)`.

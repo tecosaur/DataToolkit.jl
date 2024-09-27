@@ -1,7 +1,7 @@
 """
     getlayer([::Nothing])
 
-Return the first `DataCollection` on the `STACK`.
+Return the first [`DataCollection`](@ref) on the [`STACK`](@ref).
 """
 function getlayer(::Nothing = nothing)
     length(STACK) == 0 && throw(EmptyStackError())
@@ -12,7 +12,7 @@ end
     getlayer(name::AbstractString)
     getlayer(uuid::UUID)
 
-Find the `DataCollection` in `STACK` with `name`/`uuid`.
+Find the [`DataCollection`](@ref) in [`STACK`](@ref) with `name`/`uuid`.
 """
 function getlayer(name::AbstractString)
     length(STACK) == 0 && throw(EmptyStackError())

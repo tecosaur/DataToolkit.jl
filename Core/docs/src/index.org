@@ -1,5 +1,13 @@
 #+title: Introduction
 
+This package implements the core design and API of DataToolkit. It is not
+intended to be user-facing and is instead for packages that want to build on the
+DataToolkit infrastructure itself.
+
+This documentation also details some user-facing API reexported by other
+packages, how transformers and plugins work and should be implemented, as well
+as some general design decisions.
+
 * The problem with the current state of affairs
 
 Data is beguiling. It can initially seem simple to deal with: "here I have a

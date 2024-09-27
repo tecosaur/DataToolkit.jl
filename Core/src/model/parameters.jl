@@ -6,13 +6,13 @@ Obtain a form (depending on `action`) of `value`, a property within `source`.
 
 ## Actions
 
-**`:extract`**  Look for DataSet references ("$(DATASET_REFERENCE_WRAPPER[1])...$(DATASET_REFERENCE_WRAPPER[2])") within
-  `value`, and turn them into `Identifier`s (the inverse of `:encode`).
+**`:extract`**  Look for [`DataSet`](@ref) references ("[`$(DATASET_REFERENCE_WRAPPER[1])…$(DATASET_REFERENCE_WRAPPER[2])`](@ref DATASET_REFERENCE_WRAPPER)") within
+  `value`, and turn them into [`Identifier`](@ref)s (the inverse of `:encode`).
 
-**`:resolve`**  Look for `Identifier`s in `value`, and resolve them to the
-  referenced DataSet/value.
+**`:resolve`**  Look for [`Identifier`](@ref)s in `value`, and resolve them to the
+  referenced [`DataSet`](@ref)/value.
 
-**`:encode`**  Look for `Identifier`s in `value`, and turn them into DataSet references
+**`:encode`**  Look for [`Identifier`](@ref)s in `value`, and turn them into [`DataSet`](@ref) references
   (the inverse of `:extract`).
 """
 function dataset_parameters(collection::DataCollection, action::Val, params::Dict{String,Any})

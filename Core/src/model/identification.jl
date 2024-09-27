@@ -17,7 +17,7 @@ Identifier(ident::Identifier, ::Nothing; replace::Bool=false) =
     Identifier(dataset::DataSet, collection::Union{Symbol, Nothing}=:name,
                name::Symbol=something(collection, :name))
 
-Create an `Identifier` referring to `dataset`, specifying the collection
+Create an [`Identifier`](@ref) referring to `dataset`, specifying the collection
 `dataset` comes from as well (when `collection` is not `nothing`) as all of its
 parameters, but without any type information.
 
