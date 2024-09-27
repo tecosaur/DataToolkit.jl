@@ -2,7 +2,7 @@
 
 include("setup.jl")
 @setupdev ".."
-@get_interlinks Core Main
+@get_interlinks Core Common Main
 
 using Org
 org2md(joinpath(@__DIR__, "src"))
@@ -15,14 +15,14 @@ makedocs(;
     format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
-        "Usage" => "usage.md",
-        "Extensions" => Any[
-            "Transformer backends" => "newtransformer.md",
-            "Packages" => "packages.md",
-            "Data Advice" => "advising.md",
-        ],
-        "Internals" => "libinternal.md",
+        "Datasets" => "datasets.md",
+        "Transformers" => "transformers.md",
+        "Plugins & Advice" => "plugins.md",
+        "Lazy Packages" => "packages.md",
+        "Linting" => "linting.md",
+        "Utilities" => "utilities.md",
         "Errors" => "errors.md",
+        "Internals" => "internals.md",
     ],
     sitename="DataToolkitCore.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",

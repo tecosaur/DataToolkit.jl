@@ -72,11 +72,11 @@ lint function is invoked and the results combined.
 
 !!! note
     Each specific linter function should return a vector of relevant
-    `LintItem`s, i.e.
+    [`LintItem`](@ref)s, i.e.
     ```julia
     lint(obj::T, ::Val{:linter_id}) -> Union{Vector{LintItem{T}}, LintItem{T}, Nothing}
     ```
-    See the documentation on `LintItem` for more information on how it should be
+    See the documentation on [`LintItem`](@ref) for more information on how it should be
     constructed.
 """
 function lint(obj::T) where {T <: Union{DataCollection, DataSet, <:DataTransformer}}
@@ -96,6 +96,20 @@ function lint(obj::T, linters::Vector{Method}) where {T}
     sort(issues, by=i -> i.severity)
 end
 
+"""
+    LintReport
+
+A collection of [`LintItem`](@ref)s that apply to a particular
+[`DataCollection`](@ref).
+
+Depending on the constructor called, the report may be for the entire collection
+or just a single [`DataSet`](@ref).
+
+# Constructors
+
+    LintReport(collection::DataCollection) -> LintReport
+    LintReport(dataset::DataSet) -> LintReport
+"""
 struct LintReport
     collection::DataCollection
     results::Vector{LintItem}

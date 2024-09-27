@@ -44,6 +44,14 @@ toml_safe(x::Any) = string(x)
 
 # DataSet creation
 
+"""
+    create(parent::DataCollection, ::Type{DataSet}, name::AbstractString, specification::Dict{String, <:Any})
+    create(parent::DataCollection, ::Type{DataSet}, name::AbstractString, specification::Pair{String, <:Any}...)
+
+Create a new [`DataSet`](@ref) that is a child of `parent` with a given `name` and `specification`.
+
+See also: [`create!`](@ref).
+"""
 function create(parent::DataCollection, ::Type{DataSet}, name::AbstractString, spec::Dict{String, <:Any})
     if !haskey(spec, "uuid")
         spec = merge(spec, Dict("uuid" => uuid4()))
@@ -58,8 +66,19 @@ function create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, 
     dataset
 end
 
+"""
+    create!(parent::DataSet, ::Type{DataSet}, name::AbstractString, specification::Dict{String, <:Any})
+    create!(parent::DataSet, ::Type{DataSet}, name::AbstractString, specification::Pair{String, <:Any}...)
+
+Create a new [`DataSet`](@ref) that is a child of `parent` with a given `name` and `specification`,
+and add it to the `parent`'s list of datasets.
+
+See also: [`create`](@ref).
+"""
 create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, specs::Pair{String, <:Any}...) =
     create!(parent, DataSet, name, Dict{String, Any}(specs))
+
+create!(::Type{DataSet}, args...) = create(getlayer(), DataSet, args...)
 
 function dataset!(collection::DataCollection, name::String, parameters::Dict{String, <:Any})
     dataset = DataSet(collection, name, uuid4(),
@@ -74,6 +93,19 @@ dataset!(collection::DataCollection, name::String, parameters::Pair{String, <:An
 
 # Transformer creation (pure)
 
+"""
+    create(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any})
+    create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{String, <:Any})
+    create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, specs::Pair{String, <:Any}...)
+
+Create a new data transformer of type `T` that is a child of the `parent` dataset,
+with a given specification `spec`.
+
+The `driver` argument may be explicitly specified as a symbol, or it may be
+included as part of `spec`.
+
+See also: [`create!`](@ref).
+"""
 function create(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any})
     T <: DataStorage || T <: DataLoader || T <: DataWriter ||
         throw(ArgumentError("Unknown transformer type: $T"))
@@ -99,6 +131,16 @@ create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, specs::Pair{
 
 # Transformer creation (modifying)
 
+"""
+    create!(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any})
+    create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{String, <:Any})
+    create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, specs::Pair{String, <:Any}...)
+
+Create a new data transformer of type `T` that is a child of the `parent` dataset,
+with a given specification `spec`, and add it to the appropriate list of transformers.
+
+See also: [`create`](@ref), [`loader!`](@ref), [`storage!`](@ref), [`writer!`](@ref).
+"""
 function create!(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any})
     dslist = if T <: DataStorage
         parent.storage
@@ -125,20 +167,50 @@ create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, driver::Symbol, s
 
 # Dedicated storage/loader/writer creation (modifying)
 
+"""
+    storage!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any})
+    storage!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...)
+
+Create a new data storage transformer that is a child of the `dataset` dataset,
+with a given driver `driver` and specification `parameters`, and add it to the
+`dataset`'s list of storage transformers.
+
+See also: [`create!`](@ref), [`loader!`](@ref), [`writer!`](@ref).
+"""
 storage!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any}) =
     create!(dataset, DataStorage, driver, parameters)
-
-loader!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any}) =
-    create!(dataset, DataLoader, driver, parameters)
-
-writer!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any}) =
-    create!(dataset, DataWriter, driver, parameters)
 
 storage!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...) =
     storage!(dataset, driver, toml_safe(dataset, Dict{String, Any}(parameters)))
 
+"""
+    loader!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any})
+    loader!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...)
+
+Create a new data loader transformer that is a child of the `dataset` dataset,
+with a given driver `driver` and specification `parameters`, and add it to the
+`dataset`'s list of loader transformers.
+
+See also: [`create!`](@ref), [`storage!`](@ref), [`writer!`](@ref).
+"""
+loader!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any}) =
+    create!(dataset, DataLoader, driver, parameters)
+
 loader!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...) =
     loader!(dataset, driver, toml_safe(dataset, Dict{String, Any}(parameters)))
+
+"""
+    writer!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any})
+    writer!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...)
+
+Create a new data writer transformer that is a child of the `dataset` dataset,
+with a given driver `driver` and specification `parameters`, and add it to the
+`dataset`'s list of writer transformers.
+
+See also: [`create!`](@ref), [`storage!`](@ref), [`loader!`](@ref).
+"""
+writer!(dataset::DataSet, driver::Symbol, parameters::Dict{String, <:Any}) =
+    create!(dataset, DataWriter, driver, parameters)
 
 writer!(dataset::DataSet, driver::Symbol, parameters::Pair{String, <:Any}...) =
     writer!(dataset, driver, toml_safe(dataset, Dict{String, Any}(parameters)))

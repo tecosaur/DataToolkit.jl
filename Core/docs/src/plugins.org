@@ -1,4 +1,12 @@
-#+title: Data Advising
+#+title: Plugins & Advice
+
+In DataToolkit, the plugin system enables key behaviour to be completely
+transformed when operating on a given ~DataCollection~.
+
+#+begin_src @docs
+Plugin
+@dataplugin
+#+end_src
 
 * Advice
 
@@ -18,6 +26,8 @@ and is able to modify the arguments, execution, and results of the join point.
 
 #+begin_src @docs
 Advice
+AdviceAmalgamation
+@advise
 #+end_src
 
 * Advisement points (standard join points)

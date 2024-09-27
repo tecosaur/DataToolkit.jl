@@ -14,31 +14,38 @@ using Base.Threads
 # exports will not be visible to indirect users of this package.
 
 # Useful types
-export DataTransformer, DataStorage, DataLoader, DataWriter,
-    DataSet, DataCollection, QualifiedType, Identifier,
-    SystemPath, FilePath, DirPath, LintItem, LintReport
+export DataCollection, DataSet, Identifier, QualifiedType,
+    DataTransformer, DataStorage, DataLoader, DataWriter
 # Overload targets
 export load, save, storage, getstorage, putstorage, supportedtypes,
-    cerateinteractive, createauto, createpriority
+    createinteractive, createauto, createpriority
+# Implementing a transformer/plugin
+export @advise, @getparam
 # Retrieval functions
 export loadcollection!, getlayer, dataset, resolve, refine, parse_ident, typeify
 # Creation functions
 export create, create!, dataset!, storage!, loader!, writer!
+# Manipulation functions
+export stack_index, stack_move, stack_remove!,
+    plugin_add, plugin_remove, plugin_info, plugin_list,
+    config_get, config_set, config_unset
+# Package loading
+export @require, @addpkg, addpkg, invokepkglatest
+# Linting
+export LintReport, LintItem, lint, lintfix
 # Useful utils
-export invokepkglatest, atomic_write, @log_do
+export SystemPath, FilePath, DirPath, @log_do, @getparam, atomic_write
 # Custom exceptions
 export IdentifierException, UnresolveableIdentifier, AmbiguousIdentifier,
     PackageException, UnregisteredPackage, MissingPackage,
     DataOperationException, CollectionVersionMismatch, EmptyStackError,
     ReadonlyCollection, TransformerError, UnsatisfyableTransformer,
-    OrphanDataSet, InvalidParameterType
+    OrphanDataSet, InvalidParameterType, ImpossibleTypeException
 # Key variables
 export STACK, DATA_CONFIG_RESERVED_ATTRIBUTES
-# Key macros
-export @require, @addpkg, @dataplugin, @advise, @getparam
 # Plugin system components
 export PLUGINS, PLUGINS_DOCUMENTATION, DEFAULT_PLUGINS, Plugin,
-    fromspec, tospec, Advice, AdviceAmalgamation
+    @dataplugin, fromspec, tospec, Advice, AdviceAmalgamation
 
 include("model/types.jl")
 include("model/globals.jl")

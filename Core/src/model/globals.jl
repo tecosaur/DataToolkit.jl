@@ -1,5 +1,5 @@
 """
-The `DataCollection.version` set on all created `DataCollection`s, and assumed
+The `DataCollection.version` set on all created [`DataCollection`](@ref)s, and assumed
 when reading any Data.toml files which do not set `data_config_version`.
 """
 const LATEST_DATA_CONFIG_VERSION = 0 # while in alpha
@@ -33,7 +33,7 @@ List of `(category::Symbol, named::Symbol) => docs::Any` forms.
 const TRANSFORMER_DOCUMENTATION = Pair{Tuple{Symbol, Symbol}, Any}[]
 
 """
-The set of packages loaded by each module via `@addpkg`, for import with `@require`.
+The set of packages loaded by each module via [`@addpkg`](@ref), for import with [`@require`](@ref).
 
 More specifically, when a module M invokes `@addpkg pkg id` then
 `EXTRA_PACKAGES[M][pkg] = id` is set, and then this information is used
@@ -44,12 +44,12 @@ const EXTRA_PACKAGES = Dict{Module, Dict{Symbol, Base.PkgId}}()
 # For use in construction
 
 """
-The default `priority` field value for instances of `DataTransformer`.
+The default `priority` field value for instances of [`DataTransformer`](@ref).
 """
 const DEFAULT_DATATRANSFORMER_PRIORITY = 1
 
 """
-The default `priority` field value for `Advice`s.
+The default `priority` field value for [`Advice`](@ref)s.
 """
 const DEFAULT_DATA_ADVISOR_PRIORITY = 1
 
@@ -62,7 +62,7 @@ const DATASET_REFERENCE_WRAPPER = ("📇DATASET<<", ">>")
 
 """
 A regex which matches dataset references.
-This is constructed from `DATASET_REFERENCE_WRAPPER`.
+This is constructed from [`DATASET_REFERENCE_WRAPPER`](@ref).
 """
 const DATASET_REFERENCE_REGEX =
     Regex(string("^", DATASET_REFERENCE_WRAPPER[1],
@@ -72,9 +72,10 @@ const DATASET_REFERENCE_REGEX =
 # For plugins / general information
 
 """
-The data specification TOML format constructs a DataCollection, which itself
-contains DataSets, comprised of metadata and DataTransformers.
-```
+The data specification TOML format constructs a [`DataCollection`](@ref), which itself
+contains [`DataSet`](@ref)s, comprised of metadata and [`DataTransformer`](@ref)s.
+
+```text
 DataCollection
 ├─ DataSet
 │  ├─ DataTransformer
@@ -85,9 +86,9 @@ DataCollection
 
 Within each scope, there are certain reserved attributes. They are listed in
 this Dict under the following keys:
-- `:collection` for `DataCollection`
-- `:dataset` for `DataSet`
-- `:transformer` for `DataTransformer`
+- `:collection` for [`DataCollection`](@ref)
+- `:dataset` for [`DataSet`](@ref)
+- `:transformer` for [`DataTransformer`](@ref)
 """
 const DATA_CONFIG_RESERVED_ATTRIBUTES =
     Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "config"],
@@ -100,7 +101,7 @@ Some keys are particularly important though, and so to ensure they are placed
 higher a mappings from such keys to a higher sort priority string can be
 registered here.
 
-For example, `"config" => "\0x01"` ensures that the special configuration
+For example, `"config" => "\\0x01"` ensures that the special configuration
 section is placed before all of the data sets.
 
 This can cause odd behaviour if somebody gives a dataset the same name as a
@@ -122,7 +123,11 @@ const DATA_CONFIG_KEY_SORT_MAPPING =
 
 """
 A mapping from severity symbols to integers.
-This is used to assist with more readable construction of `LintItem`s.
+
+This is used to assist with more readable construction of [`LintItem`](@ref)s.
+
+See also: [`LINT_SEVERITY_MESSAGES`](@ref) for the reverse mapping of integer to
+severity title string.
 """
 const LINT_SEVERITY_MAPPING =
     Dict(:debug => 0x05,
@@ -132,7 +137,7 @@ const LINT_SEVERITY_MAPPING =
          :error => 0x01)
 
 """
-A mapping from severity numbers (see `LINT_SEVERITY_MAPPING`) to a tuple
+A mapping from severity numbers (see [`LINT_SEVERITY_MAPPING`](@ref)) to a tuple
 giving the color the message should be accented with and the severity
 title string.
 """

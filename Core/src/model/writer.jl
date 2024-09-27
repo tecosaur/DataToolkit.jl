@@ -1,7 +1,7 @@
 """
     iswritable(dc::DataCollection)
 
-Check whether a data collection is backed by a writable file.
+Check whether the data collection `dc` is backed by a writable file.
 """
 function Base.iswritable(dc::DataCollection)
     !isnothing(dc.path) || return false

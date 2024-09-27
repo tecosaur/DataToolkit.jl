@@ -8,9 +8,6 @@ defined.
 
 #+begin_src @docs
 UnresolveableIdentifier
-#+end_src
-
-#+begin_src @docs
 AmbiguousIdentifier
 #+end_src
 
@@ -18,9 +15,6 @@ AmbiguousIdentifier
 
 #+begin_src @docs
 UnregisteredPackage
-#+end_src
-
-#+begin_src @docs
 MissingPackage
 #+end_src
 
@@ -28,24 +22,22 @@ MissingPackage
 
 #+begin_src @docs
 CollectionVersionMismatch
-#+end_src
-
-#+begin_src @docs
 EmptyStackError
-#+end_src
-
-#+begin_src @docs
 ReadonlyCollection
-#+end_src
-
-#+begin_src @docs
 TransformerError
-#+end_src
-
-#+begin_src @docs
 UnsatisfyableTransformer
+OrphanDataSet
+InvalidParameterType
 #+end_src
 
+* Qualified type exceptions
+
 #+begin_src @docs
-OrphanDataSet
+ImpossibleTypeException
+#+end_src
+
+* Log exception
+
+#+begin_src @docs
+DataToolkitCore.LogTaskError
 #+end_src

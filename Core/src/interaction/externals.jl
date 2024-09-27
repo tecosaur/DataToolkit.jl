@@ -110,7 +110,7 @@ Base.read(io::IO, ::Type{DataCollection};
 Obtain information from `dataset` in the form of `as`, with the appropriate
 loader and storage provider automatically determined.
 
-This executes this component of the overall data flow:
+This executes the following component of the overall data flow:
 ```
                  ╭────loader─────╮
                  ╵               ▼
@@ -265,7 +265,7 @@ provider automatically selected.
 A `write` flag is also provided, to help the driver pick a more appropriate form
 of `as`.
 
-This executes this component of the overall data flow:
+This executes the following component of the overall data flow:
 ```
                  ╭────loader─────╮
                  ╵               ▼
@@ -288,12 +288,12 @@ end
 """
     storage(storer::DataStorage, as::Type; write::Bool=false)
 
-Fetch a `storer` in form `as`, appropiate for reading from or writing to
-(depending on `write`).
+Fetch the `as` from `storer`, appropiate for reading data from or writing data
+to (depending on `write`).
 
-By default, this just calls `getstorage` or `putstorage` (when `write=true`).
+By default, this just calls [`getstorage`](@ref) or [`putstorage`](@ref) (depending on `write`).
 
-This executes this component of the overall data flow:
+This executes the following component of the overall data flow:
 ```
 Storage ◀────▶ Data
 ```
@@ -306,8 +306,32 @@ function storage(storer::DataStorage, as::Type; write::Bool=false)
     end
 end
 
+"""
+    getstorage(storer::DataStorage, as::Type)
+
+Fetch the `as` form of `storer`, for reading data from.
+
+This executes the following component of the overall data flow:
+```
+Storage ─────▶ Data
+```
+
+See also: [`storage`](@ref), [`putstorage`](@ref).
+"""
 getstorage(::DataStorage, ::Any) = nothing
 
+"""
+    putstorage(storer::DataStorage, as::Type)
+
+Fetch a handle in the form `as` from `storer`, that data can be written to.
+
+This executes the following component of the overall data flow:
+```
+Storage ◀───── Data
+```
+
+See also: [`storage`](@ref), [`getstorage`](@ref).
+"""
 putstorage(::DataStorage, ::Any) = nothing
 
 """

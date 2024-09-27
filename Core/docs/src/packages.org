@@ -1,4 +1,4 @@
-#+title: Using Packages
+#+title: Lazily using packages
 
 It is entirely likely that in the course of writing a package providing a custom
 data transformer, one would come across packages that /may/ be needed.
@@ -7,9 +7,10 @@ Every possibly desired package could be shoved into the list of dependences, but
 this is a somewhat crude approach. A more granular approach is enabled with two
 macros, ~@addpkg~ and ~@require~.
 
-* Letting DataToolkitCore know about extra packages
+* Letting DataToolkit know about extra packages
 
 #+begin_src @docs
+addpkg
 @addpkg
 #+end_src
 
@@ -17,6 +18,7 @@ macros, ~@addpkg~ and ~@require~.
 
 #+begin_src @docs
 @require
+invokepkglatest
 #+end_src
 
 * Example

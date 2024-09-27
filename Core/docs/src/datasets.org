@@ -1,0 +1,70 @@
+#+title: Datasets
+
+#+begin_src @docs
+DataSet
+#+end_src
+
+* Working with datasets
+
+#+begin_src @docs
+dataset
+read
+write
+open
+#+end_src
+
+#+begin_src @docs
+create
+create!
+loader!
+storage!
+writer!
+#+end_src
+
+* Dataset identification
+
+#+begin_src @docs
+Identifier
+resolve
+refine
+#+end_src
+
+* Data collections
+
+#+begin_src @docs
+DataCollection
+loadcollection!
+STACK
+iswritable(::DataCollection)
+#+end_src
+
+* Manipulation API
+
+#+begin_src @docs
+getlayer
+stack_index
+stack_move
+stack_remove!
+plugin_add
+plugin_remove
+plugin_info
+plugin_list
+config_get
+config_set
+config_unset
+delete!
+replace!
+#+end_src
+
+* TOML serialization
+
+#+begin_src @docs
+fromspec
+tospec
+#+end_src
+
+* Qualified types
+
+#+begin_src @docs
+QualifiedType
+#+end_src

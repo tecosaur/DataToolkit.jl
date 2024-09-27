@@ -96,7 +96,7 @@ end
 # ---------------
 
 """
-    supportedtypes(DT::Type{<:DataTransformer})::Vector{QualifiedType}
+    supportedtypes(DT::Type{<:DataTransformer}, [spec::Dict{String, Any}, dataset::DataSet]) -> Vector{QualifiedType}
 
 Return a list of types supported by the data transformer `DT`.
 
@@ -105,7 +105,11 @@ The list of types is dynamically generated based on the available methods for
 the data transformer.
 
 In some cases, it makes sense for this to be explicitly defined for a particular
-transformer. """
+transformer, optionally taking into account information in the `spec` and/or
+parent `dataset`.
+
+See also: [`QualifiedType`](@ref), [`DataTransformer`](@ref).
+"""
 function supportedtypes end # See `interaction/externals.jl` for method definitions.
 
 supportedtypes(DT::Type{<:DataTransformer}, spec::Dict{String, Any}, _::DataSet) =
@@ -123,7 +127,7 @@ supportedtypes(DT::Type{<:DataTransformer}, _::Dict{String, Any}) =
 """
     fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})
 
-Create an `DT` of `dataset` according to `spec`.
+Create an [`DT`](@ref DataTransformer) of `dataset` according to `spec`.
 
 `DT` can either contain the driver name as a type parameter, or it will be read
 from the `"driver"` key in `spec`.
@@ -182,10 +186,10 @@ end
     fromspec(::Type{DataCollection}, spec::Dict{String, Any};
              path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
 
-Create a `DataCollection` from `spec`.
+Create a [`DataCollection`](@ref) from `spec`.
 
 The `path` and `mod` keywords are used as the values for the corresponding
-fields in the DataCollection.
+fields in the [`DataCollection`](@ref).
 """
 function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                   path::Union{String, Nothing}=nothing, mod::Module=Base.Main)
@@ -246,7 +250,7 @@ end
 """
     fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
 
-Create a `DataSet` for `collection` called `name`, according to `spec`.
+Create a [`DataSet`](@ref) for `collection` called `name`, according to `spec`.
 """
 function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spec::Dict{String, Any})
     uuid = UUID(@something get(spec, "uuid", nothing) begin

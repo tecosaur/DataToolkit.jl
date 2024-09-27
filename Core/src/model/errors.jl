@@ -1,7 +1,7 @@
 abstract type IdentifierException <: Exception end
 
 """
-    UnresolveableIdentifier{T}(identifier::Union{String, UUID}, [collection::DataCollection])
+    UnresolveableIdentifier{T}(identifier::Union{String, UUID}, [collection::DataCollection]) <: IdentifierException
 
 No `T` (optionally from `collection`) could be found that matches `identifier`.
 
@@ -142,7 +142,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection}, bt
 end
 
 """
-    AmbiguousIdentifier(identifier::Union{String, UUID}, matches::Vector, [collection])
+    AmbiguousIdentifier(identifier::Union{String, UUID}, matches::Vector, [collection]) <: IdentifierException
 
 Searching for `identifier` (optionally within `collection`), found multiple
 matches (provided as `matches`).
@@ -205,7 +205,7 @@ end
 abstract type PackageException <: Exception end
 
 """
-    UnregisteredPackage(pkg::Symbol, mod::Module)
+    UnregisteredPackage(pkg::Symbol, mod::Module) <: PackageException
 
 The package `pkg` was asked for within `mod`, but has not been
 registered by `mod`, and so cannot be loaded.
@@ -258,7 +258,7 @@ function Base.showerror(io::IO, err::UnregisteredPackage, bt; backtrace=true)
 end
 
 """
-    MissingPackage(pkg::Base.PkgId)
+    MissingPackage(pkg::Base.PkgId) <: PackageException
 
 The package `pkg` was asked for, but does not seem to be available in the
 current environment.
@@ -288,7 +288,7 @@ end
 abstract type DataOperationException <: Exception end
 
 """
-    CollectionVersionMismatch(version::Int)
+    CollectionVersionMismatch(version::Int) <: DataOperationException
 
 The `version` of the collection currently being acted on is not supported
 by the current version of $(@__MODULE__).
@@ -323,7 +323,7 @@ function Base.showerror(io::IO, err::CollectionVersionMismatch, bt; backtrace=tr
 end
 
 """
-    EmptyStackError()
+    EmptyStackError() <: DataOperationException
 
 An attempt was made to perform an operation on a collection within the data
 stack, but the data stack is empty.
@@ -344,7 +344,7 @@ function Base.showerror(io::IO, err::EmptyStackError, bt; backtrace=true)
 end
 
 """
-    ReadonlyCollection(collection::DataCollection)
+    ReadonlyCollection(collection::DataCollection) <: DataOperationException
 
 Modification of `collection` is not viable, as it is read-only.
 
@@ -369,7 +369,7 @@ function Base.showerror(io::IO, err::ReadonlyCollection, bt; backtrace=true)
 end
 
 """
-    TransformerError(msg::String)
+    TransformerError(msg::String) <: DataOperationException
 
 A catch-all for issues involving data transformers, with details given in `msg`.
 
@@ -394,7 +394,7 @@ function Base.showerror(io::IO, err::TransformerError, bt; backtrace=true)
 end
 
 """
-    UnsatisfyableTransformer{T}(dataset::DataSet, types::Vector{QualifiedType})
+    UnsatisfyableTransformer{T}(dataset::DataSet, types::Vector{QualifiedType}) <: DataOperationException
 
 A transformer (of type `T`) that could provide any of `types` was asked for, but
 there is no transformer that satisfies this restriction.
@@ -442,7 +442,7 @@ function Base.showerror(io::IO, err::UnsatisfyableTransformer, bt; backtrace=tru
 end
 
 """
-    OrphanDataSet(dataset::DataSet)
+    OrphanDataSet(dataset::DataSet) <: DataOperationException
 
 The data set (`dataset`) is no longer a child of its parent collection.
 
@@ -462,7 +462,7 @@ function Base.showerror(io::IO, err::OrphanDataSet, bt; backtrace=true)
 end
 
 """
-    ImpossibleTypeException(qt::QualifiedType, mod::Union{Module, Nothing})
+    ImpossibleTypeException(qt::QualifiedType, mod::Union{Module, Nothing}) <: DataOperationException
 
 The qualified type `qt` could not be converted to a `Type`, for some reason or
 another (`mod` is the parent module used in the attempt, should it be successfully
@@ -487,6 +487,11 @@ function Base.showerror(io::IO, err::ImpossibleTypeException, bt; backtrace=true
     backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
+"""
+    InvalidParameterType{T}(thing::T, parameter::String, type::Type) <: DataOperationException
+
+The parameter `parameter` of `thing` must be of type `type`, but is not.
+"""
 struct InvalidParameterType{T <: Union{<:DataTransformer, DataSet, DataCollection}}
     thing::T
     parameter::String
@@ -510,6 +515,13 @@ function Base.showerror(io::IO, err::InvalidParameterType, bt; backtrace=true)
     backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
+"""
+    @getparam container."parameter"::Type default=nothing
+
+Get the parameter `"parameter"` from `container` (a [`DataCollection`](@ref),
+[`DataSet`](@ref), or [`DataTransformer`](@ref)), ensuring that it is of type
+`Type`. If it is not, an [`InvalidParameterType`](@ref) error is thrown.
+"""
 macro getparam(expr::Expr, default=nothing)
     thing, type = if Meta.isexpr(expr, :(::)) expr.args else (expr, :Any) end
     Meta.isexpr(thing, :.) || error("Malformed expression passed to @getparam")
