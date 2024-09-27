@@ -1,5 +1,0 @@
-#+title: Passthrough
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:passthrough, :loader)
-#+end_src

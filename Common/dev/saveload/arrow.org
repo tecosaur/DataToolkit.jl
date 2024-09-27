@@ -1,5 +1,0 @@
-#+title: Arrow
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:arrow)
-#+end_src
