@@ -85,41 +85,48 @@ md2rm() = foreach(rm, MdFiles)
 
 # ---
 
-macro all_interlinks()
-    urlbase = "https://tecosaur.github.io/DataToolkit.jl"
+const SUBPKGS = Dict(
+    :Core => (sufffix="Core", subdir="Core", url="core"),
+    :REPL => (sufffix="REPL", subdir="REPL", url="repl"),
+    :Store => (sufffix="Store", subdir="Store", url="store"),
+    :Common => (sufffix="Common", subdir="Common", url="common"),
+    :Base => (sufffix="Base", subdir="Base", url="base"),
+    :Main => (sufffix="", subdir="Main", url="main")
+)
+
+const DOCS_BASE_URL = "https://tecosaur.github.io/DataToolkit.jl"
+
+macro get_interlinks(pkgs::Symbol...)
+    forms = Expr[]
+    for pkg in pkgs
+        spec = SUBPKGS[pkg]
+        name = "DataToolkit$(spec.sufffix)"
+        invfile = joinpath(dirname(dirname(@__DIR__)), spec.subdir, "docs", "build", "objects.inv")
+        puburl = "$DOCS_BASE_URL/$(spec.url)/"
+        invurl = puburl * "objects.inv"
+        push!(forms, :($name => ($puburl,
+                                 if isfile($invfile) Inventory($invfile, root_url=$puburl) end,
+                                 Inventory($invurl, root_url=$puburl))))
+    end
     quote
-        InterLinks(
-            "Julia" => "https:/docs.julialang.org/en/v1/",
-            "DataToolkitCore" => (
-                $"$urlbase/core/",
-                joinpath(dirname(dirname(@__DIR__)), "Core", "docs", "build", "objects.inv"),
-                $"$urlbase/core/objects.inv"
-            ),
-            "DataToolkitREPL" => (
-                $"$urlbase/repl/",
-                joinpath(dirname(dirname(@__DIR__)), "REPL", "docs", "build", "objects.inv"),
-                $"$urlbase/repl/objects.inv"
-            ),
-            "DataToolkitStore" => (
-                $"$urlbase/store/",
-                joinpath(dirname(dirname(@__DIR__)), "Store", "docs", "build", "objects.inv"),
-                $"$urlbase/store/objects.inv"
-            ),
-            "DataToolkitCommon" => (
-                $"$urlbase/common/",
-                joinpath(dirname(dirname(@__DIR__)), "Common", "docs", "build", "objects.inv"),
-                $"$urlbase/common/objects.inv"
-            ),
-            "DataToolkitBase" => (
-                $"$urlbase/base/",
-                joinpath(dirname(dirname(@__DIR__)), "Base", "docs", "build", "objects.inv"),
-                $"$urlbase/base/objects.inv"
-            ),
-            "DataToolkit" => (
-                $"$urlbase/main/",
-                joinpath(dirname(dirname(@__DIR__)), "Main", "docs", "build", "objects.inv"),
-                $"$urlbase/main/objects.inv"
-            ),
-        )
+        using Documenter, DocumenterInterLinks, DocInventories
+        push!(Documenter.ERROR_NAMES, :extrefs_should_be_fine_nevermind_me)
+        const INTERLINKS, INTERLINKS_WARN = let subpkgs = $(Expr(:tuple, forms...))
+            uptodate = true
+            for (name, (_, invf, invu)) in subpkgs
+                if invf != invu
+                    uptodate = false
+                    break
+                end
+            end
+            if uptodate && "--only-if-inv-changed" in ARGS
+                exit()
+            end
+            InterLinks(
+                "Julia" => ("https:/docs.julialang.org/en/v1/", "https://docs.julialang.org/en/v1/objects.inv"),
+                [name => if !isnothing(invf) invf else invu end
+                     for (name, (puburl, invf, invu)) in subpkgs]...
+            ), if uptodate; :extrefs_should_be_fine_nevermind_me else :external_cross_references end
+        end
     end |> esc
 end

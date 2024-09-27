@@ -17,11 +17,18 @@ jobs:
         with:
           version: '1'
       - uses: julia-actions/cache@v1
+      # Round 1: Create interlink dumps
       - run: Core/docs/make.jl
       - run: Store/docs/make.jl
       - run: Common/docs/make.jl
       - run: REPL/docs/make.jl
       - run: Main/docs/make.jl
+      # Round 2: Now with resolvable interlinks
+      - run: Core/docs/make.jl --only-if-inv-changed
+      - run: Store/docs/make.jl --only-if-inv-changed
+      - run: Common/docs/make.jl --only-if-inv-changed
+      - run: REPL/docs/make.jl --only-if-inv-changed
+      # Combine
       - name: MultiDocs
         run: |
           git config user.name github-actions
