@@ -331,7 +331,7 @@ stack, but the data stack is empty.
 # Example occurrence
 
 ```julia-repl
-julia> getlayer(nothing) # with an empty STACK
+julia> getlayer() # with an empty STACK
 ERROR: EmptyStackError: The data collection stack is empty
 Stacktrace: [...]
 ```
