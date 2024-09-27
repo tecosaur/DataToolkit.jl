@@ -86,32 +86,39 @@ md2rm() = foreach(rm, MdFiles)
 # ---
 
 macro all_interlinks()
+    urlbase = "https://tecosaur.github.io/DataToolkit.jl"
     quote
         InterLinks(
             "Julia" => "https:/docs.julialang.org/en/v1/",
             "DataToolkitCore" => (
-                "https://tecosaur.github.io/DataToolkit.jl/core/",
-                joinpath(dirname(dirname(@__DIR__)), "Core", "docs", "build", "objects.inv")
+                $"$urlbase/core/",
+                joinpath(dirname(dirname(@__DIR__)), "Core", "docs", "build", "objects.inv"),
+                $"$urlbase/core/objects.inv"
             ),
             "DataToolkitREPL" => (
-                "https://tecosaur.github.io/DataToolkit.jl/repl/",
-                joinpath(dirname(dirname(@__DIR__)), "REPL", "docs", "build", "objects.inv")
+                $"$urlbase/repl/",
+                joinpath(dirname(dirname(@__DIR__)), "REPL", "docs", "build", "objects.inv"),
+                $"$urlbase/repl/objects.inv"
             ),
             "DataToolkitStore" => (
-                "https://tecosaur.github.io/DataToolkit.jl/store/",
-                joinpath(dirname(dirname(@__DIR__)), "Store", "docs", "build", "objects.inv")
+                $"$urlbase/store/",
+                joinpath(dirname(dirname(@__DIR__)), "Store", "docs", "build", "objects.inv"),
+                $"$urlbase/store/objects.inv"
             ),
             "DataToolkitCommon" => (
-                "https://tecosaur.github.io/DataToolkit.jl/common/",
-                joinpath(dirname(dirname(@__DIR__)), "Common", "docs", "build", "objects.inv")
+                $"$urlbase/common/",
+                joinpath(dirname(dirname(@__DIR__)), "Common", "docs", "build", "objects.inv"),
+                $"$urlbase/common/objects.inv"
             ),
             "DataToolkitBase" => (
-                "https://tecosaur.github.io/DataToolkit.jl/base/",
-                joinpath(dirname(dirname(@__DIR__)), "Base", "docs", "build", "objects.inv")
+                $"$urlbase/base/",
+                joinpath(dirname(dirname(@__DIR__)), "Base", "docs", "build", "objects.inv"),
+                $"$urlbase/base/objects.inv"
             ),
             "DataToolkit" => (
-                "https://tecosaur.github.io/DataToolkit.jl/main/",
-                joinpath(dirname(dirname(@__DIR__)), "Main", "docs", "build", "objects.inv")
+                $"$urlbase/main/",
+                joinpath(dirname(dirname(@__DIR__)), "Main", "docs", "build", "objects.inv"),
+                $"$urlbase/main/objects.inv"
             ),
         )
     end |> esc
