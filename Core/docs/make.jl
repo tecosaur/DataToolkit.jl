@@ -2,6 +2,7 @@
 
 include("setup.jl")
 @setupdev ".."
+@get_interlinks Core Main
 
 using Org
 org2md(joinpath(@__DIR__, "src"))
@@ -25,7 +26,8 @@ makedocs(;
     ],
     sitename="DataToolkitCore.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
-    warnonly = [:missing_docs],
+    warnonly = [:missing_docs, INTERLINKS_WARN],
+    plugins = [INTERLINKS],
 )
 
 md2rm()

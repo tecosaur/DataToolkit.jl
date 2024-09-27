@@ -1,16 +1,16 @@
 #!/usr/bin/env -S julia --startup-file=no
 
 include("../../Core/docs/setup.jl")
+
 @setupdev "../../Core" ".."
+@get_interlinks
 
 using Org
 org2md(joinpath(@__DIR__, "src"))
 
-using Documenter, DocumenterInterLinks
+using Documenter
 using DataToolkitREPL, REPL
 const REPLMode = Base.get_extension(DataToolkitREPL, :REPLMode)
-
-const interlinks = @all_interlinks;
 
 makedocs(;
     modules=[DataToolkitREPL, REPLMode],
@@ -21,8 +21,8 @@ makedocs(;
     ],
     sitename="DataToolkitREPL.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
-    warnonly = [:missing_docs],
-    plugins = [interlinks],
+    warnonly = [:missing_docs, INTERLINKS_WARN],
+    plugins = [INTERLINKS],
 )
 
 md2rm()

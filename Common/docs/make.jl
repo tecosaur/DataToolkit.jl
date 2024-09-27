@@ -1,7 +1,9 @@
 #!/usr/bin/env -S julia --startup-file=no
 
 include("../../Core/docs/setup.jl")
+
 @setupdev "../../Core" "../../REPL" ".."
+@get_interlinks REPL
 
 const DocPlugins = [
     "AddPkgs" => "addpkgs",
@@ -44,7 +46,7 @@ const DocStorage = [
     "Web",
 ]
 
-using Documenter, DocumenterInterLinks
+using Documenter
 using DataToolkitCore
 using DataToolkitCommon
 using DataToolkitREPL, REPL
@@ -122,8 +124,6 @@ end
 entryfname(n::String) = replace(lowercase(n), r"[^a-z0-9]" => "") * ".md"
 entryfname(p::Pair) = entryfname(p.first)
 
-const interlinks = @all_interlinks;
-
 makedocs(;
     modules=[DataToolkitCommon],
     format=Documenter.HTML(assets = ["assets/favicon.ico"]),
@@ -136,8 +136,8 @@ makedocs(;
     repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkitCommon.jl",
     authors = "tecosaur and contributors: https://github.com/tecosaur/DataToolkit.jl/graphs/contributors",
-    warnonly = [:missing_docs],
-    plugins = [interlinks],
+    warnonly = [:missing_docs, INTERLINKS_WARN],
+    plugins = [INTERLINKS],
 )
 
 md2rm()

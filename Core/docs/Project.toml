@@ -1,4 +1,5 @@
 [deps]
+DocInventories = "43dc2714-ed3b-44b5-b226-857eda1aa7de"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterInterLinks = "d12716ef-a0f6-4df4-a9f1-a5a34e75c656"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
