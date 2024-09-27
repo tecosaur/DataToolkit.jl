@@ -271,6 +271,8 @@ function plugin_info(plugin::AbstractString; quiet::Bool=false)
             quiet || printstyled("  The $plugin plugin\n\n", color=:blue, bold=true)
             if documentation isa Base.Docs.DocStr
                 Base.Docs.parsedoc(documentation)
+            elseif documentation isa Base.Docs.Binding
+                Base.Docs.doc(documentation)
             else
                 documentation
             end
