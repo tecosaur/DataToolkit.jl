@@ -88,6 +88,7 @@ md2rm() = foreach(rm, MdFiles)
 macro all_interlinks()
     quote
         InterLinks(
+            "Julia" => "https:/docs.julialang.org/en/v1/",
             "DataToolkitCore" => (
                 "https://tecosaur.github.io/DataToolkit.jl/core/",
                 joinpath(dirname(dirname(@__DIR__)), "Core", "docs", "build", "objects.inv")
