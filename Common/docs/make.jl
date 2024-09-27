@@ -3,16 +3,52 @@
 include("../../Core/docs/setup.jl")
 @setupdev "../../Core" "../../REPL" ".."
 
+const DocPlugins = [
+    "AddPkgs" => "addpkgs",
+    "Defaults" => "defaults",
+    "Memorise" => "memorise",
+    "Versions" => "versions",
+]
+
+const DocSaveload = [
+    "Arrow",
+    "Chain",
+    "Compressed",
+    "CSV",
+    "Delim",
+    "Gif",
+    "IO to File" => "io->file",
+    "JLD2",
+    "Jpeg",
+    "Json",
+    "Julia",
+    "Netpbm",
+    "Passthrough",
+    "PNG",
+    "Qoi",
+    "Sqlite",
+    "Tar",
+    "Tiff",
+    "Webp",
+    "XLSX",
+    "Zip",
+]
+
+const DocStorage = [
+    "Filesystem",
+    "Git",
+    "Null",
+    "Passthrough",
+    "Raw",
+    "S3",
+    "Web",
+]
+
 using Documenter, DocumenterInterLinks
+using DataToolkitCore
 using DataToolkitCommon
 using DataToolkitREPL, REPL
 using Markdown
-
-Core.eval(DataToolkitCommon,
-          quote
-              tdocs(args...) = $DataToolkitREPL.transformer_docs(args...) |> string |> $Markdown.parse
-              pdocs(name) = DataToolkitCore.plugin_info(name) |> string |> $Markdown.parse
-          end)
 
 using Org
 
@@ -57,6 +93,35 @@ end
 
 org2md_jl(joinpath(@__DIR__, "src"))
 
+for (entries, subdir, idprefix, docfn) in (
+    (DocPlugins, "plugins", "plugin", p ->
+        """
+        !!! info "Using this plugin"
+            To use the plugin, either modify the `plugins` entry of the
+            collection's Data.toml to include `"$p"`, or use the Data REPL's
+            `plugin add`/`plugin remove` subcommands.
+
+        """ * string(DataToolkitCore.plugin_info(p))),
+    (DocSaveload, "saveload", "saveload", t -> DataToolkitREPL.transformer_docs(Symbol(t), :loader)),
+    (DocStorage, "storage", "storage", t -> DataToolkitREPL.transformer_docs(Symbol(t), :storage)))
+    mkpath(joinpath(@__DIR__, "src", subdir))
+    for entry in entries
+        name, key = if entry isa Pair entry else entry, lowercase(entry) end
+        file = replace(lowercase(name), r"[^a-z0-9]" => "") * ".md"
+        open(joinpath(@__DIR__, "src", subdir, file), "w") do io
+            content = replace(docfn(key) |> string, r"^#" => "##")
+            println(io, """
+            # [$name](@id $idprefix-$(lowercase(name)))
+
+            $content
+            """)
+        end
+    end
+end
+
+entryfname(n::String) = replace(lowercase(n), r"[^a-z0-9]" => "") * ".md"
+entryfname(p::Pair) = entryfname(p.first)
+
 const interlinks = @all_interlinks;
 
 makedocs(;
@@ -64,44 +129,9 @@ makedocs(;
     format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
-        "Storage" => Any[
-            "storage/filesystem.md",
-            "storage/git.md",
-            "storage/null.md",
-            "storage/passthrough.md",
-            "storage/raw.md",
-            "storage/s3.md",
-            "storage/web.md",
-        ],
-        "Loaders/Writers" => Any[
-            "saveload/arrow.md",
-            "saveload/chain.md",
-            "saveload/compression.md",
-            "saveload/csv.md",
-            "saveload/delim.md",
-            "saveload/gif.md",
-            "saveload/iotofile.md",
-            "saveload/jpeg.md",
-            "saveload/json.md",
-            "saveload/julia.md",
-            "saveload/netpbm.md",
-            "saveload/passthrough.md",
-            "saveload/png.md",
-            "saveload/qoi.md",
-            "saveload/sqlite.md",
-            "saveload/tar.md",
-            "saveload/tiff.md",
-            "saveload/webp.md",
-            "saveload/xlsx.md",
-            "saveload/zip.md",
-        ],
-        "Plugins" => Any[
-            "plugins/addpkgs.md",
-            "plugins/cache.md",
-            "plugins/defaults.md",
-            "plugins/memorise.md",
-            "plugins/versions.md",
-        ],
+        "Storage" => map(e -> "storage/$(entryfname(e))", DocStorage),
+        "Loaders/Writers" => map(e -> "saveload/$(entryfname(e))", DocSaveload),
+        "Plugins" => map(e -> "plugins/$(entryfname(e))", DocPlugins),
     ],
     repo="https://github.com/tecosaur/DataToolkit.jl/blob/{commit}{path}#L{line}",
     sitename="DataToolkitCommon.jl",

@@ -1,5 +1,0 @@
-#+title: Git
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:git)
-#+end_src

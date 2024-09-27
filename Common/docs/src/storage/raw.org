@@ -1,5 +1,0 @@
-#+title: Raw
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:raw)
-#+end_src

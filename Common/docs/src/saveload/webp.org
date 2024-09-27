@@ -1,5 +1,0 @@
-#+title: WebP
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:webp)
-#+end_src

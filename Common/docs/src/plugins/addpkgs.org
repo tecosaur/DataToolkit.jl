@@ -1,5 +1,0 @@
-#+title: Addpkgs
-
-#+begin_src @eval
-Main.DataToolkitCommon.pdocs("addpkgs")
-#+end_src
