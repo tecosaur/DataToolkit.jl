@@ -1,5 +1,0 @@
-#+title: CSV
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:csv)
-#+end_src

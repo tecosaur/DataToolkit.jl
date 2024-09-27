@@ -1,5 +1,0 @@
-#+title: Gif
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:gif)
-#+end_src

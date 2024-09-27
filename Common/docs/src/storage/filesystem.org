@@ -1,5 +1,0 @@
-#+title: Filesystem
-
-#+begin_src @eval
-Main.DataToolkitCommon.tdocs(:filesystem)
-#+end_src

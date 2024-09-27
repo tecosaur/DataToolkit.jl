@@ -1,5 +1,0 @@
-#+title: Cache
-
-#+begin_src @eval
-Main.DataToolkitCommon.pdocs("cache")
-#+end_src
