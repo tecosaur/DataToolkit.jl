@@ -62,3 +62,9 @@ replace!
 fromspec
 tospec
 #+end_src
+
+* Qualified types
+
+#+begin_src @docs
+QualifiedType
+#+end_src
