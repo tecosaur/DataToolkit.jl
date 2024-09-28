@@ -5,7 +5,7 @@ function DataCollection(name::Union{String, Nothing}, config::Dict{String, <:Any
                         plugins::Vector{String}=String[], mod::Module=Base.Main)
     collection = DataCollection(
         LATEST_DATA_CONFIG_VERSION, name, uuid, plugins,
-        Dict{String, Any}(config), DataSet[], path,
+        toml_safe(config), DataSet[], path,
         AdviceAmalgamation(plugins), mod)
     @advise identity(collection)
 end
@@ -28,14 +28,19 @@ function toml_safe end
 
 toml_safe(c::DataCollection, v::Vector) = Vector{Any}(map(Base.Fix1(toml_safe, c), v))
 toml_safe(c::DataCollection, d::Dict) = Dict{String, Any}(string(k) => toml_safe(c, v) for (k, v) in d)
-toml_safe(_::DataCollection, q::QualifiedType) = string(q)
-toml_safe(c::DataCollection, T::DataType) = toml_safe(c, QualifiedType(T))
 toml_safe(c::DataCollection, i::Identifier) = dataset_parameters(c, Val(:encode), i)
 toml_safe(c::DataCollection, d::DataSet) = toml_safe(c, Identifier(d))
-toml_safe(_::DataCollection, x::TOML.Internals.Printer.TOMLValue) = x
-toml_safe(_::DataCollection, x::Any) = string(x)
+
 toml_safe(d::DataSet, x) = toml_safe(d.collection, x)
 toml_safe(t::DataTransformer, x) = toml_safe(t.dataset, x)
+
+toml_safe(::DataCollection, x) = toml_safe(x)
+toml_safe(v::Vector) = Vector{Any}(map(toml_safe, v))
+toml_safe(d::Dict) = Dict{String, Any}(string(k) => toml_safe(v) for (k, v) in d)
+toml_safe(q::QualifiedType) = string(q)
+toml_safe(T::DataType) = toml_safe(QualifiedType(T))
+toml_safe(x::TOML.Internals.Printer.TOMLValue) = x
+toml_safe(x::Any) = string(x)
 
 # DataSet creation
 
