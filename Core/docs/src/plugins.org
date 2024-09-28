@@ -30,7 +30,7 @@ AdviceAmalgamation
 @advise
 #+end_src
 
-* Advisement points (standard join points)
+* Advisement (join) points
 
 ** Parsing and serialisation of data sets and collections
 
@@ -79,7 +79,7 @@ storage(provider::DataStorage, as::Type; write::Bool)
 save(writer::DataWriter, datahandle, info)
 #+end_src
 
-* Index of advised calls (all known join points)
+* Index of advised calls (join points)
 
 #+begin_src @eval
 using Markdown
