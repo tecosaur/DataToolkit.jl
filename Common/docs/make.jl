@@ -3,7 +3,7 @@
 include("../../Core/docs/setup.jl")
 
 @setupdev "../../Core" "../../REPL" ".."
-@get_interlinks REPL
+@get_interlinks Core REPL Main
 
 const DocPlugins = [
     "AddPkgs" => "addpkgs",
@@ -100,8 +100,9 @@ for (entries, subdir, idprefix, docfn) in (
         """
         !!! info "Using this plugin"
             To use the plugin, either modify the `plugins` entry of the
-            collection's Data.toml to include `"$p"`, or use the Data REPL's
-            `plugin add`/`plugin remove` subcommands.
+            collection's [Data.toml](@extref) to include `"$p"`, or use the Data
+            REPL's [`plugin add`](@extref repl-plugin-add)/[`plugin remove`](@extref
+            repl-plugin-remove) subcommands.
 
         """ * string(DataToolkitCore.plugin_info(p))),
     (DocSaveload, "saveload", "saveload", t -> DataToolkitREPL.transformer_docs(Symbol(t), :loader)),
@@ -129,6 +130,7 @@ makedocs(;
     format=Documenter.HTML(assets = ["assets/favicon.ico"]),
     pages=[
         "Introduction" => "index.md",
+        "Contributing" => "contributing.md",
         "Storage" => map(e -> "storage/$(entryfname(e))", DocStorage),
         "Loaders/Writers" => map(e -> "saveload/$(entryfname(e))", DocSaveload),
         "Plugins" => map(e -> "plugins/$(entryfname(e))", DocPlugins),
