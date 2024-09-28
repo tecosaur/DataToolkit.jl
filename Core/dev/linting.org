@@ -8,7 +8,7 @@ LintReport
 LintItem
 #+end_src
 
-Additional lint rules can be created by implementing new ~lint~.
+Additional lint rules can be created by implementing new ~lint~ methods.
 
 #+begin_src @docs
 lint
