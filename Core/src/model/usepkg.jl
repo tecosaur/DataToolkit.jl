@@ -28,6 +28,15 @@ function get_package(pkg::Base.PkgId)
     end
 end
 
+function get_package(from::Module, name::Symbol)
+    pkgid = get(get(EXTRA_PACKAGES, from, Dict()), name, nothing)
+    if !isnothing(pkgid)
+        get_package(pkgid)
+    else
+        throw(UnregisteredPackage(name, from))
+    end
+end
+
 const PKG_ID = Base.PkgId(Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pkg")
 
 @static if VERSION > v"1.11-alpha1"
@@ -47,15 +56,6 @@ else
         !isnothing(Pkg) && isdefined(Pkg, :REPLMode) &&
             isdefined(Pkg.REPLMode, :try_prompt_pkg_add) &&
             Pkg.REPLMode.try_prompt_pkg_add([Symbol(pkg.name)])
-    end
-end
-
-function get_package(from::Module, name::Symbol)
-    pkgid = get(get(EXTRA_PACKAGES, from, Dict()), name, nothing)
-    if !isnothing(pkgid)
-        get_package(pkgid)
-    else
-        throw(UnregisteredPackage(name, from))
     end
 end
 
