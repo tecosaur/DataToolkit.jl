@@ -27,14 +27,14 @@ I think might be helpful as a point of reference:
    b. Modify the =Project.toml= to add a ={MyPkg}Ext= to the =[extensions]= section
    c. Create =ext/{MyPkg}Ext.jl=
    d. Add a stub method to =saveload/{name}.jl=, and implement it in =ext/{MyPkg}Ext.jl=
-   e. Use ~@require {MyPkg}~ at the start of your [[@extref DataToolkitCore][~load~]] method implementation
+   e. Use ~@require {MyPkg}~ at the start of your [[@extref DataToolkitCore.load][~load~]] method implementation
    f. Add a ~@addpkg {MyPkg} {UUID}~ line to the ~__init__~ method in
       =src/DataToolkitCommon.jl= (maintaining the sorted order)
-4. Implement one or more [[@extref DataToolkitCore][~load~]] methods for ~DataLoader{:name}~. Use [[@extref DataToolkitCore][~@getparam~]]
+4. Implement one or more [[@extref DataToolkitCore.load][~load~]] methods for ~DataLoader{:name}~. Use [[@extref DataToolkitCore.@getparam][~@getparam~]]
    if you want to access parameters of the loader or dataset.
 5. If you implemented multiple ~load~ methods, consider whether it would also be
-   appropriate to implement a specialised [[@extref DataToolkitCore][~supportedtypes~]] method.
-6. Consider whether there is a reasonable implementation of [[@extref DataToolkitCore][~createauto~]] you
+   appropriate to implement a specialised [[@extref DataToolkitCore.supportedtypes][~supportedtypes~]] method.
+6. Consider whether there is a reasonable implementation of [[@extref DataToolkitCore.createauto][~createauto~]] you
    could write.
 7. At the end of the file, assign a docstring to a const using the form ~const {name}_DOC = md"""..."""~,
    and update the ~append!(DataToolkitCore.TRANSFORMER_DOCUMENTATION, [...])~ call
@@ -48,14 +48,14 @@ I think might be helpful as a point of reference:
 The same as the loader steps, except:
 + You want to create the file =src/transformers/storage/{name}.jl=
 + You want to implement either:
-  - [[@extref DataToolkitCore][~storage~]]
-  - [[@extref DataToolkitCore][~getstorage~]] and/or [[@extref DataToolkitCore][~putstorage~]]
+  - [[@extref DataToolkitCore.storage][~storage~]]
+  - [[@extref DataToolkitCore.getstorage][~getstorage~]] and/or [[@extref DataToolkitCore.putstorage][~putstorage~]]
 + Add ~"{name}"~ to ~DocStorage~ instead of ~DocSaveload~ in =docs/make.jl=
 
 ** Writer
 
 The same as the loader steps, except:
-+ You want to implement [[@extref DataToolkitCore][~save~]]
++ You want to implement [[@extref DataToolkitCore.save][~save~]]
 
 * Creating a new plugin
 
