@@ -65,8 +65,11 @@ function Selectors.runner(::Type{DataREPLHelpBlocks}, node, page, doc)
     @assert node.element isa MarkdownAST.CodeBlock
     for line in eachsplit(node.element.code, '\n')
         resnode = datareplhelp(String(line))
-        heading = Node(MarkdownAST.Heading(2))
-        push!(heading.children, Node(MarkdownAST.Code('?' * line)))
+        heading = MarkdownAST.@ast MarkdownAST.Heading(2) do
+            MarkdownAST.Link("@id repl-" * replace(line, ' ' => '-'), "") do
+                MarkdownAST.Code('?' * line)
+            end
+        end
         insert_before!(node, heading)
         Selectors.runner(TrackHeaders, heading, page, doc)
         for child in resnode.children
