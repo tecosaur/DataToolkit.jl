@@ -9,10 +9,10 @@ If we consider storage locations (storage), raw data (data), and informative
 representations of the data (information) to be /categories/, then if you squint a
 bit the =storage=, =loader=, and =writer= transformers can be viewed as functors.
 
-[[file:assets/data-category-theory.svg]]
-
 This doesn't make much of a practical impact, but I think it's a fun way of
 framing things.
+
+[[file:assets/data-category-theory.svg]]
 #+end_details
 
 * Transformer types
