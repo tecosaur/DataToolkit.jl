@@ -3,7 +3,7 @@
 include("../../Core/docs/setup.jl")
 
 @setupdev "../../Core" "../../Common" "../../Store" "../../Base" "../../REPL" ".."
-@get_interlinks Core
+@get_interlinks Core Common REPL
 
 using Org
 org2md(joinpath(@__DIR__, "src"))
