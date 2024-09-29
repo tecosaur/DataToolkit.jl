@@ -1,6 +1,6 @@
 #+title: Linting
 
-In DataToolkit, the [[@extref][Data.toml]] can be linted to identify and resolve potential
+In DataToolkit, the [[@extref DTk][Data.toml]] can be linted to identify and resolve potential
 issues. This is done by generating ~LintReport~​s and ~LintItem~​s.
 
 #+begin_src @docs
