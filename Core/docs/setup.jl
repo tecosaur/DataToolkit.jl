@@ -86,27 +86,28 @@ md2rm() = foreach(rm, MdFiles)
 # ---
 
 const SUBPKGS = Dict(
-    :Core => (sufffix="Core", subdir="Core", url="core"),
-    :REPL => (sufffix="REPL", subdir="REPL", url="repl"),
-    :Store => (sufffix="Store", subdir="Store", url="store"),
-    :Common => (sufffix="Common", subdir="Common", url="common"),
-    :Base => (sufffix="Base", subdir="Base", url="base"),
-    :Main => (sufffix="", subdir="Main", url="main")
+    :Core => (suffix="Core", subdir="Core", url="core"),
+    :REPL => (suffix="REPL", subdir="REPL", url="repl"),
+    :Store => (suffix="Store", subdir="Store", url="store"),
+    :Common => (suffix="Common", subdir="Common", url="common"),
+    :Base => (suffix="Base", subdir="Base", url="base"),
+    :Main => (suffix="", subdir="Main", url="main")
 )
 
+const DOCS_INTERLINK_PREFIX = "DTk"
 const DOCS_BASE_URL = "https://tecosaur.github.io/DataToolkit.jl"
 
 macro get_interlinks(pkgs::Symbol...)
     forms = Expr[]
     for pkg in pkgs
         spec = SUBPKGS[pkg]
-        name = "DataToolkit$(spec.sufffix)"
         invfile = joinpath(dirname(dirname(@__DIR__)), spec.subdir, "docs", "build", "objects.inv")
         puburl = "$DOCS_BASE_URL/$(spec.url)/"
         invurl = puburl * "objects.inv"
-        push!(forms, :($name => ($puburl,
-                                 if isfile($invfile) Inventory($invfile, root_url=$puburl) end,
-                                 Inventory($invurl, root_url=$puburl))))
+        push!(forms, :($"$DOCS_INTERLINK_PREFIX$(spec.suffix)" =>
+            ($puburl,
+             if isfile($invfile) Inventory($invfile, root_url=$puburl) end,
+             Inventory($invurl, root_url=$puburl))))
     end
     quote
         using Documenter, DocumenterInterLinks, DocInventories
@@ -120,6 +121,7 @@ macro get_interlinks(pkgs::Symbol...)
                 end
             end
             if uptodate && "--only-if-inv-changed" in ARGS
+                @info "All inventories are up-to-date, skipping generation"
                 exit()
             end
             InterLinks(

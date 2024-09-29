@@ -49,7 +49,7 @@ Get more information on a particular command with =help <cmd>=, you can even get
 more information on what =help= does with =help help= 😉.
 #+end_tip
 
-We will initialise a new data collection with the [[@extref DataToolkitREPL repl-init][=init=]] command.
+We will initialise a new data collection with the [[@extref repl-init][=init=]] command.
 
 #+begin_note
 We can use the full command (=init=), or any substring that uniquely identifies
@@ -90,7 +90,7 @@ plugins = ["store", "defaults", "memorise"]
 #+end_src
 
 #+begin_note
-The plugins [[@extref DataToolkitCommon plugin-addpkgs][=store=]], [[@extref DataToolkitCommon plugin-defaults][=defaults=]], and [[@extref DataToolkitCommon plugin-memorise][=memorise=]] are the default set of plugins, which
+The plugins [[@extref plugin-addpkgs][=store=]], [[@extref plugin-defaults][=defaults=]], and [[@extref plugin-memorise][=memorise=]] are the default set of plugins, which
 is why we see them here. A minimal =Data.toml= would have ~plugins = []~.
 #+end_note
 
@@ -112,7 +112,7 @@ set is part of the =scikit-learn= repository, which makes it fairly easy to find
 link to it:
 https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
 
-We can easily add this as a [[@extref DataToolkitCore.DataSet][=DataSet=]] using the [[@extref DataToolkitREPL repl-add][=add=]] Data REPL command,
+We can easily add this as a [[@extref DataToolkitCore.DataSet][=DataSet=]] using the [[@extref repl-add][=add=]] Data REPL command,
 
 #+begin_example
 (tutorial) data> add iris https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
@@ -152,10 +152,10 @@ DataSet tutorial:iris
 #+end_src
 
 We can see from the =Storage: web(IO, Vector{UInt8}, String, FilePath)= line that
-the [[@extref DataToolkitCommon storage-web][=web=]] storage driver is being used, and it can make the content available as
+the [[@extref storage-web][=web=]] storage driver is being used, and it can make the content available as
 an ~IO~, ~Vector{UInt8}~, ~String~, or ~FilePath~ (a string wrapper type provided by
 =DataToolkitBase= for dispatch purposes). Similarly, the =Loaders: csv(DataFrame,
-Matrix, File)= tells us that the [[@extref DataToolkitCommon saveload-csv][=csv=]] loader is being used, and it can provide a
+Matrix, File)= tells us that the [[@extref saveload-csv][=csv=]] loader is being used, and it can provide a
 ~DataFrame~, ~Matrix~, or ~CSV.File~.
 
 If we look at the =Data.toml= again, we can see how the =iris= data set is
@@ -406,10 +406,10 @@ create a new data set.
 
 This example is a bit more complicated because we have a gzipped CSV. There is a
 gzip-decompressing loader, and a CSV loader, but no single loader that does
-both. Thankfully, there is a special loader called [[@extref DataToolkitCommon saveload-chain][=chain=]] that allows for
+both. Thankfully, there is a special loader called [[@extref saveload-chain][=chain=]] that allows for
 multiple loaders to be /chained/ together. We can see it's automatically been used
 here, and if we inspect the =Data.toml= we an see the following generated
-representation of the boston housing data, in which the [[@extref DataToolkitCommon saveload-compressed][=gzip=]] and [[@extref DataToolkitCommon saveload-csv][=csv=]] loaders are
+representation of the boston housing data, in which the [[@extref saveload-compressed][=gzip=]] and [[@extref saveload-csv][=csv=]] loaders are
 both used.
 
 #+begin_src toml
@@ -596,7 +596,7 @@ value of ~0.8~, and set the ~column~ to ~"MedV"~. It could be nice if we made th
 more easily tunable. We can do this by turning them into keyword arguments of
 the function.
 
-To make this change, we will use the [[@extref DataToolkitREPL repl-edit][=edit=]] Data REPL command.
+To make this change, we will use the [[@extref repl-edit][=edit=]] Data REPL command.
 
 #+begin_src julia-repl
 (tutorial) data> edit boston (clean)
