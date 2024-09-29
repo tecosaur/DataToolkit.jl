@@ -61,7 +61,7 @@ The same as the loader steps, except:
 
 If you feel like DataToolkit lacks something, not support for a certain
 support/storage provider, but some more fundamental behaviour ---
-it's entirely likely this behaviour can be added in via a [[@extref DataToolkitCore Plugins-and-Advice][/Plugin/]].
+it's entirely likely this behaviour can be added in via a [[@extref DTkCore Plugins-and-Advice][/Plugin/]].
 
 Depending on the behaviour you have in mind, implementing a plugin can take five
 minutes and be just a dozen or two lines total, or something much larger (like
@@ -70,7 +70,7 @@ whether or how something can be done 🙂.
 
 The plugins in =src/plugins/= should provide an indication of what implementing a
 plugin /can/ look like. The broad strokes look something like this though:
-1. Compare the behaviour in your mind to the [[@extref DataToolkitCore Index-of-advised-calls-(join-points)][join points]] currently available,
+1. Compare the behaviour in your mind to the [[@extref DTkCore Index-of-advised-calls-(join-points)][join points]] currently available,
    and contemplate which of them would need to be changed to accomidate your
    target behaviour
 2. Create =src/plugins/{name}.jl=, and implement advice functions that modify the

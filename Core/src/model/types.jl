@@ -177,8 +177,8 @@ Optionally, the following extra methods can be implemented:
 
 For simple cases, it can only take a few lines to implement a storage backend.
 
-This is the actual implementation of the [`:filesystem`](@extref
-DataToolkitCommon storage-filesystem) backend from `DataToolkitCommon`,
+This is the actual implementation of the [`:filesystem`](@extref storage-filesystem)
+backend from `DataToolkitCommon`,
 
 ```julia
 function storage(storage::DataStorage{:filesystem}, ::Type{FilePath}; write::Bool)
