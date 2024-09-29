@@ -24,14 +24,14 @@ Artifacts]], and [[https://github.com/JuliaComputing/DataSets.jl][DataSets.jl]].
 short of the combination of /convenience/ and /robustness/ that is possible.
 
 DataToolkit leverages key Julia features ---reproducible package management with
-Pkg.jl, independence from system state with JLL packages, and well-managed
+[[https://pkgdocs.julialang.org/][Pkg.jl]], independence from system state with [[https://julialang.org/blog/2019/11/artifacts/#julia_library_jll_packages][JLL packages]], and well-managed
 environments--- to push the envelope on how easily data can be robustly managed.
 The three tenets of the project are /reproducibility/, /flexibility/, and /convenience/.
 
 * Declarative data management
 
 DataToolkit takes a declarative approach to data management, and represents
-collections of datasets in TOML files. To give a taste of what this system looks
+collections of datasets in [[@ref Data.toml][TOML files]]. To give a taste of what this system looks
 like in practice, here's a sample TOML representation of a dataset (=iris=).
 
 #+begin_src toml
@@ -71,19 +71,19 @@ serialising the table.
 
 There are thus three essential transformations that can occur involving a data
 set:
-1. The transformation of a specification into a source of /data/, termed =storage=
-2. The transformation of /data/ into /information/, termed a =loader=
-3. The transformation of /information/ into /data/, termed a =writer=
+1. The transformation of a specification into a source of /data/, termed [[@extref DataToolkitCore.DataStorage][=storage=]]
+2. The transformation of /data/ into /information/, termed a [[@extref DataToolkitCore.DataLoader][=loader=]]
+3. The transformation of /information/ into /data/, termed a [[@extref DataToolkitCore.DataWriter][=writer=]]
 
 [[file:assets/data-flow-horizontal.svg]]
 
 ** Transformers, Data Sets, and Data Collections
 
-Each =DataSet= can have any number of =storage=, =loader=, and =writer= transformers.
-All =DataSet=​s must be part of a =DataCollection= which essentially provides a
+Each [[@extref DataToolkitCore.DataSet][=DataSet=]] can have any number of =storage=, =loader=, and =writer= transformers.
+All [[@extref DataToolkitCore.DataSet][=DataSet=]]s must be part of a [[@extref DataToolkitCore.DataCollection][=DataCollection=]] which essentially provides a
 context for the existence of a particular data set (e.g. you might store
 Fisher's iris data under a "Flower measurements" data collection). The
-=DataCollection=​s loaded at any one time form the =DataCollection= /stack/. The stack
+[[@extref DataToolkitCore.DataCollection][=DataCollection=]]s loaded at any one time form the [[@extref DataToolkitCore.DataCollection][=DataCollection=]] /stack/. The stack
 essentially acts as a load-path, if you just ask for the =iris= data set, it will
 be fetched from the top collection on the stack that can satisfy it.
 
@@ -91,7 +91,7 @@ be fetched from the top collection on the stack that can satisfy it.
 
 It is also worth noting that "child" elements of this structure (data sets and
 transformers) contain a link back to their parent, and so from any part of a
-=DataCollection= the whole can be accessed.
+[[@extref DataToolkitCore.DataCollection][=DataCollection=]] the whole can be accessed.
 
 * Extreme extensibility
 
