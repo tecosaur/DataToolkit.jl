@@ -313,6 +313,8 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
     deleted_bytes = 0
     for f in orphan_files
         if dirname(f) == dirname(inv.file.path)
+            basename(f) == "Inventory.toml.lock" && continue
+            startswith(basename(f), "Inventory.toml-") && endswith(f, ".part") && continue
             @warn "Found an unexpected $(ifelse(isdir(f), "subfolder", "file")) in the inventory folder, \
                     this is quite irregular ($(relpath(f, inv.file.path))) \
                     — $(ifelse(dryrun, "would remove", "removing"))"
