@@ -347,7 +347,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     dest = storefile(inventory, newsource)
     @log_do "store:save" "Transferring $(sprint(show, storage.dataset.name)) to storage"
     isdir(dirname(dest)) || mkpath(dirname(dest))
-    if startswith(path.path, tempdir())
+    if startswith(path.path, tempdir()) || (startswith(path.path, dest) && endswith(path.path, ".tmp"))
         mv(path.path, dest, force=true)
     else
         cp(path.path, dest, force=true)

@@ -62,20 +62,10 @@ function savetofile(savefn::Function, storage::DataStorage)
     if is_store_target(storage)
         refdest = invokelatest(approximate_store_dest, storage)
         miliseconds = floor(Int, 1000 * time())
-        # We don't technically need to use `.part` then `.full`,
-        # but I like that it makes it clear what stage of existence
-        # the file is at.
         partfile = string(refdest, '-', miliseconds, ".part")
-        tmpfile = string(refdest, '-', miliseconds, ".full")
-        # In case the user aborts the download, let's try to clean up the
-        # files. This is just a nice extra, so we'll speculatively use Base
-        # internals for now, and revisit this approach if it becomes a
-        # problem.
+        tmpfile = string(refdest, '-', miliseconds, ".tmp")
         isdir(dirname(tmpfile)) || mkpath(dirname(tmpfile))
         atomic_write(savefn, String, tmpfile, partfile)
-        @static if isdefined(Base.Filesystem, :temp_cleanup_later)
-            Base.Filesystem.temp_cleanup_later(tmpfile)
-        end
         FilePath(tmpfile)
     else
         tmpfile = tempname()
