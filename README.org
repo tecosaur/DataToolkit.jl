@@ -1,8 +1,7 @@
 #+title: [[file:Main/docs/src/assets/logotype.svg]]
 #+author: tecosaur
 
-#+html: <a href="https://tecosaur.github.io/DataToolkitDocs/ref/stable/"><img src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
-#+html: <a href="https://tecosaur.github.io/DataToolkit.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
+#+html: <a href="https://tecosaur.github.io/DataToolkit.jl/main/"><img src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
 
 DataToolkit is a batteries-included family of packages for robustly managing
 data. The particular package(s) you want to use will depend on the project.
