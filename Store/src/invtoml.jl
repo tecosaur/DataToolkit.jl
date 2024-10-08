@@ -200,4 +200,22 @@ function Base.write(io::IO, inv::Inventory)
     TOML.print(io, convert(Dict, inv), sorted=true, by=keygen)
 end
 
-Base.write(inv::Inventory) = write(inv.file.path, inv)
+function Base.write(inv::Inventory)
+    lockfile = inv.file.path * ".lock"
+    if isfile(lockfile)
+        pid = tryparse(Int, read(lockfile, String))
+        if !isnothing(pid) && ccall(:uv_kill, Cint, (Cint, Cint), pid, 0)
+            @log_do("store:inventory:waitpid",
+                    "Waiting for lock on inventory file to be released by process $pid",
+                    while ccall(:uv_kill, Cint, (Cint, Cint), pid, 0)
+                        sleep(0.01)
+                    end)
+        end
+    end
+    try
+        write(lockfile, getpid())
+        atomic_write(inv.file.path, inv)
+    finally
+        rm(lockfile, force=true)
+    end
+end
