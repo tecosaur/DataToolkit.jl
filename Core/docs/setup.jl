@@ -1,4 +1,4 @@
-using Pkg
+using Pkg, TOML
 
 Pkg.activate(@__DIR__)
 
@@ -6,8 +6,7 @@ const DevPkgs = String[]
 
 pkgname(n::Symbol) = String(n)
 pkgname(path::String) =
-    open(io -> Base.TOML.parse(Base.TOML.Parser(io)),
-         joinpath(path, "Project.toml"))["name"]
+    open(TOML.parse, joinpath(path, "Project.toml"))["name"]
 
 function setupdev(execfile::String, pkgs::Vector{<:Union{Symbol, String}})
     deps = keys(Pkg.project().dependencies)
