@@ -261,6 +261,7 @@ function repl_gc(input::AbstractString)
     flags = split(input)
     dryrun = "-d" in flags || "--dryrun" in flags
     if "-a" in flags || "--all" in flags
+        foreach(getinventory, STACK)
         garbage_collect!(; dryrun)
     else
         inventory = if isempty(STACK) getinventory()
