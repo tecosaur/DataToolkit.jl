@@ -59,10 +59,11 @@ in the Data REPL.
 Part of `STORE_PLUGIN`.
 """
 function store_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
-    if any(shouldstore, dataset.storage)
+    storable(s) = shouldstore(s) || @getparam(s."save"::Bool, false)
+    if any(storable, dataset.storage)
         print(io, "  Stored:  ")
         inventory = getinventory(dataset.collection) |> update_inventory!
-        files = map(s -> if shouldstore(s) storefile(inventory, s) end,
+        files = map(s -> if storable(s) storefile(inventory, s) end,
                     dataset.storage)
         filter!(!isnothing, files)
         filter!(isfile, files)
@@ -88,9 +89,10 @@ This advice adds information about cached files when showing a dataset.
 Part of `CACHE_PLUGIN`.
 """
 function cache_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
-    forms = [(s, t) for s in dataset.loaders for t in typeify.(s.type)
-                    if !isnothing(t)]
-    filter!(Base.splat(shouldstore), forms)
+    forms = [(l, t) for l in dataset.loaders
+                 for t in map(typeify, l.type) if !isnothing(t)]
+    cacheable((loader, T),) = shouldstore(loader, T) || @getparam(loader."cache"::Bool, false)
+    filter!(cacheable, forms)
     if !isempty(forms)
         print(io, "  Cached:  ")
         inventory = getinventory(dataset.collection) |> update_inventory!
