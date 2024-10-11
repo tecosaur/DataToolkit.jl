@@ -113,7 +113,7 @@ end
 function rhash(storage::DataStorage{:passthrough}, h::UInt)
     ident = @advise storage parse(Identifier, @getparam storage."source"::String)
     sourceh = rhash(storage.dataset.collection, ident, h)
-    invoke(rhash, Tuple{DataTransformer, UInt}, storage, sourceh)
+    invoke(rhash, Tuple{DataStorage, UInt}, storage, sourceh)
 end
 
 # ------------------
