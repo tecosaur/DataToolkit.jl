@@ -1,7 +1,7 @@
 module StoreREPL
 
-import DataToolkitCore: STACK, DataCollection, DataSet, config_set,
-    init, getlayer, resolve
+using DataToolkitCore
+using DataToolkitCore: init
 
 using DataToolkitREPL: Markdown, REPL_CMDS, ReplCmd, add_repl_cmd!,
     show_extra, confirm_yn
@@ -12,7 +12,7 @@ import REPL.TerminalMenus: request, RadioMenu
 using DataToolkitStore: STORE_GC_CONFIG_INFO,
     DEFAULT_INVENTORY_CONFIG, INVENTORIES,
     getinventory, update_inventory!, garbage_collect!, expunge!, fetch!,
-    shouldstore, storefile, printstats, humansize
+    shouldstore, storefile, getsource, printstats, humansize
 
 import DataToolkitStore: should_overwrite, store_init_checksum_a,
     store_extra_info_a, cache_extra_info_a
