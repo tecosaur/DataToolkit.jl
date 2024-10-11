@@ -629,7 +629,7 @@ If `storer` is storable (either by default, or explicitly enabled), open it, and
 presumably save it in the Store along the way.
 """
 function fetch!(@nospecialize(storer::DataStorage))
-    if shouldstore(storer) || @getparam(storage."save"::Bool, false) === true
+    if shouldstore(storer) || @getparam(storer."save"::Bool, false) === true
         for type in (FilePath, IO, IOStream)
             if QualifiedType(type) in storer.type
                 handle = @advise storage(storer, type, write=false)
