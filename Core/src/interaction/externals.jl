@@ -172,7 +172,7 @@ The advisable implementation of `read(dataset::DataSet, as::Type)`, which see.
 
 This is essentially an exercise in useful indirection.
 """
-function read1(dataset::DataSet, as::Type)
+function read1(dataset::DataSet, as::Type)::as
     for loader in dataset.loaders
         l_steps = typesteps(loader, as)
         isempty(l_steps) && continue
@@ -272,7 +272,7 @@ This executes the following component of the overall data flow:
 Storage ◀────▶ Data          Information
 ```
 """
-function Base.open(data::DataSet, as::Type; write::Bool=false)
+function Base.open(data::DataSet, as::Type; write::Bool=false)::Union{as, Nothing}
     for storage_provider in data.storage
         for (_, Tout) in typesteps(storage_provider, as; write)
             result = @advise data storage(storage_provider, Tout; write)
