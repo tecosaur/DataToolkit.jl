@@ -146,7 +146,7 @@ if VERSION >= v"1.11-alpha1"
         full = REPL.LineEdit.input_string(state)
         if partial != full
             # For now, only complete at end of line
-            return ([], "", false)
+            return (String[], "", false)
         end
         complete_repl_cmd(full)
     end
@@ -157,7 +157,7 @@ else
         full = REPL.LineEdit.input_string(state)
         if partial != full
             # For now, only complete at end of line
-            return ([], "", false)
+            return (String[], "", false)
         end
         complete_repl_cmd(full)
     end
