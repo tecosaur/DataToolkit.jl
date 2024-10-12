@@ -41,7 +41,7 @@ function memorise_read_a(f::typeof(DataToolkitCore.read1), dataset::DataSet, as:
         dskey = (dataset.collection.uuid, dataset.uuid, as)
         lhash = mapreduce(hash, xor, dataset.loaders)
         if haskey(MEMORISE_CACHE, dskey) && stillvalid(MEMORISE_CACHE[dskey], lhash)
-            cache = MEMORISE_CACHE[dskey]
+            cache = last(MEMORISE_CACHE[dskey])
             (identity, (cache,))
         else
             docache = function (info)
