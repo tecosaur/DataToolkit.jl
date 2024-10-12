@@ -65,7 +65,7 @@ function savetofile(savefn::Function, storage::DataStorage)
         partfile = string(refdest, '-', miliseconds, ".part")
         tmpfile = string(refdest, '-', miliseconds, ".tmp")
         isdir(dirname(tmpfile)) || mkpath(dirname(tmpfile))
-        atomic_write(savefn, String, tmpfile, partfile)
+        atomic_write(savefn, tmpfile, partfile)
         FilePath(tmpfile)
     else
         tmpfile = tempname()

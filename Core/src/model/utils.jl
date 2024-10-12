@@ -56,7 +56,7 @@ function shrinkdict(dict::Dict{K, V}) where {K, V}
 end
 
 """
-    atomic_write(f::Function, as::IO|String, dest::AbstractString; temp::AbstractString = dest * "_XXXX.part")
+    atomic_write(f::Function, dest::AbstractString; temp::AbstractString = dest * "_XXXX.part")
 
 Atomically write to `dest` with `f`, via `temp`.
 
@@ -77,18 +77,16 @@ The file `dest` is not touched until the write is complete, and if the write to
 """
 function atomic_write end
 
-function atomic_write(f::Function, as::Union{Type{IO}, Type{String}}, dest::AbstractString, temp::AbstractString)
+function atomic_write(f::Function, dest::AbstractString, temp::AbstractString)
     try
-        if as == IO
-            io = open(temp, "w")
-            f(io)
-            req = Libc.malloc(Base._sizeof_uv_fs)
-            @ccall uv_fs_fsync(C_NULL::Ptr{Cvoid}, req::Ptr{Cvoid}, fd(io)::Base.OS_HANDLE, C_NULL::Ptr{Cvoid})::Cint
-            Libc.free(req)
-            close(io)
-        else # String
-            f(temp)
-        end
+        io = open(temp, "w")
+        f(io)
+        flush(io)
+        req = Libc.malloc(Base._sizeof_uv_fs)
+        # REVIEW: When we drop 1.11 support `Base.RawFD(fd(io))` can be replaced with `fd(io)`
+        @ccall uv_fs_fdatasync(C_NULL::Ptr{Cvoid}, req::Ptr{Cvoid}, Base.RawFD(fd(io))::Base.OS_HANDLE, C_NULL::Ptr{Cvoid})::Cint
+        Libc.free(req)
+        close(io)
     catch
         rm(temp, force=true)
         rethrow()
@@ -96,10 +94,10 @@ function atomic_write(f::Function, as::Union{Type{IO}, Type{String}}, dest::Abst
     mv(temp, dest, force=true)
 end
 
-function atomic_write(f::Function, as::Union{Type{IO}, Type{String}}, dest::AbstractString)
+function atomic_write(f::Function, dest::AbstractString)
     miliseconds = round(Int, 1000 * time()) % 1000 * 60 * 60 * 24
     suffix = string('-', string(miliseconds, base=36), ".part")
-    atomic_write(f, as, dest, dest * suffix)
+    atomic_write(f, dest, dest * suffix)
 end
 
 """
@@ -108,7 +106,7 @@ end
 Atomically write `content` to `dest`, leaving no trace of incomplete/failed writes.
 """
 atomic_write(dest::AbstractString, content) =
-    atomic_write(Base.Fix2(write, content), IO, dest)
+    atomic_write(Base.Fix2(write, content), dest)
 
 """
     natkeygen(key::String)

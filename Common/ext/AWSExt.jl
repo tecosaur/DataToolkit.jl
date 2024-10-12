@@ -25,14 +25,12 @@ function _read_s3(bucket::String, object::String, ::Type{IO};
     stream
 end
 
-function _read_s3(bucket::String, object::String, filename::String; kwargs...)
+function _read_s3(bucket::String, object::String, dest::IO; kwargs...)
     stream = _read_s3(bucket, object, IO; kwargs...)
-    open(filename, "w") do file
-        while !eof(stream)
-            write(file, readavailable(stream))
-        end
+    while !eof(stream)
+        write(dest, readavailable(stream))
     end
-    filename
+    dest
 end
 
 end
