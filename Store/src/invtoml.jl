@@ -201,24 +201,16 @@ function Base.write(io::IO, inv::Inventory)
 end
 
 function Base.write(inv::Inventory)
-    lockfile = BaseDirs.User.runtime(
-        PROJECT_SUBPATH,
-        "Inventory-" * string(hash(inv.file.path), base=32) * ".lock")
-    if isfile(lockfile)
-        pid = tryparse(Int, read(lockfile, String))
-        if !isnothing(pid) && ccall(:uv_kill, Cint, (Cint, Cint), pid, 0)
-            @log_do("store:inventory:waitpid",
-                    "Waiting for lock on inventory file to be released by process $pid",
-                    while ccall(:uv_kill, Cint, (Cint, Cint), pid, 0)
-                        sleep(0.01)
-                    end)
-        end
+    if !trylock(inv.lock)
+        # This uses a (hacky) workaround for same-task reentrant lock requirements.
+        @log_do("store:inventory:waitpid",
+                "Waiting for lock on inventory file to be released",
+                begin lock(inv.lock); unlock(inv.lock.owned) end)
+        lock(inv.lock.owned)
     end
     try
-        ispath(dirname(lockfile)) || mkpath(dirname(lockfile))
-        write(lockfile, getpid())
         atomic_write(inv.file.path, inv)
     finally
-        rm(lockfile, force=true)
+        unlock(inv.lock)
     end
 end

@@ -29,10 +29,12 @@ function load_inventory(path::String, create::Bool=true)
                     for (key, val) in get(data, "collections", Dict{String, Any}[])]
         stores = map(s -> convert(StoreSource, s), get(data, "store", Dict{String, Any}[]))
         caches = map(c -> convert(CacheSource, c), get(data, "cache", Dict{String, Any}[]))
-        Inventory(file, cmerkle, config, collections, stores, caches, last_gc)
+        Inventory(file, LockFile(path, "Inventory"), cmerkle,
+                  config, collections, stores, caches, last_gc)
     elseif create
         inventory = Inventory(
             MonitoredFile(path),
+            LockFile(path, "Inventory"),
             CachedMerkles(MonitoredFile(
                 joinpath(dirname(path), DEFAULT_INVENTORY_CONFIG.store_dir, MERKLE_FILENAME)), []),
             convert(InventoryConfig, Dict{String, Any}()),

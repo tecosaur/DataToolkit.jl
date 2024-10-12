@@ -57,6 +57,7 @@ end
 
 mutable struct Inventory
     const file::MonitoredFile
+    const lock::LockFile
     const merkles::CachedMerkles
     config::InventoryConfig
     collections::Vector{CollectionInfo}
