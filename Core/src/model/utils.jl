@@ -1,4 +1,7 @@
 # Utility functions that don't belong to any particular file
+#
+# Arguably some of these functions don't even belong to this package,
+# but they aren't implemented anywhere else, so...
 
 """
     newdict(K::Type, V::Type, capacity::Int) -> Dict{K, V}
@@ -356,4 +359,45 @@ function highlight_lcs(io::IO, a::String, b::String;
         print(io, char)
     end
     get(io, :color, false) && print(io, after)
+end
+
+"""
+    multibar(io::IO, specs::Vector{<:Pair{Symbol, <:Real}}, width::Int=30)
+
+Print a bar of certain `width` to `io`, split into segments according to `specs`.
+
+Each element of `specs` is a pair `(color, weight)`, where `color` is
+a named color recognised by `printstyled` and `weight` is a number.
+
+Each segment is draw with a width proportional to its weight.
+
+All segments with a non-zero weight are drawn.
+"""
+function multibar(io::IO, specs::Vector{<:Pair{Symbol, <:Real}}, width::Int=min(30, last(displaysize(io))))
+    bars = (whole='━', lpart='╺', rpart='╸')
+    specs = filter(s -> last(s) > 0, specs)
+    isempty(specs) && return
+    totalhalves = 2 * width - length(specs) + 1
+    duowidth = totalhalves / sum(last, specs, init=0)
+    halfwidths = [max(1, round(Int, weight * duowidth)) for (_, weight) in specs]
+    widthdiff = sum(halfwidths) - totalhalves
+    if widthdiff != 0
+        rawproportions = map(last, specs) / sum(last, specs)
+        stolenweights = ones(float(Int), length(halfwidths))
+        while widthdiff != 0
+            change = sign(widthdiff)
+            i = argmax(rawproportions .* stolenweights)
+            halfwidths[i] -= change
+            stolenweights[i] = 1 - 1 / (1 + stolenweights[i])
+            widthdiff -= change
+        end
+    end
+    partial = false
+    for ((color, _), halves) in zip(specs, halfwidths)
+        partial && printstyled(io, bars.lpart; color)
+        nbars = (halves - partial) ÷ 2
+        partial = iszero(halves - partial - 2 * nbars)
+        printstyled(io, bars.whole^nbars; color)
+        !partial && printstyled(io, bars.rpart; color)
+    end
 end

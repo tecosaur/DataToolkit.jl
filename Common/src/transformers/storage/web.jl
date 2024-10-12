@@ -3,10 +3,6 @@ const DOWNLOAD_STYLE = (
     spinners = ('◐', '◓', '◑', '◒'),
     delay = 1, # Seconds before showing any info
     update_frequency = 0.1, # Seconds between updates
-    progress = (style = "\e[34m",
-                bar = '━',
-                partials = ("\e[90m╺", "╸\e[90m"),
-                width = 30),
     eta = (min_time = 10, # Don't bother if total duration less than this
            warmup_seconds = 3, # Seconds before showing ETA
            samples = 300)) # Number of `update_frequency` sized samples to use
@@ -40,7 +36,7 @@ function (prog::DownloadProgress)(total::Integer, recieved::Integer)
         download_speed_update!(prog, now, new_bytes)
         prog.last_update[] = now
         # Pretty printing
-        out = IOBuffer()
+        out = IOContext(IOBuffer(), prog.io)
         print(out, "\e[G\e[2K", ' ', DOWNLOAD_STYLE.textstyle)
         spinner = DOWNLOAD_STYLE.spinners[
             mod1(prog.iters[] += 1, length(DOWNLOAD_STYLE.spinners))]
@@ -50,7 +46,12 @@ function (prog::DownloadProgress)(total::Integer, recieved::Integer)
             print(out, "$spinner $(join(humansize(recieved)))")
         else
             print(out, spinner, ' ')
-            download_bar(out, recieved, total)
+            DataToolkitCore.multibar(out, [:blue => recieved, :light_black => total])
+            rsize, runits = humansize(recieved, digits=3)
+            tsize, tunits = humansize(total, digits=2)
+            print(out, ' ', DOWNLOAD_STYLE.textstyle,
+                  rsize, ifelse(runits == tunits, "", runits), '/',
+                  tsize, ifelse(runits == tunits, " ", ""), tunits)
             byteps = download_speed(prog)
             if prog.state.show_eta[] ||
                 now - prog.start > DOWNLOAD_STYLE.eta.warmup_seconds &&
@@ -61,30 +62,8 @@ function (prog::DownloadProgress)(total::Integer, recieved::Integer)
             print(out, " @ ", join(humanspeed(byteps)))
         end
         print(out, "\e[m")
-        print(prog.io, String(take!(out)))
+        write(prog.io, seekstart(out.io))
         flush(prog.io)
-    end
-end
-
-function download_bar(io::IO, current::Int, total::Int, text::Bool=true)
-    if current == total
-        print(io, DOWNLOAD_STYLE.progress.style, DOWNLOAD_STYLE.progress.bar^DOWNLOAD_STYLE.progress.width)
-    else
-        width = DOWNLOAD_STYLE.progress.width
-        scaledprogress = (width * current) / total
-        complete = floor(Int, scaledprogress)
-        part = round(Int, (length(DOWNLOAD_STYLE.progress.partials)-1) * (scaledprogress % 1) + 1)
-        print(io, DOWNLOAD_STYLE.progress.style,
-                DOWNLOAD_STYLE.progress.bar^complete,
-                DOWNLOAD_STYLE.progress.partials[part],
-                DOWNLOAD_STYLE.progress.bar^(width - complete - 1))
-    end
-    print(io, "\e[m", DOWNLOAD_STYLE.textstyle)
-    if text
-        csize, cunits = humansize(current, digits=3)
-        tsize, tunits = humansize(total, digits=2)
-        print(io, ' ', csize, ifelse(cunits == tunits, "", cunits),
-              '/', tsize, ifelse(cunits == tunits, " ", ""), tunits)
     end
 end
 
