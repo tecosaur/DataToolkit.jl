@@ -178,7 +178,7 @@ end
 
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     try
-        savetofile(f -> invokepkglatest(download_to, storage, f), storage)
+        savetofile(io -> invokepkglatest(download_to, storage, io), storage)
     catch err
         url = @getparam(storage."url"::String)
         @error "Download failed" url err
