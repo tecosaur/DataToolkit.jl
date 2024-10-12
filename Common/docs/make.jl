@@ -28,6 +28,7 @@ const DocSaveload = [
     "Passthrough",
     "PNG",
     "Qoi",
+    "Serialization",
     "Sqlite",
     "Tar",
     "Tiff",
