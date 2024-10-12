@@ -66,13 +66,26 @@ handle or a `String` depending on `as`. Upon completion, `temp` is renamed to
 
 The file `dest` is not touched until the write is complete, and if the write to
 `dest` is interrupted or fails for any reason, no data is written to `temp`.
+
+!!! warning "Limitations"
+     It is impossible to gauntree truly atomic writes on hardware without power loss
+     protection (PLP), even with copy-on-write (CoW) filesystems. This function makes
+     a best effort, calling
+     [`fdatasync`](https://man7.org/linux/man-pages/man2/fdatasync.2.html)
+     before renaming a file. In most situations this will be sufficient, but it
+     is not a guarantee.
 """
 function atomic_write end
 
 function atomic_write(f::Function, as::Union{Type{IO}, Type{String}}, dest::AbstractString, temp::AbstractString)
     try
         if as == IO
-            open(f, temp, "w")
+            io = open(temp, "w")
+            f(io)
+            req = Libc.malloc(Base._sizeof_uv_fs)
+            @ccall uv_fs_fsync(C_NULL::Ptr{Cvoid}, req::Ptr{Cvoid}, fd(io)::Base.OS_HANDLE, C_NULL::Ptr{Cvoid})::Cint
+            Libc.free(req)
+            close(io)
         else # String
             f(temp)
         end
