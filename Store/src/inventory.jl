@@ -277,6 +277,7 @@ If `trimmsg` is set, a message about any sources removed by trimming is emitted.
 """
 function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
     inv.file.writable || return
+    msgwidth = MSG_LABEL_WIDTH + 2 * dryrun
     (; active_collections, live_collections, ghost_collections, dead_collections) =
         scan_collections(inv; log)
     dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
@@ -284,12 +285,12 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
     (; orphan_sources, num_recipe_checks) =
         refresh_sources!(inv; active_collections, inactive_collections, dryrun)
     if log
-        printstyled(lpad("Scanned", MSG_LABEL_WIDTH), bold=true, color=:green)
+        printstyled(lpad("Scanned", msgwidth), bold=true, color=:green)
         num_scanned_collections = length(active_collections) + length(live_collections)
         println(' ', num_scanned_collections, " collection",
                 ifelse(num_scanned_collections == 1, "", "s"))
         if !isempty(ghost_collections) || !isempty(dead_collections)
-            printstyled(lpad("Inactive", MSG_LABEL_WIDTH), bold=true, color=:green)
+            printstyled(lpad("Inactive", msgwidth), bold=true, color=:green)
             print(" collections: ",
                   length(ghost_collections) + length(dead_collections),
                   " found")
@@ -299,7 +300,7 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
             print('\n')
         end
         nsources = length(inv.stores) + length(inv.caches) + length(orphan_sources)
-        printstyled(lpad("Checked", MSG_LABEL_WIDTH), bold=true, color=:green)
+        printstyled(lpad("Checked", msgwidth), bold=true, color=:green)
         println(' ', nsources, " cached item",
                 ifelse(nsources == 1, "", "s"),
                 " (", num_recipe_checks, " recipe check",
@@ -339,7 +340,7 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
                     join(humansize(truncsource_bytes)), ") to avoid going over the maximum size")
         end
         deleted_bytes += truncsource_bytes
-        printstyled(lpad(ifelse(dryrun, "Would remove", "Removed"), MSG_LABEL_WIDTH),
+        printstyled(lpad(ifelse(dryrun, "Would remove", "Removed"), msgwidth),
                     bold=true, color=:green)
         if isempty(dead_collections) && isempty(orphan_sources) && isempty(orphan_files) && isempty(truncated_sources)
             println(" nothing")
@@ -365,7 +366,7 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
             if deleted_bytes > 0
                 print('\n')
                 removedsize, removedunits = humansize(deleted_bytes)
-                printstyled(lpad(ifelse(dryrun, "Would free", "Freed"), MSG_LABEL_WIDTH),
+                printstyled(lpad(ifelse(dryrun, "Would free", "Freed"), msgwidth),
                             bold=true, color=:green)
                 print(" $removedsize$removedunits")
             end
