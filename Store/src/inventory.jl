@@ -278,7 +278,7 @@ If `trimmsg` is set, a message about any sources removed by trimming is emitted.
 function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
     inv.file.writable || return
     (; active_collections, live_collections, ghost_collections, dead_collections) =
-        scan_collections(inv)
+        scan_collections(inv; log)
     dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
     inactive_collections = live_collections ∪ ghost_collections
     (; orphan_sources, num_recipe_checks) =
@@ -472,7 +472,7 @@ function size_recency_scores(inventory::Inventory, sources::Vector{SourceInfo}, 
 end
 
 """
-    scan_collections(inv::Inventory)
+    scan_collections(inv::Inventory; log::Bool=false)
 
 Examine each collection in `inv`, and sort them into the following categories:
 - `active_collections`: data collections which are part of the current `STACK`
@@ -492,12 +492,24 @@ These categories are returned with a named tuple of the following form:
 The `active_collections` value gives both the data collection UUIDs, as well
 as all known recipe hashes.
 """
-function scan_collections(inv::Inventory)
+function scan_collections(inv::Inventory; log::Bool=false)
     active_collections = Dict{UUID, Set{UInt64}}()
     live_collections = Set{UUID}()
     ghost_collections = Set{UUID}()
     dead_collections = Vector{UUID}()
     days_since(t::DateTime) = convert(Millisecond, now() - t).value / (1000*60*60*24)
+    scan_update = time()
+    num_datasets = if !log 0 else
+        sum(inv.collections, init=0) do col
+            if any(c -> c.uuid == col.uuid, STACK)
+                length(getlayer(col.uuid).datasets)
+            else
+                0
+            end
+        end
+    end
+    num_datasets_scanned = 0
+    did_show_progress = false
     for collection in inv.collections
         if !isnothing(collection.path) && isfile(collection.path)
             cdata = try
@@ -507,7 +519,7 @@ function scan_collections(inv::Inventory)
                 continue
             end
             if haskey(cdata, "uuid") && parse(UUID, cdata["uuid"]) == collection.uuid
-                if collection.uuid ∈ getfield.(STACK, :uuid)
+                if any(c -> c.uuid == collection.uuid, STACK)
                     ids = Set{UInt64}()
                     for dataset in getlayer(collection.uuid).datasets
                         for storage in dataset.storage
@@ -515,6 +527,19 @@ function scan_collections(inv::Inventory)
                         end
                         for loader in dataset.loaders
                             push!(ids, rhash(loader))
+                        end
+                        num_datasets_scanned += 1
+                        if log && time() - scan_update > ifelse(did_show_progress, 0.05, 0.2)
+                            did_show_progress = true
+                            batchio = IOContext(IOBuffer(), stderr)
+                            print(batchio, "\e[G\e[2K")
+                            printstyled(batchio, "Scanning datasets: ", color=:light_black)
+                            DataToolkitCore.multibar(
+                                batchio, [:magenta => num_datasets_scanned,
+                                          :light_black => num_datasets - num_datasets_scanned])
+                            printstyled(batchio, " ($num_datasets_scanned/$num_datasets)", color=:light_black)
+                            write(stderr, seekstart(batchio.io))
+                            scan_update = time()
                         end
                     end
                     active_collections[collection.uuid] = ids
@@ -532,6 +557,7 @@ function scan_collections(inv::Inventory)
             push!(dead_collections, collection.uuid)
         end
     end
+    did_show_progress && print(stderr, "\e[G\e[2K")
     (; active_collections, live_collections, ghost_collections, dead_collections)
 end
 
