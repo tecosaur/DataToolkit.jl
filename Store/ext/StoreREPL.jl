@@ -268,6 +268,7 @@ function repl_gc(input::AbstractString)
         else getinventory(first(STACK)) end |> update_inventory!
         garbage_collect!(inventory; dryrun)
     end
+    nothing
 end
 
 function repl_expunge(input::AbstractString)
