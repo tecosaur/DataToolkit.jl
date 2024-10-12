@@ -32,7 +32,8 @@ appropriately.
 
 Part of `STORE_PLUGIN`.
 """
-function store_get_a(f::typeof(storage), @nospecialize(storer::DataStorage), as::Type; write::Bool)
+function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
+    @nospecialize
     inventory = getinventory(storer.dataset.collection) |> update_inventory!
     # Get any applicable cache file
     source = getsource(inventory, storer)
@@ -252,7 +253,8 @@ cover all bases.
 
 Part of `CACHE_PLUGIN`.
 """
-function cache_get_a(f::typeof(load), @nospecialize(loader::DataLoader), source::Any, as::Type)
+function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
+    @nospecialize
     if shouldstore(loader, as) || @getparam(loader."cache"::Bool, false) === true
         # Get any applicable cache file
         inventory = getinventory(loader.dataset.collection) |> update_inventory!
