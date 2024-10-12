@@ -100,8 +100,8 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
             for (ident, collection, sim) in sort(candidates[last.(candidates) .>= threshold],
                                                 by=last, rev=true)
                 print(io, "\n    ")
-                irep = IOContext(IOBuffer(), :color => true)
-                show(irep, MIME("text/plain"), ident; collection)
+                irep = IOContext(IOBuffer(), :color => true, :data_collection => collection)
+                show(irep, MIME("text/plain"), ident)
                 highlight_lcs(io, String(take!(irep.io)), err.identifier,
                               before="\e[2m", invert=true)
                 printstyled(io, " (", round(Int, 100*sim), "% match)",
