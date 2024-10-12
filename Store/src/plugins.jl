@@ -55,7 +55,8 @@ function store_get_a(f::typeof(storage), @nospecialize(storer::DataStorage), as:
     elseif !isnothing(file) && isfile(file)
         # If using a cache file, ensure the parent collection is registered
         # as a reference.
-        update_source!(inventory, source, storer.dataset.collection)
+        STORE_RECORD_ACCESS &&
+            update_source!(inventory, source, storer.dataset.collection)
         if as === IO || as === IOStream
             @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
             (identity, (open(file, "r"),))
