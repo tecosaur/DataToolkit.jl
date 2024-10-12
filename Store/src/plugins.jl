@@ -243,7 +243,12 @@ const STORE_PLUGIN =
 """
     cache_get_a( <load(loader::DataLoader, source::Any, as::Type)> )
 
-Store and retrieve information from the cache, as appropriate.
+Intercept the loading of a data loader, and if applicable either:
+- Load the cached result
+- Add a call to save the result to the cache
+
+Cached results should already be hit by the `read1` method, but we might as well
+cover all bases.
 
 Part of `CACHE_PLUGIN`.
 """
@@ -279,6 +284,30 @@ function cache_get_a(f::typeof(load), @nospecialize(loader::DataLoader), source:
     else
         (f, (loader, source, as))
     end
+end
+
+"""
+    cache_get_a( <read1(dataset::DataSet, as::Type)> )
+
+Intercept the reading of `dataset` to determine if there's a cached
+result available, before even attempting to open the data storage.
+
+Part of `CACHE_PLUGIN`.
+"""
+function cache_get_a(f::typeof(DataToolkitCore.read1), dataset::DataSet, as::Type)
+    @nospecialize
+    for loader in dataset.loaders
+        shouldstore(loader, as) ||
+            @getparam(loader."cache"::Bool, false) === true ||
+            continue
+        l_steps = DataToolkitCore.typesteps(loader, as)
+        isempty(l_steps) && continue
+        for (_, Tloader_out) in l_steps
+            nextform = cache_get_a(load, loader, nothing, Tloader_out)
+            first(nextform) === identity && return nextform
+        end
+    end
+    (f, (dataset, as))
 end
 
 """
