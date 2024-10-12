@@ -121,7 +121,7 @@ function LintReport(collection::DataCollection)
     push!(results, lint(collection))
     for dataset in collection.datasets
         push!(results, lint(dataset))
-        for adtfield in (:storage, :loaders, :writers)
+        for dtfield in (:storage, :loaders, :writers)
             for dt in getfield(dataset, dtfield)
                 push!(results, lint(dt))
             end
@@ -133,7 +133,7 @@ end
 function LintReport(dataset::DataSet)
     results = Vector{Vector{LintItem}}()
     push!(results, lint(dataset))
-    for adtfield in (:storage, :loaders, :writers)
+    for dtfield in (:storage, :loaders, :writers)
         for dt in getfield(dataset, dtfield)
             push!(results, lint(dt))
         end
