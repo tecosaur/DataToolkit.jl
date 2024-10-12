@@ -10,6 +10,7 @@ using Compat
 
 @compat public load_inventory, fetch!
 
+include("lockfile.jl")
 include("types.jl")
 
 const INVENTORY_VERSION = 0
