@@ -35,6 +35,15 @@ The checksum scheme used when `auto` is specified. Must be recognised by `checks
 """
 const CHECKSUM_DEFAULT_SCHEME = :k12
 
+"""
+    STORE_RECORD_ACCESS::Bool
+
+Whether access to stored entries should be updated in the inventory.
+This is usually appropriate, but may be worth disabling for collection-wide
+checks, as performed by `fetch!` for instance.
+"""
+STORE_RECORD_ACCESS::Bool = true
+
 function init_user_inventory!()
     global USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
         mkpath(ENV["DATATOOLKIT_STORE"])
