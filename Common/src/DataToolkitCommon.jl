@@ -44,6 +44,7 @@ include("transformers/saveload/passthrough.jl")
 include("transformers/saveload/png.jl")
 include("transformers/saveload/qoi.jl")
 include("transformers/saveload/sqlite.jl")
+include("transformers/saveload/serialization.jl")
 include("transformers/saveload/tar.jl")
 include("transformers/saveload/tiff.jl")
 include("transformers/saveload/toml.jl")
@@ -81,6 +82,7 @@ function __init__()
     @addpkg PNGFiles       "f57f5aa1-a3ce-4bc8-8ab9-96f992907883"
     @addpkg QOI            "4b34888f-f399-49d4-9bb3-47ed5cae4e65"
     @addpkg SQLite         "0aa819cd-b072-5ff4-a722-6bc24af294d9"
+    @addpkg Serialization  "9e88b42a-f829-5b0c-bbe9-9e923198166b"
     @addpkg Tar            "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
     @addpkg TiffImages     "731e570b-9d59-4bfa-96dc-6df516fadf69"
     @addpkg TOML           "fa267f1f-6049-4f14-aa54-33bafae1ed76"
@@ -126,6 +128,7 @@ function __init__()
              (:loader, :passthrough) => PASSTHROUGH_L_DOC,
              (:loader, :png) => PNG_DOC,
              (:loader, :qoi) => QOI_DOC,
+             (:loader, :serialization) => SERIALIZATION_DOC,
              (:loader, :sqlite) => SQLITE_DOC,
              (:loader, :tar) => TAR_DOC,
              (:loader, :tiff) => TIFF_DOC,
@@ -150,6 +153,7 @@ function __init__()
              (:writer, :julia) => JULIA_DOC,
              (:writer, :png) => PNG_DOC,
              (:writer, :qoi) => QOI_DOC,
+             (:writer, :serialization) => SERIALIZATION_DOC,
              (:writer, :sqlite) => SQLITE_DOC,
              (:writer, :tiff) => TIFF_DOC,
              (:writer, :webp) => WEBP_DOC,
