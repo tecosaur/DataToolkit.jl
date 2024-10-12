@@ -277,6 +277,7 @@ If `trimmsg` is set, a message about any sources removed by trimming is emitted.
 """
 function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
     inv.file.writable || return
+    inv = update_inventory!(inv)
     msgwidth = MSG_LABEL_WIDTH + 2 * dryrun
     (; active_collections, live_collections, ghost_collections, dead_collections) =
         scan_collections(inv; log)
