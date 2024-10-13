@@ -124,8 +124,9 @@ end
         storage::Vector{Symbol}=Symbol[], loaders::Vector{Symbol}=Symbol[],
         writers::Vector{Symbol}=Symbol[], quiet::Bool=false)
 
-Create a new DataSet with a `name` and `spec`, and add it to `collection`.  The
-data transformers will be constructed with each of the backends listed in
+Create transformers for `dataset` from the specified backends.
+
+Data transformers will be constructed with each of the backends listed in
 `storage`, `loaders`, and `writers` from `source`. If the symbol `*` is given,
 all possible drivers will be searched and the highest priority driver available
 (according to `createpriority`) used. Should no transformer of the specified
@@ -147,6 +148,6 @@ function addtransformers!(dataset::DataSet, source::String;
             end
         end
     end
-    quiet || printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
+    quiet || printstyled(" ✓ Created '$(dataset.name)' ($(dataset.uuid))\n ", color=:green)
     dataset
 end
