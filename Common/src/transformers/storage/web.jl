@@ -150,7 +150,7 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
         seekstart(io)
     catch err
         url = @getparam(storage."url"::String)
-        @error "Download failed" url err
+        @error "Download failed" url exception=(err, catch_backtrace())
         nothing
     end
 end
@@ -160,7 +160,7 @@ function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
         savetofile(io -> invokepkglatest(download_to, storage, io), storage)
     catch err
         url = @getparam(storage."url"::String)
-        @error "Download failed" url err
+        @error "Download failed" url exception=(err, catch_backtrace())
         nothing
     end
 end
