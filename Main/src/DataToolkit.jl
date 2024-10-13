@@ -3,6 +3,8 @@ module DataToolkit
 import Base as JLBase
 
 using DataToolkitCore
+using DataToolkitStore
+using DataToolkitCommon
 using DataToolkitBase: DataToolkitBase, loadproject!
 using DataToolkitREPL
 
@@ -24,6 +26,8 @@ map((:DataCollection, :DataSet, :DataStorage, :DataLoader, :DataWriter,
 end
 
 const Core = DataToolkitCore
+const Store = DataToolkitStore
+const Common = DataToolkitCommon
 const Base = DataToolkitBase
 const REPL = DataToolkitREPL
 
