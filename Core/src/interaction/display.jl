@@ -153,8 +153,26 @@ function Base.show(io::IO, datacollection::DataCollection)
              datacollection.advise)
     end
     print(io, "\n  Data sets:")
-    for dataset in sort(datacollection.datasets, by = d -> natkeygen(d.name))
-        print(io, "\n     ")
-        show(IOContext(io, :compact => true), dataset)
+    dsets = sort(datacollection.datasets, by = d -> natkeygen(d.name))
+    drows = first(displaysize(io)) - 4
+    if length(dsets) <=drows
+        for dataset in dsets
+            print(io, "\n     ")
+            show(IOContext(io, :compact => true), dataset)
+        end
+    else
+        drows -= 4 + drows ÷ 5
+        for dataset in dsets[1:drows÷2]
+            print(io, "\n     ")
+            show(IOContext(io, :compact => true), dataset)
+        end
+        printstyled(io, "\n     ⋮", color = :light_black)
+        printstyled(io, "\n     $(length(dsets)-drows) datasets omitted",
+                    color = :light_black, italic = true)
+        printstyled(io, "\n     ⋮", color = :light_black)
+        for dataset in dsets[end-drows÷2:end]
+            print(io, "\n     ")
+            show(IOContext(io, :compact => true), dataset)
+        end
     end
 end
