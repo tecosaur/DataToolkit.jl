@@ -1,0 +1,23 @@
+#+title: DataToolkitStore
+
+Together, [[https://tecosaur.github.io/DataToolkit.jl/core/][DataToolkitCore]] and [[https://tecosaur.github.io/DataToolkit.jl/common/][DataToolkitCommon]] provide a convenient way of
+obtaining data. However, what about the second and third time you want to access
+the same data set? What if you have a large data set referenced in multiple
+projects, do you really want several identical copies?
+
+These are the concerns that =DataToolkitStore= sets out to address, by providing
+an central (managed) content/recipe-addressed store of data sources.
+
+* Design
+
+The management will be based on an "Inventory file" that contains all the
+requisite information on the data collections being stored. Management will
+occur automatically when the interacting with the store, but management
+functions will also be made available in the form of an API, and REPL commands.
+
+* API
+
+#+begin_src @docs
+DataToolkitStore.load_inventory
+DataToolkitStore.fetch!
+#+end_src

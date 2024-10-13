@@ -1,0 +1,79 @@
+#+title: Internals
+
+* Type transformations
+
+#+begin_src @docs
+DataToolkitCore.issubtype
+DataToolkitCore.paramtypebound
+DataToolkitCore.targettypes
+DataToolkitCore.ispreferredpath
+DataToolkitCore.transformersigs
+DataToolkitCore.typesteps
+#+end_src
+
+* TOML related
+
+#+begin_src @docs
+DataToolkitCore.toml_safe
+DataToolkitCore.tomlreformat!
+DataToolkitCore.dataset_parameters
+#+end_src
+
+* String utils
+
+#+begin_src @docs
+DataToolkitCore.natkeygen
+DataToolkitCore.stringdist
+DataToolkitCore.stringsimilarity
+DataToolkitCore.issubseq
+DataToolkitCore.longest_common_subsequence
+DataToolkitCore.highlight_lcs
+#+end_src
+
+* Small dicts
+
+#+begin_src @docs
+DataToolkitCore.newdict
+DataToolkitCore.shrinkdict
+#+end_src
+
+* Logging
+
+#+begin_src @docs
+DataToolkitCore.should_log
+DataToolkitCore.wait_maybe_log
+#+end_src
+
+* Miscilanious
+
+#+begin_src @docs
+DataToolkitCore.typeify
+DataToolkitCore.reinit
+DataToolkitCore._dataadvisecall
+DataToolkitCore.strip_stacktrace_advice!
+DataToolkitCore.get_package
+DataToolkitCore.try_install_pkg
+DataToolkitCore.read1
+#+end_src
+
+* Consts
+
+#+begin_src @docs
+DataToolkitCore.LATEST_DATA_CONFIG_VERSION
+DataToolkitCore.PLUGINS_DOCUMENTATION
+DataToolkitCore.DEFAULT_PLUGINS
+DataToolkitCore.PLUGINS
+DataToolkitCore.TRANSFORMER_DOCUMENTATION
+DataToolkitCore.EXTRA_PACKAGES
+DataToolkitCore.DEFAULT_DATATRANSFORMER_PRIORITY
+DataToolkitCore.DEFAULT_DATA_ADVISOR_PRIORITY
+DataToolkitCore.DATASET_REFERENCE_WRAPPER
+DataToolkitCore.DATASET_REFERENCE_REGEX
+DataToolkitCore.QUALIFIED_TYPE_CACHE
+DataToolkitCore.DATA_CONFIG_RESERVED_ATTRIBUTES
+DataToolkitCore.DATA_CONFIG_KEY_SORT_MAPPING
+DataToolkitCore.LINT_SEVERITY_MESSAGES
+DataToolkitCore.LINT_SEVERITY_MAPPING
+DataToolkitCore.DEFAULT_LOG_DELAY
+DataToolkitCore.SIMPLIFY_STACKTRACES
+#+end_src

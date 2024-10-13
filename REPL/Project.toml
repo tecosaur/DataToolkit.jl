@@ -1,0 +1,38 @@
+name = "DataToolkitREPL"
+uuid = "c58528a0-97a2-40a0-9a44-056fe1196995"
+authors = ["TEC <git@tecosaur.net>"]
+version = "0.10.0"
+
+[deps]
+DataToolkitCore = "caac3e55-418c-402e-a061-64d454aa8f4f"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[weakdeps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+
+[extensions]
+REPLMode = "REPL"
+REPLDocHelpers = "Documenter"
+
+[compat]
+Dates = "1.9"
+Documenter = "1.0"
+InteractiveUtils = "1.9"
+Markdown = "1.9"
+PrecompileTools = "1.2"
+REPL = "1.9"
+TOML = "1"
+UUIDs = "1.9"
+julia = "1.9"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

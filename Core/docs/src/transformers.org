@@ -1,0 +1,44 @@
+#+title: Transformers
+
+The way DataToolkit actually interacts with datasets in through /transformers/.
+
+[[file:assets/data-transformers.svg]]
+
+#+begin_details "Applying a category theory lens"
+If we consider storage locations (storage), raw data (data), and informative
+representations of the data (information) to be /categories/, then if you squint a
+bit the =storage=, =loader=, and =writer= transformers can be viewed as functors.
+
+This doesn't make much of a practical impact, but I think it's a fun way of
+framing things.
+
+[[file:assets/data-category-theory.svg]]
+#+end_details
+
+* Transformer types
+
+#+begin_src @docs
+DataTransformer
+DataStorage
+DataLoader
+DataWriter
+#+end_src
+
+* Implementation API
+
+#+begin_src @docs
+storage
+getstorage
+putstorage
+load
+save
+#+end_src
+
+* Extras
+
+#+begin_src @docs
+supportedtypes
+createauto
+createinteractive
+createpriority
+#+end_src

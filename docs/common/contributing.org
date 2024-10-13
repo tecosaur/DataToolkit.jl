@@ -1,0 +1,83 @@
+#+title: Contributing
+
+This is a guide for contributing to DataToolkitCommon. It is intended to make it
+easier to contribute new transformers and plugins, but may also be of some
+general interest.
+
+* Creating a new transformer
+
+Say there's a format you're familiar with or need to work with that's relatively
+common and not (yet) supported out-of-the-box by =DataToolkitCommon=. This is a
+great oppotunity to spin up a PR adding support 😉. If you get stuck on
+anything, just open an issue or DM me (=@tecosaur= on Zulip, Slack, and more) and
+I'll happily see if I can help 🙂.
+
+I always appreciate the value of a good example. Here are some transformers that
+I think might be helpful as a point of reference:
++ The [[@ref storage-filesystem][=filesystem=]] storage
++ The [[@ref saveload-arrow][=arrow=]] loader and writer
+
+** Loader
+
+1. Create a new file =src/transformers/saveload/{name}.jl=
+2. Add an ~include("src/transformers/saveload/{name}.jl")~ line to
+   =src/DataToolkitCommon.jl= (maintaining the sorted order)
+3. Decide whether you want to use an extra package, if so:
+   a. With =DataToolkitCommon= as the current project, in the Pkg repl run ~add --weak {MyPkg}~
+   b. Modify the =Project.toml= to add a ={MyPkg}Ext= to the =[extensions]= section
+   c. Create =ext/{MyPkg}Ext.jl=
+   d. Add a stub method to =saveload/{name}.jl=, and implement it in =ext/{MyPkg}Ext.jl=
+   e. Use ~@require {MyPkg}~ at the start of your [[@extref DataToolkitCore.load][~load~]] method implementation
+   f. Add a ~@addpkg {MyPkg} {UUID}~ line to the ~__init__~ method in
+      =src/DataToolkitCommon.jl= (maintaining the sorted order)
+4. Implement one or more [[@extref DataToolkitCore.load][~load~]] methods for ~DataLoader{:name}~. Use [[@extref DataToolkitCore.@getparam][~@getparam~]]
+   if you want to access parameters of the loader or dataset.
+5. If you implemented multiple ~load~ methods, consider whether it would also be
+   appropriate to implement a specialised [[@extref DataToolkitCore.supportedtypes][~supportedtypes~]] method.
+6. Consider whether there is a reasonable implementation of [[@extref DataToolkitCore.createauto][~createauto~]] you
+   could write.
+7. At the end of the file, assign a docstring to a const using the form ~const {name}_DOC = md"""..."""~,
+   and update the ~append!(DataToolkitCore.TRANSFORMER_DOCUMENTATION, [...])~ call
+   in =src/DataToolkitCommon.jl='s ~__init__~ method appropriately.
+8. Add ~"{name}"~ to the ~DocSaveload~ list in =docs/make.jl=
+9. For brownie points: find a test file for the new loader and PR it to
+   [[https://github.com/tecosaur/DataToolkitTestAssets][DataToolkitTestAssets]] and write a test using it.
+
+** Storage
+
+The same as the loader steps, except:
++ You want to create the file =src/transformers/storage/{name}.jl=
++ You want to implement either:
+  - [[@extref DataToolkitCore.storage][~storage~]]
+  - [[@extref DataToolkitCore.getstorage][~getstorage~]] and/or [[@extref DataToolkitCore.putstorage][~putstorage~]]
++ Add ~"{name}"~ to ~DocStorage~ instead of ~DocSaveload~ in =docs/make.jl=
+
+** Writer
+
+The same as the loader steps, except:
++ You want to implement [[@extref DataToolkitCore.save][~save~]]
+
+* Creating a new plugin
+
+If you feel like DataToolkit lacks something, not support for a certain
+support/storage provider, but some more fundamental behaviour ---
+it's entirely likely this behaviour can be added in via a [[@extref DTkCore Plugins-and-Advice][/Plugin/]].
+
+Depending on the behaviour you have in mind, implementing a plugin can take five
+minutes and be just a dozen or two lines total, or something much larger (like
+=DataToolkitStore=). Feel free to reach out to me for a chat if you're not sure
+whether or how something can be done 🙂.
+
+The plugins in =src/plugins/= should provide an indication of what implementing a
+plugin /can/ look like. The broad strokes look something like this though:
+1. Compare the behaviour in your mind to the [[@extref DTkCore Index-of-advised-calls-(join-points)][join points]] currently available,
+   and contemplate which of them would need to be changed to accomidate your
+   target behaviour
+2. Create =src/plugins/{name}.jl=, and implement advice functions that modify the
+   identified join points
+3. Construct a ~Plugin~ and assign it to a ~const~ variable with a docstring
+4. Add a ~include("plugins/myplugin.jl")~ line to =src/DataToolkitCommon.jl=, and
+   ~@dataplugin MY_PLUGIN~ line to the ~__init__~ function (around the middle, with
+   the other plugins).
+5. Add the plugin to the ~DocPlugins~ list in =docs/make.jl=, providing a mapping
+   from the display name to the actual name.

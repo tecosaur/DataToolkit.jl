@@ -1,0 +1,27 @@
+name = "DataToolkit"
+uuid = "dc83c90b-d41d-4e55-bdb7-0fc919659999"
+authors = ["TEC <tec@tecosaur.com> and contributors"]
+version = "0.10.0"
+
+[deps]
+DataToolkitBase = "e209d0c3-e863-446f-9b45-de6ca9730756"
+DataToolkitCommon = "9e6fccbf-6142-406a-aa4c-75c1ae647f53"
+DataToolkitCore = "caac3e55-418c-402e-a061-64d454aa8f4f"
+DataToolkitREPL = "c58528a0-97a2-40a0-9a44-056fe1196995"
+DataToolkitStore = "082ec3c2-3fb3-458f-ad22-5e5e31d4377a"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
+
+[compat]
+DataToolkitBase = "~0.10"
+DataToolkitCore = "~0.10"
+DataToolkitCommon = "~0.10"
+DataToolkitREPL = "~0.10"
+DataToolkitStore = "~0.10"
+PrecompileTools = "1.1.2"
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
