@@ -69,6 +69,17 @@ const DATASET_REFERENCE_REGEX =
                  "(.+)", DATASET_REFERENCE_WRAPPER[2],
                  "\$"))
 
+"""
+    QUALIFIED_TYPE_CACHE
+
+A cache of [`QualifiedType`](@ref) instances, indexed by the type they represent.
+
+While one would hope that `QualifiedType(::Type)` calls would be constant-folded,
+in practice this is not the case, and so this cache is used to avoid an unfortunate
+large performance hit when constructing many `QualifiedType` instances.
+"""
+const QUALIFIED_TYPE_CACHE = Dict{Type, QualifiedType}()
+
 # For plugins / general information
 
 """
