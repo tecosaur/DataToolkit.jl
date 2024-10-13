@@ -1,5 +1,5 @@
-function unzip end # Implemented in `../../../ext/TOMLExt.jl`
-function _read_zip end # Implemented in `../../../ext/TOMLExt.jl`
+function unzip end # Implemented in `../../../ext/ZipFileExt.jl`
+function _read_zip end # Implemented in `../../../ext/ZipFileExt.jl`
 
 function load(loader::DataLoader{:zip}, from::IO, as::Union{Type{FilePath}, Type{DirPath}})
     @require ZipFile
@@ -26,7 +26,7 @@ function load(loader::DataLoader{:zip}, from::IO, as::Union{Type{FilePath}, Type
     end
     if isnothing(file) && as == DirPath
         DirPath(path)
-    elseif as == FilePath
+    elseif file isa String && as == FilePath
         FilePath(joinpath(path, file))
     end
 end
@@ -53,6 +53,14 @@ end
 function load(loader::DataLoader{:zip}, from::FilePath,
               as::Type{<:Union{FilePath, IO, Dict{FilePath, IO}, Dict{String, IO}}})
     open(string(from)) do io load(loader, io, as) end
+end
+
+function supportedtypes(::Type{DataLoader{:zip}}, params::Dict{String, Any})
+    if haskey(params, "file")
+        map(QualifiedType, [IO, FilePath])
+    else
+        map(QualifiedType, [DirPath, Dict{FilePath, IO}, Dict{String, IO}])
+    end
 end
 
 createpriority(::Type{DataLoader{:zip}}) = 10

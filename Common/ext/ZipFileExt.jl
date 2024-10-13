@@ -1,7 +1,8 @@
 module ZipFileExt
 
 using ZipFile
-import DataToolkitCommon: _read_zip, FilePath
+using DataToolkitCore: FilePath
+import DataToolkitCommon: _read_zip, unzip
 
 """
     unzip(archive::IO, dir::String=pwd();
