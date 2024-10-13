@@ -27,7 +27,7 @@ const DocSaveload = [
     "Netpbm",
     "Passthrough",
     "PNG",
-    "Qoi",
+    "QOI",
     "Serialization",
     "Sqlite",
     "Tar",
