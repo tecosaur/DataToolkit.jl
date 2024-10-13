@@ -253,10 +253,10 @@ function printstats()
     else
         for inv in INVENTORIES
             printstyled("Store: ",
-                        if dirname(inv.file.path) == USER_STORE
+                        if normpath(dirname(inv.file.path), "") == USER_STORE
                             "(user)"
                         else
-                            dirname(inv.file.path)
+                            contractuser(dirname(inv.file.path))
                         end, '\n', color=:magenta, bold=true)
             printstats(inv)
         end
@@ -392,8 +392,8 @@ function garbage_collect!(; log::Bool=true, kwargs...)
         for inv in INVENTORIES
             log && printstyled(
                 "Store: ",
-                if dirname(inv.file.path) == USER_STORE
-                    "(user)" else dirname(inv.file.path) end,
+                if normpath(dirname(inv.file.path), "") == USER_STORE
+                    "(user)" else contractuser(dirname(inv.file.path)) end,
                 '\n', color=:magenta, bold=true)
             garbage_collect!(inv; log, kwargs...)
         end
