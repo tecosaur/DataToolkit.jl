@@ -31,7 +31,7 @@ function loadproject!(mod::Module, projpath::String; force::Bool=false)
         try
             loadcollection!(path, m; soft)
         catch err
-            @error "Failed to load $path" err
+            @error "Failed to load $path" exception=(err, catch_backtrace())
         end
     end
     if !isdir(projpath)
