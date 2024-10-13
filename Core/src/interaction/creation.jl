@@ -17,6 +17,46 @@ DataCollection(name::Union{String, Nothing}=nothing;
     DataCollection(name, Dict{String, Any}(String(k) => v for (k, v) in kwargs);
                    path, uuid, plugins, mod)
 
+"""
+    create!(::Type{DataCollection}, name::Union{String, Nothing}, path::Union{String, Nothing};
+            uuid::UUID=uuid4(), plugins::Vector{String}=String[], mod::Module=Base.Main)
+
+Create a new data collection.
+
+This can be an in-memory data collection, when `path` is set to `nothing`, or a
+collection which corresponds to a Data TOML file, in which case `path` should be
+set to either a path to a `.toml` file or an existing directory in which a
+`Data.toml` file should be placed.
+
+When a path is provided, the data collection will immediately be written,
+overwriting any existing file at the path.
+"""
+function create!(::Type{DataCollection}, name::Union{String, Nothing}, path::Union{String, Nothing};
+                 uuid::UUID=uuid4(), plugins::Vector{String}=String[], mod::Module=Base.Main)
+    if isnothing(path) || endswith(path, ".toml")
+    elseif isdir(path)
+        path = joinpath(path, "Data.toml")
+    else
+        path = path * ".toml"
+    end
+    if isnothing(name)
+        name = if !isnothing(Base.active_project(false))
+            Base.active_project(false) |> dirname |> basename
+        else
+            something(path, string(gensym("unnamed"))[3:end]) |>
+                dirname |> basename
+        end
+    end
+    dc = DataCollection(name; path, uuid, plugins, mod)
+    newcollection = @advise create(DataCollection, dc)
+    pushfirst!(STACK, newcollection)
+    !isnothing(path) && write(newcollection)
+    newcollection
+end
+
+# For advice purposes
+create(::Type{DataCollection}, dc::DataCollection) = dc
+
 # Creating safe toml values from API-passed values
 
 """

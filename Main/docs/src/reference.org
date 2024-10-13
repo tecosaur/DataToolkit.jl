@@ -42,7 +42,7 @@ DataToolkit.@addpkg
 *** DataToolkit
 
 #+begin_src @docs
-DataToolkit.init
+DataToolkit.create!(::Type{DataCollection}, ::Union{String, Nothing}, ::Union{String, Nothing})
 DataToolkit.plugins
 DataToolkit.addpkgs
 #+end_src

@@ -1,7 +1,6 @@
 module StoreREPL
 
 using DataToolkitCore
-using DataToolkitCore: init
 
 using DataToolkitREPL: Markdown, REPL_CMDS, ReplCmd, add_repl_cmd!,
     show_extra, confirm_yn
@@ -33,21 +32,26 @@ end
 # Implementing methods in `../src/plugins.jl`
 
 """
-    store_init_checksum_a( <init(dc::DataCollection)> )
+    store_init_checksum_a( <create(::Type{DataCollection}, dc::DataCollection)> )
 
 This advice prompts the user to enable checksums by default when run
 interactively with the defaults package active.
 
 Part of `STORE_PLUGIN`.
 """
-function store_init_checksum_a(f::typeof(init), dc::DataCollection)
-    if "defaults" in dc.plugins && isinteractive() &&
-        confirm_yn(" Use checksums by default?", true)
-        dc = config_set(
+function store_init_checksum_a(f::typeof(create), T::Type{DataCollection}, dc::DataCollection)
+    function add_checksum_default(dc::DataCollection)
+        config_set(
             dc, ["defaults", "storage", "_", "checksum"], "auto";
             quiet = true)
     end
-    (f, (dc,))
+    post = if "defaults" in dc.plugins && isinteractive() &&
+        confirm_yn(" Use checksums by default?", true)
+        add_checksum_default
+    else
+        identity
+    end
+    (post, f, (T, dc))
 end
 
 """
