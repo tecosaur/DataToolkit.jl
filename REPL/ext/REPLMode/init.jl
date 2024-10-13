@@ -86,8 +86,11 @@ function init(input::AbstractString)
         append!(plugins, extra_plugins)
     end
 
-    if !endswith(path, ".toml")
+    if endswith(path, ".toml")
+    elseif isdir(path)
         path = joinpath(path, "Data.toml")
+    else
+        path = path * ".toml"
     end
 
     while !isdir(dirname(path))
@@ -122,6 +125,11 @@ function init(input::AbstractString)
         name = prompt(" Name: ", name)
     end
 
-    DataToolkitCore.init(name, path; plugins)
-    nothing
+    create!(DataCollection, name, path; plugins)
+
+    if !isnothing(path)
+        printstyled(stderr, " ✓ Created new data collection '$name' at $path\n", color=:green)
+    else
+        printstyled(stderr, " ✓ Created new in-memory data collection '$name'\n", color=:green)
+    end
 end

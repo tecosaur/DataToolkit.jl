@@ -69,13 +69,13 @@ loadcollection!("<path>")
 Using the Data REPL.
 
 #+begin_src julia-repl
-(⋅) data> init
+(⋅) data> init <name>
 #+end_src
 
 Within a program.
 
 #+begin_src julia
-DataToolkit.init()
+DataToolkit.create!(DataCollection, "<name>", "<path>")
 #+end_src
 
 * Using a package within a =julia= loader script
