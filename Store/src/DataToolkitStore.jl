@@ -45,11 +45,11 @@ checks, as performed by `fetch!` for instance.
 STORE_RECORD_ACCESS::Bool = true
 
 function init_user_inventory!()
-    global USER_STORE = if haskey(ENV, "DATATOOLKIT_STORE")
+    global USER_STORE = normpath(if haskey(ENV, "DATATOOLKIT_STORE")
         mkpath(ENV["DATATOOLKIT_STORE"])
     else
         BaseDirs.User.cache(PROJECT_SUBPATH)
-    end
+    end, "")
     global USER_INVENTORY = joinpath(USER_STORE, INVENTORY_FILENAME)
 end
 
