@@ -75,12 +75,13 @@ function dataset(identstr::AbstractString, kv::Pair{<:AbstractString, <:Any}, kv
     dataset(identstr, parameters)
 end
 
-dataset(collection::DataCollection, identstr::AbstractString) =
-    resolve(collection, @advise collection parse_ident(identstr);
-            resolvetype=false)::DataSet
+function dataset(collection::DataCollection, identstr::AbstractString)
+    ident = @advise collection parse_ident(identstr)::Identifier
+    resolve(collection, ident; resolvetype=false)::DataSet
+end
 
 function dataset(collection::DataCollection, identstr::AbstractString, parameters::Dict{String, Any})
-    ident = @advise collection parse_ident(identstr)
+    ident = @advise collection parse_ident(identstr)::Identifier
     resolve(collection, Identifier(ident, parameters); resolvetype=false)::DataSet
 end
 
@@ -140,7 +141,7 @@ their declared types, and the implemented methods. If a method exists that can l
 `dataset` to a subtype of `as`, it will be used. Methods that produce a type
 declared in `dataset`'s `loaders` are preferred.
 """
-function Base.read(dataset::DataSet, as::Type)::as
+function Base.read(dataset::DataSet, @nospecialize(as::Type))::as
     @log_do("read",
             "Reading $(dataset.name) as $as",
             @advise read1(dataset, as))

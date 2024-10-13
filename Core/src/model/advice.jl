@@ -205,6 +205,8 @@ For example, `@advise myfunc(other, somedataset, rest...)` is equivalent to
 
 This macro performs a fairly minor code transformation, but should improve
 clarity.
+
+Consider adding a typeassert where type stability is important.
 """
 macro advise(source::Union{Symbol, Expr}, funcall::Union{Expr, Nothing}=nothing)
     # Handle @advice(funcall), and ensure `source` is correct both ways.
@@ -216,6 +218,10 @@ macro advise(source::Union{Symbol, Expr}, funcall::Union{Expr, Nothing}=nothing)
                       GlobalRef(@__MODULE__, :_dataadvise),
                       source)
     end
+    asserttype = nothing
+    if Meta.isexpr(funcall, :(::), 2)
+        funcall, asserttype = funcall.args
+    end
     if funcall isa Symbol || funcall.head != :call
         # Symbol if `source` was a symbol, and `funcall` nothing.
         throw(ArgumentError("Cannot advise non-function call $funcall"))
@@ -225,9 +231,11 @@ macro advise(source::Union{Symbol, Expr}, funcall::Union{Expr, Nothing}=nothing)
         args = if funcall.args[2] isa Expr && funcall.args[2].head == :parameters
             vcat(funcall.args[2], funcall.args[1], funcall.args[3:end])
         else funcall.args end
-        Expr(:escape,
-             Expr(:call,
-                  source,
-                  args...))
+        advcall = Expr(:call, source, args...)
+        Expr(:escape, if isnothing(asserttype)
+                 advcall
+             else
+                 Expr(:(::), advcall, asserttype)
+             end)
     end
 end

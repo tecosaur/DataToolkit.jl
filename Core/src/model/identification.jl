@@ -108,7 +108,7 @@ function resolve(collection::DataCollection, ident::Identifier;
             throw(UnresolveableIdentifier{DataSet}(string(notypeident), collection))
         end
     elseif length(matchingdatasets) > 1
-        throw(AmbiguousIdentifier((@advise collection string(ident)),
+        throw(AmbiguousIdentifier((@advise collection string(ident)::String),
                                   matchingdatasets, collection))
     end
 end
@@ -143,7 +143,7 @@ function refine(collection::DataCollection, datasets::Vector{DataSet}, ident::Id
         end
     matchingdatasets = datasets |> filter_nameid |> filter_type
     matchingdatasets, ignoreparams =
-        @advise collection refine(matchingdatasets, ident, String[])
+        @advise collection refine(matchingdatasets, ident, String[])::Tuple{Vector{DataSet}, Vector{String}}
     filter_parameters(matchingdatasets, ignoreparams)
 end
 
@@ -187,12 +187,12 @@ function resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, 
     isempty(stack) && throw(EmptyStackError())
     if (cname = parse(Identifier, identstr).collection) |> !isnothing
         collection = getlayer(cname)
-        ident = Identifier((@advise collection parse_ident(identstr)),
+        ident = Identifier((@advise collection parse_ident(identstr)::Identifier),
                            parameters)
         resolve(collection, ident; resolvetype)
     else
         for collection in stack
-            ident = Identifier((@advise collection parse_ident(identstr)),
+            ident = Identifier((@advise collection parse_ident(identstr)::Identifier),
                                parameters)
             result = resolve(collection, ident; resolvetype, requirematch=false)
             !isnothing(result) && return result

@@ -41,7 +41,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
     notypematches = Vector{DataSet}()
     if err.identifier isa String
         if !isnothing(err.collection)
-            ident = @advise err.collection parse_ident(err.identifier)
+            ident = @advise err.collection parse_ident(err.identifier)::Identifier
             if !isnothing(ident.type)
                 identnotype = Identifier(ident.collection, ident.dataset,
                                          nothing, ident.parameters)
@@ -50,7 +50,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
             end
         else
             for collection in STACK
-                ident = @advise collection parse_ident(err.identifier)
+                ident = @advise collection parse_ident(err.identifier)::Identifier
                 if !isnothing(ident.type)
                     identnotype = Identifier(ident.collection, ident.dataset,
                                              nothing, ident.parameters)
@@ -79,7 +79,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
         if !isnothing(err.collection) || !isempty(STACK)
             let collection = @something(err.collection, first(STACK))
                 for ident in Identifier.(collection.datasets, nothing)
-                    istr = @advise collection string(ident)
+                    istr = @advise collection string(ident)::String
                     push!(candidates,
                         (ident, collection, stringsimilarity(err.identifier, istr; halfcase=true)))
                 end
@@ -87,7 +87,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
         elseif isnothing(err.collection) && !isempty(STACK)
             for collection in last(Iterators.peel(STACK))
                 for ident in Identifier.(collection.datasets)
-                    istr = @advise collection string(ident)
+                    istr = @advise collection string(ident)::String
                     push!(candidates,
                         (ident, collection, stringsimilarity(err.identifier, istr; halfcase=true)))
                 end

@@ -69,7 +69,7 @@ function Base.parse(::Type{Identifier}, spec::AbstractString)
         cstring = spec[1:prevind(spec, mark)]
         something(tryparse(UUID, cstring), cstring)
     end
-    @advise getlayer(collection) parse_ident(spec)
+    @advise getlayer(collection) parse_ident(spec)::Identifier
 end
 
 function parse_ident(spec::AbstractString)
@@ -119,7 +119,7 @@ supportedtypes(DT::Type{<:DataTransformer}, _::Dict{String, Any}) =
     supportedtypes(DT)
 
 (DT::Type{<:DataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
-    @advise fromspec(DT, dataset, spec)
+    @advise fromspec(DT, dataset, spec)::DT
 
 (DT::Type{<:DataTransformer})(dataset::DataSet, driver::String) =
     DT(dataset, Dict{String, Any}("driver" => driver))
@@ -166,7 +166,7 @@ function fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{Stri
     delete!(parameters, "priority")
     @advise dataset identity(
         DT(dataset, ttype, priority,
-            dataset_parameters(dataset, Val(:extract), parameters)))
+            dataset_parameters(dataset, Val(:extract), parameters)))::DT
 end
 
 # function (DT::Type{<:DataTransformer})(collection::DataCollection, spec::Dict{String, Any})
@@ -236,7 +236,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
             push!(collection.datasets, DataSet(collection, name, dspec))
         end
     end
-    @advise identity(collection)
+    @advise identity(collection)::DataCollection
 end
 
 # ---------------
@@ -244,7 +244,7 @@ end
 # ---------------
 
 function DataSet(collection::DataCollection, name::String, spec::Dict{String, Any})
-    @advise fromspec(DataSet, collection, name, spec)
+    @advise fromspec(DataSet, collection, name, spec)::DataSet
 end
 
 """
@@ -274,5 +274,5 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
         end
         sort!(getfield(dataset, afield), by=a->a.priority)
     end
-    @advise identity(dataset)
+    @advise identity(dataset)::DataSet
 end
