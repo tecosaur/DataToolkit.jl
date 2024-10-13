@@ -7,7 +7,11 @@ function Base.iswritable(dc::DataCollection)
     !isnothing(dc.path) || return false
     get(dc, "locked", false) !== true || return false
     @static if VERSION >= v"1.11"
-        iswritable(dc.path)
+        if isfile(dc.path)
+            iswritable(dc.path)
+        else
+            iswritable(dirname(dc.path))
+        end
     else
         try # why is this such a hassle?
             open(io -> iswritable(io), dc.path, "a")
