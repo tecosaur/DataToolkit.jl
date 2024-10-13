@@ -163,7 +163,11 @@ function typevariants(T::Type)::Vector{Type}
     elseif T isa UnionAll || (T isa DataType && T.name.name != :Type)
         [T]
     elseif T isa Union
-        Base.uniontypes(T)
+        Ta = Type[]
+        for Tu in Base.uniontypes(T)
+            append!(Ta, typevariants(Tu))
+        end
+        Ta
     elseif T isa Type{<:Any}
         typevariants(first(T.parameters))
     else
@@ -212,7 +216,7 @@ function transformersigs(L::Type{<:DataLoader}, desired::Type)
         if Tloader isa TypeVar
             Tloader = Tloader.ub
         end
-        if Tout1 == Type{Tin}
+        if Tout1 == Type{Tin} && Tin isa TypeVar || Tout1 == Type
             push!(types, (Tloader, desired, desired))
         else
             for Tout in typevariants(Tout1)
