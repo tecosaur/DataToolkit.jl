@@ -6,17 +6,23 @@ QualifiedType(m::Symbol, parents::Vector{Symbol}, name::Symbol) =
 
 function QualifiedType(::Type{T0}) where {T0}
     T = Base.unwrap_unionall(T0)
-    params = map(p -> if p isa Type
-                     QualifiedType(p)
-                 else p end,
-                 T.parameters)
+    alias = Base.make_typealias(T)
+    root, name, params = if isnothing(alias)
+        parentmodule(T), nameof(T),
+        map(p -> if p isa Type QualifiedType(p) else p end,
+            T.parameters)
+    else
+        alias::Tuple{GlobalRef, Core.SimpleVector}
+        first(alias).mod, first(alias).name,
+        map(p -> if p isa Type QualifiedType(p) else p end,
+            collect(last(alias)))
+    end
     parents = Symbol[]
-    root = parentmodule(T)
     while root != parentmodule(root) && root ∉ (Base, Core)
         push!(parents, nameof(root))
         root = parentmodule(root)
     end
-    QualifiedType(nameof(root), parents, nameof(T), Tuple(params))
+    QualifiedType(nameof(root), parents, name, Tuple(params))
 end
 
 Base.:(==)(a::QualifiedType, b::QualifiedType) =
