@@ -7,7 +7,7 @@ function DataCollection(name::Union{String, Nothing}, config::Dict{String, <:Any
         LATEST_DATA_CONFIG_VERSION, name, uuid, plugins,
         toml_safe(config), DataSet[], path,
         AdviceAmalgamation(plugins), mod)
-    @advise identity(collection)
+    @advise identity(collection)::DataCollection
 end
 
 DataCollection(name::Union{String, Nothing}=nothing;
@@ -48,7 +48,7 @@ function create!(::Type{DataCollection}, name::Union{String, Nothing}, path::Uni
         end
     end
     dc = DataCollection(name; path, uuid, plugins, mod)
-    newcollection = @advise create(DataCollection, dc)
+    newcollection = @advise create(DataCollection, dc)::DataCollection
     pushfirst!(STACK, newcollection)
     !isnothing(path) && write(newcollection)
     newcollection
@@ -97,7 +97,7 @@ function create(parent::DataCollection, ::Type{DataSet}, name::AbstractString, s
         spec = merge(spec, Dict("uuid" => uuid4()))
     end
     uuid = if haskey(spec, "uuid") UUID(spec["uuid"]) else uuid4() end
-    dataset = @advise fromspec(DataSet, parent, String(name), toml_safe(parent, spec))
+    dataset = @advise fromspec(DataSet, parent, String(name), toml_safe(parent, spec))::DataSet
 end
 
 function create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, spec::Dict{String, <:Any})
@@ -160,7 +160,7 @@ function create(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, 
     if !isempty(spec)
         spec = toml_safe(parent, spec)
     end
-    @advise fromspec(T, parent, toml_safe(parent, spec))
+    @advise fromspec(T, parent, toml_safe(parent, spec))::T
 end
 
 create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{String, <:Any} = Dict{String, Any}()) =

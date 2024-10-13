@@ -89,7 +89,11 @@ const AdviseRecord = NamedTuple{(:location, :parent, :invocation), Tuple{LineNum
 function findadvice!(acc::Vector{AdviseRecord}, expr::Expr; parent=nothing)
     if expr.head == :macrocall && first(expr.args) == Symbol("@advise")
         !isnothing(parent) || @warn "Macro @$(expr.args[2]) has no parent function"
-        push!(acc, (; location=expr.args[2], parent, invocation=expr.args[end]))
+        invocation = expr.args[end]
+        if Meta.isexpr(invocation, :(::), 2)
+            invocation = invocation.args[1]
+        end
+        push!(acc, (; location=expr.args[2], parent, invocation))
     else
         if isnothing(parent) && expr.head == :function
             parent = if first(expr.args) isa Expr
