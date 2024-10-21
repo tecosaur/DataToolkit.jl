@@ -80,10 +80,11 @@ The file `dest` is not touched until the write is complete, and if the write to
 """
 function atomic_write end
 
-function atomic_write(f::Function, dest::AbstractString, temp::AbstractString)
+function atomic_write(f::F, dest::AbstractString, temp::AbstractString) where {F <: Function}
+    local ret
     try
         io = open(temp, "w")
-        f(io)
+        ret = f(io)
         flush(io)
         req = Libc.malloc(Base._sizeof_uv_fs)
         # REVIEW: When we drop 1.11 support `Base.RawFD(fd(io))` can be replaced with `fd(io)`
@@ -95,9 +96,10 @@ function atomic_write(f::Function, dest::AbstractString, temp::AbstractString)
         rethrow()
     end
     mv(temp, dest, force=true)
+    ret
 end
 
-function atomic_write(f::Function, dest::AbstractString)
+function atomic_write(f::F, dest::AbstractString) where {F <: Function}
     miliseconds = round(Int, 1000 * time()) % 1000 * 60 * 60 * 24
     suffix = string('-', string(miliseconds, base=36), ".part")
     atomic_write(f, dest, dest * suffix)
