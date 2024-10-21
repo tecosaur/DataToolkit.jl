@@ -30,6 +30,7 @@ shouldstore(::DataStorage{:passthrough}) = false
 shouldstore(::DataLoader{:passthrough}, ::Type) = false
 shouldstore(::DataStorage{:raw}) = false
 shouldstore(::DataLoader{:serialization}, ::Type) = false
+shouldstore(::DataLoader{:xml}, ::Type) = false
 
 # ------------------
 # Filesystem storage
