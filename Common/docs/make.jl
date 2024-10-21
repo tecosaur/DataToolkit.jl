@@ -34,6 +34,7 @@ const DocSaveload = [
     "Tiff",
     "Webp",
     "XLSX",
+    "XML",
     "Zip",
 ]
 
