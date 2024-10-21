@@ -155,15 +155,21 @@ The `DataStorage` method takes a `write::Bool` keyword argument.
 """
 function transformersigs end
 
-function typevariants(T::Type)::Vector{Type}
+"""
+    typevariants(T::Type) -> Vector{Tuple{Type, Bool}}
+
+Break a type `T` down into all types that its composed of, and indicate subtypeability.
+"""
+function typevariants(T::Type)::Vector{Tuple{Type, Bool}}
     if T == Type || T == Any
-        [Any]
+        [(Any, false)]
     elseif T isa UnionAll && T.var.ub isa Union
-        first(Base.unwrap_unionall(T).parameters).ub |> typevariants
+        [(Tu, true) for (Tu, _) in
+             first(Base.unwrap_unionall(T).parameters).ub |> typevariants]
     elseif T isa UnionAll || (T isa DataType && T.name.name != :Type)
-        [T]
+        [(T, false)]
     elseif T isa Union
-        Ta = Type[]
+        Ta = Tuple{Type, Bool}[]
         for Tu in Base.uniontypes(T)
             append!(Ta, typevariants(Tu))
         end
@@ -171,11 +177,11 @@ function typevariants(T::Type)::Vector{Type}
     elseif T isa Type{<:Any}
         typevariants(first(T.parameters))
     else
-        [T]
+        [(T, false)]
     end
 end
 
-typevariants(T::TypeVar) = typevariants(T.ub)
+typevariants(T::TypeVar) = [(Tu, true) for (Tu, _) in typevariants(T.ub)]
 
 function transformersigs(S::Type{<:DataStorage}, desired::Type; read::Bool=true, write::Bool=true)
     @nospecialize
@@ -195,9 +201,9 @@ function transformersigs(S::Type{<:DataStorage}, desired::Type; read::Bool=true,
         if Tout1 == Type
             push!(types, (Tstor, desired))
         else
-            for Tout in typevariants(Tout1)
+            for (Tout, cansubtype) in typevariants(Tout1)
                 Tout <: desired || desired <: Tout || continue
-                push!(types, (Tstor, Tout))
+                push!(types, (Tstor, ifelse(cansubtype, desired, Tout)))
             end
         end
     end
@@ -216,12 +222,12 @@ function transformersigs(L::Type{<:DataLoader}, desired::Type)
         if Tloader isa TypeVar
             Tloader = Tloader.ub
         end
-        if Tout1 == Type{Tin} && Tin isa TypeVar || Tout1 == Type
+        if Tout1 == Type{Tin} && (Tin isa TypeVar || Tout1 == Type)
             push!(types, (Tloader, desired, desired))
         else
-            for Tout in typevariants(Tout1)
+            for (Tout, cansubtype) in typevariants(Tout1)
                 Tout <: desired || desired <: Tout || continue
-                push!(types, (Tloader, Tin, Tout))
+                push!(types, (Tloader, Tin, ifelse(cansubtype, desired, Tout)))
             end
         end
     end
@@ -243,9 +249,9 @@ function transformersigs(W::Type{<:DataWriter}, desired::Type)
         if Tin1 == Type
             push!(types, (Twriter, Tdest, desired))
         else
-            for Tin in typevariants(Tin1)
+            for (Tin, cansubtype) in typevariants(Tin1)
                 issubtype(Tin, desired) || continue
-                push!(types, (Twriter, Tdest, Tin))
+                push!(types, (Twriter, Tdest, ifelse(cansubtype, desired, Tin)))
             end
         end
     end
