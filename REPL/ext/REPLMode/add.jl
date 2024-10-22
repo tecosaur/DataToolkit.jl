@@ -9,9 +9,12 @@ Optionally, the *name* and *source* can be specified using the following forms:
 
     data> add NAME
     data> add NAME from SOURCE
+    data> add NAME SOURCE
     data> add from SOURCE
 
-As a shorthand, `f` can be used instead of `from`.
+The `from` keyword is optional, except for in the final form where only the
+source is immediately provided. To include spaces in the name, use either single
+or double quotes (e.g. `"name with spaces"`).
 
 The transformers drivers used can also be specified by using a `via` argument
 before `from`, with a form like so:
