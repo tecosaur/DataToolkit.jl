@@ -56,9 +56,7 @@ function Base.string(q::QualifiedType)
     end
 end
 
-function Base.convert(::Type{Dict}, dt::DataTransformer)
-    @advise tospec(dt)::Dict{String, Any}
-end
+Base.convert(::Type{Dict}, dt::DataTransformer) = @advise tospec(dt)
 
 """
     tospec(thing::DataTransformer)
@@ -72,50 +70,49 @@ function tospec(dt::DataTransformer)
         @nospecialize
         D
     end
-    merge(Dict("driver" => string(drivername(dt)),
-               "type" => if length(dt.type) == 1
-                   string(first(dt.type))
-               else
-                   string.(dt.type)
-               end,
-               "priority" => dt.priority),
+    merge(Dict{String, Any}(
+        "driver" => string(drivername(dt)),
+        "type" => if length(dt.type) == 1
+            string(first(dt.type))
+        else
+            map(string, dt.type)
+        end,
+        "priority" => dt.priority),
           dataset_parameters(dt.dataset, Val(:encode), dt.parameters))
 end
 
-function Base.convert(::Type{Dict}, ds::DataSet)
-    @advise tospec(ds)::Dict{String, Any}
-end
+Base.convert(::Type{Dict}, ds::DataSet) = @advise tospec(ds)
 
 # Documented above
 function tospec(ds::DataSet)
-    merge(Dict("uuid" => string(ds.uuid),
-               "storage" => convert.(Dict, ds.storage),
-               "loader" => convert.(Dict, ds.loaders),
-               "writer" => convert.(Dict, ds.writers)) |>
-                   d -> filter(((k, v)::Pair) -> !isempty(v), d),
+    attrs = Pair{String, Any}[
+        "uuid" => string(ds.uuid),
+        "storage" => map(s -> convert(Dict, s), ds.storage),
+        "loader" => map(l -> convert(Dict, l), ds.loaders),
+        "writer" => map(w -> convert(Dict, w), ds.writers)]
+    filter!(p -> !isempty(last(p)), attrs)
+    merge(Dict{String, Any}(attrs),
           dataset_parameters(ds, Val(:encode), ds.parameters))
 end
 
-function Base.convert(::Type{Dict}, dc::DataCollection)
-    @advise tospec(dc)::Dict{String, Any}
-end
+Base.convert(::Type{Dict}, dc::DataCollection) = @advise tospec(dc)
 
 function tospec(dc::DataCollection)
-    merge(Dict("data_config_version" => dc.version,
-               "name" => dc.name,
-               "uuid" => string(dc.uuid),
-               "plugins" => dc.plugins,
-               "config" => dataset_parameters(dc, Val(:encode), dc.parameters)),
-          let datasets = Dict{String, Any}()
-              for ds in dc.datasets
-                  if haskey(datasets, ds.name)
-                      push!(datasets[ds.name], convert(Dict, ds))
-                  else
-                      datasets[ds.name] = [convert(Dict, ds)]
-                  end
-              end
-              datasets
-          end)
+    datasets = Dict{String, Any}()
+    for ds in dc.datasets
+        if haskey(datasets, ds.name)
+            push!(datasets[ds.name], convert(Dict, ds))
+        else
+            datasets[ds.name] = [convert(Dict, ds)]
+        end
+    end
+    spec = Dict{String, Any}(
+        "data_config_version" => dc.version,
+        "name" => dc.name,
+        "uuid" => string(dc.uuid),
+        "plugins" => dc.plugins,
+        "config" => dataset_parameters(dc, Val(:encode), dc.parameters))
+    merge(datasets, spec)
 end
 
 """
@@ -139,7 +136,7 @@ function tomlreformat!(io::IO)
         #  2. 'key...' = "string..."
         #  3. "key..." = "string..."
         if !isnothing(match(r"^\s*(?:[A-Za-z0-9_-]+|\'[ \"A-Za-z0-9_-]+\'|\"[ 'A-Za-z0-9_-]+\") *= * \".*\"$", line))
-            write(out, line[1:findfirst(!isspace, line)-1]) # apply indent
+            write(out, line[1:something(findfirst(!isspace, line),1)-1]) # apply indent
             key, value = first(TOML.parse(line))
             if length(value) < 40 || count('\n', value) == 0 || (count('\n', value) < 3 && length(value) < 90)
                 TOML.print(out, Dict{String, Any}(key => value))

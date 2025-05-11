@@ -38,19 +38,24 @@ dataset_parameters(dt::DataTransformer, action::Val, params::Any) =
 function dataset_parameters(collection::DataCollection, ::Val{:extract}, param::String)
     dsid_match = match(DATASET_REFERENCE_REGEX, param)
     if !isnothing(dsid_match)
-        @advise collection parse_ident(dsid_match.captures[1])::Identifier
+        @advise collection parse_ident(dsid_match.captures[1])
     else
         param
     end
 end
 
-function dataset_parameters(collection::DataCollection, ::Val{:resolve}, param::Identifier)
-    resolve(collection, param)
+function dataset_parameters(collection::DataCollection, ::Val{:resolve}, ident::Identifier)
+    dataset = resolve(collection, ident)
+    if isnothing(ident.type)
+        dataset
+    else
+        read(dataset, ident.type)
+    end
 end
 
-function dataset_parameters(collection::DataCollection, ::Val{:encode}, param::Identifier)
+function dataset_parameters(collection::DataCollection, ::Val{:encode}, ident::Identifier)
     string(DATASET_REFERENCE_WRAPPER[1],
-           (@advise collection string(param)),
+           (@advise collection string(ident)),
            DATASET_REFERENCE_WRAPPER[2])
 end
 
@@ -75,7 +80,7 @@ function referenced_datasets(dataset::DataSet)
     for paramsource in vcat(dataset.storage, dataset.loaders, dataset.writers)
         add_dataset_refs!(dataset_references, paramsource)
     end
-    map(r -> resolve(dataset.collection, r, resolvetype=false), dataset_references) |> unique!
+    map(r -> resolve(dataset.collection, r), dataset_references) |> unique!
 end
 
 add_dataset_refs!(acc::Vector{Identifier}, @nospecialize(dt::DataTransformer)) =

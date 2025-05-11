@@ -41,7 +41,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
     notypematches = Vector{DataSet}()
     if err.identifier isa String
         if !isnothing(err.collection)
-            ident = @advise err.collection parse_ident(err.identifier)::Identifier
+            ident = @advise err.collection parse_ident(err.identifier)
             if !isnothing(ident.type)
                 identnotype = Identifier(ident.collection, ident.dataset,
                                          nothing, ident.parameters)
@@ -50,7 +50,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
             end
         else
             for collection in STACK
-                ident = @advise collection parse_ident(err.identifier)::Identifier
+                ident = @advise collection parse_ident(err.identifier)
                 if !isnothing(ident.type)
                     identnotype = Identifier(ident.collection, ident.dataset,
                                              nothing, ident.parameters)
@@ -66,7 +66,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
         print(io, "\n  Without the type restriction, however, the following data sets match:")
         for dataset in notypematches
             print(io, "\n    ")
-            show(io, MIME("text/plain"), Identifier(dataset); dataset.collection)
+            show(IOContext(io, :data_collection => dataset.collection), MIME("text/plain"), Identifier(dataset))
             print(io, ", which is available as a ")
             types = getfield.(dataset.loaders, :type) |> Iterators.flatten |> unique
             for type in types
@@ -79,7 +79,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
         if !isnothing(err.collection) || !isempty(STACK)
             let collection = @something(err.collection, first(STACK))
                 for ident in Identifier.(collection.datasets, nothing)
-                    istr = @advise collection string(ident)::String
+                    istr = @advise collection string(ident)
                     push!(candidates,
                         (ident, collection, stringsimilarity(err.identifier, istr; halfcase=true)))
                 end
@@ -87,7 +87,7 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
         elseif isnothing(err.collection) && !isempty(STACK)
             for collection in last(Iterators.peel(STACK))
                 for ident in Identifier.(collection.datasets)
-                    istr = @advise collection string(ident)::String
+                    istr = @advise collection string(ident)
                     push!(candidates,
                         (ident, collection, stringsimilarity(err.identifier, istr; halfcase=true)))
                 end
@@ -164,7 +164,7 @@ struct AmbiguousIdentifier{T, I} <: IdentifierException where {T, I <: Union{Str
 end
 
 AmbiguousIdentifier(identifier::Union{String, UUID}, matches::Vector{T}) where {T} =
-    AmbiguousIdentifier{T}(identifier, matches, nothing)
+    AmbiguousIdentifier{T, typeof(identifier)}(identifier, matches, nothing)
 
 function Base.showerror(io::IO, err::AmbiguousIdentifier{DataSet, I}, bt; backtrace=true) where {I}
     print(io, "AmbiguousIdentifier: ", sprint(show, err.identifier),
@@ -185,7 +185,7 @@ function Base.showerror(io::IO, err::AmbiguousIdentifier{DataSet, I}, bt; backtr
     backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
-function Base.showerror(io::IO, err::AmbiguousIdentifier{DataCollection}, bt; backtrace=true)
+function Base.showerror(io::IO, err::AmbiguousIdentifier{DataCollection, I}, bt; backtrace=true) where {I}
     print(io, "AmbiguousIdentifier: ", sprint(show, err.identifier),
           " matches multiple data collections in the stack")
     if I == String
@@ -226,17 +226,19 @@ end
 function Base.showerror(io::IO, err::UnregisteredPackage, bt; backtrace=true)
     print(io, "UnregisteredPackage: ", err.pkg,
           " has not been registered by ", err.mod)
-    project_deps = let proj_file = if isnothing(pathof(err.mod)) # Main, etc.
+    mod_path = pathof(err.mod)
+    proj_file = if isnothing(mod_path) # Main, etc.
         Base.active_project()
-    else abspath(pathof(err.mod), "..", "..", "Project.toml") end
-        if isfile(proj_file)
-            Dict{String, Base.UUID}(
-                pkg => Base.UUID(id)
-                for (pkg, id) in get(Base.parsed_toml(proj_file),
-                                     "deps", Dict{String, Any}()))
-        else
-            Dict{String, Base.UUID}()
-        end
+    else
+        abspath(mod_path, "..", "..", "Project.toml")
+    end
+    project_deps = if !isnothing(proj_file) && isfile(proj_file)
+        Dict{String, Base.UUID}(
+            pkg => Base.UUID(id)
+            for (pkg, id) in get(Base.parsed_toml(proj_file),
+                                 "deps", Dict{String, Any}()))
+    else
+        Dict{String, Base.UUID}()
     end
     dtk = "DataToolkit" => Base.UUID("dc83c90b-d41d-4e55-bdb7-0fc919659999")
     has_dtk = dtk in project_deps
@@ -417,8 +419,8 @@ struct UnsatisfyableTransformer{T} <: DataOperationException where { T <: DataTr
 end
 
 function Base.showerror(io::IO, err::UnsatisfyableTransformer, bt; backtrace=true)
-    transformer_type = lowercase(replace(string(nameof(err.transformer)), "Data" => ""))
-    print(io, "UnsatisfyableTransformer: There are no $(transformer_type)s for ",
+    transformer_type = (((::Type{DataTransformer{T}}) where T) -> lowercase(string(T)))(err.transformer)
+    print(io, "UnsatisfyableTransformer: There is no $(transformer_type) for ",
           sprint(show, err.dataset.name), " that can provide a ",
           join(string.(err.wanted), ", ", ", or "),
           ".\n The defined $(transformer_type)s are as follows:")

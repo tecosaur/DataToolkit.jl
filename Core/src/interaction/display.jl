@@ -36,7 +36,7 @@ function Base.show(io::IO, dt::DataTransformer{kind, driver}) where {kind, drive
     get(io, :omittype, false) || print(io, '}')
     print(io, "(")
     for qtype in dt.type
-        type = typeify(qtype, mod=dt.dataset.collection.mod)
+        type = trytypeify(qtype, mod=dt.dataset.collection.mod)
         if !isnothing(type)
             printstyled(io, type, color=:yellow)
         else
@@ -93,7 +93,7 @@ function Base.show(io::IO, dataset::DataSet)
         print(io, " (")
         qtypes = vcat(getfield.(dataset.loaders, :type)...) |> unique
         for qtype in qtypes
-            type = typeify(qtype, mod=dataset.collection.mod)
+            type = trytypeify(qtype, mod=dataset.collection.mod)
             if !isnothing(type)
                 printstyled(io, type, color=:yellow)
             else

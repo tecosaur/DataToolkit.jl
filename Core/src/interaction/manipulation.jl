@@ -24,7 +24,14 @@ function stack_index(ident::Union{Int, String, UUID}; quiet::Bool=false)
     end
 end
 
-stack_index(collection::DataCollection) = findfirst(STACK .=== Ref(collection))
+function stack_index(collection::DataCollection; quiet::Bool = false)
+    idx = findfirst(STACK .=== Ref(collection))
+    isnothing(idx) && return idx
+    if !quiet
+        printstyled(" ! ", color=:red)
+        println("Could not find '$collection' in the stack")
+    end
+end
 
 """
     stack_move(ident::Union{Int, String, UUID, DataCollection}, shift::Int; quiet::Bool=false)
@@ -192,7 +199,7 @@ If `quiet` is not set warning messages will be omitted when no documentation
 could be fetched.
 """
 function plugin_info(plugin::AbstractString; quiet::Bool=false)
-    if plugin ∉ getfield.(PLUGINS, :name)
+    if plugin ∉ (p.name for p in PLUGINS)
         if !quiet
             printstyled(" ! ", color=:red, bold=true)
             println("The plugin '$plugin' is not currently loaded")
@@ -365,6 +372,7 @@ Remove `dataset` from its parent collection.
 """
 function Base.delete!(dataset::DataSet)
     index = findfirst(d -> d.uuid == dataset.uuid, dataset.collection.datasets)
+    isnothing(index) && throw(OrphanDataSet(dataset))
     deleteat!(dataset.collection.datasets, index)
     write(dataset.collection)
 end
@@ -391,13 +399,14 @@ function Base.replace!(dataset::DataSet;
     !isnothing(dsindex) || throw(OrphanDataSet(dataset))
     replacement = DataSet(dataset.collection, name, uuid, parameters,
                           DataStorage[], DataLoader[], DataWriter[])
-    for (tfield, transformers) in zip((:storage, :loaders, :writers),
-                                      (storage, loaders, writers))
-        for transformer in transformers
-            push!(getfield(replacement, tfield),
-                  typeof(transformer)(replacement, transformer.type,
-                                      transformer.priority, transformer.parameters))
-        end
+    for tf in storage
+        push!(replacement.storage, typeof(tf)(replacement, tf.type, tf.priority, tf.parameters))
+    end
+    for tf in loaders
+        push!(replacement.loaders, typeof(tf)(replacement, tf.type, tf.priority, tf.parameters))
+    end
+    for tf in writers
+        push!(replacement.writers, typeof(tf)(replacement, tf.type, tf.priority, tf.parameters))
     end
     dataset.collection.datasets[dsindex] = replacement
 end

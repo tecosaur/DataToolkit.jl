@@ -61,8 +61,6 @@ end
         @test sump1b(sum, 1) == 2
         @test sump1c(sum, 1) == 2
         @test_throws ErrorException sump1x(sum, 1) == 2
-        # Invalid advice function
-        @test_throws ArgumentError Advice(() -> ())
         # Pass-through of `post`
         @test sump1((sqrt, sum, (1,), (;))) ==
             (sqrt, sum, (2,), (;))
@@ -133,9 +131,13 @@ end
             @macroexpand @advise func(; a=1, b)
         @test :($(GlobalRef(DataToolkitCore, :_dataadvisecall))(func, x, y, z; a=1, b)) ==
             @macroexpand @advise func(x, y, z; a=1, b)
-        @test :(($(GlobalRef(DataToolkitCore, :_dataadvise))(a))(func, x)) ==
+        @test :($(GlobalRef(DataToolkitCore, :_dataadvisecall))($(GlobalRef(DataToolkitCore, :Val)){:noassert}(), func, x, y, z; a=1, b)::Int) ==
+            @macroexpand @advise func(x, y, z; a=1, b)::Int
+        @test :(($(GlobalRef(DataToolkitCore, :_dataadvise))(a, func, x))) ==
             @macroexpand @advise a func(x)
-        @test :(($(GlobalRef(DataToolkitCore, :_dataadvise))(source(a)))(func, x)) ==
+        @test :(($(GlobalRef(DataToolkitCore, :_dataadvise))(a))(func, x)::Int) ==
+            @macroexpand @advise a func(x)::Int
+        @test :(($(GlobalRef(DataToolkitCore, :_dataadvise))(source(a), func, x))) ==
             @macroexpand @advise source(a) func(x)
         @test_throws LoadError eval(:(@advise (1, 2)))
         @test_throws LoadError eval(:(@advise f()))
@@ -158,15 +160,15 @@ end
         @test QualifiedType(QualifiedType(:a, :b)) == QualifiedType(:a, :b, ())
     end
     @testset "Typeification" begin
-        @test typeify(QualifiedType(:a, :b)) === nothing
-        @test typeify(QualifiedType(:Core, :Int)) == Int
-        @test typeify(QualifiedType(:Core, :IO)) == IO
-        @test typeify(QualifiedType(:DataToolkitCore, :QualifiedType, ())) == QualifiedType
-        @test typeify(QualifiedType(:Core, :Array, (QualifiedType(:Core, :Integer, ()), 1))) ==
+        @test trytypeify(QualifiedType(:a, :b)) === nothing
+        @test trytypeify(QualifiedType(:Core, :Int)) == Int
+        @test trytypeify(QualifiedType(:Core, :IO)) == IO
+        @test trytypeify(QualifiedType(:DataToolkitCore, :QualifiedType, ())) == QualifiedType
+        @test trytypeify(QualifiedType(:Core, :Array, (QualifiedType(:Core, :Integer, ()), 1))) ==
             Vector{Integer}
         # Test module expansion with unexported type
-        @test typeify(QualifiedType(:Main, :AnyDict, ())) === nothing
-        @test typeify(QualifiedType(:Main, :AnyDict, ()), mod=Base) == Base.AnyDict
+        @test trytypeify(QualifiedType(:Main, :AnyDict, ())) === nothing
+        @test trytypeify(QualifiedType(:Main, :AnyDict, ()), mod=Base) == Base.AnyDict
     end
     @testset "Subtyping" begin
         @test QualifiedType(Int) ⊆ QualifiedType(Integer)
@@ -214,9 +216,9 @@ end
                           ("String", QualifiedType(String)),
                           ("a.b{c.d}", QualifiedType(:a, :b, (QualifiedType(:c, :d),))),
                           ("a.b.c{d.e.f}", QualifiedType(:a, [:b], :c, (QualifiedType(:d, [:e], :f),))),
-                          ("Array{Bool,2}", QualifiedType(Array{Bool, 2})),
-                          ("Array{Array{Array{<:Integer,1},1},1}",
-                           QualifiedType(Array{Array{Array{<:Integer,1},1},1})),
+                          ("Matrix{Bool}", QualifiedType(Matrix{Bool})),
+                          ("Vector{Vector{Array{<:Integer,1}}}",
+                           QualifiedType(Vector{Vector{Vector{<:Integer}}})),
                           ("Ref{I<:Integer}", QualifiedType(Ref{I} where {I <: Integer}))]
             @test str == string(qt)
             # Due to TypeVar comparison issues, instead of
@@ -363,13 +365,13 @@ end
         [[dataset.storage]]
         driver = "raw"
         priority = 1
-        type = "Array{Int64,1}"
+        type = "Vector{Int64}"
         value = [1, 2, 3]
 
         [[dataset.loader]]
         driver = "passthrough"
         priority = 1
-        type = "Array{Int64,1}"
+        type = "Vector{Int64}"
     """
     @test fieldeqn(read(IOBuffer(datatoml), DataCollection),
                   read(IOBuffer(datatoml_full), DataCollection))
@@ -418,8 +420,7 @@ end
         @test resolve(parse(Identifier, "dataset")) == dataset("dataset")
         @test resolve(parse(Identifier, "datatest:dataset")) == dataset("dataset")
         @test resolve(parse(Identifier, "dataset")) == dataset("dataset")
-        @test resolve(parse(Identifier, "dataset::Vector{Int}")) == read(dataset("dataset"))
-        @test resolve(parse(Identifier, "dataset::Vector{Int}"), resolvetype=false) == dataset("dataset")
+        @test resolve(parse(Identifier, "dataset::Vector{Int}")) == dataset("dataset")
         for (iargs, (col, ds)) in [((), ("datatest", "dataset")),
                                   ((:name,), ("datatest", "dataset")),
                                   ((:uuid,), (Base.UUID("84068d44-24db-4e28-b693-58d2e1f59d05"), Base.UUID("d9826666-5049-4051-8d2e-fe306c20802c"))),

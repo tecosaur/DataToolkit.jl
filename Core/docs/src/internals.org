@@ -48,6 +48,7 @@ DataToolkitCore.wait_maybe_log
 
 #+begin_src @docs
 DataToolkitCore.typeify
+DataToolkitCore.trytypeify
 DataToolkitCore.reinit
 DataToolkitCore._dataadvisecall
 DataToolkitCore.strip_stacktrace_advice!

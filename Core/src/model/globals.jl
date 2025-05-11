@@ -102,9 +102,9 @@ this Dict under the following keys:
 - `:transformer` for [`DataTransformer`](@ref)
 """
 const DATA_CONFIG_RESERVED_ATTRIBUTES =
-    Dict(:collection => ["data_config_version", "name", "uuid", "plugins", "config"],
-         :dataset => ["uuid", "storage", "loader", "writer"],
-         :transformer => ["driver", "type", "priority"])
+    (collection = ["data_config_version", "name", "uuid", "plugins", "config"],
+     dataset = ["uuid", "storage", "loader", "writer"],
+     transformer = ["driver", "type", "priority"])
 
 """
 When writing data configuration TOML file, the keys are (recursively) sorted.

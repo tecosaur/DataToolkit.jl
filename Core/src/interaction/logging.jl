@@ -81,7 +81,7 @@ macro log_do(category::String, message, expr::Union{Expr, Nothing} = nothing)
     quote
         let log_task = wait_maybe_log(
                 $category, $(esc(message));
-                mod=@__MODULE__, file=$(String(__source__.file)), line=$(__source__.line))
+                mod=@__MODULE__, file=$(String(something(__source__.file, ""))), line=$(__source__.line))
             result = try
                 fetch(@spawn $(esc(expr)))
             catch err

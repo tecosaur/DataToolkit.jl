@@ -26,9 +26,9 @@ function load_inventory(path::String, create::Bool=true)
             joinpath(dirname(path), config.store_dir, MERKLE_FILENAME)), [])
         cmerkle.file.mtime = 0.0 # To trigger refresh
         collections = [convert(CollectionInfo, key => val)
-                    for (key, val) in get(data, "collections", Dict{String, Any}[])]
-        stores = map(s -> convert(StoreSource, s), get(data, "store", Dict{String, Any}[]))
-        caches = map(c -> convert(CacheSource, c), get(data, "cache", Dict{String, Any}[]))
+                       for (key, val) in get(data, "collections", Dict{String, Any}[])]
+        stores = [convert(StoreSource, s) for s in get(data, "store", Dict{String, Any}[])]
+        caches = [convert(CacheSource, c) for c in get(data, "cache", Dict{String, Any}[])]
         Inventory(file, LockFile(path, "Inventory"), cmerkle,
                   config, collections, stores, caches, last_gc)
     elseif create
@@ -596,7 +596,7 @@ function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UIn
                         elseif all(Base.root_module_exists, source.packages)
                             true
                         else
-                            all(@. rhash(typeify(first(source.types))) == last(source.types))
+                            all(@. rhash(trytypeify(first(source.types))) == last(source.types))
                         end
                 else
                     r ∈ inactive_collections

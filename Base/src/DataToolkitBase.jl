@@ -18,10 +18,11 @@ Shorthand for loading a dataset in the default format,
 macro d_str(ident::String)
     quote
         ref = parse(Identifier, $ident)
-        if !isnothing(ref.type)
-            resolve(ref)
+        ds = resolve(ref)
+        if isnothing(ref.type)
+            read(ds)
         else
-            read(resolve(ref, resolvetype=false))
+            read(ds, ref.type)
         end
     end
 end
@@ -42,7 +43,7 @@ function loadproject!(mod::Module, projpath::String; force::Bool=false)
         data = Base.parsed_toml(joinpath(projpath, "Project.toml"))
         ispkg = haskey(data, "name") && haskey(data, "uuid") &&
             haskey(data, "version") && isfile(joinpath(
-                projpath, "src", data["name"] * ".jl"))
+                projpath, "src", data["name"]::String * ".jl"))
         ispkg && return
     end
     # Load Data.d/*.toml

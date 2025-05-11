@@ -32,7 +32,7 @@ function execute_repl_cmd(line::AbstractString;
             help_show(Symbol(first(rest_parts)[2:end]))
         elseif length(rest_parts) <= 1
             help_show(rest; commands)
-        elseif find_repl_cmd(rest_parts[1]; commands) isa ReplCmd{Vector{ReplCmd}}
+        elseif find_repl_cmd(rest_parts[1]; commands).execute isa Vector{ReplCmd}
             execute_repl_cmd(string(rest_parts[1], " help ", rest_parts[2]);
                              commands, scope)
         else
@@ -41,12 +41,13 @@ function execute_repl_cmd(line::AbstractString;
     else
         repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
         if isnothing(repl_cmd)
-        elseif repl_cmd isa ReplCmd{Function}
+        elseif repl_cmd.execute isa Function
             repl_cmd.execute(rest)
-        elseif repl_cmd isa ReplCmd{Vector{ReplCmd}}
+        elseif repl_cmd.execute isa Vector{ReplCmd}
             execute_repl_cmd(rest, commands = repl_cmd.execute, scope = repl_cmd.name)
         end
     end
+    nothing
 end
 
 """
@@ -118,16 +119,12 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
                all_cmd_names .* ' '
             end
             cmds = filter(ns -> startswith(ns, cmd_name), all_cmd_names)
-            (sort(cmds),
-             String(line),
-             !isempty(cmds))
+            (sort(cmds), String(line), !isempty(cmds))
         end
         if complete isa Tuple{Vector{String}, String, Bool}
             complete
         elseif complete isa Vector{String}
-            (sort(complete),
-             String(rest),
-             !isempty(complete))
+            (sort(complete), String(rest), !isempty(complete))
         else
             error("REPL completions for $cmd_name returned strange result, $(typeof(complete))")
         end

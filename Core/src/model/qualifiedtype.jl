@@ -41,12 +41,13 @@ function Base.show(io::IO, ::MIME"text/plain", qt::QualifiedType)
 end
 
 """
-    typeify(qt::QualifiedType; mod::Module=Main)
+    trytypeify(qt::QualifiedType; mod::Module=Main)
 
 Convert `qt` to a `Type` available in `mod`, if possible.
-If this cannot be done, `nothing` is returned instead.
+
+If this cannot be done the value `nothing` is returned instead.
 """
-function typeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)::Union{Type, Nothing}
+function trytypeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)::Union{Type, Nothing}
     mod = if qt.root === :Main
         mod
     elseif isdefined(mod, qt.root)
@@ -72,7 +73,7 @@ function typeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)::
         isempty(qt.parameters) && return T
         tparams = map(qt.parameters) do p
             if p isa QualifiedType
-                typeify(p; mod)
+                trytypeify(p; mod)
             else p end
         end
         if any(@. tparams isa TypeVar)
@@ -87,11 +88,26 @@ function typeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false)::
     end
 end
 
+"""
+    typeify(qt::QualifiedType; mod::Module=Main)
+
+Convert `qt` to a `Type` available in `mod`, if possible.
+
+If this cannot be done an `ImpossibleTypeException` is thrown.
+"""
+function typeify(qt::QualifiedType; mod::Module=Main)
+    type = trytypeify(qt; mod)
+    if isnothing(type)
+        throw(ImpossibleTypeException(qt, mod))
+    end
+    type
+end
+
 function Base.issubset(a::QualifiedType, b::QualifiedType; mod::Module=Main)
     if a == b
         true
     else
-        A, B = typeify(a; mod), typeify(b; mod)
+        A, B = trytypeify(a; mod), trytypeify(b; mod)
         !any(isnothing, (A, B)) && A <: B
     end
 end

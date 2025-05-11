@@ -31,8 +31,7 @@ function repl_lint(input::AbstractString)
                            String(input)))
             dolint(collection)
         catch
-            dataset = resolve(input, resolvetype=false)
-            dolint(dataset)
+            dolint(resolve(input))
         end
     end
 end

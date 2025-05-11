@@ -252,10 +252,10 @@ function sandbox_dataset(; collection::DataCollection=first(STACK),
             elseif type === :Any && isnothing(ident.type)
                 # Resolve `ident` then get the type the same way
                 # `read(dataset(...))` does.
-                refdataset = resolve(collection, ident, resolvetype=false)
+                refdataset = resolve(collection, ident)
                 as = nothing
-                for qtype in getproperty.(refdataset.loaders, :type) |> Iterators.flatten
-                    as = typeify(qtype, mod=refdataset.collection.mod)
+                for qtype in Iterators.flatten(Iterators.map(l -> l.type, refdataset.loaders))
+                    as = trytypeify(qtype, mod=refdataset.collection.mod)
                     isnothing(as) || break
                 end
                 # Use the picked type, if possible, else fall back on `Any`.

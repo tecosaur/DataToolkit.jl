@@ -12,6 +12,12 @@ function getstorage(storage::DataStorage{:raw}, T::Type{<:TOMLValue})
     end
 end
 
+# Avoid method ambiguities with `generic.jl`'s `getstorage(::DataStorage, ::Type{Vector{UInt8}})`
+getstorage(storage::DataStorage{:raw}, T::Type{Vector{UInt8}}) =
+    invoke(getstorage, Tuple{DataStorage{:raw}, Type{<:TOMLValue}}, storage, T)
+getstorage(storage::DataStorage{:raw}, T::Type{String}) =
+    invoke(getstorage, Tuple{DataStorage{:raw}, Type{<:TOMLValue}}, storage, T)
+
 function putstorage(storage::DataStorage{:raw}, ::Type{<:TOMLValue})
     storage
 end

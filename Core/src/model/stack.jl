@@ -1,22 +1,28 @@
 """
-    getlayer([::Nothing])
+    getlayer([stack])
 
-Return the first [`DataCollection`](@ref) on the [`STACK`](@ref).
+Return the first [`DataCollection`](@ref) on the `stack`.
+
+`stack` defaults to [`STACK`](@ref), and must be a `Vector{DataCollection}`.
 """
-function getlayer(::Nothing = nothing)
-    length(STACK) == 0 && throw(EmptyStackError())
-    first(STACK)
+function getlayer(stack::Vector{DataCollection}, ::Nothing = nothing)
+    length(stack) == 0 && throw(EmptyStackError())
+    first(stack)
 end
 
+getlayer(::Nothing = nothing) = getlayer(STACK, nothing)
+
 """
-    getlayer(name::AbstractString)
-    getlayer(uuid::UUID)
+    getlayer([stack], name::AbstractString)
+    getlayer([stack], uuid::UUID)
 
 Find the [`DataCollection`](@ref) in [`STACK`](@ref) with `name`/`uuid`.
+
+`stack` defaults to [`STACK`](@ref), and must be a `Vector{DataCollection}`.
 """
-function getlayer(name::AbstractString)
-    length(STACK) == 0 && throw(EmptyStackError())
-    matchinglayers = filter(c -> c.name == name, STACK)
+function getlayer(stack::Vector{DataCollection}, name::AbstractString)
+    length(stack) == 0 && throw(EmptyStackError())
+    matchinglayers = filter(c -> c.name == name, stack)
     if length(matchinglayers) == 0
         throw(UnresolveableIdentifier{DataCollection}(String(name)))
     elseif length(matchinglayers) > 1
@@ -27,9 +33,9 @@ function getlayer(name::AbstractString)
 end
 
 # Documented above
-function getlayer(uuid::UUID)
-    length(STACK) == 0 && throw(EmptyStackError())
-    matchinglayers = filter(c -> c.uuid == uuid, STACK)
+function getlayer(stack::Vector{DataCollection}, uuid::UUID)
+    length(stack) == 0 && throw(EmptyStackError())
+    matchinglayers = filter(c -> c.uuid == uuid, stack)
     if length(matchinglayers) == 1
         first(matchinglayers)
     elseif length(matchinglayers) == 0
@@ -38,3 +44,5 @@ function getlayer(uuid::UUID)
         throw(AmbiguousIdentifier(uuid, matchinglayers))
     end
 end
+
+getlayer(id::Union{<:AbstractString, UUID}) = getlayer(STACK, id)
