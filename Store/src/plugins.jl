@@ -37,7 +37,7 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
     inventory = getinventory(storer.dataset.collection) |> update_inventory!
     # Get any applicable cache file
     source = getsource(inventory, storer)
-    file = storefile(inventory, storer)
+    file = storefile(inventory, source)
     if !isnothing(file) && isfile(file) && haskey(storer.parameters, "lifetime")
         if epoch(storer) > epoch(storer, ctime(file))
             rm(file, force=true)
@@ -266,7 +266,7 @@ function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
             for pkg in cache.packages
                 DataToolkitCore.get_package(pkg)
             end
-            if !all(@. rhash(typeify(first(cache.types))) == last(cache.types))
+            if !all(@. rhash(trytypeify(first(cache.types))) == last(cache.types))
                 file = nothing
             end
         end

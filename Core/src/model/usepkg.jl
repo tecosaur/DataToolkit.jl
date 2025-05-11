@@ -55,7 +55,9 @@ function try_install_pkg end
 @static if VERSION > v"1.11-alpha1"
     function try_install_pkg(pkg::Base.PkgId)
         Pkg = try
-            @something get(Base.loaded_modules, PKG_ID, nothing) Base.require_stdlib(PKG_ID)
+            @something(get(Base.loaded_modules, PKG_ID, nothing),
+                       Base.require_stdlib(PKG_ID),
+                       Some(nothing))
         catch _ end
         isnothing(Pkg) && return false
         repl_ext = Base.get_extension(Pkg, :REPLExt)
@@ -101,7 +103,7 @@ See also: [`@addpkg`](@ref), [`@require`](@ref).
 """
 function addpkg(mod::Module, name::Symbol, uuid::Union{UUID, String})
     if !haskey(EXTRA_PACKAGES, mod)
-        EXTRA_PACKAGES[mod] = Dict{Symbol, Vector{Base.PkgId}}()
+        EXTRA_PACKAGES[mod] = Dict{Symbol, Base.PkgId}()
     end
     EXTRA_PACKAGES[mod][name] = Base.PkgId(UUID(uuid), String(name))
 end

@@ -88,11 +88,14 @@ function lint(obj::T, linters::Vector{Method}) where {T}
     lintiter(l::Vector{LintItem}) = l
     lintiter(l::LintItem) = (l,)
     lintiter(::Nothing) = ()
-    issues = Iterators.map(linters) do linter
-        func = first(linter.sig.parameters).instance
-        val = last(linter.sig.parameters)
-        invoke(func, Tuple{T, val}, obj, val()) |> lintiter
-    end |> Iterators.flatten |> collect
+    issues = LintItem{T}[]
+    for linter in linters
+        func = first(linter.sig.parameters).instance::Function
+        valtype = last(linter.sig.parameters)::Val
+        valtype isa DataType || continue
+        val = first(valtype.parameters)
+        append!(issues, invoke(func, Tuple{T, valtype}, obj, Val{val}) |> lintiter)
+    end
     sort(issues, by=i -> i.severity)
 end
 
@@ -121,10 +124,8 @@ function LintReport(collection::DataCollection)
     push!(results, lint(collection))
     for dataset in collection.datasets
         push!(results, lint(dataset))
-        for dtfield in (:storage, :loaders, :writers)
-            for dt in getfield(dataset, dtfield)
-                push!(results, lint(dt))
-            end
+        for dts in (dataset.storage, dataset.loaders, dataset.writers), dt in dts
+            push!(results, lint(dt))
         end
     end
     LintReport(collection, Vector{LintItem}(Iterators.flatten(results) |> collect), false)
@@ -133,10 +134,8 @@ end
 function LintReport(dataset::DataSet)
     results = Vector{Vector{LintItem}}()
     push!(results, lint(dataset))
-    for dtfield in (:storage, :loaders, :writers)
-        for dt in getfield(dataset, dtfield)
-            push!(results, lint(dt))
-        end
+    for dts in (dataset.storage, dataset.loaders, dataset.writers), dt in dts
+        push!(results, lint(dt))
     end
     LintReport(dataset.collection,
                Vector{LintItem}(Iterators.flatten(results) |> collect),
@@ -165,7 +164,7 @@ function Base.show(io::IO, report::LintReport)
         else
             false
         end || objinfo(a.dataset)
-        printstyled("\n  ‣ ", first(A.parameters), ' ',
+        printstyled("\n  ‣ ", driverof(A), ' ',
                     join(lowercase.(split(string(nameof(A)), r"(?=[A-Z])")), ' '),
                     color=:blue, bold=true)
     end

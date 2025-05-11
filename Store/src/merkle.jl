@@ -2,6 +2,8 @@
 
 using Base.Threads # For the hashing
 
+const MerkleNode = @NamedTuple{indent::Int64, kind::Symbol, checksum::Checksum, mtime::Float64, path::String}
+
 """
     read_merkles(io::IO) -> Vector{MerkleTree}
 
@@ -66,10 +68,11 @@ function Base.get(mt::MerkleTree, path::AbstractString, default)
         isempty(pathcomponents) && return default
         popfirst!(pathcomponents) == component || return default
     end
-    isempty(mt.children) && return mt
+    (isnothing(mt.children) || isempty(mt.children)) && return mt
+    mtchildren::Vector{MerkleTree} = mt.children # help the compiler
     for component in pathcomponents
         found = false
-        for subtree in mt.children
+        for subtree in mtchildren
             if subtree.path == component
                 mt = subtree
                 found = true
@@ -162,7 +165,7 @@ function _merkle(root::String, path::String, algorithm::Symbol, checksum_fn::F,
             mtree = symlinks[target]
             unlock(symlinks_lock)
             if mtree isa ReentrantLock
-                @lock mtree symlinks[target]
+                @lock mtree symlinks[target]::MerkleTree
             elseif mtree isa MerkleTree
                 MerkleTree(path, mtree.mtime, mtree.checksum, mtree.children)
             end
@@ -202,8 +205,10 @@ end
 
 function merkle(original::MerkleTree, root::String, path::String, algorithm::Symbol = original.checksum.alg)
     if original.checksum.alg == algorithm
+        checksumfn = checksum(original.checksum.alg)
+        isnothing(checksumfn) && return
         _merkle(original, String(rstrip(root, ('/', '\\'))), String(rstrip(path, ('/', '\\'))),
-                original.checksum.alg, checksum(original.checksum.alg),
+                original.checksum.alg, checksumfn,
                 (Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}(), ReentrantLock()), String[])
     else
         merkle(root, path, original.checksum.alg)
@@ -340,7 +345,7 @@ The return values consist of:
   an indent of at least `minimum_indent`).
 - The next node not contained in the constructed `MerkleTree`, if applicable.
 """
-function read_tree(io::IO, buf::IO, minimum_indent::Int, node)
+function read_tree(io::IO, buf::IO, minimum_indent::Int, node::Union{MerkleNode, Nothing})
     if isnothing(node) || node.indent < minimum_indent
         nothing, node
     elseif node.kind == :file
@@ -349,7 +354,7 @@ function read_tree(io::IO, buf::IO, minimum_indent::Int, node)
         children = Vector{MerkleTree}()
         while true
             seekstart(buf)
-            child, next_node = read_tree(
+            child, next_node::Union{MerkleNode, Nothing} = read_tree(
                 io, buf, node.indent + 1, try_read_merkle_line(io, buf))
             while !isnothing(next_node)
                 isnothing(child) || push!(children, child)
@@ -365,7 +370,9 @@ function read_tree(io::IO, buf::IO, minimum_indent::Int, node)
                 return MerkleTree(node.path, node.mtime, node.checksum, children), next_node
             end
         end
-    end
+        # Shouldn't ever hit this, but needed to make the return type stable.
+        nothing, nothing
+    end::Tuple{Union{MerkleTree, Nothing}, Union{MerkleNode, Nothing}}
 end
 
 """

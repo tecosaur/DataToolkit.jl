@@ -13,7 +13,7 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
             elseif param isa QuoteNode
                 param.value
             elseif param isa Expr && param.head == :tuple
-                Tuple(destruct.(param.args))
+                Tuple(map(destruct, param.args))
             elseif param isa Symbol
                 if haskey(QUALIFIED_TYPE_SHORTHANDS.forward, string(param))
                     QUALIFIED_TYPE_SHORTHANDS.forward[string(param)]
@@ -28,14 +28,16 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
                             first(param.args)
                         else Symbol("#s0") end,
                         getfield(Main, last(param.args)))
-            elseif Meta.isexpr(param, :<:) && (val = typeify(parse(QualifiedType, string(last(param.args))))) |> !isnothing
+            elseif Meta.isexpr(param, :<:)
+                val = trytypeify(parse(QualifiedType, string(last(param.args))))
+                isnothing(val) && throw(ArgumentError("Invalid type $(sprint(show, param)) in $(sprint(show, spec))"))
                 TypeVar(if length(param.args) == 2
                             first(param.args)
                         else Symbol("#s0") end,
                         val)
             elseif Meta.isexpr(param, :curly)
                 base = parse(QualifiedType, string(first(param.args)))
-                QualifiedType(base.root, Symbol[], base.name, Tuple(destruct.(param.args[2:end])))
+                QualifiedType(base.root, Symbol[], base.name, Tuple(map(destruct, param.args[2:end])))
             else
                 throw(ArgumentError("Invalid QualifiedType parameter $(sprint(show, param)) in $(sprint(show, spec))"))
             end
@@ -44,16 +46,16 @@ function Base.parse(::Type{QualifiedType}, spec::AbstractString)
             split(cbsplit[1], '.'), Tuple{}()
         else
             typeparams = Meta.parse(spec[1+length(cbsplit[1]):end])
-            split(cbsplit[1], '.'), Tuple(destruct.(typeparams.args))
+            split(cbsplit[1], '.'), Tuple(map(destruct, typeparams.args))
         end
     end
     root, parents, name = if length(components) == 1
         n = Symbol(components[1])
-        nameof(Base.binding_module(Main, n)), Symbol[], n
+        nameof(Base.binding_module(Main, n))::Symbol, Symbol[], n
     elseif length(components) == 2
         Symbol(components[1]), Symbol[], Symbol(components[2])
     else
-        Symbol(components[1]), Symbol.(components[2:end-1]), Symbol(components[end])
+        Symbol(components[1]), map(Symbol, components[2:end-1]), Symbol(components[end])
     end
     QualifiedType(root, parents, name, parameters)
 end
@@ -69,14 +71,14 @@ function Base.parse(::Type{Identifier}, spec::AbstractString)
         cstring = spec[1:prevind(spec, mark)]
         something(tryparse(UUID, cstring), cstring)
     end
-    @advise getlayer(collection) parse_ident(spec)::Identifier
+    @advise getlayer(collection) parse_ident(spec)
 end
 
 function parse_ident(spec::AbstractString)
     mark = findfirst(':', spec)
     collection = if !isnothing(mark) && (mark == length(spec) || spec[mark+1] != ':')
         cstring, spec = spec[begin:prevind(spec, mark)], spec[mark+1:end]
-        something(tryparse(UUID, cstring), cstring)
+        @something(tryparse(UUID, cstring), String(cstring))
     end
     mark = findfirst(':', spec)
     dataset = if isnothing(mark)
@@ -87,8 +89,8 @@ function parse_ident(spec::AbstractString)
     dtype  = if startswith(spec, "::") && length(spec) > 2
         parse(QualifiedType, spec[3:end])
     end
-    Identifier(collection, something(tryparse(UUID, dataset), dataset),
-                dtype, newdict(String, Any, 0))
+    Identifier(collection, @something(tryparse(UUID, dataset), String(dataset)),
+               dtype, newdict(String, Any, 0))
 end
 
 # ---------------
@@ -119,7 +121,7 @@ supportedtypes(DT::Type{<:DataTransformer}, _::Dict{String, Any}) =
     supportedtypes(DT)
 
 (DT::Type{<:DataTransformer})(dataset::DataSet, spec::Dict{String, Any}) =
-    @advise fromspec(DT, dataset, spec)::DT
+    @advise fromspec(DT, dataset, spec)
 
 (DT::Type{<:DataTransformer})(dataset::DataSet, driver::String) =
     DT(dataset, Dict{String, Any}("driver" => driver))
@@ -132,41 +134,43 @@ Create an [`DT`](@ref DataTransformer) of `dataset` according to `spec`.
 `DT` can either contain the driver name as a type parameter, or it will be read
 from the `"driver"` key in `spec`.
 """
-function fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})
+function fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})::DT
     parameters = shrinkdict(spec)
     driver = if DT isa DataType
-        first(DT.parameters)
+        driverof(DT)
     elseif haskey(parameters, "driver")
         Symbol(lowercase(parameters["driver"]))
     else
         @warn "$DT for $(sprint(show, dataset.name)) has no driver!"
         :MISSING
-    end
+    end::Symbol
     if !(DT isa DataType)
         DT = DT{driver}
     end
-    ttype = let spec_type = get(parameters, "type", nothing)
-        if isnothing(spec_type)
+    ttype = let val = get(parameters, "type", nothing)
+        if isnothing(val)
             supportedtypes(DT, parameters, dataset)
-        elseif spec_type isa Vector
-            parse.(QualifiedType, spec_type)
-        elseif spec_type isa String
-            [parse(QualifiedType, spec_type)]
+        elseif val isa Vector
+            [parse(QualifiedType, st) for st in val]
+        elseif val isa String
+            [parse(QualifiedType, val)]
         else
-            @warn "Invalid DT type '$spec_type', ignoring"
-        end
+            @warn "Invalid DT type '$val', ignoring"
+        end::Union{Vector{QualifiedType}, Nothing}
     end
-    if isempty(ttype)
+    if !isnothing(ttype) && isempty(ttype)
         @warn """Could not find any types that $DT of $(sprint(show, dataset.name)) supports.
                  Consider adding a 'type' parameter."""
     end
-    priority = get(parameters, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
+    priority = let val = get(parameters, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
+        if val isa Int val else DEFAULT_DATATRANSFORMER_PRIORITY end
+    end
     delete!(parameters, "driver")
     delete!(parameters, "type")
     delete!(parameters, "priority")
     @advise dataset identity(
         DT(dataset, ttype, priority,
-            dataset_parameters(dataset, Val(:extract), parameters)))::DT
+           dataset_parameters(dataset, Val(:extract), parameters)))
 end
 
 # function (DT::Type{<:DataTransformer})(collection::DataCollection, spec::Dict{String, Any})
@@ -213,7 +217,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                 end)
     plugins::Vector{String} = get(spec, "plugins", String[])
     parameters = get(spec, "config", Dict{String, Any}()) |> shrinkdict
-    unavailable_plugins = setdiff(plugins, getproperty.(PLUGINS, :name))
+    unavailable_plugins = setdiff(plugins, [p.name for p in PLUGINS])
     if length(unavailable_plugins) > 0
         @warn string("The ", join(unavailable_plugins, ", ", ", and "),
                      " plugin", if length(unavailable_plugins) == 1
@@ -236,7 +240,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
             push!(collection.datasets, DataSet(collection, name, dspec))
         end
     end
-    @advise identity(collection)::DataCollection
+    @advise identity(collection)
 end
 
 # ---------------
@@ -244,7 +248,7 @@ end
 # ---------------
 
 function DataSet(collection::DataCollection, name::String, spec::Dict{String, Any})
-    @advise fromspec(DataSet, collection, name, spec)::DataSet
+    @advise fromspec(DataSet, collection, name, spec)
 end
 
 """
@@ -256,7 +260,7 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
     uuid = UUID(@something get(spec, "uuid", nothing) begin
                     @info "Data set '$name' had no UUID, one has been generated."
                     uuid4()
-                end)
+                end)::UUID
     parameters = shrinkdict(spec)
     for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
         delete!(parameters, reservedname)
@@ -264,15 +268,17 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
     dataset = DataSet(collection, name, uuid,
                       dataset_parameters(collection, Val(:extract), parameters),
                       DataStorage[], DataLoader[], DataWriter[])
-    for (attr, afield, atype) in [("storage", :storage, DataStorage),
-                                  ("loader", :loaders, DataLoader),
-                                  ("writer", :writers, DataWriter)]
-        specs = get(spec, attr, Dict{String, Any}[]) |>
-            s -> if s isa Vector s else [s] end
-        for aspec::Union{String, Dict{String, Any}} in specs
-            push!(getfield(dataset, afield), atype(dataset, aspec))
+    function addtransformers!(tlist::Vector{T}, ds::DataSet, dspecs::Dict{String, Any}, tname::String) where {T <: DataTransformer}
+        tspecs = get(dspecs, tname, Dict{String, Any}[])
+        tspecs isa Vector && !isempty(tspecs) || return
+        for tspec in tspecs
+            tspec isa Dict{String, Any} || continue
+            push!(tlist, T(ds, tspec))
         end
-        sort!(getfield(dataset, afield), by=a->a.priority)
+        sort!(tlist, by=a->a.priority)
     end
-    @advise identity(dataset)::DataSet
+    addtransformers!(dataset.storage, dataset, spec, "storage")
+    addtransformers!(dataset.loaders, dataset, spec, "loader")
+    addtransformers!(dataset.writers, dataset, spec, "writer")
+    @advise identity(dataset)
 end

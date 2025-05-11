@@ -61,10 +61,9 @@ end
 Return the data set identified by `identstr`, optionally specifying the `collection`
 the data set should be found in and any `parameters` that apply.
 """
-dataset(identstr::AbstractString)::DataSet =
-    resolve(identstr; resolvetype=false)
-dataset(identstr::AbstractString, parameters::Dict{String, Any})::DataSet =
-    resolve(identstr, parameters; resolvetype=false)
+dataset(identstr::AbstractString) = resolve(identstr)
+dataset(identstr::AbstractString, parameters::Dict{String, Any}) =
+    resolve(identstr, parameters)
 
 function dataset(identstr::AbstractString, kv::Pair{<:AbstractString, <:Any}, kvs::Pair{<:AbstractString, <:Any}...)
     parameters = newdict(String, Any, length(kvs) + 1)
@@ -76,13 +75,13 @@ function dataset(identstr::AbstractString, kv::Pair{<:AbstractString, <:Any}, kv
 end
 
 function dataset(collection::DataCollection, identstr::AbstractString)
-    ident = @advise collection parse_ident(identstr)::Identifier
-    resolve(collection, ident; resolvetype=false)::DataSet
+    ident = @advise collection parse_ident(identstr)
+    resolve(collection, ident)
 end
 
 function dataset(collection::DataCollection, identstr::AbstractString, parameters::Dict{String, Any})
-    ident = @advise collection parse_ident(identstr)::Identifier
-    resolve(collection, Identifier(ident, parameters); resolvetype=false)::DataSet
+    ident = @advise collection parse_ident(identstr)
+    resolve(collection, Identifier(ident, parameters))
 end
 
 """
@@ -106,6 +105,7 @@ Base.read(io::IO, ::Type{DataCollection};
 
 """
     read(dataset::DataSet, as::Type)
+    read(dataset::DataSet, as::QualifiedType)
     read(dataset::DataSet) # as default type
 
 Obtain information from `dataset` in the form of `as`, with the appropriate
@@ -147,10 +147,14 @@ function Base.read(dataset::DataSet, @nospecialize(as::Type))::as
             @advise read1(dataset, as))
 end
 
+function Base.read(dataset::DataSet, as::QualifiedType)
+    read(dataset, typeify(as, mod=dataset.collection.mod))
+end
+
 function Base.read(dataset::DataSet)
     as = nothing
     for qtype in getproperty.(dataset.loaders, :type) |> Iterators.flatten
-        as = typeify(qtype, mod=dataset.collection.mod)
+        as = trytypeify(qtype, mod=dataset.collection.mod)
         isnothing(as) || break
     end
     if isnothing(as)
@@ -173,7 +177,7 @@ The advisable implementation of `read(dataset::DataSet, as::Type)`, which see.
 
 This is essentially an exercise in useful indirection.
 """
-function read1(dataset::DataSet, as::Type)::as
+function read1(dataset::DataSet, @nospecialize(as::Type))
     for loader in dataset.loaders
         l_steps = typesteps(loader, as)
         isempty(l_steps) && continue
@@ -187,7 +191,7 @@ function read1(dataset::DataSet, as::Type)::as
                 for (_, Tstorage_out) in s_steps
                     datahandle = open(dataset, Tstorage_out; write = false)
                     if !isnothing(datahandle)
-                        result = @advise dataset load(loader, datahandle, Tloader_out)
+                        result = @advise dataset load(loader, datahandle, Tloader_out)::Union{Some{as}, as, Nothing}
                         if !isnothing(result)
                             return something(result)
                         elseif datahandle isa IOStream
@@ -202,7 +206,7 @@ function read1(dataset::DataSet, as::Type)::as
         # without an explicit storage backend.
         for (Tloader_in, Tloader_out) in l_steps
             if Tloader_in == Nothing
-                result = @advise dataset load(loader, nothing, as)
+                result = @advise dataset load(loader, nothing, as)::Union{Some{as}, as, Nothing}
                 !isnothing(result) && return something(result)
             end
         end
@@ -210,7 +214,7 @@ function read1(dataset::DataSet, as::Type)::as
     throw(guess_read_failure_cause(dataset, as))
 end
 
-function guess_read_failure_cause(dataset::DataSet, as::Type)
+function guess_read_failure_cause(dataset::DataSet, @nospecialize(as::Type))
     loader_steps = [typesteps(loader, as) for loader in dataset.loaders] |> Iterators.flatten |> collect
     if all(isempty, loader_steps)
         UnsatisfyableTransformer(dataset, DataLoader, [QualifiedType(as)])
@@ -220,8 +224,8 @@ function guess_read_failure_cause(dataset::DataSet, as::Type)
     end
 end
 
-function Base.read(ident::Identifier, as::Type)
-    dataset = resolve(ident, resolvetype=false)
+function Base.read(ident::Identifier, @nospecialize(as::Type))
+    dataset = resolve(ident)
     read(dataset, as)
 end
 
@@ -273,10 +277,10 @@ This executes the following component of the overall data flow:
 Storage ◀────▶ Data          Information
 ```
 """
-function Base.open(data::DataSet, as::Type; write::Bool=false)::Union{as, Nothing}
+function Base.open(data::DataSet, @nospecialize(as::Type); write::Bool=false)::Union{as, Nothing}
     for storage_provider in data.storage
         for (_, Tout) in typesteps(storage_provider, as; write)
-            result = @advise data storage(storage_provider, Tout; write)
+            result = @advise data storage(storage_provider, Tout; write)::Union{Some{Tout}, Tout, Nothing}
             if !isnothing(result)
                 return something(result)
             end
@@ -299,7 +303,7 @@ This executes the following component of the overall data flow:
 Storage ◀────▶ Data
 ```
 """
-function storage(storer::DataStorage, as::Type; write::Bool=false)
+function storage(storer::DataStorage, @nospecialize(as::Type); write::Bool=false)
     if write
         putstorage(storer, as)
     else
@@ -340,10 +344,10 @@ putstorage(::DataStorage, ::Any) = nothing
 
 TODO write docstring
 """
-function Base.write(dataset::DataSet, info::T) where {T}
+function Base.write(dataset::DataSet, @nospecialize(info::Any))
     all_write_fn_sigs = map(fn -> Base.unwrap_unionall(fn.sig),
                             methods(save, Tuple{DataWriter, Any, Any}))
-    qtype = QualifiedType(T)
+    qtype = QualifiedType(typeof(info))
     # Filter to loaders which are declared in `dataset` as supporting `as`.
     # These will have already been orderd by priority during parsing.
     potential_writers =
@@ -357,8 +361,7 @@ function Base.write(dataset::DataSet, info::T) where {T}
         # and (b) available (checked via `!isnothing`).
         for storage in dataset.storage
             for write_fn_sig in write_fn_sigs
-                supported_storage_types = Vector{Type}(
-                    filter(!isnothing, typeify.(storage.type)))
+                supported_storage_types = Vector{Type}(filter(!isnothing, map(trytypeify, storage.type)))
                 valid_storage_types =
                     filter(stype -> issubtype(stype, write_fn_sig.types[3]),
                            supported_storage_types)

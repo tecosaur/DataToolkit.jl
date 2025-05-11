@@ -8,28 +8,26 @@ Print the help string for `r`.
 When `r` has subcommands, the description will be followed by a table of its
 subcommands.
 """
-function help end
-
-function help(r::ReplCmd{Function})
-    if r.description isa AbstractString
-        for line in eachsplit(rstrip(r.description), '\n')
-            println("  ", line)
+function help(r::ReplCmd)
+    if r.execute isa Function
+        if r.description isa AbstractString
+            for line in eachsplit(rstrip(r.description), '\n')
+                println("  ", line)
+            end
+        else
+            display(r.description)
         end
-    else
-        display(r.description)
-    end
-end
-
-function help(r::ReplCmd{Vector{ReplCmd}})
-    if r.description isa AbstractString
-        for line in eachsplit(rstrip(r.description), '\n')
-            println("  ", line)
+    else # r.execute isa Vector{ReplCmd}
+        if r.description isa AbstractString
+            for line in eachsplit(rstrip(r.description), '\n')
+                println("  ", line)
+            end
+        else
+            display(r.description)
         end
-    else
-        display(r.description)
+        print('\n')
+        help_cmd_table(commands = r.execute, sub=true)
     end
-    print('\n')
-    help_cmd_table(commands = r.execute, sub=true)
 end
 
 """

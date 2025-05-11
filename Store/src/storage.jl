@@ -62,7 +62,7 @@ function getsource(inventory::Inventory, @nospecialize(loader::DataLoader), as::
     for record in inventory.caches
         if record.recipe == recipe
             type, thash = first(record.types)
-            rtype = typeify(type)
+            rtype = trytypeify(type)
             if !isnothing(rtype) && rtype <: as && rhash(rtype) == thash
                 return record
             end
@@ -458,9 +458,10 @@ function interpret_lifetime(lifetime::String)
                             match(iso8061_duration_2, lifetime),
                             Some(nothing))
     if !isnothing(iso_period)
-        for unit in keys(iso_period)
-            if !isnothing(iso_period[unit])
-                period[unit] = parse(Int, iso_period[unit]) |> Float64
+        for unit in keys(iso_period)::Vector{String}
+            uperiod = iso_period[unit]
+            if !isnothing(uperiod)
+                period[unit] = parse(Int, uperiod) |> Float64
             end
         end
     else
@@ -473,7 +474,8 @@ function interpret_lifetime(lifetime::String)
                        "minute" => "minutes", "min" => "minutes",
                        "second" => "seconds", "sec" => "seconds", "" => "seconds")
         while (m = match(humanperiod, lifetime)) |> !isnothing
-            period[unitmap[m["unit"]]] = parse(Float64, m["quantity"])
+            munit, mquantity = m["unit"]::SubString{String}, m["quantity"]::SubString{String}
+            period[unitmap[munit]] = parse(Float64, mquantity)
             lifetime = string(lifetime[1:m.match.offset],
                               lifetime[m.match.ncodeunits+1:end])
         end
@@ -497,8 +499,8 @@ function pkgtypes!(types::Vector{Type}, seen::Set{UInt}, x::T) where {T}
         push!(seen, objectid(x))
     end
     M = parentmodule(T)
-    if M ∉ (Base, Core) && !isnothing(pkgdir(M)) &&
-        !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
+    Mdir = pkgdir(M) # Base and Core have no pkgdir (nothing)
+    if !isnothing(Mdir) && !startswith(Mdir, Sys.STDLIB) && T ∉ types
         push!(types, T)
     end
     if isconcretetype(T)
@@ -516,14 +518,14 @@ function pkgtypes!(types::Vector{Type}, seen::Set{UInt}, x::T) where {T <: Abstr
         push!(seen, objectid(x))
     end
     M = parentmodule(T)
-    if M ∉ (Base, Core) && !isnothing(pkgdir(M)) &&
-        !startswith(pkgdir(M), Sys.STDLIB) && T ∉ types
+    Mdir = pkgdir(M) # Base and Core have no pkgdir (nothing)
+    if !isnothing(Mdir) && !startswith(Mdir, Sys.STDLIB) && T ∉ types
         push!(types, T)
     end
     if isconcretetype(eltype(T))
-        if parentmodule(eltype(T)) ∈ (Base, Core)
-        elseif isnothing(pkgdir(parentmodule(eltype(T))))
-        elseif startswith(pkgdir(parentmodule(eltype(T))), Sys.STDLIB)
+        Pdir = pkgdir(parentmodule(eltype(T)))
+        if isnothing(Pdir) # Base and Core have no pkgdir (nothing)
+        elseif startswith(Pdir, Sys.STDLIB)
         elseif eltype(T) ∈ types
         elseif !isempty(x) && isassigned(x, firstindex(x))
             pkgtypes!(types, seen, first(x))
@@ -547,13 +549,19 @@ function pkgtypes(x)
 end
 
 """
-    storesave(inventory::Inventory, loader::DataLoader, value::T)
+    storesave(inventory::Inventory, loader::DataLoader, value)
 
 Save the `value` produced by `loader` into `inventory`.
 """
-function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), value::T) where {T}
+function storesave(inventory::Inventory, loader::DataLoader, value::Any)
+    @nospecialize
     inventory.file.writable || return value
-    ptypes = pkgtypes(value)
+    vunwrap = if value isa Some
+        something(value)
+    else
+        value
+    end
+    ptypes = pkgtypes(vunwrap)
     modules = parentmodule.(ptypes)
     for i in eachindex(modules)
         while modules[i] !== parentmodule(modules[i])
@@ -562,8 +570,8 @@ function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), valu
     end
     unique!(modules)
     pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], modules)
-    !isempty(ptypes) && first(ptypes) == T ||
-        pushfirst!(ptypes, T)
+    !isempty(ptypes) && first(ptypes) == typeof(vunwrap) ||
+        pushfirst!(ptypes, typeof(vunwrap))
     newsource = CacheSource(
         rhash(loader),
         [loader.dataset.collection.uuid],
@@ -581,8 +589,8 @@ function storesave(inventory::Inventory, @nospecialize(loader::DataLoader), valu
     isfile(dest) && rm(dest, force=true)
     isfile(tempdest) && rm(tempdest, force=true)
     @log_do("cache:save",
-            "Saving $T form of $(sprint(show, loader.dataset.name)) to the store",
-            Base.invokelatest(serialize, tempdest, value))
+            "Saving $(typeof(vunwrap)) form of $(sprint(show, loader.dataset.name)) to the store",
+            Base.invokelatest(serialize, tempdest, vunwrap))
     chmod(tempdest, 0o100444 & filemode(inventory.file.path)) # Make read-only
     mv(tempdest, dest, force=true)
     update_source!(inventory, newsource, loader.dataset.collection)

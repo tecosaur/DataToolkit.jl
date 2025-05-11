@@ -94,7 +94,7 @@ Part of `CACHE_PLUGIN`.
 """
 function cache_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
     forms = [(l, t) for l in dataset.loaders
-                 for t in map(typeify, l.type) if !isnothing(t)]
+                 for t in map(trytypeify, l.type) if !isnothing(t)]
     cacheable((loader, T),) = shouldstore(loader, T) || @getparam(loader."cache"::Bool, false)
     filter!(cacheable, forms)
     if !isempty(forms)
@@ -317,8 +317,7 @@ function repl_fetch(input::AbstractString)
                            String(input)))
             fetch!(collection)
         catch
-            dataset = resolve(input, resolvetype=false)
-            fetch!(dataset)
+            fetch!(resolve(input))
         end
     end
 end

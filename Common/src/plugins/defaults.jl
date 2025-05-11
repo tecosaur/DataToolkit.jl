@@ -35,8 +35,8 @@ function getdefaults(dataset::DataSet, DT::Type{<:DataTransformer{kind}},
     # get config.TRANSFORMER.DRIVER values
     transformer_defaults =
         get(get(dataset.collection,
-                "defaults", DEFAULT_DEFAULTS),
-            String(kind), Dict{String,Any}())
+                "defaults", DEFAULT_DEFAULTS)::Dict{String, Any},
+            String(kind), Dict{String,Any}())::Dict{String, Any}
     implicit_defaults = Dict{String, Any}(
         "priority" => DataToolkitCore.DEFAULT_DATATRANSFORMER_PRIORITY)
     if resolvetype
@@ -61,8 +61,10 @@ getdefaults(dataset::DataSet, DT::Type{<:DataTransformer};
             spec::Dict, resolvetype::Bool=true) =
                 getdefaults(dataset, DT,
                             if DT isa DataType
-                                first(DT.parameters)
-                            else Symbol(get(spec, "driver", "MISSING")) end,
+                                driverof(DT)
+                            else
+                                Symbol(get(spec, "driver", "MISSING"))
+                            end,
                             spec; resolvetype)
 
 """

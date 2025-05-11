@@ -1,34 +1,48 @@
 function complete_collection(sofar::AbstractString)
     name_matches = filter(c -> startswith(c.name, sofar), STACK)
     if !isempty(name_matches)
-        getproperty.(name_matches, :name)
+        [m.name::String for m in name_matches if m.name isa String]
     else
         uuid_matches = filter(c -> startswith(string(c.uuid), sofar), STACK)
-        getproperty.(uuid_matches, :name)
-    end |> Vector{String}
+        [u.name::String for u in uuid_matches if u.name isa String]
+    end
 end
 
 function complete_dataset(sofar::AbstractString)
-    try # In case `resolve` or `getlayer` fail.
+    isempty(STACK) && return String[]
+    cands = try # In case `resolve` or `getlayer` fail.
         relevant_options = if !isnothing(match(r"^.+::", sofar))
             identifier = parse(Identifier, first(split(sofar, "::")))
-            types = map(l -> l.type, resolve(identifier).loaders) |>
-                Iterators.flatten .|> string |> unique
-            string.(string(identifier), "::", types)
+            loader_types = map(l -> l.type, resolve(identifier).loaders)
+            flat_types = unique(map(string, Iterators.flatten(loader_types)))
+            [string(string(identifier), "::", type) for type in flat_types ]
         elseif !isnothing(match(r"^[^:]+:", sofar))
             layer, _ = split(sofar, ':', limit=2)
-            filter(o -> startswith(o, sofar),
-                   string.(layer, ':',
-                           unique(getproperty.(
-                               getlayer(layer).datasets, :name))))
+            if startswith(layer, sofar) || startswith(sofar, layer)
+                dsofar = chopprefix(layer, sofar)
+                dsofar = chopprefix(dsofar, ":")
+                dsnames = [d.name for d in getlayer(layer).datasets]
+                unique!(dsnames)
+                filter!(Base.Fix2(startswith, dsofar), dsnames)
+                [layer * ':' * name for name in dsnames]
+            else
+                String[]
+            end
         else
-            filter(o -> startswith(o, sofar),
-                   vcat(getproperty.(STACK, :name) .* ':',
-                        getproperty.(getlayer().datasets, :name) |> unique))
+            allnames = String[]
+            for collection in STACK, ds in collection.datasets
+                if startswith(ds.name, sofar) || startswith(sofar, ds.name)
+                    push!(allnames, string(collection.name, ':', ds.name))
+                end
+            end
+            append!(allnames, [d.name for d in getlayer().datasets])
+            filter!(Base.Fix2(startswith, sofar), allnames)
+            unique!(allnames)
         end
     catch _
         String[]
-    end |> options -> sort(filter(o -> startswith(o, sofar), options), by=natkeygen)
+    end::Vector{String}
+    sort(cands, by=natkeygen)
 end
 
 function complete_dataset_or_collection(sofar::AbstractString)

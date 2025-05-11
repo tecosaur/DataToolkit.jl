@@ -1,7 +1,7 @@
 function getstorage(storage::DataStorage{:passthrough}, T::Type)
     collection = storage.dataset.collection
     ident = @advise collection parse(Identifier, @getparam storage."source"::String)
-    read(resolve(collection, ident, resolvetype=false), T)
+    read(resolve(collection, ident), T)
 end
 
 # To avoid method ambiguity with the fallback methods
@@ -27,8 +27,11 @@ DataToolkitCore.add_dataset_refs!(acc::Vector{Identifier}, storage::DataStorage{
 createpriority(::Type{DataStorage{:passthrough}}) = 60
 
 function createauto(::Type{DataStorage{:passthrough}}, source::String)
-    if try resolve(source); true catch _ false end
+    try
+        resolve(source)
         Dict("source" => source)
+    catch err
+        if err isa UnresolveableIdentifier else rethrow() end
     end
 end
 

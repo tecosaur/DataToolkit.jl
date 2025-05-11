@@ -67,51 +67,78 @@ function Base.string(ident::Identifier)
            else "" end)
 end
 
+function samecollection(collection::DataCollection, ident::Identifier)
+    isnothing(ident.collection) && return true
+    if ident.collection isa UUID
+        collection.uuid == ident.collection
+    else
+        collection.name == ident.collection
+    end
+end
+
+function tryresolve(collection::DataCollection, ident::Identifier)
+    if samecollection(collection, ident)
+        matchingdatasets = refine(collection, collection.datasets, ident)
+        if length(matchingdatasets) == 1
+            first(matchingdatasets)
+        end
+    elseif isnothing(ident.collection) || isempty(STACK)
+        nothing
+    elseif ident.collection isa UUID
+        icol = findall(c -> c.uuid == ident.collection, STACK)
+        if length(icol) == 1
+            tryresolve(STACK[first(icol)], ident)
+        end
+    elseif ident.collection isa String
+        icol = findall(c -> c.name == ident.collection, STACK)
+        if length(icol) == 1
+            tryresolve(STACK[first(icol)], ident)
+        end
+    end
+end
+
 """
-    resolve(collection::DataCollection, ident::Identifier;
-            resolvetype::Bool=true, requirematch::Bool=true)
+    resolve(collection::DataCollection, ident::Identifier)
 
 Attempt to resolve an identifier (`ident`) to a particular data set.
 Matching data sets will searched for from `collection`.
 
-When `resolvetype` is set and `ident` specifies a datatype, the identified data
-set will be read to that type.
-
-When `requirematch` is set an error is raised should no dataset match `ident`.
-Otherwise, `nothing` is returned.
+If `ident` does not uniquely identify a data set known to `collection`, one
+of the following errors will be thrown:
+- [`AmbiguousIdentifier`](@ref) if the identifier matches multiple datasets.
+- [`UnresolveableIdentifier`](@ref) if the identifier did not match any datasets.
+- [`UnsatisfyableTransformer`](@ref) if the identifier did not match any datasets,
+  specifically because of the type information in the identifier.
 """
-function resolve(collection::DataCollection, ident::Identifier;
-                 resolvetype::Bool=true, requirematch::Bool=true)
-    collection_mismatch = !isnothing(ident.collection) &&
-        if ident.collection isa UUID
-            collection.uuid != ident.collection
-        else
-            collection.name != ident.collection
-        end
-    if collection_mismatch
+function resolve(collection::DataCollection, ident::Identifier)
+    samecollection(collection, ident) ||
         return resolve(getlayer(ident.collection), ident)
-    end
     matchingdatasets = refine(collection, collection.datasets, ident)
     if length(matchingdatasets) == 1
-        dataset = first(matchingdatasets)
-        if !isnothing(ident.type) && resolvetype
-            read(dataset, typeify(ident.type, mod=collection.mod, shoulderror=true))
-        else
-            dataset
-        end
-    elseif length(matchingdatasets) == 0 && requirematch
+        first(matchingdatasets)
+    elseif length(matchingdatasets) == 0
         notypeident = Identifier(ident.collection, ident.dataset, nothing, ident.parameters)
         notypematches = refine(collection, collection.datasets, notypeident)
-        if !isempty(notypematches)
-            throw(UnsatisfyableTransformer(first(notypematches), DataLoader, ident.type))
+        if !isnothing(ident.type) && !isempty(notypematches)
+            throw(UnsatisfyableTransformer(first(notypematches), DataLoader, [ident.type]))
         else
             throw(UnresolveableIdentifier{DataSet}(string(notypeident), collection))
         end
-    elseif length(matchingdatasets) > 1
-        throw(AmbiguousIdentifier((@advise collection string(ident)::String),
+    else # length(matchingdatasets) > 1
+        throw(AmbiguousIdentifier((@advise collection string(ident)),
                                   matchingdatasets, collection))
     end
 end
+
+function resolve(stack::Vector{DataCollection}, ident::Identifier)
+    for collection in stack
+        dset = tryresolve(collection, ident)
+        !isnothing(dset) && return dset
+    end
+    throw(UnresolveableIdentifier{DataSet}(string(ident)))
+end
+
+resolve(ident::Identifier) = resolve(STACK, ident)
 
 """
     refine(collection::DataCollection, datasets::Vector{DataSet}, ident::Identifier)
@@ -143,7 +170,7 @@ function refine(collection::DataCollection, datasets::Vector{DataSet}, ident::Id
         end
     matchingdatasets = datasets |> filter_nameid |> filter_type
     matchingdatasets, ignoreparams =
-        @advise collection refine(matchingdatasets, ident, String[])::Tuple{Vector{DataSet}, Vector{String}}
+        @advise collection refine(matchingdatasets, ident, String[])
     filter_parameters(matchingdatasets, ignoreparams)
 end
 
@@ -157,46 +184,30 @@ refine(datasets::Vector{DataSet}, ::Identifier, ignoreparams::Vector{String}) =
     (datasets, ignoreparams)
 
 """
-    resolve(ident::Identifier; resolvetype::Bool=true, stack=STACK)
-
-Attempt to resolve `ident` using the specified data layer, if present, trying
-every layer of the data stack in turn otherwise.
-"""
-resolve(ident::Identifier; resolvetype::Bool=true, stack::Vector{DataCollection}=STACK) =
-    if !isnothing(ident.collection)
-        resolve(getlayer(ident.collection), ident; resolvetype)
-    else
-        for collection in stack
-            result = resolve(collection, ident; resolvetype, requirematch=false)
-            if !isnothing(result)
-                return result
-            end
-        end
-        throw(UnresolveableIdentifier{DataSet}(string(ident)))
-    end
-
-"""
-    resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
-            resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
+    resolve([stack], identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing} = nothing)
 
 Attempt to resolve the identifier given by `identstr` and `parameters` against
 each layer of the data `stack` in turn.
+
+Optionally a `Vector` of `DataCollection`s can be provided as `stack`, by
+default the global stack is used.
 """
-function resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing}=nothing;
-                 resolvetype::Bool=true, stack::Vector{DataCollection}=STACK)
+function resolve(stack::Vector{DataCollection}, identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing} = nothing)
     isempty(stack) && throw(EmptyStackError())
-    if (cname = parse(Identifier, identstr).collection) |> !isnothing
+    cname = parse(Identifier, identstr).collection
+    if !isnothing(cname)
         collection = getlayer(cname)
-        ident = Identifier((@advise collection parse_ident(identstr)::Identifier),
-                           parameters)
-        resolve(collection, ident; resolvetype)
+        ident = Identifier(@advise(collection, parse_ident(identstr)), parameters)
+        resolve(collection, ident)
     else
         for collection in stack
-            ident = Identifier((@advise collection parse_ident(identstr)::Identifier),
-                               parameters)
-            result = resolve(collection, ident; resolvetype, requirematch=false)
+            ident = Identifier(@advise(collection, parse_ident(identstr)), parameters)
+            result = tryresolve(collection, ident)
             !isnothing(result) && return result
         end
         throw(UnresolveableIdentifier{DataSet}(String(identstr)))
     end
 end
+
+resolve(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing} = nothing) =
+    resolve(STACK, identstr, parameters)

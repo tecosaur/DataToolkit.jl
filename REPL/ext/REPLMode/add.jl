@@ -145,7 +145,7 @@ function addtransformers!(dataset::DataSet, source::String;
             dt = trycreateauto(dataset, transformer, driver, source)
             if isnothing(dt)
                 printstyled(" ! ", color=:yellow, bold=true)
-                println("Failed to create '$driver' $(string(nameof(transformer))[5:end])")
+                println("Failed to create '$driver' $(sprint(show, transformer))")
             else
                 push!(getproperty(dataset, slot), dt)
             end

@@ -1,3 +1,10 @@
+# We need to do some finagling with type parameters
+# to define mutually circular struct definitions.
+# See: <https://github.com/JuliaLang/julia/issues/269>
+
+# Simple types
+
+
 """
     QualifiedType
 
@@ -10,7 +17,7 @@ type name and the module it belongs to as Symbols.
     able to express the full gamut of Julia types. In future this will be improved,
     but it will likely always be restricted to a certain subset.
 
-See also: [`typeify`](@ref).
+See also: [`trytypeify`](@ref), [`typeify`](@ref).
 
 # Subtyping
 
@@ -69,8 +76,8 @@ See also: [`resolve`](@ref), [`refine`](@ref).
 # Constructors
 
 ```julia
-Identifier(collection::Union{AbstractString, UUID, Nothing},
-           dataset::Union{AbstractString, UUID},
+Identifier(collection::Union{String, UUID, Nothing},
+           dataset::Union{String, UUID},
            type::Union{QualifiedType, Nothing},
            parameters::Dict{String, Any})
 ```
@@ -87,11 +94,309 @@ Such forms can be parsed to an Identifier by simply calling the `parse`
 function, i.e. `parse(Identifier, "mycollection:dataset")`.
 """
 struct Identifier
-    collection::Union{AbstractString, UUID, Nothing}
-    dataset::Union{AbstractString, UUID}
+    collection::Union{String, UUID, Nothing}
+    dataset::Union{String, UUID}
     type::Union{QualifiedType, Nothing}
     parameters::Dict{String, Any}
 end
+
+
+# Advice and plugins
+
+"""
+    Advice{func, context} <: Function
+
+Advices allow for composable, highly flexible modifications of data by
+encapsulating a function call. They are inspired by [elisp's advice
+system](https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html),
+namely the most versatile form — `:around` advice, and [Clojure's transducers](https://clojure.org/reference/transducers).
+
+A `Advice` is essentially a function wrapper, with a `priority::Int`
+attribute. The wrapped functions should be of the form:
+
+    (action::Function, args...; kargs...) ->
+        ([post::Function], action::Function, args::Tuple, [kargs::NamedTuple])
+
+Short-hand return values with `post` or `kargs` omitted are also accepted, in
+which case default values (the `identity` function and `(;)` respectively) will
+be automatically substituted in.
+
+```text
+    input=(action args kwargs)
+         ┃                 ┏╸post=identity
+       ╭─╂────advisor 1────╂─╮
+       ╰─╂─────────────────╂─╯
+       ╭─╂────advisor 2────╂─╮
+       ╰─╂─────────────────╂─╯
+       ╭─╂────advisor 3────╂─╮
+       ╰─╂─────────────────╂─╯
+         ┃                 ┃
+         ▼                 ▽
+action(args; kargs) ━━━━▶ post╺━━▶ result
+```
+
+To specify which transforms a Advice should be applied to, ensure you
+add the relevant type parameters to your transducing function. In cases where
+the transducing function is not applicable, the Advice will simply act
+as the identity function.
+
+After all applicable `Advice`s have been applied, `action(args...;
+kargs...) |> post` is called to produce the final result.
+
+The final `post` function is created by rightwards-composition with every `post`
+entry of the advice forms (i.e. at each stage `post = post ∘ extra` is run).
+
+The overall behaviour can be thought of as *shells* of advice.
+
+```text
+        ╭╌ advisor 1 ╌╌╌╌╌╌╌╌─╮
+        ┆ ╭╌ advisor 2 ╌╌╌╌╌╮ ┆
+        ┆ ┆                 ┆ ┆
+input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
+        ┆ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ ┆
+        ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+```
+
+# Constructors
+
+```julia
+Advice(priority::Int, f::Function)
+Advice(f::Function) # priority is set to 1
+```
+
+# Examples
+
+**1. Logging every time a DataSet is loaded.**
+
+```julia
+loggingadvisor = Advice(
+    function(post::Function, f::typeof(load), loader::DataLoader, input, outtype)
+        @info "Loading \$(loader.data.name)"
+        (post, f, (loader, input, outtype))
+    end)
+```
+
+**2. Automatically committing each data file write.**
+
+```julia
+writecommitadvisor = Advice(
+    function(post::Function, f::typeof(write), writer::DataWriter{:filesystem}, output, info)
+        function writecommit(result)
+            run(`git add \$output`)
+            run(`git commit -m "update \$output"`)
+            result
+        end
+        (post ∘ writecommit, writefn, (output, info))
+    end)
+```
+"""
+struct Advice <: Function
+    priority::Int # REVIEW should this be an Int?
+    f::Function
+end
+
+"""
+    Plugin
+
+A named collection of [`Advice`](@ref) that accompanies [`DataCollection`](@ref)s.
+
+The complete collection of advice provided by all plugins of a
+[`DataCollection`](@ref) is applied to every [`@advise`](@ref)d call involving
+the [`DataCollection`](@ref).
+
+See also: [`Advice`](@ref), [`AdviceAmalgamation`](@ref).
+
+# Construction
+
+```julia
+Plugin(name::String, advisors::Vector{Advice}) -> Plugin
+Plugin(name::String, advisors::Vector{<:Function}) -> Plugin
+```
+"""
+struct Plugin
+    name::String
+    advisors::Vector{Advice}
+end
+
+Plugin(name::String, advisors::Vector{<:Function}) =
+    Plugin(name, map(Advice, advisors))
+
+Plugin(name::String, advisors::Vector{<:Advice}) =
+    Plugin(name, Vector{Advice}(advisors))
+
+"""
+    AdviceAmalgamation
+
+An `AdviceAmalgamation` is a collection of [`Advice`](@ref)s sourced from
+available [`Plugin`](@ref)s.
+
+Like individual `Advice`s, an `AdviceAmalgamation` can be called
+as a function. However, it also supports the following convenience syntax:
+
+    (::AdviceAmalgamation)(f::Function, args...; kargs...) # -> result
+
+# Constructors
+
+```julia
+AdviceAmalgamation(advisors::Vector{Advice}, plugins_wanted::Vector{String}, plugins_used::Vector{String})
+AdviceAmalgamation(plugins::Vector{String})
+AdviceAmalgamation(collection::DataCollection)
+```
+"""
+mutable struct AdviceAmalgamation
+    advisors::Vector{Advice}
+    plugins_wanted::Vector{String}
+    plugins_used::Vector{String}
+end
+
+
+# Finagled types (part 1)
+
+struct _IndirectDataTransformer{_D, kind, driver}
+    dataset::_D # `DataSet`
+    type::Vector{QualifiedType}
+    priority::Int
+    parameters::Dict{String, Any}
+end
+
+struct _IndirectDataSet{_C}
+    collection::_C # `DataCollection`
+    name::String
+    uuid::UUID
+    parameters::Dict{String, Any}
+    storage::Vector{_IndirectDataTransformer{_IndirectDataSet{_C}, :storage}}
+    loaders::Vector{_IndirectDataTransformer{_IndirectDataSet{_C}, :loader}}
+    writers::Vector{_IndirectDataTransformer{_IndirectDataSet{_C}, :writer}}
+end
+
+
+# The capstone type
+
+"""
+    DataCollection
+
+A collection of [`DataSet`](@ref)s, with global configuration,
+[`Plugin`](@ref)s, and a few other extras.
+
+```text
+╭╴DataCollection(name, UUID, path, module)╶─╮
+│ ├╴DataSet(…)                              │
+│ ├╴DataSet                                 │
+│ │ ├╴Loaders: DataLoader,  […]             │
+│ │ │  ╰╌◁╌╮                                │
+│ │ ├╴Storage: DataStorage, […]             │
+│ │ │  ╰╌◁╌╮                                │
+│ │ └╴Writers: DataWriter,  […]             │
+│ ⋮                                         │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+│ Plugins(…)                                │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+│ Parameters(…)                             │
+╰───────────────────────────────────────────╯
+```
+
+# Working with `DataCollection`s
+
+It is usual for non-transient `DataCollections` to be put onto the
+"[`STACK`](@ref)" (this is done automatically by [`loadcollection!`](@ref)).
+This is a collection of globally known `DataCollection`s.
+
+Being on the [`STACK`](@ref) allows a dataset to be retrieved by its name or
+UUID using [`getlayer`](@ref), and for a `DataSets` in one `DataCollection` to
+refer to a `DataSet` in another.
+
+When using the `data>` REPL mode, the top collection on the stack is used
+as a default target for all operations.
+
+# Creating a `DataCollection`
+
+A [Data.toml](@extref) file can be loaded as a `DataCollection` (and put on the
+[`STACK`](@ref)) with [`loadcollection!`](@ref).
+
+To programatically create a `DataToolkit` you can either call the full
+constructor, but that's rather involved, and so a more convenient constructor is
+also defined:
+
+```julia
+DataCollection(name::Union{String, Nothing}, [parameters::Dict{String, Any}];
+               path::Union{String, Nothing} = nothing,
+               uuid::UUID = uuid4(),
+               plugins::Vector{String} = String[],
+               mod::Module = Base.Main,
+               parameters...) -> DataCollection
+```
+
+Note that `parameters` can either be provided as the second positional argument,
+or extra keyword arguments, but not both.
+
+Once a `DataCollection` has been created, [`DataSet`](@ref)s can be added
+to it with [`create!`](@ref).
+
+## Examples
+
+```julia-repl
+julia> DataCollection("test")
+DataCollection: test
+  Data sets:
+
+julia> c1 = DataCollection(nothing, Dict("customparam" => 77))
+DataCollection:
+  Data sets:
+
+julia> c2 = DataCollection("test2", plugins = ["defaults", "store"], customparam=77)
+DataCollection: test2
+  Plugins: defaults ✔, store ✔
+  Data sets:
+
+julia> c1.parameters
+Dict{String, Any} with 1 entry:
+  "customparam" => 77
+
+julia> c2.parameters
+Dict{String, Any} with 1 entry:
+  "customparam" => 77
+```
+
+# Saving a `DataCollection`
+
+After modifying a file-backed `DataCollection`, the file can be updated by
+calling `write(::DataCollection)` (so long as
+[`iswritable(::DataCollection)`](@ref) is `true`).
+
+Any `DataCollection` can also be written to a particular destination with
+`write(dest, ::DataCollection)`.
+
+Writing a `DataCollection` to plaintext is *essentially* performed by calling
+`TOML.print` on the result of `convert(::Type{Dict}, ::DataCollection)`.
+
+# Fields
+
+```julia
+version::Int
+name::Union{String, Nothing}
+uuid::UUID
+plugins::Vector{String}
+parameters::Dict{String, Any}
+datasets::Vector{DataSet}
+path::Union{String, Nothing}
+advise::AdviceAmalgamation
+mod::Module
+```
+"""
+struct DataCollection
+    version::Int
+    name::Union{String, Nothing}
+    uuid::UUID
+    plugins::Vector{String}
+    parameters::Dict{String, Any}
+    datasets::Vector{_IndirectDataSet{DataCollection}}
+    path::Union{String, Nothing}
+    advise::AdviceAmalgamation
+    mod::Module
+end
+
+
+# Finagled types (part 2)
 
 """
     DataTransformer{kind, driver}
@@ -123,12 +428,69 @@ In addition, each transformer has the following fields:
 
 See also: [`DataStorage`](@ref), [`DataLoader`](@ref), [`DataWriter`](@ref), [`supportedtypes`](@ref).
 """
-struct DataTransformer{kind, driver}
-    dataset
-    type::Vector{QualifiedType}
-    priority::Int
-    parameters::Dict{String, Any}
+const DataTransformer = _IndirectDataTransformer{_IndirectDataSet{DataCollection}}
+
+"""
+    driverof(dt::Type{<:DataTransformer})
+    driverof(dt::DataTransformer)
+
+Get the driver of a [`DataTransformer`](@ref) `dt`, if set.
+
+The value `nothing` is returned if no driver is set.
+"""
+function driverof end
+
+driverof(::Type{DataTransformer{_kind, driver}}) where {_kind, driver} =
+    driver
+
+driverof(::Type{<:DataTransformer}) = nothing
+
+driverof(@nospecialize(dt::DataTransformer)) =
+    driverof(typeof(dt))
+
+# Getting display to work nicely is a bit of a pain,
+# but it is what it is.
+function Base.show(io::IO, T::Type{<:DataTransformer})
+    function print_with_prefix(io::IO, name::Symbol)
+        from = get(io, :module, Main)
+        if isnothing(from) || !Base.isvisible(name, @__MODULE__, from)
+            show(io, @__MODULE__)
+            print(io, '.')
+        end
+        print(io, name)
+    end
+    if T == DataTransformer
+        print_with_prefix(io, :DataTransformer)
+        return
+    elseif T isa Union
+        Base.show_delim_array(io, Base.uniontypes(T), '{', ',', '}', false)
+        return
+    end
+    _, kind, driver = Base.unwrap_unionall(T).parameters
+    curly = false
+    if kind == :storage
+        print_with_prefix(io, :DataStorage)
+    elseif kind == :loader
+        print_with_prefix(io, :DataLoader)
+    elseif kind == :writer
+        print_with_prefix(io, :DataWriter)
+    else
+        print_with_prefix(io, :DataTransformer)
+        print(io, '{')
+        show(io, kind)
+        curly = true
+    end
+    defaultdriver = Base.unwrap_unionall(DataTransformer).parameters[3]
+    if driver == defaultdriver
+        curly && print(io, '}')
+        return
+    end
+    curly || print(io, '{')
+    show(io, driver)
+    print(io, '}')
 end
+
+Base.show(io::IO, ::MIME"text/plain", T::Type{<:DataTransformer}) = print(io, T)
 
 """
     DataStorage <: DataTransformer
@@ -317,127 +679,6 @@ by implementing [`supportedtypes`](@ref) for the loader.
 const DataWriter = DataTransformer{:writer}
 
 """
-    Advice{func, context} <: Function
-
-Advices allow for composable, highly flexible modifications of data by
-encapsulating a function call. They are inspired by [elisp's advice
-system](https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html),
-namely the most versatile form — `:around` advice, and [Clojure's transducers](https://clojure.org/reference/transducers).
-
-A `Advice` is essentially a function wrapper, with a `priority::Int`
-attribute. The wrapped functions should be of the form:
-
-    (action::Function, args...; kargs...) ->
-        ([post::Function], action::Function, args::Tuple, [kargs::NamedTuple])
-
-Short-hand return values with `post` or `kargs` omitted are also accepted, in
-which case default values (the `identity` function and `(;)` respectively) will
-be automatically substituted in.
-
-```text
-    input=(action args kwargs)
-         ┃                 ┏╸post=identity
-       ╭─╂────advisor 1────╂─╮
-       ╰─╂─────────────────╂─╯
-       ╭─╂────advisor 2────╂─╮
-       ╰─╂─────────────────╂─╯
-       ╭─╂────advisor 3────╂─╮
-       ╰─╂─────────────────╂─╯
-         ┃                 ┃
-         ▼                 ▽
-action(args; kargs) ━━━━▶ post╺━━▶ result
-```
-
-To specify which transforms a Advice should be applied to, ensure you
-add the relevant type parameters to your transducing function. In cases where
-the transducing function is not applicable, the Advice will simply act
-as the identity function.
-
-After all applicable `Advice`s have been applied, `action(args...;
-kargs...) |> post` is called to produce the final result.
-
-The final `post` function is created by rightwards-composition with every `post`
-entry of the advice forms (i.e. at each stage `post = post ∘ extra` is run).
-
-The overall behaviour can be thought of as *shells* of advice.
-
-```text
-        ╭╌ advisor 1 ╌╌╌╌╌╌╌╌─╮
-        ┆ ╭╌ advisor 2 ╌╌╌╌╌╮ ┆
-        ┆ ┆                 ┆ ┆
-input ━━┿━┿━━━▶ function ━━━┿━┿━━▶ result
-        ┆ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ ┆
-        ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
-```
-
-# Constructors
-
-```julia
-Advice(priority::Int, f::Function)
-Advice(f::Function) # priority is set to 1
-```
-
-# Examples
-
-**1. Logging every time a DataSet is loaded.**
-
-```julia
-loggingadvisor = Advice(
-    function(post::Function, f::typeof(load), loader::DataLoader, input, outtype)
-        @info "Loading \$(loader.data.name)"
-        (post, f, (loader, input, outtype))
-    end)
-```
-
-**2. Automatically committing each data file write.**
-
-```julia
-writecommitadvisor = Advice(
-    function(post::Function, f::typeof(write), writer::DataWriter{:filesystem}, output, info)
-        function writecommit(result)
-            run(`git add \$output`)
-            run(`git commit -m "update \$output"`)
-            result
-        end
-        (post ∘ writecommit, writefn, (output, info))
-    end)
-```
-"""
-struct Advice <: Function
-    priority::Int # REVIEW should this be an Int?
-    f::Function
-end
-
-"""
-    Plugin
-
-A named collection of [`Advice`](@ref) that accompanies [`DataCollection`](@ref)s.
-
-The complete collection of advice provided by all plugins of a
-[`DataCollection`](@ref) is applied to every [`@advise`](@ref)d call involving
-the [`DataCollection`](@ref).
-
-See also: [`Advice`](@ref), [`AdviceAmalgamation`](@ref).
-
-# Construction
-
-```julia
-Plugin(name::String, advisors::Vector{Advice}) -> Plugin
-Plugin(name::String, advisors::Vector{<:Function}) -> Plugin
-```
-"""
-struct Plugin
-    name::String
-    advisors::Vector{Advice}
-end
-
-Plugin(name::String, advisors::Vector{<:Function}) =
-    Plugin(name, map(Advice, advisors))
-
-Plugin(name::String, advisors::Vector{<:Advice}) =
-    Plugin(name, Vector{Advice}(advisors))
-
-"""
     DataSet
 
 A named collection of data, along with the means to retrive the source and
@@ -488,163 +729,21 @@ methods [`storage!`](@ref), [`loader!`](@ref), and [`writer!`](@ref).
 See also: [`DataCollection`](@ref), [`DataStorage`](@ref), [`DataLoader`](@ref),
 [`DataWriter`](@ref).
 """
-struct DataSet
-    collection
-    name::String
-    uuid::UUID
-    parameters::Dict{String, Any}
-    storage::Vector{DataStorage}
-    loaders::Vector{DataLoader}
-    writers::Vector{DataWriter}
+const DataSet = _IndirectDataSet{DataCollection}
+
+function Base.show(io::IO, ::Type{DataSet})
+    from = get(io, :module, Main)
+    if isnothing(from) || !Base.isvisible(:DataSet, @__MODULE__, from)
+        show(io, @__MODULE__)
+        print(io, '.')
+    end
+    print(io, "DataSet")
 end
 
-"""
-    AdviceAmalgamation
+Base.show(io::IO, ::MIME"text/plain", T::Type{DataSet}) = show(io, T)
 
-An `AdviceAmalgamation` is a collection of [`Advice`](@ref)s sourced from
-available [`Plugin`](@ref)s.
-
-Like individual `Advice`s, an `AdviceAmalgamation` can be called
-as a function. However, it also supports the following convenience syntax:
-
-    (::AdviceAmalgamation)(f::Function, args...; kargs...) # -> result
-
-# Constructors
-
-```julia
-AdviceAmalgamation(advisors::Vector{Advice}, plugins_wanted::Vector{String}, plugins_used::Vector{String})
-AdviceAmalgamation(plugins::Vector{String})
-AdviceAmalgamation(collection::DataCollection)
-```
-"""
-mutable struct AdviceAmalgamation
-    advisors::Vector{Advice}
-    plugins_wanted::Vector{String}
-    plugins_used::Vector{String}
-end
-
-"""
-    DataCollection
-
-A collection of [`DataSet`](@ref)s, with global configuration,
-[`Plugin`](@ref)s, and a few other extras.
-
-```text
-╭╴DataCollection(name, UUID, path, module)╶─╮
-│ ├╴DataSet(…)                              │
-│ ├╴DataSet                                 │
-│ │ ├╴Loaders: DataLoader,  […]             │
-│ │ │  ╰╌◁╌╮                                │
-│ │ ├╴Storage: DataStorage, […]             │
-│ │ │  ╰╌◁╌╮                                │
-│ │ └╴Writers: DataWriter,  […]             │
-│ ⋮                                         │
-├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
-│ Plugins(…)                                │
-├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
-│ Parameters(…)                             │
-╰───────────────────────────────────────────╯
-```
-
-# Working with `DataCollection`s
-
-It is usual for non-transient `DataCollections` to be put onto the
-"[`STACK`](@ref)" (this is done automatically by [`loadcollection!`](@ref)).
-This is a collection of globally known `DataCollection`s.
-
-Being on the [`STACK`](@ref) allows a dataset to be retrieved by its name or
-UUID using [`getlayer`](@ref), and for a `DataSets` in one `DataCollection` to
-refer to a `DataSet` in another.
-
-When using the `data>` REPL mode, the top collection on the stack is used
-as a default target for all operations.
-
-# Creating a `DataCollection`
-
-A [Data.toml](@extref) file can be loaded as a `DataCollection` (and put on the
-[`STACK`](@ref)) with [`loadcollection!`](@ref).
-
-To programatically create a `DataToolkit` you can either call the full
-constructor, but that's rather involved, and so a more convenient constructor is
-also defined:
-
-```julia
-DataCollection(name::Union{String, Nothing}, [parameters::Dict{String, Any}];
-               path::Union{String, Nothing} = nothing,
-               uuid::UUID = uuid4(),
-               plugins::Vector{String} = String[],
-               mod::Module = Base.Main,
-               parameters...) -> DataCollection
-```
-
-Note that `parameters` can either be provided as the second positional argument,
-or extra keyword arguments, but not both.
-
-Once a `DataCollection` has been created, [`DataSet`](@ref)s can be added
-to it with [`create!`](@ref).
-
-## Examples
-
-```julia-repl
-julia> DataCollection("test")
-DataCollection: test
-  Data sets:
-
-julia> c1 = DataCollection(nothing, Dict("customparam" => 77))
-DataCollection:
-  Data sets:
-
-julia> c2 = DataCollection("test2", plugins = ["defaults", "store"], customparam=77)
-DataCollection: test2
-  Plugins: defaults ✔, store ✔
-  Data sets:
-
-julia> c1.parameters
-Dict{String, Any} with 1 entry:
-  "customparam" => 77
-
-julia> c2.parameters
-Dict{String, Any} with 1 entry:
-  "customparam" => 77
-```
-
-# Saving a `DataCollection`
-
-After modifying a file-backed `DataCollection`, the file can be updated by
-calling `write(::DataCollection)` (so long as
-[`iswritable(::DataCollection)`](@ref) is `true`).
-
-Any `DataCollection` can also be written to a particular destination with
-`write(dest, ::DataCollection)`.
-
-Writing a `DataCollection` to plaintext is *essentially* performed by calling
-`TOML.print` on the result of `convert(::Type{Dict}, ::DataCollection)`.
-
-# Fields
-
-```julia
-version::Int
-name::Union{String, Nothing}
-uuid::UUID
-plugins::Vector{String}
-parameters::Dict{String, Any}
-datasets::Vector{DataSet}
-path::Union{String, Nothing}
-advise::AdviceAmalgamation
-mod::Module
-```
-"""
-struct DataCollection
-    version::Int
-    name::Union{String, Nothing}
-    uuid::UUID
-    plugins::Vector{String}
-    parameters::Dict{String, Any}
-    datasets::Vector{DataSet}
-    path::Union{String, Nothing}
-    advise::AdviceAmalgamation
-    mod::Module
-end
+
+# Other types
 
 """
     SystemPath

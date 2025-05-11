@@ -16,21 +16,16 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
             [typeify(QualifiedType(t); mod) for t in types]
         elseif types isa String
             typeify(QualifiedType(types); mod)
-        else
-        end
-        if isnothing(kwargs[:types])
-            @warn "CSV types argument is invalid: must be a resolvable type string, vector, or dict. Ignoring." types
-            delete!(kwargs, :types)
         end
     end
     if haskey(kwargs, :typemap)
         kwargs[:typemap] = Dict{Type, Type}(
-            typeify(QualifiedType(k); mod) => typeify(QualifiedType(v); mod)
+            trytypeify(QualifiedType(k); mod) => trytypeify(QualifiedType(v); mod)
             for (k, v) in kwargs[:typemap])
     end
     if haskey(kwargs, :stringtype)
         kwargs[:stringtype] =
-            [typeify(QualifiedType(t); mod) for t in kwargs[:stringtype]]
+            [trytypeify(QualifiedType(t); mod) for t in kwargs[:stringtype]]
     end
     invokelatest(_read_csv, from; NamedTuple(kwargs)...) |>
         if sink == Any || QualifiedType(sink) == QualifiedType(:CSV, :File)

@@ -69,7 +69,7 @@ A `ReplCmd` consists of the following fields:
 
 ```julia
 ReplCmd(name::String, description::String, execute::Function, [completions::Function])
-ReplCmd(name::String, description::String, execute::Vector{<:ReplCmd})
+ReplCmd(name::String, description::String, execute::Vector{ReplCmd})
 ```
 
 # Examples
@@ -82,27 +82,20 @@ ReplCmd("math", "A collection of basic integer arithmetic",
      ReplCmd("mul", "a * b * ...", nums -> prod(parse.(Int, split(nums)))))
 ```
 """
-struct ReplCmd{E <: Union{Function, Vector}}
+struct ReplCmd
     name::String
     description::Any
-    execute::E
+    execute::Union{Function, Vector{ReplCmd}}
     completions::Function
 end
 
-function ReplCmd(name::String, description::Any,
-                 execute::Union{Function, Vector{<:ReplCmd}},
-                 completions::Function = if execute isa Vector
-                     sofar -> invokelatest(complete_repl_cmd, sofar, commands = execute)
-                 else
-                     Returns(String[])
-                 end)
-    if execute isa Function
-        ReplCmd{Function}(
-            name, description, execute, completions)
-    else
-        ReplCmd{Vector{ReplCmd}}(
-            name, description, Vector{ReplCmd}(execute), completions)
-    end
+function ReplCmd(name::String, description::Any, execute::Vector{ReplCmd})
+    completions = sofar -> invokelatest(complete_repl_cmd, sofar, commands = execute)
+    ReplCmd(name, description, execute, completions)
+end
+
+function ReplCmd(name::String, description::Any, execute::Function)
+    ReplCmd(name, description, execute, Returns(String[]))
 end
 
 function ReplCmd(name, description, execute, completions::Vector{String})
@@ -115,8 +108,7 @@ function add_repl_cmd!(cmd::ReplCmd)
     insert!(REPL_CMDS, pos, cmd)
 end
 
-precompile(add_repl_cmd!, (ReplCmd{Function},))
-precompile(add_repl_cmd!, (ReplCmd{Vector{ReplCmd}},))
+precompile(add_repl_cmd!, (ReplCmd,))
 
 """
 The set of commands available directly in the Data REPL.

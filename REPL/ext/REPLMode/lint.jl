@@ -31,8 +31,7 @@ function repl_lint(input::AbstractString)
                            String(input)))
             dolint(collection)
         catch
-            dataset = resolve(input, resolvetype=false)
-            dolint(dataset)
+            dolint(resolve(input))
         end
     end
 end
@@ -56,7 +55,7 @@ function DataToolkitCore.linttryfix(fixprompt::Vector{Tuple{Int, DataToolkitCore
             printstyled(" ", d.uuid, "\n", color=:light_black)
         end
         objinfo(a::A) where {A <: DataTransformer} =
-            printstyled("• ", first(A.parameters), ' ',
+            printstyled("• ", driverof(A), ' ',
                         join(lowercase.(split(string(nameof(A)), r"(?=[A-Z])")), ' '),
                         " for ", a.dataset.name, '\n', color=:blue, bold=true)
         objinfo(::DataLoader{driver}) where {driver} =

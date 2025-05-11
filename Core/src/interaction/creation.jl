@@ -7,7 +7,7 @@ function DataCollection(name::Union{String, Nothing}, config::Dict{String, <:Any
         LATEST_DATA_CONFIG_VERSION, name, uuid, plugins,
         toml_safe(config), DataSet[], path,
         AdviceAmalgamation(plugins), mod)
-    @advise identity(collection)::DataCollection
+    @advise identity(collection)
 end
 
 DataCollection(name::Union{String, Nothing}=nothing;
@@ -40,15 +40,11 @@ function create!(::Type{DataCollection}, name::Union{String, Nothing}, path::Uni
         path = path * ".toml"
     end
     if isnothing(name)
-        name = if !isnothing(Base.active_project(false))
-            Base.active_project(false) |> dirname |> basename
-        else
-            something(path, string(gensym("unnamed"))[3:end]) |>
-                dirname |> basename
-        end
+        name = @something(Base.active_project(false), path,
+                          string(gensym("unnamed"))[3:end]) |> dirname |> basename
     end
     dc = DataCollection(name; path, uuid, plugins, mod)
-    newcollection = @advise create(DataCollection, dc)::DataCollection
+    newcollection = @advise create(DataCollection, dc)
     pushfirst!(STACK, newcollection)
     !isnothing(path) && write(newcollection)
     newcollection
@@ -97,7 +93,7 @@ function create(parent::DataCollection, ::Type{DataSet}, name::AbstractString, s
         spec = merge(spec, Dict("uuid" => uuid4()))
     end
     uuid = if haskey(spec, "uuid") UUID(spec["uuid"]) else uuid4() end
-    dataset = @advise fromspec(DataSet, parent, String(name), toml_safe(parent, spec))::DataSet
+    dataset = @advise fromspec(DataSet, parent, String(name), toml_safe(parent, spec))
 end
 
 function create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, spec::Dict{String, <:Any})
@@ -129,7 +125,7 @@ function dataset!(collection::DataCollection, name::String, parameters::Dict{Str
 end
 
 dataset!(collection::DataCollection, name::String, parameters::Pair{String, <:Any}...) =
-    dataset!(collection, name, toml_safe(collection, parameters))
+    dataset!(collection, name, toml_safe(collection, collect(parameters)))
 
 # Transformer creation (pure)
 
@@ -167,7 +163,7 @@ create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{S
     create(parent, T, merge(toml_safe(parent, spec), Dict("driver" => String(driver))))
 
 create(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, specs::Pair{String, <:Any}...) =
-    create(parent, T, driver, toml_safe(parent, specs))
+    create(parent, T, driver, toml_safe(parent, collect(specs)))
 
 # Transformer creation (modifying)
 
@@ -202,8 +198,8 @@ create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{
 create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, spec::Dict{String, <:Any} = Dict{String, Any}()) where {_kind, D} =
     create!(parent, T, D, spec)
 
-create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, driver::Symbol, specs::Pair{String, <:Any}...) where {_kind, D} =
-    create!(parent, T, D, driver, Dict{String, Any}(specs))
+create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, driver::Symbol, spec1::Pair{String, <:Any}, specs::Pair{String, <:Any}...) where {_kind, D} =
+    create!(parent, T, D, driver, Dict{String, Any}(vcat(spec1, specs)))
 
 # Dedicated storage/loader/writer creation (modifying)
 
@@ -324,14 +320,17 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symb
         methods(load)
     elseif T == DataWriter
         methods(save)
+    else
+        throw(ArgumentError("Unknown transformer type: $T"))
     end
     alldrivers = Symbol[]
     for m in relevant_methods
         arg1 = Base.unwrap_unionall(Base.unwrap_unionall(m.sig).types[2])
-        if arg1 isa DataType && first(arg1.parameters) isa Symbol &&
-            minpriority <= createpriority(T{arg1}) <= maxpriority
-            push!(alldrivers, first(arg1.parameters))
-        end
+        arg1 isa DataType && arg1 <: DataTransformer || continue
+        par1 = driverof(arg1)
+        par1 isa Symbol || continue
+        minpriority <= createpriority(T{arg1}) <= maxpriority || continue
+        push!(alldrivers, par1)
     end
     sort!(alldrivers, by = drv -> createpriority(T{drv}))
     for drv in alldrivers

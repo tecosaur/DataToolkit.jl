@@ -52,7 +52,6 @@ function (dt::Advice)(func::Function, args...; kwargs...)
     end
 end
 
-
 Base.empty(::Type{AdviceAmalgamation}) =
     AdviceAmalgamation(Advice[], String[], String[])
 
@@ -131,13 +130,39 @@ _dataadvise(advs::Vector{<:Advice}) = AdviceAmalgamation(advs)
 _dataadvise(adv::Advice) = AdviceAmalgamation([adv])
 _dataadvise(col::DataCollection) = col.advise
 _dataadvise(ds::DataSet) = _dataadvise(ds.collection)
-_dataadvise(dt::DataTransformer) = _dataadvise(dt.dataset::DataSet)
+_dataadvise(dt::DataTransformer) = _dataadvise(dt.dataset)
 
-const DATA_ADVISE_CALL_LOC = 1 + @__LINE__
+"""
+    _dataadvise(thing, func::Function, args...; kwargs...)
+
+Obtain the relevant [`AdviceAmalgamation`](@ref) for `thing`, and call
+`func(args...; kwargs...)` with the advice.
+
+This adds an assertion that the return type of the advised `func` is the same as
+the original function.
+"""
+@generated function _dataadvise(source::Any, func::Function, args...; kwargs...)
+    :(_dataadvise(source)(func, args...; kwargs...)::Base.promote_op(func, $args...))
+end
+
+"""
+    _dataadvisecall([noassert], func::Function, args...; kwargs...)
+
+Identify the first data-like argument of `args` (i.e. a [`DataCollection`](@ref),
+[`DataSet`](@ref), or [`DataTransformer`](@ref)), obtain its advise, and perform
+an advised call of `func(args...; kwargs...)`.
+
+Unless an initial `noassert` argument of `Val{:noassert}` is provided, it is
+assumed (and asserted) that the advised function will have the same return type
+as the original.
+"""
 @generated function _dataadvisecall(func::Function, args...; kwargs...)
-    dataarg = findfirst(
-        a -> a <: DataCollection || a <: DataSet || a <: DataTransformer,
-        args)
+    :(_dataadvisecall(Val{:noassert}(), func, args...; kwargs...)::Base.promote_op(func, $args...))
+end
+
+@generated function _dataadvisecall(::Val{:noassert}, func::Function, args...; kwargs...)
+    advisable(a) = a <: DataCollection || a <: DataSet || a <: DataTransformer
+    dataarg = findfirst(advisable, args)
     if isnothing(dataarg)
         @warn """Attempted to generate advised function call for $(func.instance),
                  however none of the provided arguments were advisable.
@@ -149,14 +174,6 @@ const DATA_ADVISE_CALL_LOC = 1 + @__LINE__
     end
 end
 
-@doc """
-    _dataadvisecall(func::Function, args...; kwargs...)
-
-Identify the first data-like argument of `args` (i.e. a [`DataCollection`](@ref),
-[`DataSet`](@ref), or [`DataTransformer`](@ref)), obtain its advise, and perform
-an advised call of `func(args...; kwargs...)`.
-""" _dataadvisecall
-
 """
     strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
 
@@ -166,7 +183,7 @@ function strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
     SIMPLIFY_STACKTRACES[] || return st
     i, in_advice_region = length(st), false
     while i > 0
-        if st[i].file === Symbol(@__FILE__) && st[i].line == DATA_ADVISE_CALL_LOC
+        if st[i].file === Symbol(@__FILE__) && st[i].func ∈ (:_dataadvise, :_dataadvisecall)
             in_advice_region = true
             deleteat!(st, i)
         elseif in_advice_region && st[i].file ∈
@@ -192,7 +209,7 @@ strip_stacktrace_advice!(st::Vector{Union{Ptr{Nothing}, Base.InterpreterIP}}) =
     strip_stacktrace_advice!(stacktrace(st))
 
 """
-    @advise [source] f(args...; kwargs...)
+    @advise [source] f(args...; kwargs...) [::T]
 
 Convert a function call `f(args...; kwargs...)` to an *advised* function call,
 where the advise collection is obtained from `source` or the first data-like\\*
@@ -206,17 +223,17 @@ For example, `@advise myfunc(other, somedataset, rest...)` is equivalent to
 This macro performs a fairly minor code transformation, but should improve
 clarity.
 
-Consider adding a typeassert where type stability is important.
+Unless otherwise asserted, it is assumed that the advised function
+will have the same return type as the original function. If this assumption
+does not hold, make sure to add a type assertion (even just `::Any`).
 """
 macro advise(source::Union{Symbol, Expr}, funcall::Union{Expr, Nothing}=nothing)
     # Handle @advice(funcall), and ensure `source` is correct both ways.
-    if isnothing(funcall)
+    implicitsource = if isnothing(funcall)
         funcall = source
-        source = GlobalRef(@__MODULE__, :_dataadvisecall)
+        true
     else
-        source = Expr(:call,
-                      GlobalRef(@__MODULE__, :_dataadvise),
-                      source)
+        false
     end
     asserttype = nothing
     if Meta.isexpr(funcall, :(::), 2)
@@ -228,14 +245,27 @@ macro advise(source::Union{Symbol, Expr}, funcall::Union{Expr, Nothing}=nothing)
     elseif length(funcall.args) < 2
         throw(ArgumentError("Cannot advise function call without arguments $funcall"))
     else
-        args = if funcall.args[2] isa Expr && funcall.args[2].head == :parameters
-            vcat(funcall.args[2], funcall.args[1], funcall.args[3:end])
-        else funcall.args end
-        advcall = Expr(:call, source, args...)
-        Expr(:escape, if isnothing(asserttype)
-                 advcall
-             else
-                 Expr(:(::), advcall, asserttype)
-             end)
+        advcall = if implicitsource
+            Expr(:call, GlobalRef(@__MODULE__, :_dataadvisecall))
+        elseif isnothing(asserttype)
+            Expr(:call, GlobalRef(@__MODULE__, :_dataadvise), source)
+        else
+            source = Expr(:call, GlobalRef(@__MODULE__, :_dataadvise), source)
+            Expr(:call, source)
+        end
+        if implicitsource && !isnothing(asserttype)
+            push!(advcall.args, Expr(:call, Expr(:curly, GlobalRef(@__MODULE__, :Val), QuoteNode(:noassert))))
+        end
+        if Meta.isexpr(funcall.args[2], :parameters)
+            advcall = Expr(:call, advcall.args[1], funcall.args[2],
+                           advcall.args[2:end]..., funcall.args[1],
+                           funcall.args[3:end]...)
+        else
+            advcall = Expr(:call, advcall.args..., funcall.args...)
+        end
+        if !isnothing(asserttype)
+            advcall = Expr(:(::), advcall, asserttype)
+        end
+        Expr(:escape, advcall)
     end
 end

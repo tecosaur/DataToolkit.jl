@@ -88,7 +88,7 @@ function targettypes(types::Vector{QualifiedType}, desired::Type; mod::Module = 
     @nospecialize
     targets = Type[]
     for typ in types
-        Ttyp = typeify(typ; mod)
+        Ttyp = trytypeify(typ; mod)
         isnothing(Ttyp) && continue
         if Ttyp <: desired
             push!(targets, Ttyp)
@@ -124,17 +124,17 @@ This operates on the following rules:
 """
 function ispreferredpath(((a_in, a_out), a_ind, a_ldr)::Tuple{Pair{Type, Type}, Int, Type},
                          ((b_in, b_out), b_ind, b_ldr)::Tuple{Pair{Type, Type}, Int, Type})
+    @nospecialize
     function ncommonparents(A::Type, B::Type)::Int
         a_parents, b_parents = Type[A], Type[B]
         while first(a_parents) != Any
-            pushfirst!(a_parents, supertype(first(a_parents)))
+            pushfirst!(a_parents, supertype(first(a_parents))::Type)
         end
         while first(b_parents) != Any
-            pushfirst!(b_parents, supertype(first(b_parents)))
+            pushfirst!(b_parents, supertype(first(b_parents))::Type)
         end
         sum(splat(==), zip(a_parents, b_parents))
     end
-    @nospecialize
     a_ind < b_ind ||
         Base.morespecific(a_out, b_out) ||
         Base.morespecific(a_ldr, b_ldr) ||
