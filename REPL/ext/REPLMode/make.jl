@@ -114,42 +114,39 @@ function create_sandbox()
     lasttype = Ref(Any)
 
     # Run in `mod`, not `Main`, and do some input checking.
-    julia_mode.on_done = REPL.respond(
-        function (line)
-            expr = Base.parse_input_line(line, filename=REPL.repl_filename(repl, hist_mode.hp))
-            if expr isa Expr && expr.head == :toplevel
-                expr = expr.args[2]
-            end
-            result = if !(expr isa Expr)
+    julia_mode.on_done = handle_input(repl) do line
+        expr = Base.parse_input_line(line, filename=REPL.repl_filename(repl, hist_mode.hp))
+        if expr isa Expr && expr.head == :toplevel
+            expr = expr.args[2]
+        end
+        result = if !(expr isa Expr)
+            res = Core.eval(mod, expr)
+            lasttype[] = typeof(res)
+            Expr(:quote, res)
+        elseif expr.head ∈ (:const, :global)
+            printstyled("ERROR: ", color=:light_red, bold=true)
+            println("Disallowed: Global assignment is not permitted")
+        elseif expr.head ∈ (:import, :using)
+            printstyled("ERROR: ", color=:light_red, bold=true)
+            println("Dissalowed: Use @require instead of $(expr.head)")
+        elseif expr == :(exit())
+            @info "Press ^D to exit"
+        else
+            try
                 res = Core.eval(mod, expr)
-                lasttype[] = typeof(res)
-                Expr(:quote, res)
-            elseif expr.head ∈ (:const, :global)
-                printstyled("ERROR: ", color=:light_red, bold=true)
-                println("Disallowed: Global assignment is not permitted")
-            elseif expr.head ∈ (:import, :using)
-                printstyled("ERROR: ", color=:light_red, bold=true)
-                println("Dissalowed: Use @require instead of $(expr.head)")
-            elseif expr == :(exit())
-                @info "Press ^D to exit"
-            else
-                try
+                if res isa DataToolkitCore.PkgRequiredRerunNeeded
                     res = Core.eval(mod, expr)
-                    if res isa DataToolkitCore.PkgRequiredRerunNeeded
-                        res = Core.eval(mod, expr)
-                    end
-                    lasttype[] = typeof(res)
-                    return Expr(:quote, res)
-                catch err
-                    push!(hist_ignore, length(julia_mode.hist.history))
-                    rethrow()
                 end
+                lasttype[] = typeof(res)
+                return Expr(:quote, res)
+            catch err
+                push!(hist_ignore, length(julia_mode.hist.history))
+                rethrow()
             end
-            push!(hist_ignore, length(julia_mode.hist.history))
-            result
-        end,
-        repl,
-        julia_mode)
+        end
+        push!(hist_ignore, length(julia_mode.hist.history))
+        result
+    end
 
     (; repl, hist_ignore, lasttype, mod,
      modes = ( julia=julia_mode, shell=shell_mode, help=help_mode, hist=hist_mode))

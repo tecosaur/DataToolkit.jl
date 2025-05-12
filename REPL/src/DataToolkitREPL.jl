@@ -92,7 +92,7 @@ end
 function ReplCmd(name::String, description::Any,
                  execute::Union{Function, Vector{<:ReplCmd}},
                  completions::Function = if execute isa Vector
-                     sofar -> complete_repl_cmd(sofar, commands = execute)
+                     sofar -> invokelatest(complete_repl_cmd, sofar, commands = execute)
                  else
                      Returns(String[])
                  end)
@@ -152,5 +152,24 @@ function help_cmd_table end
 function help_show end
 function transformer_docs end
 function transformers_printall end
+
+# ------------------
+# Workaround for 1.11+ REPL package extension dodginess
+# ------------------
+
+@static if VERSION >= v"1.11"
+    function __init__()
+        # Trigger extension loading. This is an absolute pain, but
+        # the only way I could find to get this to work.
+        replid = Base.PkgId(Base.UUID("3fa0cd96-eef1-5676-8a61-b3b8758bbffb"), "REPL")
+        if isassigned(Base.REPL_MODULE_REF) && !haskey(Base.loaded_modules, replid)
+            # It seems that the required hooks (i.e. EXT_DORMITORY entries) are
+            # only added /after/ this package is loaded and this `__init__`
+            # finishes, so we need to require REPL and trigger extension loading
+            # /after/ this package is loaded.
+            @async (sleep(0.01); Base.require_stdlib(replid))
+        end
+    end
+end
 
 end

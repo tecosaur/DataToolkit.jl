@@ -190,8 +190,7 @@ function create_data_mode(repl::REPL.AbstractREPL, base_mode::LineEdit.Prompt)
     _, search_keymap = LineEdit.setup_search_keymap(history_provider)
     _, prefix_keymap = LineEdit.setup_prefix_keymap(history_provider, data_mode)
 
-    data_mode.on_done =
-        REPL.respond(toplevel_execute_repl_cmd, repl, data_mode)
+    data_mode.on_done = handle_input(toplevel_execute_repl_cmd, repl)
 
     data_mode.keymap_dict = LineEdit.keymap(Dict{Any, Any}[
         search_keymap,
@@ -203,6 +202,31 @@ function create_data_mode(repl::REPL.AbstractREPL, base_mode::LineEdit.Prompt)
     ])
 
     data_mode
+end
+
+"""
+    handle_input(f::Function, s::REPL.LineEdit.MIState, buf::REPL.LineEdit.BufferLike, ok::Bool, repl::REPL.AbstractREPL)
+
+Call `f` on a line of input, managing the REPL state and history appropriately.
+"""
+function handle_input(f::Function, s::REPL.LineEdit.MIState, buf::REPL.LineEdit.BufferLike, ok::Bool, repl::REPL.AbstractREPL)
+    ok || return REPL.transition(s, :abort)
+    input = String(take!(buf))
+    REPL.reset(repl)
+    all(isspace, input) || f(input)
+    REPL.prepare_next(repl)
+    REPL.reset_state(s)
+    s.current_mode.sticky || REPL.transition(s, main)
+end
+
+"""
+    handle_input(f::Function, repl::REPL.AbstractREPL)
+
+Return a function that takes a `(s::MIState, buf::BufferLike, ok::Bool)` tuple
+and calls `handle_input(f, s, buf, ok, repl)`.
+"""
+function handle_input(f::Function, repl::REPL.AbstractREPL)
+    (s, buf, ok) -> handle_input(f, s, buf, ok, repl)
 end
 
 """
@@ -228,6 +252,9 @@ function init_repl(repl::REPL.AbstractREPL)
             end
         else
             LineEdit.edit_insert(state, REPL_KEY)
+            @static if VERSION >= v"1.12-alpha1"
+                LineEdit.check_show_hint(state)
+            end
         end
     end
     data_keymap = Dict{Any, Any}(REPL_KEY => key_action)

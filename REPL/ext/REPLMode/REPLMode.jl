@@ -17,9 +17,9 @@ using DataToolkitREPL: ReplCmd, REPL_KEY, REPL_NAME, REPL_PROMPT,
     add_repl_cmd!
 
 import DataToolkitREPL: help, find_repl_cmd, execute_repl_cmd,
-    complete_repl_cmd, init_repl, prompt, prompt_char, confirm_yn, peelword,
-    show_extra, displaytable, help_cmd_table, help_show, transformer_docs,
-    transformers_printall
+    toplevel_execute_repl_cmd, complete_repl_cmd, init_repl, prompt,
+    prompt_char, confirm_yn, peelword, show_extra, displaytable, help_cmd_table,
+    help_show, transformer_docs, transformers_printall
 
 include("utils.jl")
 include("help.jl")
