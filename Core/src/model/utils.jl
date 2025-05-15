@@ -12,7 +12,7 @@ this can result in substantial memory savings for small dictionaries.
 """
 function newdict end
 
-@static if VERSION >= v"1.11-alpha1"
+@static if VERSION >= v"1.11"
     function newdict(K::Type, V::Type, capacity::Int)
         size = if capacity < 1; 0
         elseif capacity == 1; 2
@@ -82,18 +82,25 @@ function atomic_write end
 
 function atomic_write(f::F, dest::AbstractString, temp::AbstractString) where {F <: Function}
     local ret
+    req = Libc.malloc(Base._sizeof_uv_fs)
     try
         io = open(temp, "w")
         ret = f(io)
         flush(io)
-        req = Libc.malloc(Base._sizeof_uv_fs)
         # REVIEW: When we drop 1.11 support `Base.RawFD(fd(io))` can be replaced with `fd(io)`
         @ccall uv_fs_fdatasync(C_NULL::Ptr{Cvoid}, req::Ptr{Cvoid}, Base.RawFD(fd(io))::Base.OS_HANDLE, C_NULL::Ptr{Cvoid})::Cint
-        Libc.free(req)
+        @ccall uv_fs_req_cleanup(req::Ptr{Cvoid})::Cvoid
         close(io)
+        # Now fsync the directory to flush the rename to disk
+        parent = Base.Filesystem.open(dirname(dest), Base.Filesystem.JL_O_RDONLY | Base.Filesystem.JL_O_DIRECTORY)
+        @ccall uv_fs_fsync(C_NULL::Ptr{Cvoid}, req::Ptr{Cvoid}, parent.handle::Base.OS_HANDLE, C_NULL::Ptr{Cvoid})::Cint
+        @ccall uv_fs_req_cleanup(req::Ptr{Cvoid})::Cvoid
+        close(parent)
     catch
         rm(temp, force=true)
         rethrow()
+    finally
+        Libc.free(req)
     end
     mv(temp, dest, force=true)
     ret
