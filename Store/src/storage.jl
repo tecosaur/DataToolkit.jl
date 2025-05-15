@@ -384,6 +384,31 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     open(storesave(inventory, storage, FilePath, FilePath(dumpfile)).path, "r")
 end
 
+struct StoreTypeMismatch <: Exception
+    storage::DataStorage
+    as::Type
+    given::Type
+end
+
+function storesave(inv::Inventory, storage::DataStorage, as::Type, val::T) where {T}
+    @nospecialize
+    throw(StoreTypeMismatch(storage, as, T))
+end
+
+function Base.showerror(io::IO, e::StoreTypeMismatch)
+    potentalcalls = methods(storesave, Tuple{Inventory, DataStorage, Type{e.as}, Any})
+    validvals = Type[Base.unwrap_unionall(m.sig).types[4] for m in potentalcalls]
+    filter!(t -> t !== Type, validvals)
+    println(io, "StoreTypeMismatch: Given a $(sprint(show, e.given)) to store as $(sprint(show, e.as)) from a $(sprint(show, e.storage)).")
+    if isempty(validvals)
+        println(io, "No valid types for $(sprint(show, e.as)) are currently known.")
+    else
+        print(io, "Valid types that can be stored as $(sprint(show, e.as)) are:\n • ")
+        join(io, validvals, "\n • ")
+        print(io, "\n")
+    end
+end
+
 """
     storesave(inventory::Inventory, storage::DataStorage, as::Type)
 
