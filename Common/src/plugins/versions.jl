@@ -30,19 +30,24 @@ Part of `VERSIONS_PLUGIN`.
 function versions_refine_a(f::typeof(refine), datasets::Vector{DataSet}, ident::Identifier, ignoreparams::Vector{String})
     @require Pkg
     if haskey(ident.parameters, "version")
-        versions = map(
-            ds -> @something(if haskey(ds.parameters, "version")
-                                    tryparse(VersionNumber,
-                                            string(ds.parameters["version"]))
-                                end,
-                                v"0"),
-            datasets)
-        if ident.parameters["version"] == "latest"
+        versions = [something(if haskey(ds.parameters, "version")
+                                  tryparse(VersionNumber, string(ds.parameters["version"]))
+                              end, v"0") for ds in datasets]
+        selector = String(ident.parameters["version"])
+        if selector == "latest"
             datasets = datasets[versions .== maximum(versions)]
         else
-            maxvalid = invokelatest(
-                best_semver_version,
-                String(ident.parameters["version"]), versions)::Union{VersionNumber, Nothing}
+            if !isempty(selector) && all(c -> c ∈ '0':'9' || c == '.', selector)
+                # When no explicit version matching scheme is provided, match
+                # up to the level of granularity in the version string.
+                specificity = count('.', selector)
+                if specificity ∈ 0:1
+                    selector = '~' * selector
+                else
+                    selector = '=' * selector
+                end
+            end
+            maxvalid = invokelatest(best_semver_version, selector, versions)::Union{VersionNumber, Nothing}
             datasets = if !isnothing(maxvalid)
                 datasets[versions .== maxvalid]
             else
@@ -115,7 +120,11 @@ or `iris@2`.
 
 The version matching re-uses machinery from `Pkg`, and so all
 [`Pkg`-style version specifications](https://pkgdocs.julialang.org/v1/compatibility/#Version-specifier-format)
-are supported. In addition to this, one can simply request the "latest" version.
+are supported, with two notable differences:
+- In addition to numeric versioning, you can just ask for the "latest" version
+- Numeric versions with no explicit scheme are matched up to the level of granularity
+  explicitly provided. For instance, `@1` will match all `1.x.x` versions and `@1.2`
+  will match all `1.2.x` versions.
 
 The following are all valid identifiers, using the `@`-shorthand:
 ```
