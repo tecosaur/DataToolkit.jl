@@ -6,7 +6,6 @@ import DataToolkitCore: load, save, storage,
     createinteractive, createauto, createpriority
 
 using PrecompileTools
-using Compat
 
 using Tables
 using Dates

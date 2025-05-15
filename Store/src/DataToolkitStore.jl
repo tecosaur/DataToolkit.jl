@@ -6,9 +6,10 @@ using Dates
 using Serialization
 using TOML
 using UUIDs
-using Compat
 
-@compat public load_inventory, fetch!
+@static if VERSION >= v"1.11"
+    eval(Expr(:public, :load_inventory, :fetch!))
+end
 
 include("lockfile.jl")
 include("types.jl")
