@@ -586,7 +586,7 @@ function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UIn
     for sources in (inv.stores, inv.caches)
         let i = 1; while i <= length(sources)
             source = sources[i]
-            # TODO avoid permanantly modifying during dryrun
+            # TODO avoid permanently modifying during dryrun
             filter!(source.references) do r
                 if haskey(active_collections, r)
                     num_recipe_checks += 1
