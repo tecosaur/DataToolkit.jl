@@ -218,7 +218,8 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
     plugins::Vector{String} = get(spec, "plugins", String[])
     parameters = get(spec, "config", Dict{String, Any}()) |> shrinkdict
     unavailable_plugins = setdiff(plugins, [p.name for p in PLUGINS])
-    if length(unavailable_plugins) > 0
+    # TODO: Replace `jl_generating_output` with `Base.generating_output` once min Julia >= 1.11
+    if length(unavailable_plugins) > 0 && ccall(:jl_generating_output, Cint, ()) == 0
         @warn string("The ", join(unavailable_plugins, ", ", ", and "),
                      " plugin", if length(unavailable_plugins) == 1
                          " is" else "s are" end,

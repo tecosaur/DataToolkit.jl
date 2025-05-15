@@ -4,7 +4,6 @@ authors = ["TEC <tec@tecosaur.com> and contributors"]
 version = "0.10.0"
 
 [deps]
-Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Preferences = "21216c6a-2e73-6563-6e65-726566657250"
@@ -20,11 +19,14 @@ AbstractTreesExt = "AbstractTrees"
 MetaGraphsNextExt = "MetaGraphsNext"
 
 [compat]
-AbstractTrees = "0.2, 0.3, 0.4"
-Compat = "3.29, 4"
+AbstractTrees = "0.2 - 0.4"
+Dates = "1.9"
 MetaGraphsNext = "0.5, 0.6"
 PrecompileTools = "1"
 Preferences = "1.2"
+TOML = "1"
+Test = "1"
+UUIDs = "1.9"
 julia = "1.9"
 
 [extras]

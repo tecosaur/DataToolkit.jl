@@ -17,7 +17,8 @@ DataToolkitCore = "~0.10"
 DataToolkitCommon = "~0.10"
 DataToolkitREPL = "~0.10"
 DataToolkitStore = "~0.10"
-PrecompileTools = "1.1.2"
+PrecompileTools = "1.2"
+Test = "1"
 julia = "1"
 
 [extras]
