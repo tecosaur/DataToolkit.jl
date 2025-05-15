@@ -386,7 +386,7 @@ function Base.write(dataset::DataSet, @nospecialize(info::Any))
 end
 
 """
-    save(writer::Datasaveer{driver}, destination::Any, information::Any)
+    save(writer::DataWriter{driver}, destination::Any, information::Any)
 
 Using a certain `writer`, save the `information` to the `destination`.
 
