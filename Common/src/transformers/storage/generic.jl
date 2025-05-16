@@ -2,40 +2,25 @@
 # We implement `getstorage` / `putstorage` instead of `storage` to allow
 # for specialised implementations of one method but not the other.
 
-function getstorage(storage::S, ::Type{IO}) where {S <: DataStorage}
-    if hasmethod(getstorage, Tuple{S, FilePath})
-        path = getstorage(storage, FilePath)
-        isnothing(path) && return
-        !isfile(path) && return
-        open(path, "r")
-    end
+function storage(store::S, ::Type{IO}; write = false) where {S <: DataStorage}
+    path = storage(store, FilePath; write)
+    isnothing(path) && return
+    !isfile(string(path)) && return
+    open(string(path); write)
 end
 
-function getstorage(storage::S, ::Type{Vector{UInt8}}) where {S <: DataStorage}
-    if hasmethod(getstorage, Tuple{S, IO})
-        io = getstorage(storage, IO)
-        isnothing(io) && return
-        read(io)
-    end
+function getstorage(store::S, ::Type{Vector{UInt8}}) where {S <: DataStorage}
+    io = storage(store, IO; write = false)
+    isnothing(io) && return
+    read(io)
 end
 
-function getstorage(storage::S, ::Type{String}) where {S <: DataStorage}
-    if hasmethod(getstorage, Tuple{S, IO})
-        io = getstorage(storage, IO)
-        isnothing(io) && return
-        read(io, String)
-    end
-end
-
-# We can't really return a `String` or `Vector{UInt8}` that can be
-# effectively written to, so we'll just do the `IO` fallback.
-
-function putstorage(storage::S, ::Type{IO}) where {S <: DataStorage}
-    if hasmethod(getstorage, Tuple{S, FilePath})
-        path = getstorage(storage, FilePath)
-        isnothing(path) && return
-        open(path, "w")
-    end
+function getstorage(store::S, ::Type{String}) where {S <: DataStorage}
+    io = storage(store, IO; write = false)
+    !isnothing(io) && return read(io, String)
+    bytes = storage(store, Vector{UInt8}; write = false)
+    !isnothing(bytes) && return String(copy(bytes))
+    nothing
 end
 
 # For handling saving to a file robustly
