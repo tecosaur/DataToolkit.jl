@@ -303,10 +303,10 @@ This executes the following component of the overall data flow:
 Storage ◀────▶ Data
 ```
 """
-function storage(storer::DataStorage, @nospecialize(as::Type); write::Bool=false)
-    if write
+function storage(storer::S, @nospecialize(as::Type); write::Bool=false) where {S <: DataStorage}
+    if write && hasmethod(putstorage, Tuple{S, Type{as}})
         putstorage(storer, as)
-    else
+    elseif hasmethod(getstorage, Tuple{S, Type{as}})
         getstorage(storer, as)
     end
 end
@@ -323,7 +323,7 @@ Storage ─────▶ Data
 
 See also: [`storage`](@ref), [`putstorage`](@ref).
 """
-getstorage(::DataStorage, ::Any) = nothing
+function getstorage end
 
 """
     putstorage(storer::DataStorage, as::Type)
@@ -337,7 +337,7 @@ Storage ◀───── Data
 
 See also: [`storage`](@ref), [`getstorage`](@ref).
 """
-putstorage(::DataStorage, ::Any) = nothing
+function putstorage end
 
 """
     write(dataset::DataSet, info::Any)
