@@ -1,0 +1,12 @@
+#+title: REPL Commands
+
+#+begin_src @datarepl
+?store
+#+end_src
+
+#+begin_src @datareplhelp
+store config
+store expunge
+store gc
+store stats
+#+end_src

@@ -1,0 +1,63 @@
+#+title: Commands
+
+All of the relevant help for the REPL can be accessed from inside the REPL. They
+are repeated here verbatim.
+
+#+begin_src @datarepl
+help
+#+end_src
+
+#+begin_src @datareplhelp
+add
+check
+#+end_src
+
+#+begin_src @datarepl
+?config
+#+end_src
+
+#+begin_src @datareplhelp
+config get
+config set
+config unset
+#+end_src
+
+#+begin_src @datareplhelp
+edit
+init
+list
+make
+#+end_src
+
+#+begin_src @datarepl
+?plugin
+#+end_src
+
+#+begin_src @datareplhelp
+plugin add
+plugin remove
+plugin edit
+plugin info
+plugin list
+#+end_src
+
+#+begin_src @datareplhelp
+remove
+search
+show
+#+end_src
+
+#+begin_src @datarepl
+?stack
+#+end_src
+
+#+begin_src @datareplhelp
+stack promote
+stack demote
+stack load
+stack remove
+#+end_src
+
+#+begin_src @datareplhelp
+help
+#+end_src

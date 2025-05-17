@@ -1,0 +1,77 @@
+#+title: The Inventory
+
+The store needs a way of keeping track of which data sources are actively being
+used, and which are orphaned. To do this, we need to keep track of two things:
+1. The data sources being stored
+2. The data collections using those data sources
+
+Essentially we need a "stock list" for our data sources, or a "data inventory",
+and this is what the =Inventory.toml= file functions as.
+
+* Format of the Inventory file
+The inventory file needs to contain three categories of information:
++ Configuration (e.g. how long data should "expire" after): =config=
++ Known data collections: =collections=
++ Stored entries: =store= and =cache=
+
+Configuration is stored in a simple TOML table, and currently recognises the
+following attributes:
++ =auto_gc=
++ =max_age=
++ =max_size=
++ =recency_beta=
++ =store_dir=
++ =cache_dir=
+
+Known collections are also stored in a TOML table, using the collection UUIDs as
+keys. The name, collection source path, and a timestamp of the last access are
+recorded under the keys =name=, =path=, and =seen= respectively.
+
+Entries of the inventory are recorded in two arrays of tables: =store= and =cache=.
+These tables share three common attributes:
++ =recipie=, a (fairly stable) hash of the inputs and parameters that lead to the
+  object being stored
++ =accessed=, a time stamp of the last access time
++ =references=, a list of collections that reference the object, by UUID
+
+The =store= tables extend the common trio with an optional =checksum= attribute, as
+well as an optional file =extension= attribute.
+
+The =cache= tables extend the common trio with a list of the =types= involved,
+=typehashes= of their structure, and =packages= involved.
+
+* Example Inventory file
+
+#+begin_src toml
+inventory_version = 1
+
+[config]
+max_age = 30
+# ...
+
+[collections.d0c50be9-f198-43c6-9411-63aaecb83ed0]
+name = "known-collection"
+path = "/absolute/path/to/Data.toml"
+seen = 2023-08-12T17:34:56.816Z
+# ...
+
+[[store]]
+recipe = "15edb3448b1460c8"
+accessed = 2023-08-12T17:34:56.816Z
+references = ["d0c50be9-f198-43c6-9411-63aaecb83ed0"]
+checksum = "k12:d8e04889edd692e1f36dfac9cc7e73b0"
+extension = "csv"
+# ...
+
+[[cache]]
+recipe = "e41acbb05ac155d1"
+accessed = 2024-06-04T19:35:57.074Z
+references = ["d0c50be9-f198-43c6-9411-63aaecb83ed0"]
+types = ["Array{Any,2}", "InlineStrings.String15"]
+typehashes = ["5420e006bc4fe707", "ad994c6b8c7e2324"]
+
+    [[cache.packages]]
+    name = "InlineStrings"
+    uuid = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
+# ...
+#+end_src

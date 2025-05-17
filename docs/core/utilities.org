@@ -1,0 +1,10 @@
+#+title: Utilities
+
+#+begin_src @docs
+SystemPath
+FilePath
+DirPath
+@log_do
+@getparam
+atomic_write
+#+end_src

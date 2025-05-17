@@ -1,0 +1,53 @@
+#+title: [[file:Main/docs/src/assets/logotype.svg]]
+#+author: tecosaur
+
+#+html: <a href="https://tecosaur.github.io/DataToolkit.jl/main/"><img src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
+
+DataToolkit is a batteries-included family of packages for robustly managing
+data. The particular package(s) you want to use will depend on the project.
+
++ Use [[https://tecosaur.github.io/DataToolkit.jl/main/][DataToolkit]] for analysis projects and scripts
++ Use [[https://tecosaur.github.io/DataToolkit.jl/base/][DataToolkitBase]] when making a package that needs data
+  - Optionally, use [[https://github.com/tecosaur/DataToolkitDocumenter.jl][DataToolkitDocumenter]] too to document the datasets
++ Use [[https://tecosaur.github.io/DataToolkit.jl/core/][DataToolkitCore]] when making a package extending DataToolkit, and possibly
+  [[https://tecosaur.github.io/DataToolkit.jl/store/][DataToolkitStore]] too.
+
+For now, this set of packages around the beta stage of development. No major
+changes to the core functionality or structure are anticipated, but small
+expansions in the data-CLI functionality and set of transformers and plugins
+provided by /DataToolkitCommon/ are expected prior to the 1.0 release, and larger
+changes may occur if there is good reason for them.
+
+-----
+
+#+begin_src toml
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+    args.header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+    args.skipto = 2
+#+end_src
+
+** Similar Packages
+
++ [[https://github.com/oxinabox/DataDeps.jl][DataDeps.jl]] :: Downloading files on-demand. Essentially implements the =web=
+  storage driver along with some of the machinery.
++ [[https://github.com/JuliaComputing/DataSets.jl][DataSets.jl]] :: An alternate take on declarative data representation. Focused
+  on filling a gap with JuliaHub's cloud compute offering; less versatile
+  overall.
++ [[https://github.com/helgee/RemoteFiles.jl][RemoteFiles.jl]] :: Automatically re-downloading files on a schedule. Equivalent
+  to the =web= storage driver when using the =lifetime= parameter of the =store=
+  plugin.
+
+** Relevant Links
+
++ [[https://discourse.julialang.org/t/ann-datatoolkit-jl-reproducible-flexible-and-convenient-data-management/104757][Announcement thread on Discourse]]
++ JuliaCon 2023 [[https://pretalx.com/media/juliacon2023/submissions/9BTTRL/resources/presentation_0F8lVWc.pdf][slides]] and [[https://www.youtube.com/watch?v=Ytz3JPgvOnE][recording]]
