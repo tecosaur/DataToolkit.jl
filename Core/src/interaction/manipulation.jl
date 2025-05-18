@@ -79,13 +79,13 @@ function stack_remove!(ident::Union{Int, String, UUID, DataCollection}; quiet::B
 end
 
 # ------------------
-# Plugins
+# Collection fiddling
 # ------------------
 
 function collection_reinit!(collection::DataCollection,
                            spec::Dict{String, Any} = convert(Dict, collection);
                            plugins::Vector{String} = collection.plugins)
-    if collection.plugins !== plugins
+    if collection.plugins !== plugins && collection.plugins != plugins
         empty!(collection.plugins)
         append!(collection.plugins, plugins)
         empty!(collection.advise.advisors)
@@ -142,6 +142,25 @@ function collection_reinit!(collection::DataCollection,
 end
 
 """
+    refresh!(collection::DataCollection)
+
+Reload `collection` if its source file has changed.
+"""
+function refresh!(collection::DataCollection)
+    isnothing(collection.source) && return
+    pathmtime = mtime(collection.source.path)
+    pathmtime == collection.source.mtime && return
+    spec = open(TOML.parse, collection.source.path)
+    collection.source =
+        (path = collection.source.path, mtime = pathmtime)
+    collection_reinit!(collection, spec; plugins = get(spec, "plugins", String[]))
+end
+
+# ------------------
+# Plugins
+# ------------------
+
+"""
     plugin_add!([collection::DataCollection=first(STACK)], plugins::Vector{<:AbstractString};
                quiet::Bool=false)
 
@@ -157,6 +176,7 @@ Unless `quiet` is a set an informative message is printed.
 """
 function plugin_add!(collection::DataCollection, plugins::Vector{<:AbstractString};
                     quiet::Bool=false)
+    refresh!(collection)
     new_plugins = setdiff(plugins, collection.plugins)
     if isempty(new_plugins)
         if !quiet
@@ -206,6 +226,7 @@ Unless `quiet` is a set an informative message is printed.
 """
 function plugin_remove!(collection::DataCollection, plugins::Vector{<:AbstractString};
                         quiet::Bool=false)
+    refresh!(collection)
     rem_plugins = intersect(plugins, collection.plugins)
     if isempty(rem_plugins)
         if !quiet
@@ -298,6 +319,7 @@ When no value is set, `nothing` is returned instead and if `quiet` is unset
 "unset" is printed.
 """
 function config_get(collection::DataCollection, propertypath::Vector{String}; quiet::Bool=false)
+    refresh!(collection)
     config = collection.parameters
     for segment in propertypath
         config isa AbstractDict || (config = newdict(String, Nothing, 0);)
@@ -329,6 +351,7 @@ Unless `quiet` is set, a success message is printed.
 """
 function config_set!(collection::DataCollection, propertypath::Vector{String}, value::Any;
                      quiet::Bool=false)
+    refresh!(collection)
     # It may seem like an unnecessary layer of indirection to set
     # the configuration via a Dict conversion of `collection`,
     # however this way any plugin-processing of the configuration
@@ -371,6 +394,7 @@ Unless `quiet` is set, a success message is printed.
 """
 function config_unset!(collection::DataCollection, propertypath::Vector{String};
                        quiet::Bool=false)
+    refresh!(collection)
     # It may seem like an unnecessary layer of indirection to set
     # the configuration via a Dict conversion of `collection`,
     # however this way any plugin-processing of the configuration
@@ -413,6 +437,7 @@ end
 Remove `dataset` from its parent collection.
 """
 function Base.delete!(dataset::DataSet)
+    refresh!(dataset.collection)
     index = findfirst(d -> d.uuid == dataset.uuid, dataset.collection.datasets)
     isnothing(index) && throw(OrphanDataSet(dataset))
     deleteat!(dataset.collection.datasets, index)

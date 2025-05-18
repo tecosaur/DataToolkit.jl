@@ -66,6 +66,7 @@ function repl_make(input::AbstractString)
                             string(QualifiedType(sandbox.lasttype[]))) |> String
 
         collection = first(STACK)
+        refresh!(collection)
         dataset = sandbox_dataset(; collection, name, returntype, datavars,
                                 scriptfn=read(scriptfile, String))
 

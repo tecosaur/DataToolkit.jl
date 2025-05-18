@@ -22,6 +22,7 @@ function repl_lint(input::AbstractString)
         printstyled(" ! ", color=:yellow, bold=true)
         println("The data collection stack is empty")
     elseif all(isspace, input)
+        refresh!(first(STACK))
         dolint(first(STACK))
     else
         try
@@ -29,9 +30,19 @@ function repl_lint(input::AbstractString)
                 @something(tryparse(Int, input),
                            tryparse(UUID, input),
                            String(input)))
+            refresh!(collection)
             dolint(collection)
         catch
-            dolint(resolve(input))
+            dset = resolve(input)
+            mtime0 = dset.collection.source.mtime
+            refresh!(dset.collection)
+            mtime1 = if !isnothing(dset.collection.source)
+                dset.collection.source.mtime
+            end
+            if mtime0 != mtime1
+                dset = resolve(input)
+            end
+            dolint(dset)
         end
     end
 end

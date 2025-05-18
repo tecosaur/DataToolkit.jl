@@ -51,6 +51,7 @@ function add(input::AbstractString)
     end
     confirm_stack_first_writable() || return nothing
     collection = first(STACK)
+    refresh!(collection)
     name, rest = if isnothing(match(r"^(?:v|via|f|from)\b|^\s*$|^https?://", input)) &&
         !isfile(first(peelword(input)))
         peelword(input)

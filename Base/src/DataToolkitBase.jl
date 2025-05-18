@@ -18,7 +18,7 @@ Shorthand for loading a dataset in the default format,
 macro d_str(ident::String)
     quote
         ref = parse(Identifier, $ident)
-        ds = resolve(ref)
+        ds = dataset($ident)
         if isnothing(ref.type)
             read(ds)
         else

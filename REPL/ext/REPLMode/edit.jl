@@ -102,6 +102,7 @@ function repl_edit(input::AbstractString)
         println("The data collection $(dataset.name) belongs to is read-only")
         return
     end
+    refresh!(dataset.collection)
     dataspec = convert(Dict, dataset)
     tomlfile = tempname(cleanup=false) * ".toml"
     open(tomlfile, "w") do io

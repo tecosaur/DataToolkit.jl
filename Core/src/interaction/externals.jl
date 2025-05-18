@@ -60,10 +60,14 @@ end
 
 Return the data set identified by `identstr`, optionally specifying the `collection`
 the data set should be found in and any `parameters` that apply.
+
+When run interactively, any changes to the underlying data collection
+file will be reflected in the returned data set.
 """
-dataset(identstr::AbstractString) = resolve(identstr)
-dataset(identstr::AbstractString, parameters::Dict{String, Any}) =
+function dataset(identstr::AbstractString, parameters::Union{Dict{String, Any}, Nothing} = nothing)
+    isinteractive() && foreach(refresh!, STACK)
     resolve(identstr, parameters)
+end
 
 function dataset(identstr::AbstractString, kv::Pair{<:AbstractString, <:Any}, kvs::Pair{<:AbstractString, <:Any}...)
     parameters = newdict(String, Any, length(kvs) + 1)
@@ -75,11 +79,13 @@ function dataset(identstr::AbstractString, kv::Pair{<:AbstractString, <:Any}, kv
 end
 
 function dataset(collection::DataCollection, identstr::AbstractString)
+    isinteractive() && refresh!(collection)
     ident = @advise collection parse_ident(identstr)
     resolve(collection, ident)
 end
 
 function dataset(collection::DataCollection, identstr::AbstractString, parameters::Dict{String, Any})
+    isinteractive() && refresh!(collection)
     ident = @advise collection parse_ident(identstr)
     resolve(collection, Identifier(ident, parameters))
 end

@@ -9,6 +9,7 @@ function stack_list(::AbstractString; maxwidth::Int=displaysize(stdout)[2])
     table_rows = displaytable(
         ["#", "Name", "Datasets", "Writable", "Plugins"],
         map(enumerate(STACK)) do (i, collection)
+            refresh!(collection)
             [string(i), something(collection.name, ""),
              length(collection.datasets),
              ifelse(iswritable(collection), "yes", "no"),

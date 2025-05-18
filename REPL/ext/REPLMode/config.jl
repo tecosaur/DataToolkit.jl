@@ -84,6 +84,7 @@ function complete_config(sofar::AbstractString; collection::DataCollection=first
     if isempty(sofar) || last(sofar) == '.'
         push!(segments, "")
     end
+    refresh!(collection)
     config = collection.parameters
     for segment in segments[1:end-1]
         if haskey(config, segment)

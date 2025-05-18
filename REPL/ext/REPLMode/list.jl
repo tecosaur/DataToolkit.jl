@@ -19,6 +19,7 @@ function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(std
         else
             getlayer(collection_str)
         end
+        refresh!(collection)
         table_rows = displaytable(
             ["Dataset", "Description"],
             if isempty(collection.datasets)

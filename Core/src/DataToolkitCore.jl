@@ -27,7 +27,7 @@ export loadcollection!, getlayer, dataset, tryresolve, resolve, refine,
 # Creation functions
 export create, create!, dataset!, storage!, loader!, writer!
 # Manipulation functions
-export stack_index, stack_move, stack_remove!,
+export stack_index, stack_move, stack_remove!, refresh!,
     plugin_add!, plugin_remove!, plugin_info, plugin_list,
     config_get, config_set!, config_unset!
 # Package loading

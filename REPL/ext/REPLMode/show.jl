@@ -12,7 +12,10 @@ function repl_show(input::AbstractString)
         println("Specify a DataSet shown")
         return
     end
-    dataset = try resolve(input) catch err
+    foreach(refresh!, STACK)
+    dataset = try
+        resolve(input)
+    catch err
         printstyled(" ! ", color=:red, bold=true)
         println("Could not resolve identifier: $input")
         if err isa IdentifierException

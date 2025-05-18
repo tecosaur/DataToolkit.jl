@@ -19,6 +19,7 @@ function search(input::AbstractString)
             searchstack = [getlayer(if !isempty(collection) collection end)]
         end
         for collection in STACK
+            refresh!(collection)
             for dataset in collection.datasets
                 identstr = @advise collection string(Identifier(dataset))
                 identstr = replace(identstr, collection.name * ':' => "", count=1)
