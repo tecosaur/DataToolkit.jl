@@ -243,7 +243,7 @@ AdviceAmalgamation(plugins::Vector{String})
 AdviceAmalgamation(collection::DataCollection)
 ```
 """
-mutable struct AdviceAmalgamation
+struct AdviceAmalgamation
     advisors::Vector{Advice}
     plugins_wanted::Vector{String}
     plugins_used::Vector{String}

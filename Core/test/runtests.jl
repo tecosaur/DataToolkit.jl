@@ -4,7 +4,7 @@ using Test
 import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
     stack_index, plugin_add!, plugin_list, plugin_remove!, config_get,
-    config_set!, config_unset!, reinit, DATASET_REFERENCE_WRAPPER
+    config_set!, config_unset!, reinit!, DATASET_REFERENCE_WRAPPER
 
 @testset "Utils" begin
     @testset "Doctests" begin

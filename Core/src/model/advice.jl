@@ -56,7 +56,7 @@ Base.empty(::Type{AdviceAmalgamation}) =
     AdviceAmalgamation(Advice[], String[], String[])
 
 """
-    reinit(dta::AdviceAmalgamation)
+    reinit!(dta::AdviceAmalgamation)
 
 Check that `dta` is well initialised before using it.
 
@@ -65,7 +65,7 @@ This does noting if `dta.plugins_wanted` is the same as `dta.plugins_used`.
 When they differ, it re-builds the advisors function list based
 on the currently available plugins, and updates `dta.plugins_used`.
 """
-function reinit(dta::AdviceAmalgamation)
+function reinit!(dta::AdviceAmalgamation)
     if dta.plugins_wanted != dta.plugins_used
         plugins_available =
             filter(plugin -> plugin.name in dta.plugins_wanted, PLUGINS)
@@ -75,8 +75,11 @@ function reinit(dta::AdviceAmalgamation)
                 append!(advisors, plg.advisors)
             end
             sort!(advisors, by = t -> t.priority)
-            dta.advisors = advisors
-            dta.plugins_used = map(p -> p.name, plugins_available)
+            empty!(dta.advisors)
+            append!(dta.advisors, advisors)
+            plugins_used = map(p -> p.name, plugins_available)
+            empty!(dta.plugins_used)
+            append!(dta.plugins_used, plugins_used)
         end
     end
     dta
@@ -98,7 +101,7 @@ end
 
 function (dta::AdviceAmalgamation)(annotated_func_call::Tuple{Function, Function, Tuple, NamedTuple})
     @nospecialize
-    reinit(dta)
+    reinit!(dta)
     for adv in dta.advisors
         annotated_func_call = adv(annotated_func_call)
     end
@@ -107,7 +110,7 @@ end
 
 function (dta::AdviceAmalgamation)(func::Function, args...; kwargs...)
     @nospecialize
-    reinit(dta)
+    reinit!(dta)
     post::Function, func2::Function, args2::Tuple, kwargs2::NamedTuple =
         dta((identity, func, args, merge(NamedTuple(), kwargs)))
     invokepkglatest(func2, args2...; kwargs2...) |> post

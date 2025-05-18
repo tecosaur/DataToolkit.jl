@@ -92,7 +92,7 @@ function collection_reinit!(collection::DataCollection,
         empty!(collection.advise.plugins_wanted)
         append!(collection.advise.plugins_wanted, plugins)
         empty!(collection.advise.plugins_used)
-        reinit(collection.advise)
+        reinit!(collection.advise)
     end
     empty!(collection.parameters)
     for (k, v) in get(spec, "config", Dict{String, Any}())::Dict{String, Any}
