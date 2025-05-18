@@ -19,7 +19,7 @@ function plugin_add(input::AbstractString)
             return nothing
         end
     end
-    DataToolkitCore.plugin_add(plugins)
+    DataToolkitCore.plugin_add!(plugins)
     nothing
 end
 
@@ -32,7 +32,7 @@ Parse and call the repl-format plugin removal command `input`.
 function plugin_remove(input::AbstractString)
     confirm_stack_first_writable() || return nothing
     plugins = split(input, r", *| +")
-    DataToolkitCore.plugin_remove(plugins)
+    DataToolkitCore.plugin_remove!(plugins)
     nothing
 end
 
@@ -146,10 +146,10 @@ complete_plugin_all(sofar::AbstractString) =
 const PLUGIN_SUBCOMMANDS = ReplCmd[
     ReplCmd(
         "add", "Add plugins to the first data collection",
-        plugin_add, complete_plugin_unused),
+        plugin_add!, complete_plugin_unused),
     ReplCmd(
         "remove", "Remove plugins from the first data collection",
-        plugin_remove, complete_plugin_used),
+        plugin_remove!, complete_plugin_used),
     ReplCmd(
         "edit", "Edit the plugins used by the first data collection",
         plugin_edit),

@@ -3,8 +3,8 @@ using Test
 
 import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
-    stack_index, plugin_add, plugin_list, plugin_remove, config_get,
-    config_set, config_unset, reinit, DATASET_REFERENCE_WRAPPER
+    stack_index, plugin_add!, plugin_list, plugin_remove!, config_get,
+    config_set!, config_unset!, reinit, DATASET_REFERENCE_WRAPPER
 
 @testset "Utils" begin
     @testset "Doctests" begin
@@ -114,10 +114,10 @@ end
         @test amlg.advisors == [sumx2, sump1]
         @test amlg.plugins_wanted == [plg.name]
         @test amlg.plugins_used == [plg.name]
-        @test reinit(AdviceAmalgamation(amlg)).advisors == amlg.advisors
+        @test reinit!(AdviceAmalgamation(amlg)).advisors == amlg.advisors
         let cltn = DataCollection()
             push!(cltn.plugins, plg.name)
-            @test reinit(AdviceAmalgamation(cltn)).advisors == amlg.advisors
+            @test reinit!(AdviceAmalgamation(cltn)).advisors == amlg.advisors
         end
         # Display
         @test sprint(show, amlg) == "AdviceAmalgamation($(plg.name) ✔)"
@@ -442,18 +442,18 @@ end
     @testset "Manipulation" begin
         @test stack_index(collection.uuid) == stack_index(collection.name) == stack_index(1)
         @test stack_index(2) === nothing
-        @test plugin_add(["test"]).plugins == ["test"]
-        @test plugin_add(["test2"]).plugins == ["test", "test2"]
+        @test plugin_add!(["test"]).plugins == ["test"]
+        @test plugin_add!(["test2"]).plugins == ["test", "test2"]
         @test plugin_list() == ["test", "test2"]
-        @test plugin_remove(["test"]).plugins == ["test2"]
-        @test plugin_remove(["test2"]).plugins == String[]
+        @test plugin_remove!(["test"]).plugins == ["test2"]
+        @test plugin_remove!(["test2"]).plugins == String[]
         @test config_get(collection, ["setting"]) == 123
         @test config_get(collection, ["setting", "none"]) ===nothing
         @test config_get(collection, ["nested", "value"]) == 4
         @test config_get(collection, ["nested", "nope"]) ===nothing
-        @test config_set(["some", "nested", "val"], 5).parameters["some"] ==
+        @test config_set!(["some", "nested", "val"], 5).parameters["some"] ==
             Dict{String, Any}("nested" => Dict{String, Any}("val" => 5))
         @test config_get(["some", "nested", "val"]) == 5
-        @test get(config_unset(collection, ["some"]), "some") === nothing
+        @test get(config_unset!(collection, ["some"]), "some") === nothing
     end
 end

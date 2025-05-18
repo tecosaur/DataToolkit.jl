@@ -22,3 +22,26 @@ using DataToolkitStore: DataToolkitStore, MonitoredFile, InventoryConfig,
     @test checksum(:crc32c, "DataToolkitStore") ==
         Checksum(:crc32c, UInt8[0xea, 0xbc, 0x8a, 0x08])
 end
+
+@testset "Merkle trees" begin
+    serialised_sample_mtree = """
+    d 101t3scp5ey9w alg:1234 some/dir
+      f 101t3scouw0l3 alg:2345 file
+      f 101t3scoizz9p alg:4567 other
+      d 101t3sco1ppsw alg:5678 subdir
+        f 101t3scmmw8mh alg:6789 file
+        f 101t3scmjk9mt alg:7890 other
+      d 101t3t7a8rqzc alg:8901 another
+        d 101t3t8udhoyc alg:9012 nested
+          f 101t3t7atpdsv alg:0123 lone
+    """
+    sample_mtree = MerkleTree("some/dir", 1.718190355243043e9, Checksum(:alg, UInt8[0x12, 0x34]), MerkleTree[
+        MerkleTree("file", 1.718190351027891e9, Checksum(:alg, UInt8[0x23, 0x45]), nothing),
+        MerkleTree("other", 1.718190346266559e9, Checksum(:alg, UInt8[0x45, 0x67]), nothing),
+        MerkleTree("subdir", 1.718190339344719e9, Checksum(:alg, UInt8[0x56, 0x78]), MerkleTree[
+            MerkleTree("file", 1.718190318994242e9, Checksum(:alg, UInt8[0x67, 0x89]), nothing),
+            MerkleTree("other", 1.718190317659715e9, Checksum(:alg, UInt8[0x78, 0x90]), nothing)]),
+        MerkleTree("another", 1.718206228888754e9, Checksum(:alg, UInt8[0x89, 0x01]), MerkleTree[
+            MerkleTree("nested", 1.718207038089696e9, Checksum(:alg, UInt8[0x90, 0x12]), MerkleTree[
+                MerkleTree("lone", 1.718206237271919e9, Checksum(:alg, UInt8[0x01, 0x23]), nothing)])])])
+end

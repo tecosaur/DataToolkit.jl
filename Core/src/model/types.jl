@@ -383,16 +383,16 @@ advise::AdviceAmalgamation
 mod::Module
 ```
 """
-struct DataCollection
+mutable struct DataCollection
     version::Int
     name::Union{String, Nothing}
-    uuid::UUID
-    plugins::Vector{String}
-    parameters::Dict{String, Any}
-    datasets::Vector{_IndirectDataSet{DataCollection}}
-    path::Union{String, Nothing}
-    advise::AdviceAmalgamation
-    mod::Module
+    const uuid::UUID
+    const plugins::Vector{String}
+    const parameters::Dict{String, Any}
+    const datasets::Vector{_IndirectDataSet{DataCollection}}
+    const path::Union{String, Nothing}
+    const advise::AdviceAmalgamation
+    const mod::Module
 end
 
 

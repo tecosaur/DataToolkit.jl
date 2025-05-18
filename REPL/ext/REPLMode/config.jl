@@ -50,7 +50,7 @@ function config_set(input::AbstractString)
             rest = string('"', rest, '"')
         end
         value = TOML.parse(string("value = ", rest))
-        DataToolkitCore.config_set(segments, value["value"])
+        DataToolkitCore.config_set!(segments, value["value"])
         nothing
     end
 end
@@ -65,7 +65,7 @@ function config_unset(input::AbstractString)
         printstyled(" ! ", color=:yellow, bold=true)
         println("Trailing garbage ignored in unset command: \"$rest\"")
     end
-    DataToolkitCore.config_unset(segments)
+    DataToolkitCore.config_unset!(segments)
     nothing
 end
 

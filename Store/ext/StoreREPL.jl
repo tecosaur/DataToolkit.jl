@@ -41,7 +41,7 @@ Part of `STORE_PLUGIN`.
 """
 function store_init_checksum_a(f::typeof(create), T::Type{DataCollection}, dc::DataCollection)
     function add_checksum_default(dc::DataCollection)
-        config_set(
+        config_set!(
             dc, ["defaults", "storage", "_", "checksum"], "auto";
             quiet = true)
     end
@@ -172,7 +172,7 @@ function repl_config_get(input::AbstractString)
     end
 end
 
-function repl_config_set(input::AbstractString)
+function repl_config_set!(input::AbstractString)
     inventory = if isempty(STACK)
         getinventory()
     else
@@ -335,7 +335,7 @@ const STORE_SUBCMDS =
                     ReplCmd("set",
                             MD(md"Set a configuration parameter",
                                STORE_GC_CONFIG_INFO),
-                            repl_config_set,
+                            repl_config_set!,
                             REPL_CONFIG_KEYS),
                     ReplCmd("reset",
                             MD(md"Set a configuration parameter",

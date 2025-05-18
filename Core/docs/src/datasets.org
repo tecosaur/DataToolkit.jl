@@ -45,13 +45,13 @@ getlayer
 stack_index
 stack_move
 stack_remove!
-plugin_add
-plugin_remove
+plugin_add!
+plugin_remove!
 plugin_info
 plugin_list
 config_get
-config_set
-config_unset
+config_set!
+config_unset!
 delete!
 replace!
 #+end_src

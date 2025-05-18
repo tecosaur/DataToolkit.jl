@@ -28,8 +28,8 @@ export loadcollection!, getlayer, dataset, tryresolve, resolve, refine,
 export create, create!, dataset!, storage!, loader!, writer!
 # Manipulation functions
 export stack_index, stack_move, stack_remove!,
-    plugin_add, plugin_remove, plugin_info, plugin_list,
-    config_get, config_set, config_unset
+    plugin_add!, plugin_remove!, plugin_info, plugin_list,
+    config_get, config_set!, config_unset!
 # Package loading
 export @require, @addpkg, addpkg, invokepkglatest
 # Linting
