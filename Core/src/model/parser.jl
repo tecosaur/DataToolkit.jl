@@ -228,7 +228,7 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                      " prior to DataCollections.")
     end
     collection = DataCollection(version, name, uuid, plugins,
-                                parameters, DataSet[], path,
+                                parameters, DataSet[], if !isnothing(path); (; path, mtime=mtime(path)) end,
                                 AdviceAmalgamation(plugins),
                                 mod)
     # Construct the data sets

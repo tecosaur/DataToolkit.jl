@@ -14,16 +14,16 @@ the directory of the collection file, the two exceptions being:
   and a warning emitted (once only per collection).
 """
 function dirof(collection::DataCollection)
-    if isnothing(collection.path)
+    if isnothing(collection.source)
         if collection.uuid ∉ COLLECTION_CWD_WARNED
             push!(COLLECTION_CWD_WARNED, collection.uuid)
             @warn "Collection $(sprint(show, collection.name)) ($(collection.uuid)) \
                    does not have a path, using the current working directory ($(pwd()))"
         end
         pwd()
-    elseif collection.path |> dirname |> basename == "Data.d"
-        collection.path |> dirname |> dirname
+    elseif collection.source.path |> dirname |> basename == "Data.d"
+        collection.source.path |> dirname |> dirname
     else
-        collection.path |> dirname
+        collection.source.path |> dirname
     end
 end

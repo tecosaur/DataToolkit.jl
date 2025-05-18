@@ -5,7 +5,7 @@ function DataCollection(name::Union{String, Nothing}, config::Dict{String, <:Any
                         plugins::Vector{String}=String[], mod::Module=Base.Main)
     collection = DataCollection(
         LATEST_DATA_CONFIG_VERSION, name, uuid, plugins,
-        toml_safe(config), DataSet[], path,
+        toml_safe(config), DataSet[], if !isnothing(path); (; path, mtime = mtime(path)) end,
         AdviceAmalgamation(plugins), mod)
     @advise identity(collection)
 end

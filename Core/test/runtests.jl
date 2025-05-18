@@ -383,7 +383,7 @@ end
         @test collection.parameters ==
             Dict{String, Any}("setting" => 123, "nested" => Dict{String, Any}("value" => 4))
         @test collection.plugins == String[]
-        @test collection.path === nothing
+        @test collection.source === nothing
         @test collection.mod == Main
         @test length(collection.datasets) == 1
     end

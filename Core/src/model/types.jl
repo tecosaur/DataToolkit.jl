@@ -390,7 +390,7 @@ mutable struct DataCollection
     const plugins::Vector{String}
     const parameters::Dict{String, Any}
     const datasets::Vector{_IndirectDataSet{DataCollection}}
-    const path::Union{String, Nothing}
+    source::Union{@NamedTuple{path::String, mtime::Float64}, Nothing}
     const advise::AdviceAmalgamation
     const mod::Module
 end

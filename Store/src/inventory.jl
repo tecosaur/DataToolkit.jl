@@ -106,12 +106,12 @@ function getinventory(collection::DataCollection)
     storepathabs = if isnothing(storepath)
         USER_STORE
     else
-        cdir = if isnothing(collection.path)
+        cdir = if isnothing(collection.source)
             pwd()
-        elseif  collection.path |> dirname |> basename == "Data.d"
-            collection.path |> dirname |> dirname
+        elseif  collection.source.path |> dirname |> basename == "Data.d"
+            collection.source.path |> dirname |> dirname
         else
-            collection.path |> dirname
+            collection.source.path |> dirname
         end
         joinpath(cdir, storepath)
     end

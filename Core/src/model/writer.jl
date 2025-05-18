@@ -4,17 +4,17 @@
 Check whether the data collection `dc` is backed by a writable file.
 """
 function Base.iswritable(dc::DataCollection)
-    !isnothing(dc.path) || return false
+    !isnothing(dc.source) || return false
     get(dc, "locked", false) !== true || return false
     @static if VERSION >= v"1.11"
-        if isfile(dc.path)
-            iswritable(dc.path)
+        if isfile(dc.source.path)
+            iswritable(dc.source.path)
         else
-            iswritable(dirname(dc.path))
+            iswritable(dirname(dc.source.path))
         end
     else
         try # why is this such a hassle?
-            open(io -> iswritable(io), dc.path, "a")
+            open(io -> iswritable(io), dc.source.path, "a")
         catch e
             if e isa SystemError
                 false
@@ -174,13 +174,15 @@ end
 
 function Base.write(dc::DataCollection)
     if !iswritable(dc)
-        if !isnothing(dc.path)
+        if !isnothing(dc.source.path)
             throw(ArgumentError("No collection writer is provided, so an IO argument must be given."))
         else
             throw(ReadonlyCollection(dc))
         end
     end
-    atomic_write(dc.path, dc)
+    nb = atomic_write(dc.source.path, dc)
+    dc.source = (; path = dc.source.path, mtime = mtime(dc.source.path))
+    nb
 end
 
 Base.write(ds::DataSet) = write(ds.collection)

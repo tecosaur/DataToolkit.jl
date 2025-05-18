@@ -285,7 +285,7 @@ function sandbox_dataset(; collection::DataCollection=first(STACK),
         loader.parameters["function"] = scriptfn
     else
         loader.parameters["path"] = savefile
-        fullpath = abspath(dirname(collection.path),
+        fullpath = abspath(dirname(collection.source.path),
                            expanduser(get(loader, "pathroot", "")),
                            expanduser(savefile))
         open(fullpath, "w") do io
