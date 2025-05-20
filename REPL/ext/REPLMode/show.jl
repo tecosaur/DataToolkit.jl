@@ -31,11 +31,12 @@ function repl_show(input::AbstractString)
     if dataset isa DataSet
         print("  UUID:    ")
         printstyled(dataset.uuid, '\n', color=:light_magenta)
-        if !isempty(dataset.parameters)
+        if !isempty(dataset.parameters) && !(length(dataset.parameters) == 1 && first(keys(dataset.parameters)) == "description")
             println("  Parameters:")
             pkeys = collect(keys(dataset.parameters))
             pkeypad = maximum(textwidth, pkeys)
             for key in sort(pkeys, by=natkeygen)
+                key == "description" && continue
                 print("    ", lpad(key, pkeypad), ' ')
                 printstyled(dataset.parameters[key], '\n', color=:light_cyan)
             end
