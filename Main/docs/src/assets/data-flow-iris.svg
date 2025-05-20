@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="101.36579mm"
+   height="27.265333mm"
+   viewBox="0 0 101.36579 27.265334"
+   version="1.1"
+   id="svg618"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25)"
+   sodipodi:docname="data-flow-iris.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview620"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="2.2173472"
+     inkscape:cx="136.87527"
+     inkscape:cy="35.402665"
+     inkscape:window-width="1340"
+     inkscape:window-height="939"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs615">
+    <marker
+       style="overflow:visible"
+       id="RoundedArrow"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="RoundedArrow"
+       markerWidth="4.0653567"
+       markerHeight="3.9300001"
+       viewBox="0 0 6.1347524 5.9304951"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="m -0.21114562,-4.1055728 6.42229122,3.21114561 a 1,1 90 0 1 0,1.78885438 L -0.21114562,4.1055728 A 1.236068,1.236068 31.717474 0 1 -2,3 v -6 a 1.236068,1.236068 148.28253 0 1 1.78885438,-1.1055728 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path1367" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="RoundedArrow-3"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="RoundedArrow"
+       markerWidth="4.0653567"
+       markerHeight="3.9300001"
+       viewBox="0 0 6.1347524 5.9304951"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="m -0.21114562,-4.1055728 6.42229122,3.21114561 a 1,1 90 0 1 0,1.78885438 L -0.21114562,4.1055728 A 1.236068,1.236068 31.717474 0 1 -2,3 v -6 a 1.236068,1.236068 148.28253 0 1 1.78885438,-1.1055728 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path1367-2" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="RoundedArrow-3-7"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="RoundedArrow"
+       markerWidth="4.0653567"
+       markerHeight="3.9300001"
+       viewBox="0 0 6.1347524 5.9304951"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="m -0.21114562,-4.1055728 6.42229122,3.21114561 a 1,1 90 0 1 0,1.78885438 L -0.21114562,4.1055728 A 1.236068,1.236068 31.717474 0 1 -2,3 v -6 a 1.236068,1.236068 148.28253 0 1 1.78885438,-1.1055728 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path1367-2-4" />
+    </marker>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-34.867379,-114.08095)">
+    <rect
+       style="fill:#a5cdff;fill-opacity:1;fill-rule:evenodd;stroke:#d2e6ff;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181"
+       id="rect471-3"
+       width="20.406923"
+       height="6.1703539"
+       x="77.887901"
+       y="122.34808"
+       rx="2.7314286"
+       ry="2.7314286" />
+    <rect
+       style="fill:#d3bdda;fill-opacity:1;fill-rule:evenodd;stroke:#e9deed;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181"
+       id="rect471-3-6-1-0"
+       width="27.204494"
+       height="6.2114654"
+       x="108.85123"
+       y="127.3336"
+       rx="2.7314281"
+       ry="2.7314281" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#134f99;stroke-width:0.187799"
+       x="79.408516"
+       y="126.78866"
+       id="text355"><tspan
+         sodipodi:role="line"
+         id="tspan353"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#134f99;stroke-width:0.187799"
+         x="79.408516"
+         y="126.78866">Iris Data</tspan></text>
+    <rect
+       style="fill:#d2d2d2;fill-opacity:1;fill-rule:evenodd;stroke:#e9e9e9;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181;stroke-opacity:1"
+       id="rect471-3-9"
+       width="17.017267"
+       height="6.1703539"
+       x="35.044827"
+       y="122.38931"
+       rx="2.7314286"
+       ry="2.7314286" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#7a7a7a;fill-opacity:1;stroke-width:0.187799"
+       x="37.23629"
+       y="126.8299"
+       id="text355-3"><tspan
+         sodipodi:role="line"
+         id="tspan353-7"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#7a7a7a;fill-opacity:1;stroke-width:0.187799"
+         x="37.23629"
+         y="126.8299">server</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#754782;stroke-width:0.187799"
+       x="110.9737"
+       y="131.98529"
+       id="text409"><tspan
+         sodipodi:role="line"
+         id="tspan407"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#754782;stroke-width:0.187799"
+         x="110.9737"
+         y="131.98529">DataFrame</tspan></text>
+    <rect
+       style="fill:#d3bdda;fill-opacity:1;fill-rule:evenodd;stroke:#e9deed;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181"
+       id="rect471-3-6-1-0-45"
+       width="6.7847257"
+       height="4.4483633"
+       x="124.22594"
+       y="136.72047"
+       rx="2.7314281"
+       ry="2.2241817" />
+    <path
+       d="m 126.36528,139.28495 c 0.22086,0 0.32903,-0.1307 0.32903,-0.30648 v -0.0676 c 0,-0.17578 -0.10817,-0.30648 -0.32903,-0.30648 -0.22084,0 -0.32902,0.1307 -0.32902,0.30648 v 0.0676 c 0,0.17578 0.10818,0.30648 0.32902,0.30648 z m 1.24849,0 c 0.22086,0 0.32903,-0.1307 0.32903,-0.30648 v -0.0676 c 0,-0.17578 -0.10817,-0.30648 -0.32903,-0.30648 -0.22084,0 -0.32902,0.1307 -0.32902,0.30648 v 0.0676 c 0,0.17578 0.10818,0.30648 0.32902,0.30648 z m 1.25751,0 c 0.22086,0 0.32903,-0.1307 0.32903,-0.30648 v -0.0676 c 0,-0.17578 -0.10817,-0.30648 -0.32903,-0.30648 -0.22085,0 -0.32903,0.1307 -0.32903,0.30648 v 0.0676 c 0,0.17578 0.10818,0.30648 0.32903,0.30648 z"
+       id="text409-0"
+       style="font-weight:500;font-size:5.17668px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';fill:#754782;stroke-width:0.187799"
+       aria-label="…" />
+    <rect
+       style="fill:#d3bdda;fill-opacity:1;fill-rule:evenodd;stroke:#e9deed;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181"
+       id="rect471-3-6-1-0-4"
+       width="16.843746"
+       height="6.2114611"
+       x="117.61439"
+       y="117.89375"
+       rx="2.7314281"
+       ry="2.7314281" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#754782;stroke-width:0.187799"
+       x="119.73687"
+       y="122.54543"
+       id="text409-5"><tspan
+         sodipodi:role="line"
+         id="tspan407-2"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.50718px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#754782;stroke-width:0.187799"
+         x="119.73687"
+         y="122.54543">Matrix</tspan></text>
+    <path
+       style="fill:none;stroke:#4063d8;stroke-width:0.401032;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#RoundedArrow)"
+       d="m 53.186016,125.574 23.122966,1e-5"
+       id="path1533"
+       sodipodi:nodetypes="cc" />
+    <rect
+       style="fill:#d2e6ff;fill-opacity:1;fill-rule:evenodd;stroke:#79b5ff;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181"
+       id="rect471"
+       width="8.7989912"
+       height="4.6159034"
+       x="60.887085"
+       y="123.26605"
+       rx="0.46949789"
+       ry="0.46949789" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.00638px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#134f99;stroke-width:0.187799"
+       x="61.491291"
+       y="126.94874"
+       id="text193"><tspan
+         sodipodi:role="line"
+         id="tspan191"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.00638px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#134f99;stroke-width:0.187799"
+         x="61.491291"
+         y="126.94874">web</tspan></text>
+    <path
+       style="fill:none;stroke:#389826;stroke-width:0.401032;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#RoundedArrow-3)"
+       d="m 87.570852,120.99947 c 9.74032,-7.38686 18.368488,-8.69711 28.095538,-2.45616"
+       id="path1533-0"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#389826;stroke-width:0.401032;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#RoundedArrow-3-7)"
+       d="m 87.570852,121.07576 c 9.74032,-7.38686 19.554228,-4.05456 27.672058,4.06328"
+       id="path1533-0-4"
+       sodipodi:nodetypes="cc" />
+    <rect
+       style="fill:#d7eada;fill-opacity:1;fill-rule:evenodd;stroke:#88c190;stroke-width:0.354896;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:1.51181"
+       id="rect471-3-6"
+       width="7.5118303"
+       height="3.7687881"
+       x="95.605293"
+       y="114.2584"
+       rx="0.46949789"
+       ry="0.46949789" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.00639px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#225b2a;stroke-width:0.187799"
+       x="96.292313"
+       y="117.18446"
+       id="text413"><tspan
+         sodipodi:role="line"
+         id="tspan411"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.00639px;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#225b2a;stroke-width:0.187799"
+         x="96.292313"
+         y="117.18446">csv</tspan></text>
+  </g>
+</svg>

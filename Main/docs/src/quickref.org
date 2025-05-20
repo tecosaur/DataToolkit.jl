@@ -1,0 +1,100 @@
+#+title: Quick Reference Guide
+
+This gives the bare essentials, as the relevant Data REPL command (enter the
+Data REPL with =}=) and Julia function when sensible.
+
+* Data REPL help
+
+Look at the REPL =help= docs, accessible within the Data REPL.
+
+#+begin_src julia-repl
+(demo) data> help help
+#+end_src
+
+* Accessing a dataset
+** In the default form
+
+Using the Data REPL.
+
+#+begin_src julia-repl
+(demo) data> show <identifier>
+#+end_src
+
+Within a program.
+
+#+begin_src julia
+d"<identifier>"
+read(dataset("<identifier>"))
+#+end_src
+
+** As a particular type
+
+Either add =::<type>= to the identifier string, or if using =read= provide the type
+as the second argument, i.e.
+
+#+begin_src julia
+read(dataset("<identifier>"), TYPE)
+#+end_src
+
+* Creating a new dataset
+
+Using the Data REPL.
+
+#+begin_src julia-repl
+(demo) data> add <name> <source>
+#+end_src
+
+Within a program.
+
+#+begin_src julia
+DataToolkit.Base.add(DataSet, "<name>", Dict{String, Any}(), "<source>"; ...)
+#+end_src
+
+* Loading a data collection
+
+Using the Data REPL
+
+#+begin_src julia-repl
+(⋅) data> stack load <path>
+#+end_src
+
+Within a program.
+
+#+begin_src julia
+loadcollection!("<path>")
+#+end_src
+
+* Creating a data collection
+
+Using the Data REPL.
+
+#+begin_src julia-repl
+(⋅) data> init <name>
+#+end_src
+
+Within a program.
+
+#+begin_src julia
+DataToolkit.create!(DataCollection, "<name>", "<path>")
+#+end_src
+
+* Using a package within a =julia= loader script
+
+Use =@require SomePkg= instead of =import SomePkg= (and don't use =using=).
+
+* Registering a package for use with =@require=
+
+Call =DataToolkit.@addpkgs A B C...=, or to make all direct dependencies of the
+current module available: =DataToolkit.@addpkgs *=.
+
+* Using the Data REPL within code
+
+The ~cmd~ macro ~data`...`~ allows for Data REPL commands to be easily inserted
+within a program.
+
+This also makes it relatively simple to invoke Data REPL functions from the
+shell.
+
+#+begin_src shell
+~$ julia -e 'using DataToolkit; data`stuff...`'
+#+end_src
