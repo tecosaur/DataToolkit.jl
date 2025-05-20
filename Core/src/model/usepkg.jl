@@ -40,6 +40,7 @@ function get_package(from::Module, name::Symbol)
 end
 
 const PKG_ID = Base.PkgId(Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pkg")
+const REPL_ID = Base.PkgId(Base.UUID("3fa0cd96-eef1-5676-8a61-b3b8758bbffb"), "REPL")
 
 """
     try_install_pkg(pkg::Base.PkgId)
@@ -54,12 +55,15 @@ function try_install_pkg end
 
 @static if VERSION > v"1.11-alpha1"
     function try_install_pkg(pkg::Base.PkgId)
-        Pkg = try
+        REPL, Pkg = try
+            @something(get(Base.loaded_modules, REPL_ID, nothing),
+                       Base.require_stdlib(REPL_ID),
+                       Some(nothing)),
             @something(get(Base.loaded_modules, PKG_ID, nothing),
                        Base.require_stdlib(PKG_ID),
                        Some(nothing))
         catch _ end
-        isnothing(Pkg) && return false
+        any(isnothing, (REPL, Pkg)) && return false
         repl_ext = Base.get_extension(Pkg, :REPLExt)
         !isnothing(repl_ext) &&
             isdefined(repl_ext, :try_prompt_pkg_add) &&
