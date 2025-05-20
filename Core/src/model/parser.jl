@@ -216,7 +216,14 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
                     uuid4()
                 end)
     plugins::Vector{String} = get(spec, "plugins", String[])
-    parameters = get(spec, "config", Dict{String, Any}()) |> shrinkdict
+    parameters = if !haskey(spec, "config")
+        Dict{String, Any}()
+    elseif spec["config"] isa Dict{String, Any}
+        shrinkdict(spec["config"])
+    else
+        @warn "Invalid config for DataCollection, ignoring"
+        Dict{String, Any}()
+    end
     unavailable_plugins = setdiff(plugins, [p.name for p in PLUGINS])
     # TODO: Replace `jl_generating_output` with `Base.generating_output` once min Julia >= 1.11
     if length(unavailable_plugins) > 0 && ccall(:jl_generating_output, Cint, ()) == 0
