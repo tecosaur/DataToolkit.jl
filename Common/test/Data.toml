@@ -290,6 +290,30 @@ uuid = "66a5fc67-cee1-4481-b9f2-e750be2897ff"
     [[lighthouse-tiff.loader]]
     driver = "tiff"
 
+[[lighthouse-tiff-mmap]]
+uuid = "c7443fa2-8b9f-4a4c-821f-7815ba31716b"
+
+    [[lighthouse-tiff-mmap.storage]]
+    driver = "web"
+    checksum = "k12:56893a4e9f184ea70602710f34040467"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.tiff"
+
+    [[lighthouse-tiff-mmap.loader]]
+    driver = "tiff"
+    mmap = true
+
+[[lighthouse-tiff-lazyio]]
+uuid = "baee9117-a3ef-43af-885e-c73776498643"
+
+    [[lighthouse-tiff-lazyio.storage]]
+    driver = "web"
+    checksum = "k12:56893a4e9f184ea70602710f34040467"
+    url = "https://raw.githubusercontent.com/tecosaur/DataToolkitTestAssets/master/data/lighthouse.tiff"
+
+    [[lighthouse-tiff-lazyio.loader]]
+    driver = "tiff"
+    lazyio = true
+
 [[lighthouse-webp]]
 uuid = "62ef89d8-2d69-4ca1-a13b-d24e5e56995b"
 

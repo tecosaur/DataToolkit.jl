@@ -55,6 +55,8 @@ end
     end
     @testset "tiff" begin
         @test read(dataset("lighthouse-tiff"), AbstractMatrix) isa AbstractMatrix
+        @test read(dataset("lighthouse-tiff-mmap"), AbstractMatrix) isa AbstractMatrix
+        @test read(dataset("lighthouse-tiff-lazyio"), AbstractMatrix) isa AbstractMatrix
     end
     @testset "toml" begin
         @test sort([k => length(v) for (k, v) in read(dataset("sample-toml"))], by=first) ==
