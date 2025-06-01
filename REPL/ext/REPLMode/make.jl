@@ -71,7 +71,7 @@ function repl_make(input::AbstractString)
                                 scriptfn=read(scriptfile, String))
 
         push!(collection.datasets, dataset)
-        write(collection)
+        save!(collection)
         printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
     finally
         REPL.activate(previous_repl_module)

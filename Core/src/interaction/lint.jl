@@ -243,13 +243,13 @@ function lintfix(report::LintReport, manualfix::Bool=false)
         end
     end
     if !isempty(autofixed)
-        write(report.collection)
+        save!(report.collection)
     end
     # Manual fixes
     if !isempty(fixprompt) &&
         (isinteractive() || manualfix) &&
         hasmethod(linttryfix, Tuple{typeof(fixprompt)})
-        linttryfix(fixprompt) && write(report.collection)
+        linttryfix(fixprompt) && save!(report.collection)
     end
     nothing
 end

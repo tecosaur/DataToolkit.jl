@@ -195,7 +195,7 @@ function plugin_add!(collection::DataCollection, plugins::Vector{<:AbstractStrin
         spec["plugins"] = append!(get(spec, "plugins", String[]), new_plugins)
         sort!(spec["plugins"])
         collection_reinit!(collection, spec; plugins = spec["plugins"])
-        iswritable(collection) && write(collection)
+        iswritable(collection) && save!(collection)
         if !quiet
             printstyled(" +", color=:light_green, bold=true)
             print(" Added plugins: ")
@@ -245,7 +245,7 @@ function plugin_remove!(collection::DataCollection, plugins::Vector{<:AbstractSt
         spec["plugins"] = setdiff(get(spec, "plugins", String[]), rem_plugins)
         sort!(spec["plugins"])
         collection_reinit!(collection, spec; plugins = spec["plugins"])
-        iswritable(collection) && write(collection)
+        iswritable(collection) && save!(collection)
         if !quiet
             printstyled(" -", color=:light_red, bold=true)
             print(" Removed plugins: ")
@@ -368,7 +368,7 @@ function config_set!(collection::DataCollection, propertypath::Vector{String}, v
     window[propertypath[end]] = value
     spec["config"] = config
     collection_reinit!(collection, spec)
-    iswritable(collection) && write(collection)
+    iswritable(collection) && save!(collection)
     quiet || printstyled(" ✓ Set $(join(propertypath, '.'))\n", color=:green)
     collection
 end
@@ -411,7 +411,7 @@ function config_unset!(collection::DataCollection, propertypath::Vector{String};
     delete!(window, propertypath[end])
     spec["config"] = config
     collection_reinit!(collection, spec)
-    iswritable(collection) && write(collection)
+    iswritable(collection) && save!(collection)
     quiet || printstyled(" ✓ Unset $(join(propertypath, '.'))\n", color=:green)
     collection
 end
@@ -441,7 +441,7 @@ function Base.delete!(dataset::DataSet)
     index = findfirst(d -> d.uuid == dataset.uuid, dataset.collection.datasets)
     isnothing(index) && throw(OrphanDataSet(dataset))
     deleteat!(dataset.collection.datasets, index)
-    write(dataset.collection)
+    save!(dataset.collection)
 end
 
 # ------------------

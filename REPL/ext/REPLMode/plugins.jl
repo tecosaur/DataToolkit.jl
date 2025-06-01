@@ -69,7 +69,7 @@ function plugin_edit(::AbstractString)
         newcollection =
             DataCollection(snapshot; path=collection.path, mod=collection.mod)
         STACK[begin] = newcollection
-        iswritable(newcollection) && write(newcollection)
+        iswritable(newcollection) && save!(newcollection)
     end
     if isempty(added_plugins) && isempty(removed_plugins)
         printstyled(" No change to plugins\n", color=:green)

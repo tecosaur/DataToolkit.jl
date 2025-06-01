@@ -22,7 +22,7 @@ export load, save, storage, getstorage, putstorage, supportedtypes,
 # Implementing a transformer/plugin
 export @advise, @getparam
 # Retrieval functions
-export loadcollection!, getlayer, dataset, tryresolve, resolve, refine,
+export loadcollection!, save!, getlayer, dataset, tryresolve, resolve, refine,
     parse_ident, trytypeify, typeify, driverof
 # Creation functions
 export create, create!, dataset!, storage!, loader!, writer!

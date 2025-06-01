@@ -149,7 +149,7 @@ function repl_edit(input::AbstractString)
         print("\n\n")
         DataToolkitCore.lintfix(lintreport)
     end
-    write(newdata.collection)
+    save!(newdata.collection)
     printstyled(" ✓ Edited '$(newdata.name)' ", color=:green)
     printstyled('(', newdata.uuid, ')', '\n', color=:light_black)
 end

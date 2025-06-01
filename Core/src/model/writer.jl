@@ -172,18 +172,174 @@ function Base.write(io::IO, dc::DataCollection)
     write(io, take!(tomlreformat!(intermediate)))
 end
 
-function Base.write(dc::DataCollection)
+
+# Batch writing
+
+"""
+    WriteRecord
+
+A record of write statistics and scheduling for each `DataCollection` written.
+
+## Structure
+
+- `write`:
+    - `last::Float64`: The time of the last write.
+    - `duration::Float64`: The duration of the last write performed.
+    - `count::Int`: The number of writes performed.
+- `invoke`:
+    - `last::Float64`: The time of the last invocation of `save!`.
+    - `count::Int`: The number of times `save!` was invoked.
+- `queued::Bool`: Whether a write is queued for later execution.
+"""
+struct WriteRecord
+    invoke::@NamedTuple{last::Float64, count::Int}
+    write::@NamedTuple{last::Float64, duration::Float64, count::Int}
+    queued::Bool
+end
+
+const ZERO_WRITE_RECORD =
+    WriteRecord((last = 0.0, count = 0),
+                (last = 0.0, duration = 0.0, count = 0),
+                false)
+
+"""
+    WRITE_RECORDS
+
+A record of write statistics and scheduling for each `DataCollection` written.
+
+The record is a `WeakKeyDict` mapping `DataCollection` objects to
+`WriteRecord` objects. This is used to track the timing of writes
+an to schedule writes in a debounced manner.
+
+See also: `save!`, `writesoon`, `WriteRecord`, `WRITE_DEBOUNCE_FACTOR`, `WRITE_DEFER_LIMIT`.
+"""
+const WRITE_RECORDS = WeakKeyDict{DataCollection, WriteRecord}()
+
+"""
+    WRITE_DEBOUNCE_FACTOR
+
+How long the dynamic debounce duration should be,
+as a multiple of the last write duration.
+
+See also: `WRITE_DEFER_LIMIT`.
+"""
+const WRITE_DEBOUNCE_FACTOR = 4
+
+"""
+    WRITE_DEFER_LIMIT
+
+The maximum number of intervals of the debounce duration
+to wait before performing a write.
+
+See also: `WRITE_DEBOUNCE_FACTOR`.
+"""
+const WRITE_DEFER_LIMIT = 12
+
+"""
+    save!(dc::DataCollection)
+
+Save the `DataCollection` `dc` to its source file.
+
+The `DataCollection` must be backed by a file, and the file must be writable.
+
+The `save!` operation is debounced and asynchronous to prevent
+serialisation time from dominating in large write-heavy scenarios.
+"""
+function save!(dc::DataCollection)
     if !iswritable(dc)
         if !isnothing(dc.source.path)
-            throw(ArgumentError("No collection writer is provided, so an IO argument must be given."))
+            throw(ArgumentError("The collection is not backed by a file, and so cannot be saved."))
         else
             throw(ReadonlyCollection(dc))
         end
     end
-    nb = atomic_write(dc.source.path, dc)
-    dc.source = (; path = dc.source.path, mtime = mtime(dc.source.path))
-    nb
+    lock(WRITE_RECORDS)
+    record = get!(() -> ZERO_WRITE_RECORD, WRITE_RECORDS, dc)
+    if record.queued
+        WRITE_RECORDS[dc] = WriteRecord((last = time(), count = record.invoke.count + 1),
+                                        record.write, record.queued)
+        unlock(WRITE_RECORDS)
+    elseif time() - record.invoke.count > WRITE_DEBOUNCE_FACTOR * record.duration
+        start = time()
+        WRITE_RECORDS[dc] = WriteRecord((last = start, count = record.invoke.count + 1),
+                                        record.write, true)
+        unlock(WRITE_RECORDS)
+        try
+            atomic_write(dc.source.path, dc)
+            duration = time() - start
+            @lock WRITE_RECORDS let
+                record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+                WRITE_RECORDS[dc] = WriteRecord(
+                    record.invoke,
+                    (last = start, duration = duration, count = record.write.count + 1),
+                    false)
+            end
+        catch err
+            @lock WRITE_RECORDS let
+                record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+                WRITE_RECORDS[dc] = WriteRecord(record.invoke, record.write, false)
+            end
+            rethrow(err)
+        end
+    else
+        WRITE_RECORDS[dc] = WriteRecord(record.invoke, record.write, true)
+        unlock(WRITE_RECORDS)
+        @spawn writesoon(dc)
+    end
 end
 
-Base.write(ds::DataSet) = write(ds.collection)
-Base.write(dt::DataTransformer) = write(dt.dataset)
+save!(ds::DataSet) = save!(ds.collection)
+save!(dt::DataTransformer) = save!(dt.dataset)
+
+"""
+    writesoon(dc::DataCollection)
+
+Schedule a write for `dc`.
+
+This is used to perform a debounced write of the `DataCollection`
+after a delay. The delay is determined by the `WRITE_DEBOUNCE_FACTOR`
+and the last write duration. The function will wait for a maximum
+of `WRITE_DEFER_LIMIT` intervals of the debounce duration before
+performing the write.
+
+It is assumed that the `.queued` field of the `WriteRecord` is set to `true`
+immediately before this function is called. Otherwise, this function will return
+immediately without performing any action.
+"""
+function writesoon(dc::DataCollection)
+    itime = time()
+    debounce = let irecord = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+        irecord.queued || return
+        WRITE_DEBOUNCE_FACTOR * irecord.duration
+    end
+    for _ in 1:WRITE_DEFER_LIMIT
+        sleep(debounce)
+        crecord = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+        crecord.queued || return
+        if time() - crecord.invoke <= debounce
+            break
+        end
+    end
+    record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+    record.queued || return
+    try
+        writestart = time()
+        atomic_write(dc.source.path, dc)
+        writeduration = time() - writestart
+        @lock WRITE_RECORDS let
+            record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+            WRITE_RECORDS[dc] =
+                WriteRecord(record.invoke,
+                            (last = writestart, duration = writeduration,
+                             count = record.write.count + 1),
+                            false)
+        end
+    catch err
+        @lock WRITE_RECORDS let
+            record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+            WRITE_RECORDS[dc] = WriteRecord(record.invoke, record.write, false)
+        end
+        rethrow(err)
+    end
+    nothing
+end

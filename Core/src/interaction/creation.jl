@@ -46,7 +46,7 @@ function create!(::Type{DataCollection}, name::Union{String, Nothing}, path::Uni
     dc = DataCollection(name; path, uuid, plugins, mod)
     newcollection = @advise create(DataCollection, dc)
     pushfirst!(STACK, newcollection)
-    !isnothing(path) && write(newcollection)
+    !isnothing(path) && save!(newcollection)
     newcollection
 end
 

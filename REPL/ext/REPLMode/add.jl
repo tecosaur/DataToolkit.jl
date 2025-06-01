@@ -94,7 +94,7 @@ function add(input::AbstractString)
     spec = prompt_attributes()
     dataset = create!(collection, DataSet, name, spec)
     addtransformers!(dataset, from; via...)
-    iswritable(collection) && write(collection)
+    iswritable(collection) && save!(collection)
 end
 
 """

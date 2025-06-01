@@ -62,7 +62,7 @@ function addpkgs(mod::Module, pkgs::Vector{Symbol})
                         ismodified = true
                     end
                 end
-                ismodified && write(collection)
+                ismodified && save!(collection)
             end
         end
     end

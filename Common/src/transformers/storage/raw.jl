@@ -28,7 +28,7 @@ supportedtypes(::Type{DataStorage{:raw}}, spec::Dict{String, Any}) =
 # NOTE This is hacky, but it's a special case
 function save(::DataWriter{:passthrough}, dest::DataStorage{:raw}, info::Any)
     dest.parameters["value"] = info
-    write(dest)
+    save!(dest)
     true
 end
 
