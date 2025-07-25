@@ -5,8 +5,20 @@ function load(loader::DataLoader{:xlsx}, from::IO, ::Type{Matrix})
     @require XLSX
     sheet = @getparam loader."sheet"::Union{String, Int} 1
     range = @getparam loader."range"::Union{String, Nothing}
-    invokelatest(_read_xlsx, from, sheet, range)
+    invokelatest(_read_xlsx, from, Matrix{Any}, sheet, range)
 end
+
+function load(loader::DataLoader{:xlsx}, from::IO, as::Type)
+    @require XLSX
+    sheet = @getparam loader."sheet"::Union{String, Int} 1
+    range = @getparam loader."range"::Union{String, Nothing}
+    invokelatest(_read_xlsx, from, as, sheet, range)
+end
+
+supportedtypes(::Type{DataLoader{:xlsx}}) =
+    [QualifiedType(:DataFrames, :DataFrame),
+     QualifiedType(:XLSX, :DataTable),
+     QualifiedType(:Base, :Matrix)]
 
 createpriority(::Type{DataLoader{:xlsx}}) = 10
 
