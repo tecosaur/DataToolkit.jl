@@ -1,0 +1,108 @@
+#+title: Introduction
+
+DataToolkit is a batteries-included family of packages for robustly managing
+data. The particular package(s) you want to use will depend on the project.
+
++ Use =DataToolkit= for analysis projects and scripts
++ Use [[https://tecosaur.github.io/DataToolkit.jl/base/][DataToolkitBase]] when making a package that needs data
+  - Optionally, use [[https://github.com/tecosaur/DataToolkitDocumenter.jl][DataToolkitDocumenter]] too to document the datasets
++ Use [[https://tecosaur.github.io/DataToolkit.jl/core/][DataToolkitCore]] when making a package extending DataToolkit, and possibly
+  [[https://tecosaur.github.io/DataToolkit.jl/store/][DataToolkitStore]] too.
+
+Whether using =DataToolkit= or =DataToolkitBase=, to see what storage providers and
+formats are supported out-of-the-box, look at the [[https://tecosaur.github.io/DataToolkit.jl/common/][DataToolkitCommon]]
+documentation.
+
+[[file:assets/package-structure.svg]]
+
+* Why this exists
+
+Poor data management approaches are rampant. This is well-recognised, and so
+people have created tools that attempt to tackle subsets of the problem --- such
+as [[https://www.datalad.org/][DataLad]], [[https://dvc.org/][DVC]], the [[https://docs.kedro.org/en/stable/data/data_catalog.html][Kedro data catalogue]], [[https://snakemake.github.io/][Snakemake]], [[https://www.nextflow.io/][Nextflow]], [[https://intake.readthedocs.io/en/latest/][Intake]], [[https://pkgdocs.julialang.org/v1/artifacts/][Pkg.jl's
+Artifacts]], and [[https://github.com/JuliaComputing/DataSets.jl][DataSets.jl]]. These tools contain many good ideas, but all fall
+short of the combination of /convenience/ and /robustness/ that is possible.
+
+DataToolkit leverages key Julia features ---reproducible package management with
+[[https://pkgdocs.julialang.org/][Pkg.jl]], independence from system state with [[https://julialang.org/blog/2019/11/artifacts/#julia_library_jll_packages][JLL packages]], and well-managed
+environments--- to push the envelope on how easily data can be robustly managed.
+The three tenets of the project are /reproducibility/, /flexibility/, and /convenience/.
+
+* Declarative data management
+
+DataToolkit takes a declarative approach to data management, and represents
+collections of datasets in [[@ref Data.toml][TOML files]]. To give a taste of what this system looks
+like in practice, here's a sample TOML representation of a dataset (=iris=).
+
+#+begin_src toml
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "crc32c:d5c06b86"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+    args.header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+    args.skipto = 2
+#+end_src
+
+This creates an =iris= dataset that can be conveniently and reproducibly loaded
+within a Julia session, with data flowing like so:
+
+[[file:assets/data-flow-iris.svg]]
+
+* The data model
+** Data Sets --- Information and Data
+
+Useful /information/ is a particular representation of basic /data/. We acquire data
+and /load/ it into a more informative form, and similarly can /write/ information
+back as data.
+
+To give a concrete example, Fisher's famous iris data set can exist on-disk as a
+CSV, comprised of bytes or ASCII characters. This is the /data/ form. If we want
+to do useful analysis, we would want to transform the data into say a table of
+information (e.g. as a =DataFrame=). This is the /information/ form. We can /load/ the
+information form by parsing the CSV data, and /write/ the information back by
+serialising the table.
+
+There are thus three essential transformations that can occur involving a data
+set:
+1. The transformation of a specification into a source of /data/, termed [[@extref DataToolkitCore.DataStorage][=storage=]]
+2. The transformation of /data/ into /information/, termed a [[@extref DataToolkitCore.DataLoader][=loader=]]
+3. The transformation of /information/ into /data/, termed a [[@extref DataToolkitCore.DataWriter][=writer=]]
+
+[[file:assets/data-flow-horizontal.svg]]
+
+** Transformers, Data Sets, and Data Collections
+
+Each [[@extref DataToolkitCore.DataSet][=DataSet=]] can have any number of =storage=, =loader=, and =writer= transformers.
+All [[@extref DataToolkitCore.DataSet][=DataSet=]]s must be part of a [[@extref DataToolkitCore.DataCollection][=DataCollection=]] which essentially provides a
+context for the existence of a particular data set (e.g. you might store
+Fisher's iris data under a "Flower measurements" data collection). The
+[[@extref DataToolkitCore.DataCollection][=DataCollection=]]s loaded at any one time form the [[@extref DataToolkitCore.DataCollection][=DataCollection=]] /stack/. The stack
+essentially acts as a load-path, if you just ask for the =iris= data set, it will
+be fetched from the top collection on the stack that can satisfy it.
+
+[[file:assets/data-collection-structure.svg]]
+
+It is also worth noting that "child" elements of this structure (data sets and
+transformers) contain a link back to their parent, and so from any part of a
+[[@extref DataToolkitCore.DataCollection][=DataCollection=]] the whole can be accessed.
+
+* Extreme extensibility
+
+The plethora of formats, workflows, and tools that surround data make designing
+a "do it all" system implausible. A much easier task is to produce a system that
+can be /adapted/ to serve as many use cases as possible, even ones the designers
+have never conceived of! To that end, extensibility is weaved throughout the
+code base. The core system (=DataToolkitBase=) is generic to the point of being
+useless on its own, and special-case behaviour has been avoided. Many basic
+features (such as default values) are implemented as plugins, to avoid being
+inadvertently privileged in the core system.
+
+I have yet to come across a feature that could not be implemented under this
+framework.

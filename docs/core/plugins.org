@@ -1,0 +1,208 @@
+#+title: Plugins & Advice
+
+In DataToolkit, the plugin system enables key behaviour to be completely
+transformed when operating on a given ~DataCollection~.
+
+#+begin_src @docs
+Plugin
+@dataplugin
+#+end_src
+
+* Advice
+
+Inspired by Lisp, =DataToolkitCore= comes with a method of completely transforming
+its behaviour at certain defined points. This is essentially a restricted form
+of [[https://en.wikipedia.org/wiki/Aspect-oriented_programming][Aspect-oriented programming]]. At certain declared locations (termed "join
+points"), we consult a list of "advise" functions that modify the execution at
+that point, and apply the (matched via "pointcuts") advise functions
+accordingly.
+
+[[file:assets/join-point-model.svg]]
+
+Each applied advise function is wrapped around the invocation of the join point,
+and is able to modify the arguments, execution, and results of the join point.
+
+[[file:assets/advice-flow.svg]]
+
+#+begin_src @docs
+Advice
+AdviceAmalgamation
+@advise
+#+end_src
+
+* Advisement (join) points
+
+** Parsing and serialisation of data sets and collections
+
+~DataCollection~​s, ~DataSet~​s, and ~DataTransformer~​s are advised at two
+stages during parsing:
+1. When calling ~fromspec~ on the ~Dict~ representation, at the start of parsing
+2. At the end of the ~fromspec~ function, calling ~identity~ on the object
+
+Serialisation is performed through the ~tospec~ call, which is also advised.
+
+The signatures of the advised function calls are as follows:
+
+#+begin_src julia
+fromspec(DataCollection, spec::Dict{String, Any}; path::Union{String, Nothing})::DataCollection
+identity(collection::DataCollection)::DataCollection
+tospec(collection::DataCollection)::Dict
+#+end_src
+
+#+begin_src julia
+fromspec(DataSet, collection::DataCollection, name::String, spec::Dict{String, Any})::DataSet
+identity(dataset::DataSet)::DataSet
+tospec(dataset::DataSet)::Dict
+#+end_src
+
+#+begin_src julia
+fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})::DT
+identity(dt::DataTransformer)::DataTransformer
+tospec(dt::DataTransformer)::Dict
+#+end_src
+
+** Processing identifiers
+
+Both the parsing of an ~Identifier~ from a string, and the serialisation of an ~Identifier~ to a string are advised. Specifically, the following function calls:
+#+begin_src julia
+parse_ident(spec::AbstractString)
+string(ident::Identifier)
+#+end_src
+
+** The data flow arrows
+
+The reading, writing, and storage of data may all be advised. Specifically,
+the following function calls:
+#+begin_src julia
+load(loader::DataLoader, datahandle, as::Type)
+storage(provider::DataStorage, as::Type; write::Bool)
+save(writer::DataWriter, datahandle, info)
+#+end_src
+
+* Index of advised calls (join points)
+
+#+begin_src @eval
+using Markdown
+content = Any[]
+
+const AdviseRecord = NamedTuple{(:location, :parent, :invocation), Tuple{LineNumberNode, <:Union{Expr, Symbol}, Expr}}
+function findadvice!(acc::Vector{AdviseRecord}, expr::Expr; parent=nothing)
+    if expr.head == :macrocall && first(expr.args) == Symbol("@advise")
+        !isnothing(parent) || @warn "Macro @$(expr.args[2]) has no parent function"
+        invocation = expr.args[end]
+        if Meta.isexpr(invocation, :(::), 2)
+            invocation = invocation.args[1]
+        end
+        push!(acc, (; location=expr.args[2], parent, invocation))
+    else
+        if isnothing(parent) && expr.head == :function
+            parent = if first(expr.args) isa Expr
+                first(first(expr.args).args)
+            else
+                first(expr.args)
+            end
+        elseif isnothing(parent) && expr.head == :(=) &&
+            first(expr.args) isa Expr && first(expr.args).head == :call
+            parent = first(first(expr.args).args)
+        end
+        findadvice!.(Ref(acc), expr.args; parent)
+    end
+end
+findadvice!(acc, ::Any; parent=nothing) = nothing
+
+alladvice = Vector{AdviseRecord}()
+for (root, dirs, files) in walkdir("../../src")
+    for file in files
+        file == "precompile.jl" && continue
+        @info "Analysing $file for advise"
+        path = joinpath(root, file)
+        expr = Meta.parseall(read(path, String); filename=path)
+        findadvice!(alladvice, expr)
+    end
+end
+
+AdvItem = NamedTuple{(:line, :parent, :invocation), Tuple{Int, Union{Expr, Symbol}, Expr}}
+advbyfunc = Dict{Symbol, Dict{Symbol, Vector{AdvItem}}}()
+atypes = first.(getfield.(getfield.(alladvice, :invocation), :args)) |> unique
+afiles = getfield.(getfield.(alladvice, :location), :file) |> unique
+
+for atype in atypes
+    advs = filter(a -> first(a.invocation.args) == atype, alladvice)
+    advbyfunc[atype] = Dict{Symbol, Vector{AdvItem}}()
+    for (; location, parent, invocation) in advs
+        if !haskey(advbyfunc[atype], location.file)
+            advbyfunc[atype][location.file] = Vector{AdvItem}()
+        end
+        push!(advbyfunc[atype][location.file], (; line=location.line, parent, invocation))
+    end
+end
+
+push!(content, Markdown.Paragraph([
+    "There are ", Markdown.Bold(string(length(alladvice))),
+    " advised function calls, across ",
+    Markdown.Bold(string(length(unique(getfield.(getfield.(alladvice, :location), :file))))),
+    " files, covering ", Markdown.Bold(string(length(advbyfunc))),
+    " functions (automatically detected)."]))
+
+push!(content, Markdown.Header{3}(["Arranged by function"]))
+
+for fname in sort(keys(advbyfunc) |> collect)
+    instances = advbyfunc[fname]
+    nadv = sum(length, values(instances))
+    push!(content, Markdown.Header{4}([
+        Markdown.Code(String(fname)),
+        if nadv == 1
+            " (1 instance)"
+        else
+            " ($nadv instances)"
+        end]))
+    list = Markdown.List(Any[], -1, false)
+    for file in sort(keys(instances) |> collect)
+        details = instances[file]
+        sublist = Markdown.List(Any[], -1, false)
+        for (; line, parent, invocation) in details
+            push!(sublist.items, Markdown.Paragraph(
+                ["On line ", string(line), " ",
+                 Markdown.Code(string(invocation)),
+                 " is advised within a ",
+                 Markdown.Code(string(parent)), " method."]))
+        end
+        push!(list.items, Any[
+            Markdown.Paragraph([Markdown.Italic(last(splitpath(String(file))))]),
+            sublist])
+    end
+    push!(content, list)
+end
+
+push!(content, Markdown.Header{3}(["Arranged by file"]))
+
+advbyfile = Dict{Symbol, Vector{AdvItem}}()
+for (; location, parent, invocation) in alladvice
+    if !haskey(advbyfile, location.file)
+        advbyfile[location.file] = Vector{AdvItem}()
+    end
+    push!(advbyfile[location.file], (; line=location.line, parent, invocation))
+end
+
+for file in sort(afiles)
+    instances = advbyfile[file]
+    push!(content, Markdown.Header{5}([
+        Markdown.Code(last(splitpath(String(file)))),
+        if length(instances) == 1
+            " (1 instance)"
+        else
+            " ($(length(instances)) instances)"
+        end]))
+    list = Markdown.List(Any[], -1, false)
+    for (; line, parent, invocation) in instances
+        push!(list.items, [Markdown.Paragraph(
+            ["On line ", string(line), " ",
+             Markdown.Code(string(invocation)),
+             " is advised within a ",
+             Markdown.Code(string(parent)), " method."])])
+    end
+    push!(content, list)
+end
+
+Markdown.MD(content) |> string |> Markdown.parse
+#+end_src

@@ -1,0 +1,79 @@
+#+title: Lazily using packages
+
+It is entirely likely that in the course of writing a package providing a custom
+data transformer, one would come across packages that /may/ be needed.
+
+Every possibly desired package could be shoved into the list of dependences, but
+this is a somewhat crude approach. A more granular approach is enabled with two
+macros, ~@addpkg~ and ~@require~.
+
+* Letting DataToolkit know about extra packages
+
+#+begin_src @docs
+addpkg
+@addpkg
+#+end_src
+
+* Using extra packages
+
+#+begin_src @docs
+@require
+invokepkglatest
+#+end_src
+
+* Example
+
+#+begin_src julia
+module DataToolkitExample
+
+using DataToolkitCore
+using DataFrame
+
+function __init__()
+    @addpkg CSV "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+    @addpkg DelimitedFiles "8bb1440f-4735-579b-a4ab-409b98df4dab"
+end
+
+function load(::DataLoader{:csv}, from::IOStream, ::Type{DataFrame})
+    @require CSV
+    result = CSV.read(from, DataFrame)
+    close(from)
+    result
+end
+
+function load(::DataLoader{:delimcsv}, from::IOStream, ::Type{DataFrame})
+    @require DelimitedFiles
+    result = DelimitedFiles.readdlm(from, ',', DataFrame)
+    close(from)
+    result
+end
+
+end
+#+end_src
+
+Packages that implement loaders with other packages are recommended to use Julia
+1.9's [[https://pkgdocs.julialang.org/dev/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)][Package Extensions]], together with the ~@requires~ macro and ~invokelatest~ like so:
+
+#+begin_src julia
+# CsvLoaderPkg/src/loader.jl
+function load(::DataLoader{:csv}, from::IOStream, t::Type{DataFrame})
+    @require CSV
+    invokelatest(_load_csv, from, t)
+end
+#+end_src
+
+#+begin_src julia
+# CsvLoaderPkg/ext/csv.jl
+module csv
+
+using CSV
+import CsvLoaderPkg: _load_csv
+
+function _load_csv(from::IOStream, ::Type{DataFrame})
+    result = CSV.read(from, DataFrame)
+    close(from)
+    result
+end
+
+end
+#+end_src

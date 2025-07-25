@@ -1,0 +1,779 @@
+#+title: Tutorial
+
+In this tutorial you will be guided through some of the main usage patterns
+involving =DataToolkit=. After doing the first step (/Initialising a Data
+Collection/), all other sections can be treated as self-contained exercises.
+
+* Initialising a Data Collection
+
+First, we will create a new environment to run through the tutorial in, and load
+the =DataToolkit= package.
+
+#+begin_src julia-repl
+julia> using Pkg
+
+julia> expanduser("~/Documents/datatoolkit_tutorial") |> mkpath |> cd
+
+julia> Pkg.activate(".")
+  Activating new project at `~/Documents/datatoolkit_tutorial`
+
+julia> Pkg.add("DataToolkit")
+   Resolving package versions...
+    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+  [dc83c90b] + DataToolkit
+  ...
+Precompiling project...
+
+julia> using DataToolkit
+#+end_src
+
+Notice that by typing =}= at an empty =julia>= prompt, the REPL prompt will change
+to =(⋅) data>= (in the same way that typing =]= enters the =pkg>= REPL). This is the
+"Data REPL", and the =(⋅)= prefix indicates the current project. When there is no
+current project, the dot is shown.
+
+In the data REPL, we can see a list of all the available commands by typing =help=
+or =?=, which will pull up a command list like so:
+
+#+begin_example
+(⋅) data> help
+ Command  Action
+ ────────────────────────────────────────────────────────
+ <cmd>    <brief description of what cmd does>
+ ...      ...
+ help     Display help text for commands and transformers
+#+end_example
+
+#+begin_tip
+Get more information on a particular command with =help <cmd>=, you can even get
+more information on what =help= does with =help help= 😉.
+#+end_tip
+
+We will initialise a new data collection with the [[@extref repl-init][=init=]] command.
+
+#+begin_note
+We can use the full command (=init=), or any substring that uniquely identifies
+the command (e.g.  =it=).
+#+end_note
+
+#+begin_example
+(⋅) data> init
+ Create Data.toml for current project? [Y/n]: y
+ Name: tutorial
+ Use checksums by default? [Y/n]: n
+ ✓ Created new data collection 'tutorial' at /home/tec/Documents/datatoolkit_tutorial/Data.toml
+#+end_example
+
+#+begin_tip
+There are a few other ways =init= can be used, see the full docs with =help init=.
+#+end_tip
+
+If we look at the =~/Documents/datatoolkit_tutorial= folder, we should now see
+three files.
+
+#+begin_example
+shell> tree
+.
+├── Data.toml
+├── Manifest.toml
+└── Project.toml
+#+end_example
+
+Looking inside the =Data.toml=, we can see what a data collection with no data
+sets looks like:
+
+#+begin_src toml
+data_config_version = 0
+uuid = "f20a77d0-0dc9-41bb-875b-ad0bf42c90bd"
+name = "tutorial"
+plugins = ["store", "defaults", "memorise"]
+#+end_src
+
+#+begin_note
+The plugins [[@extref plugin-addpkgs][=store=]], [[@extref plugin-defaults][=defaults=]], and [[@extref plugin-memorise][=memorise=]] are the default set of plugins, which
+is why we see them here. A minimal =Data.toml= would have ~plugins = []~.
+#+end_note
+
+At this point, we have created a new data collection, and seen what is created.
+If we close the Julia session and re-open a REPL in the =datatoolkit_test=
+project, loading =DataToolkit= will automatically cause the data collection we
+just created to be loaded as well, as seen in the prompt prefix.
+
+#+begin_src julia-repl
+julia> using DataToolkit
+
+(tutorial) data> # after typing '}'
+#+end_src
+
+* Adding and loading the Iris data set
+
+Now we have a data collection, we can add data sets too it. Fisher's /Iris/ data
+set is part of the =scikit-learn= repository, which makes it fairly easy to find a
+link to it:
+https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+
+We can easily add this as a [[@extref DataToolkitCore.DataSet][=DataSet=]] using the [[@extref repl-add][=add=]] Data REPL command,
+
+#+begin_example
+(tutorial) data> add iris https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+ Description: Fisher's famous Iris flower measurements
+ ✓ Created 'iris' (3f3d7714-22aa-4555-a950-78f43b74b81c)
+ DataSet tutorial:iris
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: csv(DataFrame, Matrix, File)
+#+end_example
+
+#+begin_note
+Say halfway through we decide we don't want to proceed with this Data REPL
+command, at any point we can interrupt it with =^C= (Control + =C=) and abort the
+action. This works with other Data REPL commands in the same way.
+
+#+begin_example
+(tutorial) data> add iris https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+ Description:  ! Aborted
+#+end_example
+#+end_note
+
+The =add= command tries to be a bit clever and guess how the data should be
+acquired and loaded. In this case it (correctly) guessed that this file should
+be downloaded from the web, and loaded as a CSV. It is worth noting that
+downloading will occur when =iris= is first accessed or the =store fetch= Data REPL
+command is run.
+
+The =DataSet tutorial:iris= and =Storage:=​/​=Loaders:= lines are how all =DataSet=​s are
+displayed. Using the ~dataset~ function we can obtain any data set easily by name,
+and so ~dataset("iris")~ will show the same information.
+
+#+begin_src julia-repl
+julia> dataset("iris")
+DataSet tutorial:iris
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: csv(DataFrame, Matrix, File)
+#+end_src
+
+We can see from the =Storage: web(IO, Vector{UInt8}, String, FilePath)= line that
+the [[@extref storage-web][=web=]] storage driver is being used, and it can make the content available as
+an ~IO~, ~Vector{UInt8}~, ~String~, or ~FilePath~ (a string wrapper type provided by
+=DataToolkitBase= for dispatch purposes). Similarly, the =Loaders: csv(DataFrame,
+Matrix, File)= tells us that the [[@extref saveload-csv][=csv=]] loader is being used, and it can provide a
+~DataFrame~, ~Matrix~, or ~CSV.File~.
+
+If we look at the =Data.toml= again, we can see how the =iris= data set is
+represented:
+
+#+begin_src toml
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+#+end_src
+
+To obtain a particular loaded form of the data set, we can use the ~read~
+function. For instance, ~read(dataset("iris"), DataFrame)~ or
+~read(dataset("iris"), Matrix)~. We can also omit the second argument, in which
+case the first form that /can/ be loaded will be (e.g. in this case since
+=DataFrames= is not loaded, =iris= can not be loaded as a ~DataFrame~, but it can be
+loaded as a ~Matrix~, and so it will be).
+
+#+begin_example
+julia> read(dataset("iris"))
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
+ │ Package KangarooTwelve not found, but a package named KangarooTwelve is available from a registry.
+ │ Install package?
+ │   (dt_test) pkg> add KangarooTwelve
+ └ (y/n/o) [y]: y
+    Updating registry at `~/.julia/registries/General.toml`
+   Resolving package versions...
+    Updating `/tmp/dt_test/Project.toml`
+  [2a5dabf5] + KangarooTwelve v1.0.0
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
+[ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
+ │ Package CSV not found, but a package named CSV is available from a registry.
+ │ Install package?
+ │   (dt_test) pkg> add CSV
+ └ (y/n/o) [y]:
+   Resolving package versions...
+    Updating `/tmp/dt_test/Project.toml`
+  [336ed68f] + CSV v0.10.11
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
+[ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
+150×5 Matrix{Float64}:
+ 5.1  3.5  1.4  0.2  0.0
+ 4.9  3.0  1.4  0.2  0.0
+ 4.7  3.2  1.3  0.2  0.0
+ ⋮
+ 6.5  3.0  5.2  2.0  2.0
+ 6.2  3.4  5.4  2.3  2.0
+ 5.9  3.0  5.1  1.8  2.0
+#+end_example
+
+#+begin_note
+We haven't installed the =KangarooTwelve= (a cryptographic hash) or  =CSV= packages,
+but thanks to the lazy-loading system we are presented with the option to
+install them on-the-fly. The =KangarooTwelve= package is only used when hashing
+new data, or verifying the hash of downloaded data. Should you want to avoid
+lazy-loading, you can always just load the =CSV= package yourself before trying to
+access information that uses the =csv= loader.
+#+end_note
+
+Because ~read(dataset("iris"))~ is a fairly common pattern, for convenience there
+is a ~d""~ "data set in loaded form" macro. ~d"iris"~ is equivalent to
+~read(dataset("iris"))~.
+
+Having the =iris= data as a ~Matrix~ is fine, but it would be nicer to have it as a
+~DataFrame~. Since that is the first format listed, if we just install =DataFrames=
+and ask for =iris= again (but this time using the ~d""~ macro).
+
+#+begin_src julia-repl
+julia> using DataFrames
+ │ Package DataFrames not found, but a package named DataFrames is available from a registry.
+ │ Install package?
+ │   (datatoolkit_tutorial) pkg> add DataFrames
+ └ (y/n/o) [y]:
+   Resolving package versions...
+    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+  [a93c6f00] + DataFrames v1.6.1
+  ...
+  1 dependency successfully precompiled in 25 seconds. 41 already precompiled.
+
+julia> d"iris"
+150×5 DataFrame
+ Row │ 150      4        setosa   versicolor  virginica
+     │ Float64  Float64  Float64  Float64     Int64
+─────┼──────────────────────────────────────────────────
+   1 │     5.1      3.5      1.4         0.2          0
+   2 │     4.9      3.0      1.4         0.2          0
+   3 │     4.7      3.2      1.3         0.2          0
+  ⋮  │    ⋮        ⋮        ⋮         ⋮           ⋮
+ 149 │     6.2      3.4      5.4         2.3          2
+ 150 │     5.9      3.0      5.1         1.8          2
+#+end_src
+
+That's nicer, but wait, those column names aren't right! The first line appears
+to be describing the size of the data (150\times4) and the three category names, when
+the columns should be:
++ =sepal_length=,
++ =sepal_width=,
++ =petal_length=,
++ =petal_width=, and
++ =species_class=
+
+Perhaps there's a way we can specify the correct column names? We could check
+the online docs for the CSV loader, but we can also look at them with the =help=
+Data REPL command.
+
+#+begin_example
+(tutorial) data> help :csv
+  Parse and serialize CSV data
+
+  ...
+
+  Parameters
+  ≡≡≡≡≡≡≡≡≡≡≡≡
+
+    •  args: keyword arguments to be provided to CSV.File, see
+       https://csv.juliadata.org/stable/reading.html#CSV.File.
+
+  As a quick-reference, some arguments of particular interest are:
+
+    •  header: Either,
+       • the row number to parse for column names
+       • the list of column names
+
+  ...
+#+end_example
+
+Perfect! Looks like we can just set the =args.header= parameter of the =csv= loader,
+and we'll get the right column names. To easily do so, we can make use of the
+=edit= Data REPL command, which opens up a TOML file with just a single data set
+in =$JULIA_EDITOR= (which defaults to =$VISUAL=​/​=$EDITOR=) and records the changes
+upon exit.
+
+#+begin_example
+(tutorial) data> edit iris
+#+end_example
+
+Setting =args.header= is as simple as editing the =iris= loader to the following
+value (adding one line):
+
+#+begin_src toml
+[[iris.loader]]
+driver = "csv"
+args.header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+#+end_src
+
+After saving and exiting, you'll be presented with a summary of the changes and
+a prompt to accept them.
+
+#+begin_example
+(tutorial) data> edit iris
+ ~ Modified loader:
+   ~ Modified [1]:
+     + Added args
+ Does this look correct? [y/N]: y
+ ✓ Edited 'iris' (3f3d7714-22aa-4555-a950-78f43b74b81c)
+#+end_example
+
+Now if we ask for the =iris= data set again, we should see the correct headers.
+
+#+begin_src julia-repl
+julia> d"iris"
+151×5 DataFrame
+ Row │ sepal_length  sepal_width  petal_length  petal_width  species_class
+     │ Float64       Float64      String7       String15     String15
+─────┼─────────────────────────────────────────────────────────────────────
+   1 │        150.0          4.0  setosa        versicolor   virginica
+   2 │          5.1          3.5  1.4           0.2          0
+   3 │          4.9          3.0  1.4           0.2          0
+  ⋮  │      ⋮             ⋮            ⋮             ⋮             ⋮
+ 150 │          6.2          3.4  5.4           2.3          2
+ 151 │          5.9          3.0  5.1           1.8          2
+#+end_src
+
+The headers are correct, but now the first line is counted as part of the data.
+This can be fixed by editing =iris= again and setting =args.skipto= to =2= in the =csv=
+loader settings.
+
+The final =iris= entry in the =Data.toml= should look like so:
+
+#+begin_src toml
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+
+        [iris.loader.args]
+        header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+        skipto = 2
+#+end_src
+
+Now, you have a =Project.toml=, =Manifest.toml=, and =Data.toml= that can be relocated
+to other systems and ~d"iris"~ will consistently produce the exact same ~DataFrame~.
+
+** On ensuring the integrity of the downloaded data
+
+One of the three plugins used by default is the =store= plugin. It is responsible
+for caching IO data and checking data validity. For a more complete description
+of what it does, see the web docs or the Data REPL (sub)command =plugin info
+store=.
+
+There are two immediate impacts of this plugin we can easily observe. The first
+is that we can load the =iris= data set offline in a fresh Julia session, and in
+fact if we copy the =iris= specification into a separate data set it will re-use
+the /same/ downloaded data.
+
+The second, is that by setting =iris='s =web= storage driver's =checksum= property to
+="auto"= (as is done by default), the next time we load =iris= a checksum will be
+generated and saved. If in future the =web= storage driver produces different
+data, this will now be caught and raised. This can be done automatically by
+setting the default value to ="auto"=, which we were prompted to do during
+initialisation.
+
+* Multi-step analysis with the Boston Housing data set
+** Loading the data
+
+The /Boston Housing/ data set is part of the =RDatasets= package, and we can obtain
+a link to the raw data file in the repository:
+https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+
+As with the Iris data, we will use the =add= Data REPL command to conveniently
+create a new data set.
+
+#+begin_example
+(tutorial) data> add boston https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+ Description: The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass.
+ ✓ Created 'boston' (02968c42-828e-4f22-86b8-ec67ac629a03)
+ DataSet tutorial:boston
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: chain(DataFrame, Matrix, File)
+#+end_example
+
+This example is a bit more complicated because we have a gzipped CSV. There is a
+gzip-decompressing loader, and a CSV loader, but no single loader that does
+both. Thankfully, there is a special loader called [[@extref saveload-chain][=chain=]] that allows for
+multiple loaders to be /chained/ together. We can see it's automatically been used
+here, and if we inspect the =Data.toml= we an see the following generated
+representation of the boston housing data, in which the [[@extref saveload-compressed][=gzip=]] and [[@extref saveload-csv][=csv=]] loaders are
+both used.
+
+#+begin_src toml
+[[boston]]
+uuid = "02968c42-828e-4f22-86b8-ec67ac629a03"
+description = "The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass."
+
+    [[boston.storage]]
+    driver = "web"
+    url = "https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz"
+
+    [[boston.loader]]
+    driver = "chain"
+    loaders = ["gzip", "csv"]
+    type = ["DataFrame", "Matrix", "CSV.File"]
+#+end_src
+
+#+begin_note
+We can see the loaders =chain= passes the =data= through are given by ~loaders =
+["gzip", "csv"]~. For more information on the =chain= loader see =help :chain= in the
+Data REPL or the online documentation.
+#+end_note
+
+Thanks to this cleverness, obtaining the Boston Housing data as a nice
+~DataFrame~ is as simple as ~d"boston"~ (when =DataFrames= is loaded).
+
+#+begin_src julia-repl
+julia> d"boston"
+506×14 DataFrame
+ Row │ Crim     Zn       Indus    Chas   NOx      Rm       Age      Dis      Rad   ⋯
+     │ Float64  Float64  Float64  Int64  Float64  Float64  Float64  Float64  Int64 ⋯
+─────┼──────────────────────────────────────────────────────────────────────────────
+   1 │ 0.00632     18.0     2.31      0    0.538    6.575     65.2   4.09        1 ⋯
+   2 │ 0.02731      0.0     7.07      0    0.469    6.421     78.9   4.9671      2
+   3 │ 0.02729      0.0     7.07      0    0.469    7.185     61.1   4.9671      2
+  ⋮  │    ⋮        ⋮        ⋮       ⋮       ⋮        ⋮        ⋮        ⋮       ⋮   ⋱
+ 504 │ 0.06076      0.0    11.93      0    0.573    6.976     91.0   2.1675      1
+ 505 │ 0.10959      0.0    11.93      0    0.573    6.794     89.3   2.3889      1
+ 506 │ 0.04741      0.0    11.93      0    0.573    6.03      80.8   2.505       1 ⋯
+#+end_src
+
+** Cleaning the data
+
+Say the data needs some massaging, such as imputation, outlier removal, or
+restructuring. We can cleanly handle this by creating a /second/ dataset that uses
+the value of the /initial/ dataset. Say we consider this initial data unclean, and
+that to "clean" this dataset we filter out the entries where the we only keep
+entries where the =MedV= value is within the 90% quantile. We can easily do this
+with the =make= Data REPL command.
+
+For this, we'll want to use the =StatsBase= package, so we'll add it and then make
+it available to use with ~DataToolkit.@addpkgs~.
+
+#+begin_src julia-repl
+(datatoolkit_tutorial) pkg> add StatsBase
+
+julia> DataToolkit.@addpkgs StatsBase
+#+end_src
+
+#+begin_info
+The ~DataToolkit.@addpkgs StatsBase~ line will need to be executed in every fresh
+Julia session, when creating a data /package/ it makes sense to put this within
+the ~__init__~ function.
+#+end_info
+
+Now we can create the =boston (clean)= dataset with the =make= command.
+
+#+begin_src julia-repl
+(tutorial) data> make boston (clean)
+
+(data) julia> @require StatsBase
+StatsBase
+
+(data) julia> proportion = 0.8
+0.8
+
+(data) julia> column = "MedV"
+
+(data) julia> vals = d"boston"[!, column]
+506-element Vector{Float64}:
+
+(data) julia> minval, maxval = StatsBase.quantile(vals, [0.5 - proportion/2, 0.5 + proportion/2])
+2-element Vector{Float64}:
+ 12.75
+ 34.8
+
+(data) julia> mask = minval .<= vals .<= maxval
+506-element BitVector:
+
+(data) julia> d"boston"[mask, :]
+456×14 DataFrame...
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? DataFrame
+ Description: Cleaned Boston Housing data
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
+
+(tutorial) data>
+#+end_src
+
+We can look inside the =Data.toml= to see the new entry.
+
+#+begin_src toml
+[["boston (clean)"]]
+uuid = "5162814a-120f-4cdc-9958-620189295330"
+description = "Cleaned Boston Housing data"
+
+    [["boston (clean)".loader]]
+    driver = "julia"
+    function = '''
+function (; var"data#boston")
+    @require StatsBase
+    proportion = 0.8
+    column = "MedV"
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .<= vals .<= maxval
+    var"data#boston"[mask, :]
+end
+'''
+    type = "DataFrame"
+
+        ["boston (clean)".loader.arguments]
+        "data#boston" = "📇DATASET<<boston::DataFrame>>"
+#+end_src
+
+** Fitting a linear model
+
+Now let's say we want to fit a linear model for the relationship between =MedV=
+and =Rm=. We could do this in a script ... or create another derived dataset.
+
+Let's do this with =GLM=, so first run ~] add GLM~, then ~DataToolkit.@addpkgs GLM~.
+Now we'll create another derived data set with =make=.
+
+#+begin_src julia-repl
+(tutorial) data> make boston Rm ~ MedV
+
+(data) julia> @require GLM
+
+(data) julia> GLM.lm(GLM.@formula(Rm ~ MedV), d"boston (clean)")
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? Any
+ Description: A linear model for the relation between Rm and MedV
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created 'boston Rm ~ MedV' (e720acb2-5ed1-417f-bfd0-668c21134c87)
+
+(tutorial) data>
+#+end_src
+
+#+begin_info
+For now, manually specify ~Any~ as the return type instead of the default
+~StatsModels.TableRegressionModel{GLM.LinearModel{GLM.LmResp{Array{Float64,1}},GLM.DensePredChol{Float64,LinearAlgebra.CholeskyPivoted{Float64,Array{Float64,2},Array{Int64,1}}}},Array{Float64,2}}~.
+It's currently difficult for =DataToolkitBase= to represent types that rely on
+nested modules, which occurs here.
+#+end_info
+
+Obtaining the linear regression result is as easy as fetching any other dataset.
+
+#+begin_src julia-repl
+julia> d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.95241     0.0753342  65.74    <1e-99  4.80436    5.10045
+MedV         0.0588453   0.0033047  17.81    <1e-53  0.0523509  0.0653397
+─────────────────────────────────────────────────────────────────────────
+#+end_src
+
+** A more easily tunable cleaner
+
+In the current implementation of =boston (clean)=, we hardcoded a ~proportion~
+value of ~0.8~, and set the ~column~ to ~"MedV"~. It could be nice if we made those
+more easily tunable. We can do this by turning them into keyword arguments of
+the function.
+
+To make this change, we will use the [[@extref repl-edit][=edit=]] Data REPL command.
+
+#+begin_src julia-repl
+(tutorial) data> edit boston (clean)
+#+end_src
+
+This will open up a temporary TOML file containing the =boston (clean)= dataset in
+your text editor of choice. In this file, change the function to:
+
+#+begin_src julia
+function (; var"data#boston", proportion, column)
+    @require StatsBase
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .<= vals .<= maxval
+    var"data#boston"[mask, :]
+end
+#+end_src
+
+We will then move the ~proportion = 0.8~ and ~column = "MedV"~ lines to the
+arguments table.
+
+#+begin_src toml
+["boston (clean)".loader.arguments]
+"data#boston" = "📇DATASET<<boston::DataFrame>>"
+proportion = 0.8
+column = "MedV"
+#+end_src
+
+Aftre making these changes and closing the file, we'll be asked if we want to
+make this change (we do).
+
+#+begin_src julia-repl
+(tutorial) data> edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       + Added column
+       + Added proportion
+     ~ Modified function:
+       "function (; var\"data#boston\")\n    @require StatsBase\n    proportion = 0.9\n    column = \"MedV\"\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n" ~> "function (; var\"data#boston\", proportion, column)\n    @require StatsBase\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .<= vals .<= maxval\n    var\"data#boston\"[mask, :]\nend\n"
+ Does this look correct? [y/N]: y
+ ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
+#+end_src
+
+** Propagating changes
+
+With our new parameterisation of the cleaning step, we can now easily tune the
+cleaning step. We can see the results of this propagating through in the =boston
+Rm ~ MedV= dataset.
+
+First, see that the ~d"boston Rm ~ MedV"~ result is the same as it was before.
+
+#+begin_src julia-repl
+julia> d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.98609     0.0978742  50.94    <1e-99  4.79369    5.1785
+MedV         0.0563562   0.0044222  12.74    <1e-30  0.0476627  0.0650497
+─────────────────────────────────────────────────────────────────────────
+#+end_src
+
+Now, =edit= the =boston (clean)= dataset again and change the ~proportion~ to ~0.95~.
+
+#+begin_src julia-repl
+(tutorial) data> edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       ~ Modified proportion:
+         0.8 ~> 0.95
+ Does this look correct? [y/N]: y
+ ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
+#+end_src
+
+Since =boston (clean)= is an input of =boston Rm ~ MedV=, and all inputs are
+recursively hashed (like in a [[https://en.wikipedia.org/wiki/Merkle_tree][Merkle tree]]), we can immediately see the (small)
+change simply by fetching it again --- it is automatically recomputed.
+
+#+begin_src julia-repl
+julia> d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(>|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  5.05849    0.0618848   81.74    <1e-99   4.9369    5.18008
+MedV         0.0541727  0.00251511  21.54    <1e-72   0.049231  0.0591144
+─────────────────────────────────────────────────────────────────────────
+#+end_src
+
+* The final =Data.toml=
+
+At the end of this tutorial (or should you wish to just poke at the results),
+you should end up with a =Data.toml= that looks like this:
+
+#+begin_src toml
+data_config_version = 0
+uuid = "f20a77d0-0dc9-41bb-875b-ad0bf42c90bd"
+name = "tutorial"
+plugins = ["defaults", "store"]
+
+[config.defaults.storage._]
+checksum = "auto"
+
+[[boston]]
+uuid = "02968c42-828e-4f22-86b8-ec67ac629a03"
+description = "The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass."
+
+    [[boston.storage]]
+    driver = "web"
+    checksum = "k12:663371e9040b883267104b32d8ac28e6"
+    url = "https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz"
+
+    [[boston.loader]]
+    driver = "chain"
+    loaders = ["gzip", "csv"]
+
+[["boston (clean)"]]
+uuid = "5162814a-120f-4cdc-9958-620189295330"
+description = "Cleaned Boston Housing data"
+
+    [["boston (clean)".loader]]
+    driver = "julia"
+    function = '''
+function (; var"data#boston", proportion, column)
+    @require StatsBase
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .<= vals .<= maxval
+    var"data#boston"[mask, :]
+end
+'''
+    type = "DataFrame"
+
+        ["boston (clean)".loader.arguments]
+        column = "MedV"
+        "data#boston" = "📇DATASET<<boston::DataFrame>>"
+        proportion = 0.95
+
+[["boston Rm ~ MedV"]]
+uuid = "e720acb2-5ed1-417f-bfd0-668c21134c87"
+description = "A linear model for the relation between Rm and MedV"
+
+    [["boston Rm ~ MedV".loader]]
+    driver = "julia"
+    function = """
+function (; var\"data#boston (clean)\")
+    @require GLM
+    GLM.lm(GLM.@formula(Rm ~ MedV), var\"data#boston (clean)\")
+end
+"""
+
+        ["boston Rm ~ MedV".loader.arguments]
+        "data#boston (clean)" = "📇DATASET<<boston (clean)::DataFrame>>"
+
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+
+        [iris.loader.args]
+        header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+        skipto = 2
+#+end_src

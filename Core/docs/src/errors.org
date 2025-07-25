@@ -1,0 +1,43 @@
+#+title: Errors
+
+This package tries to minimise the use of generic errors, and maximise the
+helpfulness of error messages. To that end, a number of new error types are
+defined.
+
+* Identifier exceptions
+
+#+begin_src @docs
+UnresolveableIdentifier
+AmbiguousIdentifier
+#+end_src
+
+* Package exceptions
+
+#+begin_src @docs
+UnregisteredPackage
+MissingPackage
+#+end_src
+
+* Data Operation exceptions
+
+#+begin_src @docs
+CollectionVersionMismatch
+EmptyStackError
+ReadonlyCollection
+TransformerError
+UnsatisfyableTransformer
+OrphanDataSet
+InvalidParameterType
+#+end_src
+
+* Qualified type exceptions
+
+#+begin_src @docs
+ImpossibleTypeException
+#+end_src
+
+* Log exception
+
+#+begin_src @docs
+DataToolkitCore.LogTaskError
+#+end_src

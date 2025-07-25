@@ -1,0 +1,377 @@
+<!DOCTYPE html><HTML lang="en"><head><script charset="utf-8" src="../../assets/default/multidoc_injector.js" type="text/javascript"></script><script charset="utf-8" type="text/javascript">window.MULTIDOCUMENTER_ROOT_PATH = '/DataToolkit.jl/'</script><script charset="utf-8" src="../../assets/default/flexsearch.bundle.js" type="text/javascript"></script><script charset="utf-8" src="../../assets/default/flexsearch_integration.js" type="text/javascript"></script><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Tutorial · DataToolkit.jl</title><meta content="Tutorial · DataToolkit.jl" name="title"/><meta content="Tutorial · DataToolkit.jl" property="og:title"/><meta content="Tutorial · DataToolkit.jl" property="twitter:title"/><meta content="Documentation for DataToolkit.jl." name="description"/><meta content="Documentation for DataToolkit.jl." property="og:description"/><meta content="Documentation for DataToolkit.jl." property="twitter:description"/><script data-outdated-warner="" src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" data-theme-name="catppuccin-mocha" href="../assets/themes/catppuccin-mocha.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" data-theme-name="catppuccin-macchiato" href="../assets/themes/catppuccin-macchiato.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" data-theme-name="catppuccin-frappe" href="../assets/themes/catppuccin-frappe.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" data-theme-name="catppuccin-latte" href="../assets/themes/catppuccin-latte.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" data-theme-name="documenter-dark" data-theme-primary-dark="" href="../assets/themes/documenter-dark.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" data-theme-name="documenter-light" data-theme-primary="" href="../assets/themes/documenter-light.css" rel="stylesheet" type="text/css"/><script src="../assets/themeswap.js"></script><link href="../assets/favicon.ico" rel="icon" type="image/x-icon"/><link href="../../assets/default/multidoc.css" rel="stylesheet" type="text/css"/><link href="../../assets/default/flexsearch.css" rel="stylesheet" type="text/css"/></head><body><nav id="multi-page-nav"><a class="brand" href="../../../../DataToolkit.jl"><img alt="home" src="../../logo-small.svg"/></a><div class="hidden-on-mobile" id="nav-items"><a class="nav-link active nav-item" href="../">DataToolkit</a><a class="nav-link nav-item" href="../../repl/">REPL</a><a class="nav-link nav-item" href="../../common/">Common</a><a class="nav-link nav-item" href="../../store/">Store</a><a class="nav-link nav-item" href="../../core/">Core</a><div class="nav-dropdown"><button class="nav-item dropdown-label">Collections</button><ul class="nav-dropdown-container"></ul></div><div class="search nav-item"><input id="search-input" placeholder="Search..."/><ul class="suggestions hidden" id="search-result-container"></ul><div class="search-keybinding">/</div></div></div><button id="multidoc-toggler"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"></path></svg></button></nav><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img alt="DataToolkit.jl logo" src="../assets/logo.svg"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">DataToolkit.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li class="is-active"><a class="tocitem" href="">Tutorial</a><ul class="internal"><li><a class="tocitem" href="#Initialising-a-Data-Collection"><span>Initialising a Data Collection</span></a></li><li><a class="tocitem" href="#Adding-and-loading-the-Iris-data-set"><span>Adding and loading the Iris data set</span></a></li><li><a class="tocitem" href="#Multi-step-analysis-with-the-Boston-Housing-data-set"><span>Multi-step analysis with the Boston Housing data set</span></a></li><li><a class="tocitem" href="#The-final-Data.toml"><span>The final <code>Data.toml</code></span></a></li></ul></li><li><a class="tocitem" href="../datatoml/">Data.toml format</a></li><li><a class="tocitem" href="../reference/">Reference</a></li><li><a class="tocitem" href="../quickref/">Quick Reference Guide</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" href="#" id="documenter-sidebar-button"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href="">Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="">Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/tecosaur/DataToolkit.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/tecosaur/DataToolkit.jl/blob/main/Main/docs/src/tutorial.org" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" href="#" id="documenter-settings-button" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" href="javascript:;" id="documenter-article-toggle-button" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Tutorial"><a class="docs-heading-anchor" href="#Tutorial">Tutorial</a><a id="Tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#Tutorial" title="Permalink"></a></h1><p>In this tutorial you will be guided through some of the main usage patterns involving <code>DataToolkit</code>. After doing the first step (<em>Initialising a Data Collection</em>), all other sections can be treated as self-contained exercises.</p><h2 id="Initialising-a-Data-Collection"><a class="docs-heading-anchor" href="#Initialising-a-Data-Collection">Initialising a Data Collection</a><a id="Initialising-a-Data-Collection-1"></a><a class="docs-heading-anchor-permalink" href="#Initialising-a-Data-Collection" title="Permalink"></a></h2><p>First, we will create a new environment to run through the tutorial in, and load the <code>DataToolkit</code> package.</p><pre><code class="language-julia-repl hljs">julia&gt; using Pkg
+
+julia&gt; expanduser("~/Documents/datatoolkit_tutorial") |&gt; mkpath |&gt; cd
+
+julia&gt; Pkg.activate(".")
+  Activating new project at `~/Documents/datatoolkit_tutorial`
+
+julia&gt; Pkg.add("DataToolkit")
+   Resolving package versions...
+    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+  [dc83c90b] + DataToolkit
+  ...
+Precompiling project...
+
+julia&gt; using DataToolkit</code></pre><p>Notice that by typing <code>}</code> at an empty <code>julia&gt;</code> prompt, the REPL prompt will change to <code>(⋅) data&gt;</code> (in the same way that typing <code>]</code> enters the <code>pkg&gt;</code> REPL). This is the "Data REPL", and the <code>(⋅)</code> prefix indicates the current project. When there is no current project, the dot is shown.</p><p>In the data REPL, we can see a list of all the available commands by typing <code>help</code> or <code>?</code>, which will pull up a command list like so:</p><pre><code class="nohighlight hljs">(⋅) data&gt; help
+ Command  Action
+ ────────────────────────────────────────────────────────
+ &lt;cmd&gt;    &lt;brief description of what cmd does&gt;
+ ...      ...
+ help     Display help text for commands and transformers</code></pre><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>Get more information on a particular command with <code>help &lt;cmd&gt;</code>, you can even get more information on what <code>help</code> does with <code>help help</code> 😉.</p></div></div><p>We will initialise a new data collection with the <a href="https://tecosaur.github.io/DataToolkit.jl/repl/commands/#repl-init"><code>init</code></a> command.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>We can use the full command (<code>init</code>), or any substring that uniquely identifies the command (e.g. <code>it</code>).</p></div></div><pre><code class="nohighlight hljs">(⋅) data&gt; init
+ Create Data.toml for current project? [Y/n]: y
+ Name: tutorial
+ Use checksums by default? [Y/n]: n
+ ✓ Created new data collection 'tutorial' at /home/tec/Documents/datatoolkit_tutorial/Data.toml</code></pre><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>There are a few other ways <code>init</code> can be used, see the full docs with <code>help init</code>.</p></div></div><p>If we look at the <code>~/Documents/datatoolkit_tutorial</code> folder, we should now see three files.</p><pre><code class="nohighlight hljs">shell&gt; tree
+.
+├── Data.toml
+├── Manifest.toml
+└── Project.toml</code></pre><p>Looking inside the <code>Data.toml</code>, we can see what a data collection with no data sets looks like:</p><pre><code class="language-toml hljs">data_config_version = 0
+uuid = "f20a77d0-0dc9-41bb-875b-ad0bf42c90bd"
+name = "tutorial"
+plugins = ["store", "defaults", "memorise"]</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>The plugins <a href="https://tecosaur.github.io/DataToolkit.jl/common/plugins/addpkgs/#plugin-addpkgs"><code>store</code></a>, <a href="https://tecosaur.github.io/DataToolkit.jl/common/plugins/defaults/#plugin-defaults"><code>defaults</code></a>, and <a href="https://tecosaur.github.io/DataToolkit.jl/common/plugins/memorise/#plugin-memorise"><code>memorise</code></a> are the default set of plugins, which is why we see them here. A minimal <code>Data.toml</code> would have <code>plugins = []</code>.</p></div></div><p>At this point, we have created a new data collection, and seen what is created. If we close the Julia session and re-open a REPL in the <code>datatoolkit_test</code> project, loading <code>DataToolkit</code> will automatically cause the data collection we just created to be loaded as well, as seen in the prompt prefix.</p><pre><code class="language-julia-repl hljs">julia&gt; using DataToolkit
+
+(tutorial) data&gt; # after typing '}'</code></pre><h2 id="Adding-and-loading-the-Iris-data-set"><a class="docs-heading-anchor" href="#Adding-and-loading-the-Iris-data-set">Adding and loading the Iris data set</a><a id="Adding-and-loading-the-Iris-data-set-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-and-loading-the-Iris-data-set" title="Permalink"></a></h2><p>Now we have a data collection, we can add data sets too it. Fisher's <em>Iris</em> data set is part of the <code>scikit-learn</code> repository, which makes it fairly easy to find a link to it: <a href="https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv">https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv</a></p><p>We can easily add this as a <a href="https://tecosaur.github.io/DataToolkit.jl/core/datasets/#DataToolkitCore.DataSet"><code>DataSet</code></a> using the <a href="https://tecosaur.github.io/DataToolkit.jl/repl/commands/#repl-add"><code>add</code></a> Data REPL command,</p><pre><code class="nohighlight hljs">(tutorial) data&gt; add iris https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+ Description: Fisher's famous Iris flower measurements
+ ✓ Created 'iris' (3f3d7714-22aa-4555-a950-78f43b74b81c)
+ DataSet tutorial:iris
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: csv(DataFrame, Matrix, File)</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>Say halfway through we decide we don't want to proceed with this Data REPL command, at any point we can interrupt it with <code>^C</code> (Control + <code>C</code>) and abort the action. This works with other Data REPL commands in the same way.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; add iris https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv
+ Description:  ! Aborted</code></pre></div></div><p>The <code>add</code> command tries to be a bit clever and guess how the data should be acquired and loaded. In this case it (correctly) guessed that this file should be downloaded from the web, and loaded as a CSV. It is worth noting that downloading will occur when <code>iris</code> is first accessed or the <code>store fetch</code> Data REPL command is run.</p><p>The <code>DataSet tutorial:iris</code> and <code>Storage:</code>​/​<code>Loaders:</code> lines are how all <code>DataSet</code>​s are displayed. Using the <code>dataset</code> function we can obtain any data set easily by name, and so <code>dataset("iris")</code> will show the same information.</p><pre><code class="language-julia-repl hljs">julia&gt; dataset("iris")
+DataSet tutorial:iris
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: csv(DataFrame, Matrix, File)</code></pre><p>We can see from the <code>Storage: web(IO, Vector{UInt8}, String, FilePath)</code> line that the <a href="https://tecosaur.github.io/DataToolkit.jl/common/storage/web/#storage-web"><code>web</code></a> storage driver is being used, and it can make the content available as an <code>IO</code>, <code>Vector{UInt8}</code>, <code>String</code>, or <code>FilePath</code> (a string wrapper type provided by <code>DataToolkitBase</code> for dispatch purposes). Similarly, the <code>Loaders: csv(DataFrame, Matrix, File)</code> tells us that the <a href="https://tecosaur.github.io/DataToolkit.jl/common/saveload/csv/#saveload-csv"><code>csv</code></a> loader is being used, and it can provide a <code>DataFrame</code>, <code>Matrix</code>, or <code>CSV.File</code>.</p><p>If we look at the <code>Data.toml</code> again, we can see how the <code>iris</code> data set is represented:</p><pre><code class="language-toml hljs">[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"</code></pre><p>To obtain a particular loaded form of the data set, we can use the <code>read</code> function. For instance, <code>read(dataset("iris"), DataFrame)</code> or <code>read(dataset("iris"), Matrix)</code>. We can also omit the second argument, in which case the first form that <em>can</em> be loaded will be (e.g. in this case since <code>DataFrames</code> is not loaded, <code>iris</code> can not be loaded as a <code>DataFrame</code>, but it can be loaded as a <code>Matrix</code>, and so it will be).</p><pre><code class="nohighlight hljs">julia&gt; read(dataset("iris"))
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
+ │ Package KangarooTwelve not found, but a package named KangarooTwelve is available from a registry.
+ │ Install package?
+ │   (dt_test) pkg&gt; add KangarooTwelve
+ └ (y/n/o) [y]: y
+    Updating registry at `~/.julia/registries/General.toml`
+   Resolving package versions...
+    Updating `/tmp/dt_test/Project.toml`
+  [2a5dabf5] + KangarooTwelve v1.0.0
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
+[ Info: Lazy-loading KangarooTwelve [2a5dabf5-6a39-42aa-818d-ce8a58d1b312]
+[ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
+ │ Package CSV not found, but a package named CSV is available from a registry.
+ │ Install package?
+ │   (dt_test) pkg&gt; add CSV
+ └ (y/n/o) [y]:
+   Resolving package versions...
+    Updating `/tmp/dt_test/Project.toml`
+  [336ed68f] + CSV v0.10.11
+    Updating `/tmp/dt_test/Manifest.toml`
+    ...
+[ Info: Lazy-loading CSV [336ed68f-0bac-5ca0-87d4-7b16caf5d00b]
+150×5 Matrix{Float64}:
+ 5.1  3.5  1.4  0.2  0.0
+ 4.9  3.0  1.4  0.2  0.0
+ 4.7  3.2  1.3  0.2  0.0
+ ⋮
+ 6.5  3.0  5.2  2.0  2.0
+ 6.2  3.4  5.4  2.3  2.0
+ 5.9  3.0  5.1  1.8  2.0</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>We haven't installed the <code>KangarooTwelve</code> (a cryptographic hash) or <code>CSV</code> packages, but thanks to the lazy-loading system we are presented with the option to install them on-the-fly. The <code>KangarooTwelve</code> package is only used when hashing new data, or verifying the hash of downloaded data. Should you want to avoid lazy-loading, you can always just load the <code>CSV</code> package yourself before trying to access information that uses the <code>csv</code> loader.</p></div></div><p>Because <code>read(dataset("iris"))</code> is a fairly common pattern, for convenience there is a <code>d""</code> "data set in loaded form" macro. <code>d"iris"</code> is equivalent to <code>read(dataset("iris"))</code>.</p><p>Having the <code>iris</code> data as a <code>Matrix</code> is fine, but it would be nicer to have it as a <code>DataFrame</code>. Since that is the first format listed, if we just install <code>DataFrames</code> and ask for <code>iris</code> again (but this time using the <code>d""</code> macro).</p><pre><code class="language-julia-repl hljs">julia&gt; using DataFrames
+ │ Package DataFrames not found, but a package named DataFrames is available from a registry.
+ │ Install package?
+ │   (datatoolkit_tutorial) pkg&gt; add DataFrames
+ └ (y/n/o) [y]:
+   Resolving package versions...
+    Updating `~/Documents/datatoolkit_tutorial/Project.toml`
+  [a93c6f00] + DataFrames v1.6.1
+  ...
+  1 dependency successfully precompiled in 25 seconds. 41 already precompiled.
+
+julia&gt; d"iris"
+150×5 DataFrame
+ Row │ 150      4        setosa   versicolor  virginica
+     │ Float64  Float64  Float64  Float64     Int64
+─────┼──────────────────────────────────────────────────
+   1 │     5.1      3.5      1.4         0.2          0
+   2 │     4.9      3.0      1.4         0.2          0
+   3 │     4.7      3.2      1.3         0.2          0
+  ⋮  │    ⋮        ⋮        ⋮         ⋮           ⋮
+ 149 │     6.2      3.4      5.4         2.3          2
+ 150 │     5.9      3.0      5.1         1.8          2</code></pre><p>That's nicer, but wait, those column names aren't right! The first line appears to be describing the size of the data (150×4) and the three category names, when the columns should be:</p><ul><li><code>sepal_length</code>,</li><li><code>sepal_width</code>,</li><li><code>petal_length</code>,</li><li><code>petal_width</code>, and</li><li><code>species_class</code></li></ul><p>Perhaps there's a way we can specify the correct column names? We could check the online docs for the CSV loader, but we can also look at them with the <code>help</code> Data REPL command.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; help :csv
+  Parse and serialize CSV data
+
+  ...
+
+  Parameters
+  ≡≡≡≡≡≡≡≡≡≡≡≡
+
+    •  args: keyword arguments to be provided to CSV.File, see
+       https://csv.juliadata.org/stable/reading.html#CSV.File.
+
+  As a quick-reference, some arguments of particular interest are:
+
+    •  header: Either,
+       • the row number to parse for column names
+       • the list of column names
+
+  ...</code></pre><p>Perfect! Looks like we can just set the <code>args.header</code> parameter of the <code>csv</code> loader, and we'll get the right column names. To easily do so, we can make use of the <code>edit</code> Data REPL command, which opens up a TOML file with just a single data set in <code>$JULIA_EDITOR</code> (which defaults to <code>$VISUAL</code>​/​<code>$EDITOR</code>) and records the changes upon exit.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; edit iris</code></pre><p>Setting <code>args.header</code> is as simple as editing the <code>iris</code> loader to the following value (adding one line):</p><pre><code class="language-toml hljs">[[iris.loader]]
+driver = "csv"
+args.header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]</code></pre><p>After saving and exiting, you'll be presented with a summary of the changes and a prompt to accept them.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; edit iris
+ ~ Modified loader:
+   ~ Modified [1]:
+     + Added args
+ Does this look correct? [y/N]: y
+ ✓ Edited 'iris' (3f3d7714-22aa-4555-a950-78f43b74b81c)</code></pre><p>Now if we ask for the <code>iris</code> data set again, we should see the correct headers.</p><pre><code class="language-julia-repl hljs">julia&gt; d"iris"
+151×5 DataFrame
+ Row │ sepal_length  sepal_width  petal_length  petal_width  species_class
+     │ Float64       Float64      String7       String15     String15
+─────┼─────────────────────────────────────────────────────────────────────
+   1 │        150.0          4.0  setosa        versicolor   virginica
+   2 │          5.1          3.5  1.4           0.2          0
+   3 │          4.9          3.0  1.4           0.2          0
+  ⋮  │      ⋮             ⋮            ⋮             ⋮             ⋮
+ 150 │          6.2          3.4  5.4           2.3          2
+ 151 │          5.9          3.0  5.1           1.8          2</code></pre><p>The headers are correct, but now the first line is counted as part of the data. This can be fixed by editing <code>iris</code> again and setting <code>args.skipto</code> to <code>2</code> in the <code>csv</code> loader settings.</p><p>The final <code>iris</code> entry in the <code>Data.toml</code> should look like so:</p><pre><code class="language-toml hljs">[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+
+        [iris.loader.args]
+        header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+        skipto = 2</code></pre><p>Now, you have a <code>Project.toml</code>, <code>Manifest.toml</code>, and <code>Data.toml</code> that can be relocated to other systems and <code>d"iris"</code> will consistently produce the exact same <code>DataFrame</code>.</p><h3 id="On-ensuring-the-integrity-of-the-downloaded-data"><a class="docs-heading-anchor" href="#On-ensuring-the-integrity-of-the-downloaded-data">On ensuring the integrity of the downloaded data</a><a id="On-ensuring-the-integrity-of-the-downloaded-data-1"></a><a class="docs-heading-anchor-permalink" href="#On-ensuring-the-integrity-of-the-downloaded-data" title="Permalink"></a></h3><p>One of the three plugins used by default is the <code>store</code> plugin. It is responsible for caching IO data and checking data validity. For a more complete description of what it does, see the web docs or the Data REPL (sub)command <code>plugin info store</code>.</p><p>There are two immediate impacts of this plugin we can easily observe. The first is that we can load the <code>iris</code> data set offline in a fresh Julia session, and in fact if we copy the <code>iris</code> specification into a separate data set it will re-use the <em>same</em> downloaded data.</p><p>The second, is that by setting <code>iris</code>'s <code>web</code> storage driver's <code>checksum</code> property to <code>"auto"</code> (as is done by default), the next time we load <code>iris</code> a checksum will be generated and saved. If in future the <code>web</code> storage driver produces different data, this will now be caught and raised. This can be done automatically by setting the default value to <code>"auto"</code>, which we were prompted to do during initialisation.</p><h2 id="Multi-step-analysis-with-the-Boston-Housing-data-set"><a class="docs-heading-anchor" href="#Multi-step-analysis-with-the-Boston-Housing-data-set">Multi-step analysis with the Boston Housing data set</a><a id="Multi-step-analysis-with-the-Boston-Housing-data-set-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-step-analysis-with-the-Boston-Housing-data-set" title="Permalink"></a></h2><h3 id="Loading-the-data"><a class="docs-heading-anchor" href="#Loading-the-data">Loading the data</a><a id="Loading-the-data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-the-data" title="Permalink"></a></h3><p>The <em>Boston Housing</em> data set is part of the <code>RDatasets</code> package, and we can obtain a link to the raw data file in the repository: <a href="https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz">https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz</a></p><p>As with the Iris data, we will use the <code>add</code> Data REPL command to conveniently create a new data set.</p><pre><code class="nohighlight hljs">(tutorial) data&gt; add boston https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz
+ Description: The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass.
+ ✓ Created 'boston' (02968c42-828e-4f22-86b8-ec67ac629a03)
+ DataSet tutorial:boston
+  Storage: web(IO, Vector{UInt8}, String, FilePath)
+  Loaders: chain(DataFrame, Matrix, File)</code></pre><p>This example is a bit more complicated because we have a gzipped CSV. There is a gzip-decompressing loader, and a CSV loader, but no single loader that does both. Thankfully, there is a special loader called <a href="https://tecosaur.github.io/DataToolkit.jl/common/saveload/chain/#saveload-chain"><code>chain</code></a> that allows for multiple loaders to be <em>chained</em> together. We can see it's automatically been used here, and if we inspect the <code>Data.toml</code> we an see the following generated representation of the boston housing data, in which the <a href="https://tecosaur.github.io/DataToolkit.jl/common/saveload/compressed/#saveload-compressed"><code>gzip</code></a> and <a href="https://tecosaur.github.io/DataToolkit.jl/common/saveload/csv/#saveload-csv"><code>csv</code></a> loaders are both used.</p><pre><code class="language-toml hljs">[[boston]]
+uuid = "02968c42-828e-4f22-86b8-ec67ac629a03"
+description = "The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass."
+
+    [[boston.storage]]
+    driver = "web"
+    url = "https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz"
+
+    [[boston.loader]]
+    driver = "chain"
+    loaders = ["gzip", "csv"]
+    type = ["DataFrame", "Matrix", "CSV.File"]</code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>We can see the loaders <code>chain</code> passes the <code>data</code> through are given by <code>loaders = ["gzip", "csv"]</code>. For more information on the <code>chain</code> loader see <code>help :chain</code> in the Data REPL or the online documentation.</p></div></div><p>Thanks to this cleverness, obtaining the Boston Housing data as a nice <code>DataFrame</code> is as simple as <code>d"boston"</code> (when <code>DataFrames</code> is loaded).</p><pre><code class="language-julia-repl hljs">julia&gt; d"boston"
+506×14 DataFrame
+ Row │ Crim     Zn       Indus    Chas   NOx      Rm       Age      Dis      Rad   ⋯
+     │ Float64  Float64  Float64  Int64  Float64  Float64  Float64  Float64  Int64 ⋯
+─────┼──────────────────────────────────────────────────────────────────────────────
+   1 │ 0.00632     18.0     2.31      0    0.538    6.575     65.2   4.09        1 ⋯
+   2 │ 0.02731      0.0     7.07      0    0.469    6.421     78.9   4.9671      2
+   3 │ 0.02729      0.0     7.07      0    0.469    7.185     61.1   4.9671      2
+  ⋮  │    ⋮        ⋮        ⋮       ⋮       ⋮        ⋮        ⋮        ⋮       ⋮   ⋱
+ 504 │ 0.06076      0.0    11.93      0    0.573    6.976     91.0   2.1675      1
+ 505 │ 0.10959      0.0    11.93      0    0.573    6.794     89.3   2.3889      1
+ 506 │ 0.04741      0.0    11.93      0    0.573    6.03      80.8   2.505       1 ⋯</code></pre><h3 id="Cleaning-the-data"><a class="docs-heading-anchor" href="#Cleaning-the-data">Cleaning the data</a><a id="Cleaning-the-data-1"></a><a class="docs-heading-anchor-permalink" href="#Cleaning-the-data" title="Permalink"></a></h3><p>Say the data needs some massaging, such as imputation, outlier removal, or restructuring. We can cleanly handle this by creating a <em>second</em> dataset that uses the value of the <em>initial</em> dataset. Say we consider this initial data unclean, and that to "clean" this dataset we filter out the entries where the we only keep entries where the <code>MedV</code> value is within the 90% quantile. We can easily do this with the <code>make</code> Data REPL command.</p><p>For this, we'll want to use the <code>StatsBase</code> package, so we'll add it and then make it available to use with <code>DataToolkit.@addpkgs</code>.</p><pre><code class="language-julia-repl hljs">(datatoolkit_tutorial) pkg&gt; add StatsBase
+
+julia&gt; DataToolkit.@addpkgs StatsBase</code></pre><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>The <code>DataToolkit.@addpkgs StatsBase</code> line will need to be executed in every fresh Julia session, when creating a data <em>package</em> it makes sense to put this within the <code>__init__</code> function.</p></div></div><p>Now we can create the <code>boston (clean)</code> dataset with the <code>make</code> command.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; make boston (clean)
+
+(data) julia&gt; @require StatsBase
+StatsBase
+
+(data) julia&gt; proportion = 0.8
+0.8
+
+(data) julia&gt; column = "MedV"
+
+(data) julia&gt; vals = d"boston"[!, column]
+506-element Vector{Float64}:
+
+(data) julia&gt; minval, maxval = StatsBase.quantile(vals, [0.5 - proportion/2, 0.5 + proportion/2])
+2-element Vector{Float64}:
+ 12.75
+ 34.8
+
+(data) julia&gt; mask = minval .&lt;= vals .&lt;= maxval
+506-element BitVector:
+
+(data) julia&gt; d"boston"[mask, :]
+456×14 DataFrame...
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? DataFrame
+ Description: Cleaned Boston Housing data
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)
+
+(tutorial) data&gt;</code></pre><p>We can look inside the <code>Data.toml</code> to see the new entry.</p><pre><code class="language-toml hljs">[["boston (clean)"]]
+uuid = "5162814a-120f-4cdc-9958-620189295330"
+description = "Cleaned Boston Housing data"
+
+    [["boston (clean)".loader]]
+    driver = "julia"
+    function = '''
+function (; var"data#boston")
+    @require StatsBase
+    proportion = 0.8
+    column = "MedV"
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .&lt;= vals .&lt;= maxval
+    var"data#boston"[mask, :]
+end
+'''
+    type = "DataFrame"
+
+        ["boston (clean)".loader.arguments]
+        "data#boston" = "📇DATASET&lt;&lt;boston::DataFrame&gt;&gt;"</code></pre><h3 id="Fitting-a-linear-model"><a class="docs-heading-anchor" href="#Fitting-a-linear-model">Fitting a linear model</a><a id="Fitting-a-linear-model-1"></a><a class="docs-heading-anchor-permalink" href="#Fitting-a-linear-model" title="Permalink"></a></h3><p>Now let's say we want to fit a linear model for the relationship between <code>MedV</code> and <code>Rm</code>. We could do this in a script … or create another derived dataset.</p><p>Let's do this with <code>GLM</code>, so first run <code>] add GLM</code>, then <code>DataToolkit.@addpkgs GLM</code>. Now we'll create another derived data set with <code>make</code>.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; make boston Rm ~ MedV
+
+(data) julia&gt; @require GLM
+
+(data) julia&gt; GLM.lm(GLM.@formula(Rm ~ MedV), d"boston (clean)")
+
+^D
+
+ Would you like to edit the final script? [Y/n]: n
+ What is the type of the returned value? Any
+ Description: A linear model for the relation between Rm and MedV
+ Should the script be inserted inline (i), or as a file (f)? i
+ ✓ Created 'boston Rm ~ MedV' (e720acb2-5ed1-417f-bfd0-668c21134c87)
+
+(tutorial) data&gt;</code></pre><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>For now, manually specify <code>Any</code> as the return type instead of the default <code>StatsModels.TableRegressionModel{GLM.LinearModel{GLM.LmResp{Array{Float64,1}},GLM.DensePredChol{Float64,LinearAlgebra.CholeskyPivoted{Float64,Array{Float64,2},Array{Int64,1}}}},Array{Float64,2}}</code>. It's currently difficult for <code>DataToolkitBase</code> to represent types that rely on nested modules, which occurs here.</p></div></div><p>Obtaining the linear regression result is as easy as fetching any other dataset.</p><pre><code class="language-julia-repl hljs">julia&gt; d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.95241     0.0753342  65.74    &lt;1e-99  4.80436    5.10045
+MedV         0.0588453   0.0033047  17.81    &lt;1e-53  0.0523509  0.0653397
+─────────────────────────────────────────────────────────────────────────</code></pre><h3 id="A-more-easily-tunable-cleaner"><a class="docs-heading-anchor" href="#A-more-easily-tunable-cleaner">A more easily tunable cleaner</a><a id="A-more-easily-tunable-cleaner-1"></a><a class="docs-heading-anchor-permalink" href="#A-more-easily-tunable-cleaner" title="Permalink"></a></h3><p>In the current implementation of <code>boston (clean)</code>, we hardcoded a <code>proportion</code> value of <code>0.8</code>, and set the <code>column</code> to <code>"MedV"</code>. It could be nice if we made those more easily tunable. We can do this by turning them into keyword arguments of the function.</p><p>To make this change, we will use the <a href="https://tecosaur.github.io/DataToolkit.jl/repl/commands/#repl-edit"><code>edit</code></a> Data REPL command.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)</code></pre><p>This will open up a temporary TOML file containing the <code>boston (clean)</code> dataset in your text editor of choice. In this file, change the function to:</p><pre><code class="language-julia hljs">function (; var"data#boston", proportion, column)
+    @require StatsBase
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .&lt;= vals .&lt;= maxval
+    var"data#boston"[mask, :]
+end</code></pre><p>We will then move the <code>proportion = 0.8</code> and <code>column = "MedV"</code> lines to the arguments table.</p><pre><code class="language-toml hljs">["boston (clean)".loader.arguments]
+"data#boston" = "📇DATASET&lt;&lt;boston::DataFrame&gt;&gt;"
+proportion = 0.8
+column = "MedV"</code></pre><p>Aftre making these changes and closing the file, we'll be asked if we want to make this change (we do).</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       + Added column
+       + Added proportion
+     ~ Modified function:
+       "function (; var\"data#boston\")\n    @require StatsBase\n    proportion = 0.9\n    column = \"MedV\"\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .&lt;= vals .&lt;= maxval\n    var\"data#boston\"[mask, :]\nend\n" ~&gt; "function (; var\"data#boston\", proportion, column)\n    @require StatsBase\n    vals = var\"data#boston\"[!, column]\n    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])\n    mask = minval .&lt;= vals .&lt;= maxval\n    var\"data#boston\"[mask, :]\nend\n"
+ Does this look correct? [y/N]: y
+ ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)</code></pre><h3 id="Propagating-changes"><a class="docs-heading-anchor" href="#Propagating-changes">Propagating changes</a><a id="Propagating-changes-1"></a><a class="docs-heading-anchor-permalink" href="#Propagating-changes" title="Permalink"></a></h3><p>With our new parameterisation of the cleaning step, we can now easily tune the cleaning step. We can see the results of this propagating through in the <code>boston Rm ~ MedV</code> dataset.</p><p>First, see that the <code>d"boston Rm ~ MedV"</code> result is the same as it was before.</p><pre><code class="language-julia-repl hljs">julia&gt; d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  4.98609     0.0978742  50.94    &lt;1e-99  4.79369    5.1785
+MedV         0.0563562   0.0044222  12.74    &lt;1e-30  0.0476627  0.0650497
+─────────────────────────────────────────────────────────────────────────</code></pre><p>Now, <code>edit</code> the <code>boston (clean)</code> dataset again and change the <code>proportion</code> to <code>0.95</code>.</p><pre><code class="language-julia-repl hljs">(tutorial) data&gt; edit boston (clean)
+ ~ Modified loader:
+   ~ Modified [1]:
+     ~ Modified arguments:
+       ~ Modified proportion:
+         0.8 ~&gt; 0.95
+ Does this look correct? [y/N]: y
+ ✓ Edited 'boston (clean)' (5162814a-120f-4cdc-9958-620189295330)</code></pre><p>Since <code>boston (clean)</code> is an input of <code>boston Rm ~ MedV</code>, and all inputs are recursively hashed (like in a <a href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a>), we can immediately see the (small) change simply by fetching it again — it is automatically recomputed.</p><pre><code class="language-julia-repl hljs">julia&gt; d"boston Rm ~ MedV"
+StatsModels.TableRegressionModel{LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+Rm ~ 1 + MedV
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────
+                 Coef.  Std. Error      t  Pr(&gt;|t|)  Lower 95%  Upper 95%
+─────────────────────────────────────────────────────────────────────────
+(Intercept)  5.05849    0.0618848   81.74    &lt;1e-99   4.9369    5.18008
+MedV         0.0541727  0.00251511  21.54    &lt;1e-72   0.049231  0.0591144
+─────────────────────────────────────────────────────────────────────────</code></pre><h2 id="The-final-Data.toml"><a class="docs-heading-anchor" href="#The-final-Data.toml">The final <code>Data.toml</code></a><a id="The-final-Data.toml-1"></a><a class="docs-heading-anchor-permalink" href="#The-final-Data.toml" title="Permalink"></a></h2><p>At the end of this tutorial (or should you wish to just poke at the results), you should end up with a <code>Data.toml</code> that looks like this:</p><pre><code class="language-toml hljs">data_config_version = 0
+uuid = "f20a77d0-0dc9-41bb-875b-ad0bf42c90bd"
+name = "tutorial"
+plugins = ["defaults", "store"]
+
+[config.defaults.storage._]
+checksum = "auto"
+
+[[boston]]
+uuid = "02968c42-828e-4f22-86b8-ec67ac629a03"
+description = "The Boston Housing data set. This contains information collected by the U.S Census Service concerning housing in the area of Boston Mass."
+
+    [[boston.storage]]
+    driver = "web"
+    checksum = "k12:663371e9040b883267104b32d8ac28e6"
+    url = "https://github.com/JuliaStats/RDatasets.jl/raw/v0.7.0/data/MASS/Boston.csv.gz"
+
+    [[boston.loader]]
+    driver = "chain"
+    loaders = ["gzip", "csv"]
+
+[["boston (clean)"]]
+uuid = "5162814a-120f-4cdc-9958-620189295330"
+description = "Cleaned Boston Housing data"
+
+    [["boston (clean)".loader]]
+    driver = "julia"
+    function = '''
+function (; var"data#boston", proportion, column)
+    @require StatsBase
+    vals = var"data#boston"[!, column]
+    (minval, maxval) = StatsBase.quantile(vals, [0.5 - proportion / 2, 0.5 + proportion / 2])
+    mask = minval .&lt;= vals .&lt;= maxval
+    var"data#boston"[mask, :]
+end
+'''
+    type = "DataFrame"
+
+        ["boston (clean)".loader.arguments]
+        column = "MedV"
+        "data#boston" = "📇DATASET&lt;&lt;boston::DataFrame&gt;&gt;"
+        proportion = 0.95
+
+[["boston Rm ~ MedV"]]
+uuid = "e720acb2-5ed1-417f-bfd0-668c21134c87"
+description = "A linear model for the relation between Rm and MedV"
+
+    [["boston Rm ~ MedV".loader]]
+    driver = "julia"
+    function = """
+function (; var\"data#boston (clean)\")
+    @require GLM
+    GLM.lm(GLM.@formula(Rm ~ MedV), var\"data#boston (clean)\")
+end
+"""
+
+        ["boston Rm ~ MedV".loader.arguments]
+        "data#boston (clean)" = "📇DATASET&lt;&lt;boston (clean)::DataFrame&gt;&gt;"
+
+[[iris]]
+uuid = "3f3d7714-22aa-4555-a950-78f43b74b81c"
+description = "Fisher's famous Iris flower measurements"
+
+    [[iris.storage]]
+    driver = "web"
+    checksum = "k12:cfb9a6a302f58e5a9b0c815bb7e8efb4"
+    url = "https://raw.githubusercontent.com/scikit-learn/scikit-learn/1.0/sklearn/datasets/data/iris.csv"
+
+    [[iris.loader]]
+    driver = "csv"
+
+        [iris.loader.args]
+        header = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species_class"]
+        skipto = 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../datatoml/">Data.toml format »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label></p><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div><p></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Friday 25 July 2025 07:27">Friday 25 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></HTML>
