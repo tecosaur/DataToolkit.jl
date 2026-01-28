@@ -7,6 +7,11 @@ Load the inventory at `path`. If it does not exist, it will be created
 so long as `create` is set to `true`.
 """
 function load_inventory(path::String, create::Bool=true)
+    lockfile = if startswith(path, homedir())
+        LockFile(PROJECT_SUBPATH, "inventory", path)
+    else
+        LockFile(path * ".lock")
+    end
     if isfile(path)
         data = open(io -> TOML.parse(io), path)
         if !haskey(data, "inventory_version")
@@ -29,12 +34,12 @@ function load_inventory(path::String, create::Bool=true)
                        for (key, val) in get(data, "collections", Dict{String, Any}[])]
         stores = [convert(StoreSource, s) for s in get(data, "store", Dict{String, Any}[])]
         caches = [convert(CacheSource, c) for c in get(data, "cache", Dict{String, Any}[])]
-        Inventory(file, LockFile(path, "Inventory"), cmerkle,
+        Inventory(file, lockfile, cmerkle,
                   config, collections, stores, caches, last_gc)
     elseif create
         inventory = Inventory(
             MonitoredFile(path),
-            LockFile(path, "Inventory"),
+            lockfile,
             CachedMerkles(MonitoredFile(
                 joinpath(dirname(path), DEFAULT_INVENTORY_CONFIG.store_dir, MERKLE_FILENAME)), []),
             convert(InventoryConfig, Dict{String, Any}()),

@@ -2,7 +2,9 @@ using Test
 
 using DataToolkitStore: DataToolkitStore, MonitoredFile, InventoryConfig,
     CollectionInfo, SourceInfo, Checksum, StoreSource, CacheSource, Inventory,
-    checksum
+    LockFile, iscontested, checksum
+
+using DataToolkitStore.LockFiles: pidlive, pidqueue, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE
 
 @testset "Checksums" begin
     @test checksum(:k12, "DataToolkitStore") ==
@@ -21,6 +23,63 @@ using DataToolkitStore: DataToolkitStore, MonitoredFile, InventoryConfig,
         Checksum(:md5, UInt8[0x2c, 0xd6, 0x92, 0x26, 0xc8, 0xe9, 0x15, 0xe9, 0xda, 0xbb, 0x7f, 0xaa, 0xaa, 0x58, 0x7f, 0x6d])
     @test checksum(:crc32c, "DataToolkitStore") ==
         Checksum(:crc32c, UInt8[0xea, 0xbc, 0x8a, 0x08])
+end
+
+@testset "Lockfile" begin
+    # Get any two other live PIDs so we can pretend to
+    # be multiple processes trying to lock the same file.
+    # Hopefully they won't die while this test is running...
+    fauxpid1, fauxpid2 = Int32(1), Int32(0)
+    while !pidlive(fauxpid1)
+        fauxpid1 += 0x1
+    end
+    fauxpid2 = fauxpid1 + 0x1
+    while pidlive(fauxpid2)
+        fauxpid2 += 0x1
+    end
+    lf1 = LockFile(DataToolkitStore.PROJECT_SUBPATH, "test", "a")
+    lf2 = LockFile(ReentrantLock(), lf1.path,
+                   Base.Filesystem.open(lf1.path, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE),
+                   fauxpid1, false, false, 0.0)
+    lf3 = LockFile(ReentrantLock(), lf1.path,
+                   Base.Filesystem.open(lf1.path, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE),
+                   fauxpid2, false, false, 0.0)
+    @test isfile(lf1.path)
+    @test !islocked(lf1)
+    @test !islocked(lf2)
+    # Acquire the lock on lf1
+    @test trylock(lf1)
+    @test islocked(lf1)
+    @test !iscontested(lf1)
+    @test length(pidqueue(lf1)) == 1
+    @test first(pidqueue(lf1)) == lf1.pid
+    @test islocked(lf2)
+    # Check that lf1 can be re-entrantly locked
+    @test trylock(lf1)
+    @test islocked(lf1)
+    unlock(lf1)
+    @test islocked(lf1)
+    # Confirm that lf2 can't grab the lock
+    @test !trylock(lf2)
+    # Now unlock lf1 and try again with lf2
+    unlock(lf1)
+    @test length(pidqueue(lf1)) == 0
+    @test trylock(lf2)
+    # Create two tasks trying to aquire lf2
+    @test !iscontested(lf2)
+    lt1 = @async lock(lf1)
+    lt3 = @async lock(lf3)
+    sleep(0.01)
+    @test iscontested(lf2)
+    @test !istaskdone(lt1)
+    @test !istaskdone(lt3)
+    @test first(pidqueue(lf2)) == lf2.pid
+    @test length(pidqueue(lf2)) == 3
+    _, q2, q3 = pidqueue(lf2)
+    @test q2 ∈ (lf1.pid, lf3.pid)
+    @test q3 ∈ (lf1.pid, lf3.pid)
+    @test q2 != q3
+    unlock(lf2)
 end
 
 @testset "Merkle trees" begin

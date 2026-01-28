@@ -11,7 +11,9 @@ using UUIDs
     eval(Expr(:public, :load_inventory, :fetch!))
 end
 
-include("lockfile.jl")
+include("lockfiles.jl")
+using .LockFiles
+
 include("types.jl")
 
 const INVENTORY_VERSION = 0
