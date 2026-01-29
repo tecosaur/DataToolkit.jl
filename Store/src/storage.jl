@@ -594,7 +594,10 @@ function storesave(inventory::Inventory, loader::DataLoader, value::Any)
         end
     end
     unique!(modules)
-    pkgs = @lock Base.require_lock map(m -> Base.module_keys[m], modules)
+    pkgs = Base.PkgId[]
+    for (pkg, mod) in Base.loaded_modules
+        mod in modules && push!(pkgs, pkg)
+    end
     !isempty(ptypes) && first(ptypes) == typeof(vunwrap) ||
         pushfirst!(ptypes, typeof(vunwrap))
     newsource = CacheSource(
