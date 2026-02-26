@@ -71,10 +71,12 @@ function trytypeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false
     if !isnothing(mod) && isdefined(mod, qt.name)
         T = getfield(mod, qt.name)
         isempty(qt.parameters) && return T
-        tparams = map(qt.parameters) do p
-            if p isa QualifiedType
-                trytypeify(p; mod)
-            else p end
+        tparams = let mod = mod
+            map(qt.parameters) do p
+                if p isa QualifiedType
+                    trytypeify(p; mod)
+                else p end
+            end
         end
         if any(@. tparams isa TypeVar)
             foldl((t, p) -> UnionAll(p, t),
