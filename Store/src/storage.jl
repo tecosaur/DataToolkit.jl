@@ -177,7 +177,7 @@ function checksum(algorithm::Symbol)
 end
 
 function _checksum(algorithm::Symbol)
-    algorithm === :auto && return _checksum(CHECKSUM_DEFAULT_SCHEME, data)
+    algorithm === :auto && return _checksum(CHECKSUM_DEFAULT_SCHEME)
     hash = if algorithm === :k12
         @require KangarooTwelve
         let k12 = KangarooTwelve.k12
@@ -230,7 +230,7 @@ struct ChecksumMismatch <: Exception
 end
 
 function Base.showerror(io::IO, e::ChecksumMismatch)
-    println(io, "Expected $target checksum $(string(e.expected)), got $(string(e.actual))")
+    println(io, "Expected $(e.target) checksum $(string(e.expected)), got $(string(e.actual))")
 end
 
 function checksumalgorithm(@nospecialize(storage::DataStorage))
