@@ -48,7 +48,7 @@ end
 function Base.tryparse(::Type{Checksum}, checksum::String)
     count(':', checksum) == 1 || return
     typestr, valstr = split(checksum, ':', limit=2)
-    all(c -> '0' <= c <= '9' || 'a' <= c <= 'f', valstr)
+    all(c -> '0' <= c <= '9' || 'a' <= lowercase(c) <= 'f', valstr) || return
     ncodeunits(valstr) % 2 == 0 || return
     hash = map(byteind -> parse(UInt8, view(valstr, byteind), base=16),
                Iterators.partition(1:ncodeunits(valstr), 2))
