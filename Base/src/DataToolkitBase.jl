@@ -56,7 +56,7 @@ function loadproject!(mod::Module, projpath::String; force::Bool=false)
         end
         # Load Data.toml last so that is is first in the stack.
         joinpath(data_dir, "Data.toml") in dfiles &&
-            tryloadcollection!("Data.d/Data.toml", mod, soft=!force)
+            tryloadcollection!(joinpath(data_dir, "Data.toml"), mod, soft=!force)
     end
     # Load Data.toml
     data_file = joinpath(projpath, "Data.toml")
