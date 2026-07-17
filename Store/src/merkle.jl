@@ -193,7 +193,6 @@ function _merkle(root::String, path::String, algorithm::Symbol, checksum_fn::F,
         end
         children = MerkleTree[]
         dirgestive = IOBuffer()
-        write(dirgestive, path)
         for (_, ctree) in sort(childtrees, by=first)
             isnothing(ctree) && continue
             push!(children, ctree)
@@ -265,7 +264,6 @@ function _merkle(original::MerkleTree, root::String, path::String, algorithm::Sy
         end
         children = MerkleTree[]
         dirgestive = IOBuffer()
-        write(dirgestive, path)
         for (_, ctree, _) in sort(childtrees, by=first)
             isnothing(ctree) && continue
             push!(children, ctree)
