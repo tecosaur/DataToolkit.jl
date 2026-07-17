@@ -133,7 +133,7 @@ function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retr
         success && break
         attempt < retries &&
             @warn "Download failed, retrying ($(retries - attempt) retries remaining)" url
-        target isa IO && seekstart(target)
+        target isa IO && (truncate(target, 0); seekstart(target))
     end
     if !success
         @error "Download failed after $retries attempts"
