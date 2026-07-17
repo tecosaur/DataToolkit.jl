@@ -4,15 +4,15 @@ function _write_sqlite end # Implemented in `../../../ext/SQLiteExt.jl`
 function load(loader::DataLoader{:sqlite}, from::FilePath, as::Type)
     @require SQLite
     if QualifiedType(as) == QualifiedType(:SQLite, :DB)
-        invokelatest(_read_sqlite, from, as)
+        invokelatest(_read_sqlite, from.path)
     else
-        @require DBInterface
-        query = @something(@getparam(loader."query"::Union{String, Nothing}),
-                           string("SELECT ",
-                                  @getparam(loader."columns"::String, "*"),
-                                  " FROM ",
-                                  @getparam(loader."table"::String, "data")))
-        invokelatest(_read_sqlite, from, query, as)
+        query = @something(
+            @getparam(loader."query"::Union{String, Nothing}),
+            string("SELECT ",
+                   @getparam(loader."columns"::String, "*"),
+                   " FROM ",
+                   @getparam(loader."table"::String, "data")))
+        invokelatest(_read_sqlite, from.path, query) |> as
     end
 end
 
@@ -32,7 +32,7 @@ end
 
 createpriority(::Type{DataLoader{:sqlite}}) = 10
 
-function createinteractive(::Type{DataLoader{:sqlite}}, source::String)
+function createinteractive(dataset::DataSet, ::Type{DataLoader{:sqlite}}, source::String)
     if !isnothing(match(r"\.sqlite$"i, source)) &&
         isfile(abspath(dirof(dataset.collection), expanduser(source)))
         ["path" => source,
