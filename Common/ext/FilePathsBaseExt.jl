@@ -27,4 +27,9 @@ function load(loader::L, from::F, ::Type{AbstractPath}) where {L <: DataLoader, 
     end
 end
 
+# Resolve ambiguity between the chain loader's load(::DataLoader{:chain}, ::Any, ::Type{T})
+# and this extension's load(::DataLoader, ::Any, ::Type{AbstractPath}).
+load(loader::DataLoader{:chain}, from, ::Type{AbstractPath}) =
+    invoke(load, Tuple{DataLoader{:chain}, Any, Type{<:AbstractPath}}, loader, from, AbstractPath)
+
 end
