@@ -15,9 +15,10 @@ See also: [`@require`](@ref), [`@addpkg`](@ref), [`try_install_pkg`](@ref).
 """
 function get_package(pkg::Base.PkgId)
     if !Base.root_module_exists(pkg)
-        @info "Lazy-loading $(pkg.name) [$(pkg.uuid)])]"
         try
-            Base.require(pkg)
+            @log_do("pkg:lazyload",
+                    "Lazy-loading $(pkg.name) [$(pkg.uuid)]",
+                    Base.require(pkg))
             true
         catch err
             pkgmsg = "is required but does not seem to be installed"
