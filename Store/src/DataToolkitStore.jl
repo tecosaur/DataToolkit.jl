@@ -83,6 +83,8 @@ function __init__()
     # Inventory loading
     init_user_inventory!()
     push!(INVENTORIES, load_inventory(USER_INVENTORY))
+    # Registered before the GC hook so (LIFO) it flushes any writes GC queues.
+    atexit(flushpendingwrites)
     atexit() do
         for inv in INVENTORIES
             hours_since = (now() - inv.last_gc).value / (1000 * 60 * 60)

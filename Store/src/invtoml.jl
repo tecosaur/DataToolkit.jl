@@ -50,7 +50,7 @@ end
 function Base.tryparse(::Type{Checksum}, checksum::String)
     count(':', checksum) == 1 || return
     typestr, valstr = split(checksum, ':', limit=2)
-    all(c -> '0' <= c <= '9' || 'a' <= c <= 'f', valstr)
+    all(c -> '0' <= c <= '9' || 'a' <= c <= 'f', valstr) || return
     ncodeunits(valstr) % 2 == 0 || return
     hash = map(byteind -> parse(UInt8, view(valstr, byteind), base=16),
                Iterators.partition(1:ncodeunits(valstr), 2))
@@ -213,23 +213,11 @@ const WRITE_RECORDS = WeakKeyDict{Inventory, WriteRecord}()
 """
     SYNCHRONISATION_FREQUENCY::Float64
 
-In preparation for a debounced write, the inventory file will be locked.
-While still collecting modifications, it is entirely possible that another
-process may wish to modify the inventory file.
-
-In this scenario, to avoid blocking the other process indefinitely we
-should flush the current writes to the inventory file and unlock it.
-
-To detect when another process is waiting for the lock, the `trylock` function
-touches the lock file when it cannot be acquired. We can check for this by
-comparing the access time of the lock file to what it was the when we initially
-acquired the lock.
-
-The *synchronisation frequency* is how often we should check the access time
-of the lock file while batching writes. This is a trade-off between maximising
-throughput and responsiveness.
+How often (in seconds) a queued debounced write checks `iscontested` on the
+inventory lock while waiting out the debounce window, so that another process
+wanting the inventory cuts the batching short.
 """
-const SYNCHRONISATION_FREQUENCY = 0.2 # REVIEW: seconds, or relative unit?
+const SYNCHRONISATION_FREQUENCY = 0.2 # seconds
 
 const SYNCHRONISATION_CARVEOUT = 3
 
@@ -285,38 +273,38 @@ end
 
 function writesoon_unlock(inv::Inventory, owner::Task)
     adopt!(inv.lock, owner)
-    debounce = let irecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-        irecord.queued || @goto cleanup
-        WRITE_DEBOUNCE_FACTOR * irecord.write.duration
-    end
-    for i in 1:WRITE_DEFER_LIMIT
-        if i <= SYNCHRONISATION_CARVEOUT
-            # If we are within the carveout, we should not synchronise.
-            # This is to allow the first few writes to be batched together
-            # without interruption.
-            sleep(debounce)
-        elseif iscontested(inv.lock)
-            break
-        elseif debounce < SYNCHRONISATION_FREQUENCY
-            sleep(debounce)
-        else
-            netsleep = 0.0
-            while netsleep < debounce
-                iscontested(inv.lock) && break
-                sleep(SYNCHRONISATION_FREQUENCY)
-                netsleep += SYNCHRONISATION_FREQUENCY
-            end
-            netsleep < debounce && break
-        end
-        crecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-        crecord.queued || @goto cleanup
-        if time() - crecord.invoke.last <= debounce
-            break
-        end
-    end
-    record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-    record.queued || @goto cleanup
     try
+        debounce = let irecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+            irecord.queued || return
+            WRITE_DEBOUNCE_FACTOR * irecord.write.duration
+        end
+        for i in 1:WRITE_DEFER_LIMIT
+            if i <= SYNCHRONISATION_CARVEOUT
+                # If we are within the carveout, we should not synchronise.
+                # This is to allow the first few writes to be batched together
+                # without interruption.
+                sleep(debounce)
+            elseif iscontested(inv.lock)
+                break
+            elseif debounce < SYNCHRONISATION_FREQUENCY
+                sleep(debounce)
+            else
+                netsleep = 0.0
+                while netsleep < debounce
+                    iscontested(inv.lock) && break
+                    sleep(SYNCHRONISATION_FREQUENCY)
+                    netsleep += SYNCHRONISATION_FREQUENCY
+                end
+                netsleep < debounce && break
+            end
+            crecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+            crecord.queued || return
+            if time() - crecord.invoke.last <= debounce
+                break
+            end
+        end
+        record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+        record.queued || return
         writestart = time()
         atomic_write(inv.file.path, inv)
         writeduration = time() - writestart
@@ -333,9 +321,9 @@ function writesoon_unlock(inv::Inventory, owner::Task)
             WRITE_RECORDS[inv] = WriteRecord(record.invoke, record.write, false)
         end
         rethrow()
+    finally
+        unlock(inv.lock)
     end
-    @label cleanup
-    unlock(inv.lock)
     nothing
 end
 
@@ -345,13 +333,13 @@ end
 Perform all pending inventory writes in the `WRITE_RECORDS` dictionary.
 """
 function flushpendingwrites()
-    lock(WRITE_RECORDS)
-    for (inv, record) in WRITE_RECORDS
-        record.queued || continue
-        atomic_write(inv.file.path, inv)
+    @lock WRITE_RECORDS begin
+        for (inv, record) in WRITE_RECORDS
+            record.queued || continue
+            atomic_write(inv.file.path, inv)
+        end
+        empty!(WRITE_RECORDS)
     end
-    empty!(WRITE_RECORDS)
-    unlock(WRITE_RECORDS)
 end
 
 function Base.write(inv::Inventory)
