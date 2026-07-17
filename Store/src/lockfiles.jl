@@ -8,12 +8,12 @@ module LockFiles
 
 using BaseDirs
 
-export LockFile, iscontested
+export LockFile, iscontested, adopt!
 
 """
     LockFile(parent, [prefix::AbstractString], target) -> LockFile
 
-A per-user FIFO lock file for arbitrary resources.
+A per-user re-entrant FIFO lock file for arbitrary resources.
 
 A `LockFile` can be used to synchronise access to a resource across multiple
 processes. The lock is implemented by creating a file under the users runtime
@@ -25,7 +25,7 @@ to compete for the lock. Special care is taken to make sure that string targets
 hash to the same value across Julia versions
 
 Lock files are also scoped to a particular parent, which can be a `String` key,
-a `BaseDirs.Project`, or a `Module`. This allows for lock files to be used in a
+a `BaseDirs.App`, or a `Module`. This allows for lock files to be used in a
 project-specific manner, preventing name clashes between different projects or
 modules.
 
@@ -33,10 +33,13 @@ Lock contentions are resolved in the order in which processes attempt to acquire
 the lock (FIFO).
 """
 mutable struct LockFile <: Base.AbstractLock
-    const owned::ReentrantLock
     const path::String
     file::Base.Filesystem.File
     const pid::Int32
+    # `cond` guards `owner`/`depth`; the file protocol runs outside it.
+    const cond::Threads.Condition
+    owner::Union{Nothing, Task}
+    depth::UInt32
     pidtop::Bool
     advlock::Bool
     mtime::Float64
@@ -188,14 +191,13 @@ end
 function LockFile(path::String)
     ispath(dirname(path)) || mkpath(dirname(path))
     file = Base.Filesystem.open(path, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE)
-    lf = LockFile(ReentrantLock(), path, file, getpid(),
-                  false, false, zero(Float64))
+    lf = LockFile(path, file, getpid(), Threads.Condition(), nothing, zero(UInt32), false, false, zero(Float64))
     @lock LIVE_LOCKS.lock push!(LIVE_LOCKS.entries, WeakRef(lf))
     finalizer(cleanupfile, lf)
     lf
 end
 
-function LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::AbstractString, target::UInt64)
+function LockFile(parent::Union{String, BaseDirs.App, Module}, prefix::AbstractString, target::UInt64)
     # It's well worth using the `runtime` dir for a lockfile, as beyond it being
     # appropriate on Linux it's usually a tempfs volume. This means it's an in-memory
     # filesystem, ~halving the time that `unlock(lock(::LockFile))` takes (10μs → 5μs)
@@ -204,13 +206,13 @@ function LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::Abstr
     LockFile(path)
 end
 
-LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::String, target::AbstractString) =
+LockFile(parent::Union{String, BaseDirs.App, Module}, prefix::String, target::AbstractString) =
     LockFile(parent, prefix, simplehash(target))
 
-LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::AbstractString, target) =
+LockFile(parent::Union{String, BaseDirs.App, Module}, prefix::AbstractString, target) =
     LockFile(parent, prefix, hash(target))
 
-LockFile(parent::Union{String, BaseDirs.Project, Module}, target) = LockFile(parent, "", target)
+LockFile(parent::Union{String, BaseDirs.App, Module}, target) = LockFile(parent, "", target)
 
 """
     simplehash(text::String) -> UInt64
@@ -235,7 +237,7 @@ function simplehash(text::String)
 end
 
 function Base.islocked(lf::LockFile)
-    islocked(lf.owned) && return true
+    !isnothing(@lock lf.cond lf.owner) && return true
     lfstat = statopen!(lf)
     haslock = lf.advlock
     if mtime(lfstat) == lf.mtime && (time() - lf.mtime) < LOCKFILE_CHECK_EXPIRY
@@ -292,7 +294,7 @@ function pidqueue(lf::LockFile)
             funlock(lf)
             return Int32[]
         else # It got better?
-            keeplocked && funlock(lf)
+            !keeplocked && funlock(lf)
         end
     end
     pids = Vector{Int32}(undef, nbytes ÷ 4)
@@ -338,76 +340,112 @@ function iscontested(lf::LockFile)
     false
 end
 
+function acquire_inproc!(lf::LockFile; block::Bool)
+    ct = current_task()
+    @lock lf.cond begin
+        while !(isnothing(lf.owner) || lf.owner === ct)
+            block || return false
+            wait(lf.cond)
+        end
+        lf.owner = ct
+        lf.depth += 0x1
+        true
+    end
+end
+
+function release_inproc!(lf::LockFile)
+    @lock lf.cond begin
+        lf.depth -= 0x1
+        iszero(lf.depth) || return
+        lf.owner = nothing
+        notify(lf.cond, all=false)
+    end
+    nothing
+end
+
 function Base.trylock(lf::LockFile)
-    islocked(lf.owned) && return trylock(lf.owned)
-    statopen!(lf)
-    if filesize(lf.file) == 0
-        # Uncontested fast-path
-        flock(lf, true)
-        return if filesize(lf.file) == 0
-            overwrite(lf, [lf.pid])
-            funlock(lf)
-            lock(lf.owned)
-            true
-        else # Somebody else jumped in
-            funlock(lf)
-            false
-        end
-    end
+    acquire_inproc!(lf, block=false) || return false
+    lf.depth > 0x1 && return true
     try
-        flock(lf, true)
-        if islocked(lf)
-            funlock(lf)
-            return false
-        end
-        pids = pidqueue(lf)
-        initialpids = length(pids)
-        if length(pids) == 1 && first(pids) < 0
-            pids[1] = lf.pid # Replace abandoned claim
-        else
-            for (i, pid) in enumerate(pids)
-                if pid == lf.pid || pid > 0 && !pidlive(pid)
-                    pids[i] = -1 # Mark for removal
-                end
-            end
-            if isempty(pids) || first(pids) > 0
-                pushfirst!(pids, zero(Int32)) # Placeholder
-            end
-            pids[1] = lf.pid # Insert our PID at the front
-            sort!(pids, by=<=(0)) # Move dead pids to the end (relies on stable sort)
-        end
-        overwrite(lf, pids)
-        deadpid = findfirst(pids, !ispositive)
-        isnothing(deadpid) ||
-            truncate(lf.file, sizeof(Int32) * (deadpid - 1))
-        funlock(lf)
-    catch _
-        return false
+        claim_pidfront!(lf) && return true
+    catch
+        release_inproc!(lf)
+        rethrow()
     end
-    lock(lf.owned)
-    true
+    release_inproc!(lf)
+    false
+end
+
+function claim_pidfront!(lf::LockFile)
+    statopen!(lf)
+    flock(lf, true)
+    try
+        rawpids = pidqueue(lf)
+        livepids = filter(p -> p > 0 && pidlive(p), rawpids)
+        (isempty(livepids) || first(livepids) == lf.pid) || return false
+        isempty(livepids) && push!(livepids, lf.pid)
+        # Persist unless the file already leads with our live PID; an all-dead
+        # queue must still be rewritten, else two processes prune the same corpse.
+        if livepids != rawpids
+            overwrite(lf, livepids)
+            truncate(lf.file, sizeof(Int32) * length(livepids))
+        end
+        true
+    finally
+        funlock(lf)
+    end
 end
 
 function Base.lock(lf::LockFile)
-    trylock(lf) && return
+    acquire_inproc!(lf, block=true)
+    lf.depth > 0x1 && return
     backoff = 0.00001 # 10μs, given that it takes 5μs lock + unlock on my machine
     try
+        claim_pidfront!(lf) && return
         expressinterest(lf)
-        while !trylock(lf)
+        while !claim_pidfront!(lf)
             GC.safepoint()
             quicksleep(backoff)
             backoff = min(LOCKFILE_MAX_CHECK_PERIOD, backoff * 2)
         end
-    catch _
+    catch
         unclaim(lf)
+        release_inproc!(lf)
         rethrow()
     end
 end
 
 function Base.unlock(lf::LockFile)
-    unlock(lf.owned)
-    islocked(lf.owned) && return
-    unclaim(lf)
+    final = @lock lf.cond begin
+        isnothing(lf.owner) && throw(ConcurrencyViolationError("unlock of a LockFile that is not locked"))
+        lf.owner === current_task() ||
+            throw(ConcurrencyViolationError("unlock of a LockFile held by another task; `adopt!` it first"))
+        lf.depth == 0x1
+    end
+    try
+        final && unclaim(lf)
+    finally
+        release_inproc!(lf)
+    end
+    nothing
+end
+
+"""
+    adopt!(lf::LockFile, old::Task)
+
+Transfer ownership of `lf` from `old` to the current task.
+
+This lets a critical section span tasks: the task that acquired `lf` names
+itself as `old`, and the task that will release it adopts ownership first. Errors
+if `lf` is not currently owned by `old`.
+"""
+function adopt!(lf::LockFile, old::Task)
+    @lock lf.cond begin
+        lf.owner === old ||
+            throw(ConcurrencyViolationError("adopt! of a LockFile not owned by the given task"))
+        lf.owner = current_task()
+    end
+    nothing
 end
 
 """
@@ -426,7 +464,7 @@ function unclaim(lf::LockFile)
     flock(lf, true)
     pids = pidqueue(lf)
     if length(pids) == 1 && first(pids) == lf.pid
-        truncate(lf.file, 0)
+        Base.Filesystem.truncate(lf.file, 0)
     else
         for (i, pid) in enumerate(pids)
             if pid == lf.pid
@@ -447,7 +485,10 @@ If `nums` takes up less space than the existing contents of `lf`,
 `truncate` should be called on `lf.file` (not taken care of here).
 """
 function overwrite(lf::LockFile, nums::DenseVector{<:Integer})
-    # @show nums
+    # I would have thought seeking wouldn't be needed given the provided
+    # write arg `offset=0`, however it seems that can produce appends and
+    # so break the system, so we must seek first.
+    seek(lf.file, 0)
     GC.@preserve nums unsafe_write(
         lf.file, Ptr{UInt8}(pointer(nums)), sizeof(eltype(nums)) * length(nums) % UInt, 0)
 end
