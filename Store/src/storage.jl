@@ -118,7 +118,6 @@ function storefile(inventory::Inventory, @nospecialize(storage::DataStorage))
         if isfile(file)
             file
         else
-            @info "Deleting store"
             # If the cache file has been removed, remove the associated
             # source info.
             index = findfirst(==(source), inventory.stores)
@@ -273,7 +272,8 @@ function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), 
             "store:checksum",
             "Calculating checksum of $(storage.dataset.name)'s source",
             if path isa FilePath
-                open(checksum(alg), path.path)
+                csfn = checksum(alg)
+                if !isnothing(csfn) open(csfn, path.path) end
             else # path isa DirPath
                 mtree = merkle(inventory.merkles, path.path, alg)
                 isnothing(mtree) && return
@@ -289,7 +289,7 @@ function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), 
     end
     schecksum = tryparse(Checksum, csumval)
     if isnothing(schecksum)
-        @warn "Checksum value '$schecksum' is invalid, ignoring"
+        @warn "Checksum value '$csumval' is invalid, ignoring"
         return
     end
     if schecksum.alg === :auto
@@ -299,7 +299,8 @@ function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), 
         "store:checksum",
         "Calculating checksum of $(storage.dataset.name)'s source",
         if path isa FilePath
-            open(checksum(alg), path.path)
+            csfn = checksum(alg)
+            if !isnothing(csfn) open(csfn, path.path) end
         else # path isa DirPath
             mtree = merkle(inventory.merkles, path.path, alg;
                            last_checksum = schecksum)
@@ -377,12 +378,13 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
         now(), nothing, fileextension(storage))
     refdest = storefile(inventory, newsource)
     miliseconds = round(Int, 1000 * time())
-    partfile = string(refdest, '-', miliseconds, ".part")
     dumpfile = string(refdest, '-', miliseconds, ".dump")
     @log_do("store:save",
             "Writing $(sprint(show, storage.dataset.name)) to the store",
             atomic_write(dumpfile, from))
-    open(storesave(inventory, storage, FilePath, FilePath(dumpfile)).path, "r")
+    storedpath = storesave(inventory, storage, FilePath, FilePath(dumpfile)).path
+    isfile(dumpfile) && rm(dumpfile)
+    open(storedpath, "r")
 end
 
 struct StoreTypeMismatch <: Exception
