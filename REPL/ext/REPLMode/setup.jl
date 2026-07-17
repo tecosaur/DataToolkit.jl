@@ -230,7 +230,7 @@ function handle_input(f::Function, s::REPL.LineEdit.MIState, buf::REPL.LineEdit.
     all(isspace, input) || f(input)
     REPL.prepare_next(repl)
     REPL.reset_state(s)
-    s.current_mode.sticky || REPL.transition(s, main)
+    s.current_mode.sticky || REPL.transition(s, s.interface.modes[1])
 end
 
 """

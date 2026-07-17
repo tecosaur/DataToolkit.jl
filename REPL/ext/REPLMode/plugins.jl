@@ -155,7 +155,8 @@ const PLUGIN_SUBCOMMANDS = ReplCmd[
         plugin_edit),
     ReplCmd(
         "info", "Fetch the documentation of a plugin",
-        DataToolkitCore.plugin_info, complete_plugin_all),
+        input -> (doc = DataToolkitCore.plugin_info(strip(input));
+                  isnothing(doc) || display(doc)), complete_plugin_all),
     ReplCmd("list",
             """List the plugins used by the first data collection
 

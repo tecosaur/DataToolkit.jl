@@ -90,7 +90,7 @@ function displaytable(rows::Vector{<:Vector};
         if length(content) <= len
             rpad(content, len)
         else
-            string(content[1:len-1], '…')
+            string(first(content, len-1), '…')
         end
     makelen(content::Any, len::Int) = makelen(string(content), len)
     map(rows) do row

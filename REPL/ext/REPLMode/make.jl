@@ -102,7 +102,7 @@ function create_sandbox()
     term = REPL.Terminals.TTYTerminal(term_env, stdin, stdout, stderr)
     repl = REPL.LineEditREPL(term, get(stdout, :color, false), true)
     if repl.hascolor
-        repl.prompt_color = DataToolkitCore.REPL_PROMPTSTYLE
+        repl.prompt_color = REPL_PROMPTSTYLE
     end
 
     repl.interface = REPL.setup_interface(repl)

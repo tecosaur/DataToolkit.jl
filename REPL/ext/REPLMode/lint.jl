@@ -25,20 +25,24 @@ function repl_lint(input::AbstractString)
         refresh!(first(STACK))
         dolint(first(STACK))
     else
-        try
-            collection = getlayer(
-                @something(tryparse(Int, input),
-                           tryparse(UUID, input),
-                           String(input)))
+        index = tryparse(Int, input)
+        collection = if !isnothing(index)
+            if index in axes(STACK, 1) STACK[index] end
+        else
+            try getlayer(@something(tryparse(UUID, input), String(input))) catch _ end
+        end
+        if !isnothing(collection)
             refresh!(collection)
             dolint(collection)
-        catch
-            dset = resolve(input)
-            mtime0 = dset.collection.source.mtime
-            refresh!(dset.collection)
-            mtime1 = if !isnothing(dset.collection.source)
-                dset.collection.source.mtime
+        else
+            dset = try resolve(input) catch err
+                err isa IdentifierException || rethrow()
+                printstyled(" ! ", color=:red, bold=true)
+                return println("Could not resolve identifier: $input")
             end
+            mtime0 = if !isnothing(dset.collection.source) dset.collection.source.mtime end
+            refresh!(dset.collection)
+            mtime1 = if !isnothing(dset.collection.source) dset.collection.source.mtime end
             if mtime0 != mtime1
                 dset = resolve(input)
             end

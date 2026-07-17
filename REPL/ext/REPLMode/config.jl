@@ -32,7 +32,7 @@ function config_get(input::AbstractString)
     elseif value isa Dict
         TOML.print(value)
     else
-        value
+        println(value)
     end
 end
 
