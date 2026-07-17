@@ -81,17 +81,17 @@ end
 function create_sandbox()
     mod = Module(:Scratch)
 
-    isdefined(Main, Symbol("@import")) &&
+    isdefined(Main, Symbol("@require")) &&
         Core.eval(mod,
                 Expr(:toplevel,
                     quote
-                        macro __localimport(args...)
+                        macro __localrequire(args...)
                             # This seems hacky, but it also seems to work...
                             Base.macroexpand(Main,
-                                             Expr(:macrocall, Symbol("@import"), (),
+                                             Expr(:macrocall, Symbol("@require"), (),
                                                   args...)) |> esc
                         end
-                        const var"@import" = var"@__localimport"
+                        const var"@require" = var"@__localrequire"
                     end))
     isdefined(Main, :dataset) &&
         Core.eval(mod, Expr(:toplevel, :(const dataset = $(Main.dataset))))
