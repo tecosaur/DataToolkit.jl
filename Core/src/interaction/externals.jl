@@ -200,7 +200,7 @@ function read1(dataset::DataSet, @nospecialize(as::Type))
                         result = @advise dataset load(loader, datahandle, Tloader_out)::Union{Some{as}, as, Nothing}
                         if !isnothing(result)
                             return something(result)
-                        elseif datahandle isa IOStream
+                        elseif datahandle isa IOStream && isopen(datahandle)
                             close(datahandle)
                         end
                     end
@@ -378,6 +378,9 @@ function Base.write(dataset::DataSet, @nospecialize(info::Any))
                         if res isa IO && isopen(res)
                             close(res)
                         end
+                        if datahandle isa IO && isopen(datahandle)
+                            close(datahandle)
+                        end
                         return nothing
                     end
                 end
@@ -385,9 +388,9 @@ function Base.write(dataset::DataSet, @nospecialize(info::Any))
         end
     end
     if length(potential_writers) == 0
-        throw(TransformerError("There are no writers for $(sprint(show, dataset.name)) that can work with $T"))
+        throw(TransformerError("There are no writers for $(sprint(show, dataset.name)) that can work with $(typeof(info))"))
     else
-        TransformerError("There are no available storage backends for $(sprint(show, dataset.name)) that can be used by a writer for $T.")
+        throw(TransformerError("There are no available storage backends for $(sprint(show, dataset.name)) that can be used by a writer for $(typeof(info))."))
     end
 end
 
