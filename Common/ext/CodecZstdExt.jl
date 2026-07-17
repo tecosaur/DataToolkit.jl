@@ -10,8 +10,8 @@ _read_zstd(from::IO, ::Type{Vector{UInt8}}) =
     transcode(CodecZstd.ZstdDecompressor, read(from))
 
 function _write_zstd(dest::IO, info::IOStream)
-    steam = CodecZstd.ZstdCompressorStream(dest)
-    write(steam, info)
+    stream = CodecZstd.ZstdCompressorStream(dest)
+    write(stream, info)
     stream
 end
 

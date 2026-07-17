@@ -10,8 +10,8 @@ _read_bzip2(from::IO, ::Type{Vector{UInt8}}) =
     transcode(CodecBzip2.Bzip2Decompressor, read(from))
 
 function _write_bzip2(dest::IO, info::IOStream)
-    steam = CodecBzip2.Bzip2CompressorStream(dest)
-    write(steam, info)
+    stream = CodecBzip2.Bzip2CompressorStream(dest)
+    write(stream, info)
     stream
 end
 

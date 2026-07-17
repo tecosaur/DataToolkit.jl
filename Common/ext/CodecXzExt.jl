@@ -10,8 +10,8 @@ _read_xz(from::IO, ::Type{Vector{UInt8}}) =
     transcode(CodecXz.XzDecompressor, read(from))
 
 function _write_xz(dest::IO, info::IOStream)
-    steam = CodecXz.XzCompressorStream(dest)
-    write(steam, info)
+    stream = CodecXz.XzCompressorStream(dest)
+    write(stream, info)
     stream
 end
 
