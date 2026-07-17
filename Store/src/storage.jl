@@ -354,6 +354,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     end
     chmod(dest, 0o100444 & filemode(inventory.file.path)) # Make read-only
     update_source!(inventory, newsource, storage.dataset.collection)
+    stochastic_gc!(inventory, dest)
     FilePath(dest)
 end
 
@@ -622,6 +623,7 @@ function storesave(inventory::Inventory, loader::DataLoader, value::Any)
     chmod(tempdest, 0o100444 & filemode(inventory.file.path)) # Make read-only
     mv(tempdest, dest, force=true)
     update_source!(inventory, newsource, loader.dataset.collection)
+    stochastic_gc!(inventory, dest)
     value
 end
 
@@ -632,6 +634,22 @@ Partially apply the first two arguments of `storesave`.
 """
 storesave(inventory::Inventory, @nospecialize(loader::DataLoader)) =
     value -> storesave(inventory, loader, value)
+
+"""
+    stochastic_gc!(inventory::Inventory, newfile::String)
+
+Potentially perform a garbage collection on `inventory`, with a probability
+that increases with the size of `newfile` relative to the maximum size of `inventory`.
+
+When the maximum size of `inventory` in unbounded, nothing is done.
+"""
+function stochastic_gc!(inventory::Inventory, newfile::String)
+    isnothing(inventory.config.max_size) && return
+    relsize = filesize(newfile) / inventory.config.max_size
+    if 2 * relsize > rand()
+        garbage_collect!(inventory, log=false)
+    end
+end
 
 """
     update_source!(inventory::Inventory,
