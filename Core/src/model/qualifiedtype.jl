@@ -64,7 +64,7 @@ function trytypeify(qt::QualifiedType; mod::Module=Main, shoulderror::Bool=false
     end
     for parent in qt.parents
         mod = if isdefined(mod, parent)
-            getfield(mod, parent)
+            getfield(mod, parent)::Module
         end
     end
     # For the sake of the `catch` statement:
@@ -121,6 +121,7 @@ Base.issubset(a::Type, b::QualifiedType; mod::Module=Main) =
 const QUALIFIED_TYPE_SHORTHANDS = let forward =
     Dict{String, QualifiedType}(
         "FilePath" => QualifiedType(FilePath),
+        "DirPath" => QualifiedType(DirPath),
         "DataSet" => QualifiedType(nameof(@__MODULE__), :DataSet),
         "DataFrame" => QualifiedType(:DataFrames, :DataFrame))
     (; forward, reverse = Dict(val => key for (key, val) in forward))
