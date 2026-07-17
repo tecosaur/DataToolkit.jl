@@ -6,16 +6,18 @@ import DataToolkitCommon: _read_tar
 function _read_tar(from::IO, filepath::Union{String, Nothing})
     buf = Vector{UInt8}(undef, Tar.DEFAULT_BUFFER_SIZE)
     io = IOBuffer()
+    found = false
     Tar.read_tarball(_ -> true, from; buf) do header, _
         if header.path == filepath
             if header.type === :file
+                found = true
                 Tar.read_data(from, io; size=header.size, buf)
             else
                 @warn "Found $(sprint(show, filepath)), but it is a $(header.type) not a normal file."
             end
         end
     end
-    io.size > 0 || error("Could not find the file $(sprint(show, filepath)) in the tarball")
+    found || error("Could not find the file $(sprint(show, filepath)) in the tarball")
     io
 end
 
