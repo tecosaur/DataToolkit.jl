@@ -42,7 +42,7 @@ WebP = "e3aaa7dc-3e4b-44e0-be63-ffb868ccd7c1"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 XML = "72c71f33-b9b6-44de-8c94-c961784809e2"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
-ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+ZipArchives = "49080126-0e18-4c2a-b176-c102e4b3760c"
 
 [extensions]
 AWSExt = "AWS"
@@ -73,7 +73,7 @@ WebPExt = "WebP"
 XLSXExt = "XLSX"
 XMLExt = "XML"
 YAMLExt = "YAML"
-ZipFileExt = "ZipFile"
+ZipArchivesExt = "ZipArchives"
 
 [compat]
 AWS = "1"
@@ -118,7 +118,7 @@ WebP = "0.1"
 XLSX = "0.9,0.10"
 XML = "0.3"
 YAML = "0.4"
-ZipFile = "0.10"
+ZipArchives = "2.0"
 julia = "1.9"
 
 [extras]
@@ -152,7 +152,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
-ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+ZipArchives = "49080126-0e18-4c2a-b176-c102e4b3760c"
 
 [targets]
-test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DBInterface", "DataFrames", "DataToolkitCore", "DelimitedFiles", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "XLSX", "YAML", "ZipFile"]
+test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DBInterface", "DataFrames", "DataToolkitCore", "DelimitedFiles", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "XLSX", "YAML", "ZipArchives"]

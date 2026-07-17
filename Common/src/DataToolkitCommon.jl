@@ -90,7 +90,7 @@ function __init__()
     @addpkg XLSX           "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
     @addpkg XML            "72c71f33-b9b6-44de-8c94-c961784809e2"
     @addpkg YAML           "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
-    @addpkg ZipFile        "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+    @addpkg ZipArchives    "49080126-0e18-4c2a-b176-c102e4b3760c"
     # Plugins
     @addpkg Pkg            "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
