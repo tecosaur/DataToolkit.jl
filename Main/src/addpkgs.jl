@@ -57,7 +57,7 @@ function addpkgs(mod::Module, pkgs::Vector{Symbol})
                 confpkgs = get!(() -> Dict{String, String}(),
                                 collection.parameters, "packages")
                 for pkg in pkgs
-                    if !haskey(confpkgs, pkg) && haskey(project_deps, String(pkg))
+                    if !haskey(confpkgs, String(pkg)) && haskey(project_deps, String(pkg))
                         confpkgs[String(pkg)] = string(project_deps[String(pkg)])
                         ismodified = true
                     end

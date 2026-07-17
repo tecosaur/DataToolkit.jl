@@ -47,7 +47,9 @@ Proxy for running the command in the Data REPL,
 e.g. ```data`config set demo 1` ``` is equivalent to `data> config set demo 1`.
 """
 macro data_cmd(line::String)
-    Expr(:call, DataToolkitREPL.toplevel_execute_repl_cmd, line)
+    :(isempty(methods(DataToolkitREPL.toplevel_execute_repl_cmd)) &&
+          error("The data`...` string macro requires the REPL to be loaded, try `using REPL` first");
+      DataToolkitREPL.toplevel_execute_repl_cmd($line))
 end
 
 """
