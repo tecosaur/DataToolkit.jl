@@ -4,20 +4,26 @@
 
 function storage(store::S, ::Type{IO}; write = false) where {S <: DataStorage}
     path = storage(store, FilePath; write)
-    isnothing(path) && return
-    !isfile(string(path)) && return
-    open(string(path); write)
+    !isnothing(path) && isfile(string(path)) &&
+        return open(string(path); write = write)
+    bytes = storage(store, Vector{UInt8}; write)
+    !isnothing(bytes) && return IOBuffer(bytes)
+    str = storage(store, String; write)
+    !isnothing(str) && return IOBuffer(str)
+    nothing
 end
 
 function getstorage(store::S, ::Type{Vector{UInt8}}) where {S <: DataStorage}
     io = storage(store, IO; write = false)
-    isnothing(io) && return
-    read(io)
+    !isnothing(io) && return try read(io) finally close(io) end
+    str = storage(store, String; write = false)
+    !isnothing(str) && return Vector{UInt8}(str)
+    nothing
 end
 
 function getstorage(store::S, ::Type{String}) where {S <: DataStorage}
     io = storage(store, IO; write = false)
-    !isnothing(io) && return read(io, String)
+    !isnothing(io) && return try read(io, String) finally close(io) end
     bytes = storage(store, Vector{UInt8}; write = false)
     !isnothing(bytes) && return String(copy(bytes))
     nothing
