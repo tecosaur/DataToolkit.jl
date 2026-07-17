@@ -9,9 +9,7 @@ function _read_geopkg(file::String, T::Type)
 end
 
 function _write_geopkg(destfile::String, info::ArchGDAL.AbstractDataset)
-    info isa ArchGDAL.AbstractDataset || return
     ArchGDAL.write(destfile, info)
-    close(dest)
 end
 
 end

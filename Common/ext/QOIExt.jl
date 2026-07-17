@@ -6,7 +6,7 @@ import DataToolkitCommon: _read_qoi, _write_qoi
 _read_qoi(from::IO) =
     QOI.qoi_decode(from)
 
-_write_qoi(dest::IO, info::Matrix) =
+_write_qoi(dest::String, info::Matrix) =
     QOI.qoi_encode(dest, info)
 
 end

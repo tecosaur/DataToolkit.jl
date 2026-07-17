@@ -12,6 +12,7 @@ _read_bzip2(from::IO, ::Type{Vector{UInt8}}) =
 function _write_bzip2(dest::IO, info::IOStream)
     stream = CodecBzip2.Bzip2CompressorStream(dest)
     write(stream, info)
+    write(stream, CodecBzip2.TranscodingStreams.TOKEN_END); flush(stream)
     stream
 end
 
