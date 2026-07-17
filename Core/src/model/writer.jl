@@ -197,7 +197,7 @@ struct WriteRecord
     queued::Bool
 end
 
-const ZERO_WRITE_RECORD =
+const BLANK_WRITE_RECORD =
     WriteRecord((last = 0.0, count = 0),
                 (last = 0.0, duration = 0.0, count = 0),
                 false)
@@ -247,19 +247,19 @@ serialisation time from dominating in large write-heavy scenarios.
 """
 function save!(dc::DataCollection)
     if !iswritable(dc)
-        if !isnothing(dc.source.path)
+        if isnothing(dc.source)
             throw(ArgumentError("The collection is not backed by a file, and so cannot be saved."))
         else
             throw(ReadonlyCollection(dc))
         end
     end
     lock(WRITE_RECORDS)
-    record = get!(() -> ZERO_WRITE_RECORD, WRITE_RECORDS, dc)
+    record = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
     if record.queued
-        WRITE_RECORDS[dc] = WriteRecord((last = time(), count = record.invoke.count + 1),
-                                        record.write, record.queued)
+        newinvoke = (last = time(), count = record.invoke.count + 1)
+        WRITE_RECORDS[dc] = WriteRecord(newinvoke, record.write, record.queued)
         unlock(WRITE_RECORDS)
-    elseif time() - record.invoke.count > WRITE_DEBOUNCE_FACTOR * record.duration
+    elseif time() - record.invoke.last > WRITE_DEBOUNCE_FACTOR * record.write.duration
         start = time()
         WRITE_RECORDS[dc] = WriteRecord((last = start, count = record.invoke.count + 1),
                                         record.write, true)
@@ -268,24 +268,25 @@ function save!(dc::DataCollection)
             atomic_write(dc.source.path, dc)
             duration = time() - start
             @lock WRITE_RECORDS let
-                record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+                record = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
                 WRITE_RECORDS[dc] = WriteRecord(
                     record.invoke,
                     (last = start, duration = duration, count = record.write.count + 1),
                     false)
             end
-        catch err
+        catch
             @lock WRITE_RECORDS let
-                record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+                record = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
                 WRITE_RECORDS[dc] = WriteRecord(record.invoke, record.write, false)
             end
-            rethrow(err)
+            rethrow()
         end
     else
         WRITE_RECORDS[dc] = WriteRecord(record.invoke, record.write, true)
         unlock(WRITE_RECORDS)
         @spawn writesoon(dc)
     end
+    dc
 end
 
 save!(ds::DataSet) = save!(ds.collection)
@@ -307,39 +308,52 @@ immediately before this function is called. Otherwise, this function will return
 immediately without performing any action.
 """
 function writesoon(dc::DataCollection)
-    itime = time()
-    debounce = let irecord = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+    debounce = let irecord = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
         irecord.queued || return
-        WRITE_DEBOUNCE_FACTOR * irecord.duration
+        WRITE_DEBOUNCE_FACTOR * irecord.write.duration
     end
     for _ in 1:WRITE_DEFER_LIMIT
         sleep(debounce)
-        crecord = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+        crecord = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
         crecord.queued || return
-        if time() - crecord.invoke <= debounce
+        if time() - crecord.invoke.last >= debounce
             break
         end
     end
-    record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+    record = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
     record.queued || return
     try
         writestart = time()
         atomic_write(dc.source.path, dc)
         writeduration = time() - writestart
         @lock WRITE_RECORDS let
-            record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
-            WRITE_RECORDS[dc] =
-                WriteRecord(record.invoke,
-                            (last = writestart, duration = writeduration,
-                             count = record.write.count + 1),
-                            false)
+            record = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
+            newwrite = (last = writestart,
+                        duration = writeduration,
+                        count = record.write.count + 1)
+            WRITE_RECORDS[dc] = WriteRecord(record.invoke, newwrite, false)
         end
-    catch err
+    catch
         @lock WRITE_RECORDS let
-            record = get(WRITE_RECORDS, dc, ZERO_WRITE_RECORD)
+            record = get(WRITE_RECORDS, dc, BLANK_WRITE_RECORD)
             WRITE_RECORDS[dc] = WriteRecord(record.invoke, record.write, false)
         end
-        rethrow(err)
+        rethrow()
     end
     nothing
+end
+
+"""
+    flushpendingwrites()
+
+Perform all pending data collection writes in the `WRITE_RECORDS` dictionary.
+"""
+function flushpendingwrites()
+    @lock WRITE_RECORDS begin
+        for (dc, record) in WRITE_RECORDS
+            record.queued || continue
+            atomic_write(dc.source.path, dc)
+        end
+        empty!(WRITE_RECORDS)
+    end
 end
