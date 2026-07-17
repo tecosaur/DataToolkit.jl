@@ -23,6 +23,7 @@ function getstorage(storage::DataStorage{:git}, ::Type{IO})
             return cmd.out
         end
         # Fall back on `git clone` + `git archive`
+        close(cmd)
         @info "Git archive --remote failed, falling back on git clone + git archive"
     end
     clonedir = mktempdir()
