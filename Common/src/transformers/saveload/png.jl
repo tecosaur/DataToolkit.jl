@@ -25,8 +25,8 @@ function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
     filters = let filt = @getparam(writer."filters"::Union)
         if filt isa Int && 0 <= filt <= 4
             filt
-        elseif strat ∈ ("none", "sub", "up", "average", "paeth")
-            findfirst(strat .== ("none", "sub", "up", "average", "paeth"))::Int
+        elseif filt ∈ ("none", "sub", "up", "average", "paeth")
+            findfirst(filt .== ("none", "sub", "up", "average", "paeth"))::Int
         else
             @warn "Unrecognised PNG `filters` $(sprint(show, filt)), defaulting to 4"
             4
@@ -36,7 +36,7 @@ function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
               compression_strategy, filters,
               gamma = @getparam(writer."gamma"::Union{Real, Nothing}))
     # TODO support `background`
-    invokelatest(_read_png, dest, info; kwargs...)
+    invokelatest(_write_png, dest, info; kwargs...)
 end
 
 createauto(::Type{DataLoader{:png}}, source::String) =
