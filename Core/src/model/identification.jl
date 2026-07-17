@@ -15,7 +15,8 @@ Identifier(ident::Identifier, ::Nothing; replace::Bool=false) =
 
 """
     Identifier(dataset::DataSet, collection::Union{Symbol, Nothing}=:name,
-               name::Symbol=something(collection, :name))
+               name::Symbol=something(collection, :name);
+               type::Union{Nothing, DataType, QualifiedType}=nothing)
 
 Create an [`Identifier`](@ref) referring to `dataset`, specifying the collection
 `dataset` comes from as well (when `collection` is not `nothing`) as all of its
@@ -27,7 +28,8 @@ the *name*s of the collection/dataset. If set to `:uuid`, the UUID is used
 instead. No other value symbols are supported.
 """
 function Identifier(ds::DataSet, collection::Union{Symbol, Nothing}=:name,
-                    name::Symbol=something(collection, :name))
+                    name::Symbol=something(collection, :name);
+                    type::Union{Nothing, DataType, QualifiedType} = nothing)
     Identifier(
         if collection == :uuid
             ds.collection.uuid
@@ -44,7 +46,7 @@ function Identifier(ds::DataSet, collection::Union{Symbol, Nothing}=:name,
         else
             throw(ArgumentError("name argument must be :uuid or :name — not $name"))
         end,
-        nothing,
+        if !isnothing(type) QualifiedType(type) end,
         ds.parameters)
 end
 
