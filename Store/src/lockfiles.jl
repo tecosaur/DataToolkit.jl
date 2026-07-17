@@ -282,17 +282,16 @@ function pidqueue(lf::LockFile)
     if nbytes == 0
         return Int32[]
     elseif nbytes % sizeof(Int32) != 0
-        # We know this file is non-empty since we already checked `iszero(filesize(lfstat))`.
         keeplocked = lf.advlock
         flock(lf, true)
         nbytes = filesize(lf.file)
         if nbytes % sizeof(Int32) != 0
             # The file is corrupt, so we truncate it.
             truncate(lf.file, 0)
-            funlock(lf)
+            !keeplocked && funlock(lf)
             return Int32[]
         else # It got better?
-            keeplocked && funlock(lf)
+            !keeplocked && funlock(lf)
         end
     end
     pids = Vector{Int32}(undef, nbytes ÷ 4)
