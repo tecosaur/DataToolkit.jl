@@ -137,8 +137,8 @@ function funlock end
         nothing
     end
 else
-    flock(::RawFD, ::Bool=false) = nothing
-    funlock(::RawFD) = nothing
+    flock(::Base.Filesystem.File, ::Bool=false) = nothing
+    funlock(::Base.Filesystem.File) = nothing
 end
 
 function flock(lf::LockFile, exclusive::Bool=false)
