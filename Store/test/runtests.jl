@@ -103,6 +103,10 @@ end
         MerkleTree("another", 1.718206228888754e9, Checksum(:alg, UInt8[0x89, 0x01]), MerkleTree[
             MerkleTree("nested", 1.718207038089696e9, Checksum(:alg, UInt8[0x90, 0x12]), MerkleTree[
                 MerkleTree("lone", 1.718206237271919e9, Checksum(:alg, UInt8[0x01, 0x23]), nothing)])])])
+    @test sprint(write_merkle, sample_mtree) == serialised_sample_mtree
+    parsed = read_merkles(IOBuffer(serialised_sample_mtree))
+    @test length(parsed) == 1
+    @test sprint(write_merkle, only(parsed)) == serialised_sample_mtree
     # Directory checksums are location-independent, so they hold across machines.
     function filltree(dir)
         write(joinpath(dir, "file"), "hello")
@@ -114,4 +118,14 @@ end
     twin1, twin2 = filltree(mktempdir()), filltree(mktempdir())
     @test DataToolkitStore.merkle("", twin1, :crc32c).checksum ==
         DataToolkitStore.merkle("", twin2, :crc32c).checksum
+    unreadable = filltree(mktempdir())
+    chmod(joinpath(unreadable, "file"), 0o000)
+    built = DataToolkitStore.merkle("", unreadable, :crc32c)
+    @test only(filter(c -> c.path == "file", built.children)).checksum == DataToolkitStore.MERKLE_INACCESSIBLE
+    chmod(joinpath(unreadable, "file"), 0o600)
+    # A failing hash stops the pool rather than stranding it or passing as unreadable.
+    exploding(_io) = error("boom")
+    result = Threads.@spawn DataToolkitStore.merkle("", filltree(mktempdir()), exploding)
+    @test timedwait(() -> istaskdone(result), 20.0) === :ok
+    @test_throws TaskFailedException fetch(result)
 end
