@@ -1,4 +1,4 @@
-const TOMLValue = TOML.Internals.Printer.TOMLValue
+const TOMLValue = Union{TOML.Internals.Printer.TOMLValue, DataSet}
 # TOML_TYPES = Base.uniontypes(TOMLValue)
 
 function getstorage(storage::DataStorage{:raw}, T::Type{<:TOMLValue})
