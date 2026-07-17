@@ -24,8 +24,7 @@ function load(loader::DataLoader{:csv}, from::IO, sink::Type)
             for (k, v) in kwargs[:typemap])
     end
     if haskey(kwargs, :stringtype)
-        kwargs[:stringtype] =
-            [trytypeify(QualifiedType(t); mod) for t in kwargs[:stringtype]]
+        kwargs[:stringtype] = trytypeify(QualifiedType(kwargs[:stringtype]); mod)
     end
     invokelatest(_read_csv, from; NamedTuple(kwargs)...) |>
         if sink == Any || QualifiedType(sink) == QualifiedType(:CSV, :File)

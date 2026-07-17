@@ -17,7 +17,7 @@ function load(loader::DataLoader{:zip}, from::Vector{UInt8}, as::Union{Type{File
     prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     file = @getparam loader."file"::Union{String, Nothing}
     filepath = if !isnothing(file) prefix * file end
-    if !isdir(path) || (!isnothing(file) && !isfile(joinpath(path, file)))
+    if !isdir(path) || (!isnothing(file) && !isfile(joinpath(path, lstrip(filepath, '/'))))
         @log_do("load:unzip",
                 "Extracting zip archive for $(loader.dataset.name)",
                 invokelatest(
@@ -28,7 +28,7 @@ function load(loader::DataLoader{:zip}, from::Vector{UInt8}, as::Union{Type{File
     if isnothing(file) && as == DirPath
         DirPath(path)
     elseif file isa String && as == FilePath
-        FilePath(joinpath(path, file))
+        FilePath(joinpath(path, lstrip(filepath, '/')))
     end
 end
 

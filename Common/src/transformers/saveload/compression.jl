@@ -1,10 +1,10 @@
 for (lib, name, ext) in
-    ((:CodecZlib, :gzip, r"\\.(?:gzip|gz)$"i),
-     (:CodecZlib, :zlib, r"\\.zlib$"i),
-     (:CodecZlib, :deflate, r".zz"i),
-     (:CodecBzip2, :bzip2, r"\\.bz(ip)?2?$"i),
-     (:CodecXz, :xz, r"\\.xz$"i),
-     (:CodecZstd, :zstd, r"\\.zstd$"i))
+    ((:CodecZlib, :gzip, r"\.(?:gzip|gz)$"i),
+     (:CodecZlib, :zlib, r"\.zlib$"i),
+     (:CodecZlib, :deflate, r"\.zz$"i),
+     (:CodecBzip2, :bzip2, r"\.bz(ip)?2?$"i),
+     (:CodecXz, :xz, r"\.xz$"i),
+     (:CodecZstd, :zstd, r"\.zstd$"i))
     eval(quote
              function $(Symbol("_read_$name")) end
              function $(Symbol("_write_$name")) end

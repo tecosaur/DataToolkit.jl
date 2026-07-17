@@ -33,4 +33,7 @@ function _read_s3(bucket::String, object::String, dest::IO; kwargs...)
     dest
 end
 
+_read_s3(bucket::String, object::String, dest::String; kwargs...) =
+    open(io -> _read_s3(bucket, object, io; kwargs...), dest; write=true)
+
 end

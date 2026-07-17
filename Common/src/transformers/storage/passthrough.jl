@@ -1,5 +1,6 @@
-function asidentifier(parent::DataSet, source::Union{String, Identifier})
+function asidentifier(parent::DataSet, source::Union{String, Identifier, DataSet})
     source isa Identifier && return source
+    source isa DataSet && return Identifier(source)
     @advise parent parse(Identifier, source)
 end
 
@@ -7,7 +8,7 @@ function getstorage(storage::DataStorage{:passthrough}, T::Type)
     @nospecialize
     any((issubset(typ, T; mod=storage.dataset.collection.mod)
          for typ in storage.type)) || return
-    ident = asidentifier(storage.dataset, @getparam storage."source"::Union{String, Identifier})
+    ident = asidentifier(storage.dataset, @getparam storage."source"::Union{String, Identifier, DataSet})
     read(resolve(storage.dataset.collection, ident), T)
 end
 
@@ -20,7 +21,7 @@ getstorage(storage::DataStorage{:passthrough}, T::Type{IO}) =
     invoke(getstorage, Tuple{typeof(storage), Type}, storage, T)
 
 function supportedtypes(::Type{DataStorage{:passthrough}}, params::Dict{String, Any}, dataset::DataSet)
-    source = get(params, "source", "")::Union{String, Identifier}
+    source = get(params, "source", "")::Union{String, Identifier, DataSet}
     ident = asidentifier(dataset, source)
     if !isnothing(ident.type)
         [ident.type]
@@ -30,7 +31,7 @@ function supportedtypes(::Type{DataStorage{:passthrough}}, params::Dict{String, 
 end
 
 DataToolkitCore.add_dataset_refs!(acc::Vector{Identifier}, storage::DataStorage{:passthrough}) =
-    DataToolkitCore.add_dataset_refs!(acc, asidentifier(storage.dataset, @getparam storage."source"::Union{String, Identifier}))
+    DataToolkitCore.add_dataset_refs!(acc, asidentifier(storage.dataset, @getparam storage."source"::Union{String, Identifier, DataSet}))
 
 createpriority(::Type{DataStorage{:passthrough}}) = 60
 

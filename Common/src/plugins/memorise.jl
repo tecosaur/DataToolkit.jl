@@ -23,9 +23,9 @@ function memorise_read_a(f::typeof(DataToolkitCore.read1), dataset::DataSet, as:
     should_memorise = if memorise isa Bool
         memorise
     elseif memorise isa String
-        as <: QualifiedType(memorise)
+        issubset(as, QualifiedType(memorise); mod = dataset.collection.mod)
     elseif memorise isa Vector
-        any(t -> as <: t, QualifiedType.(memorise))
+        any(t -> issubset(as, t; mod = dataset.collection.mod), QualifiedType.(memorise))
     else
         false
     end
