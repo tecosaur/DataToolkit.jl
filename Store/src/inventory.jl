@@ -17,7 +17,7 @@ function load_inventory(path::String, create::Bool=true)
         if !haskey(data, "inventory_version")
             if create && all(isspace, read(path, String))
                 rm(path)
-                load_inventory(path, create)
+                return load_inventory(path, create)
             else
                 error("$path does not seem to be an inventory file")
             end
@@ -558,7 +558,7 @@ function scan_collections(inv::Inventory; log::Bool=false)
             else
                 push!(dead_collections, collection.uuid)
             end
-        elseif days_since(collection.seen) <= inv.config.max_age
+        elseif isnothing(inv.config.max_age) || days_since(collection.seen) <= inv.config.max_age
             push!(ghost_collections, collection.uuid)
         else
             push!(dead_collections, collection.uuid)
