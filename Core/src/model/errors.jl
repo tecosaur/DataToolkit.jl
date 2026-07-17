@@ -84,7 +84,8 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
                         (ident, collection, stringsimilarity(err.identifier, istr; halfcase=true)))
                 end
             end
-        elseif isnothing(err.collection) && !isempty(STACK)
+        end
+        if isnothing(err.collection) && !isempty(STACK)
             for collection in last(Iterators.peel(STACK))
                 for ident in Identifier.(collection.datasets)
                     istr = @advise collection string(ident)
@@ -494,7 +495,7 @@ end
 
 The parameter `parameter` of `thing` must be of type `type`, but is not.
 """
-struct InvalidParameterType{T <: Union{<:DataTransformer, DataSet, DataCollection}}
+struct InvalidParameterType{T <: Union{<:DataTransformer, DataSet, DataCollection}} <: DataOperationException
     thing::T
     parameter::String
     type::Type
