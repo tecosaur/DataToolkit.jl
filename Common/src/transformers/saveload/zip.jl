@@ -1,8 +1,9 @@
-function unzip end # Implemented in `../../../ext/ZipFileExt.jl`
-function _read_zip end # Implemented in `../../../ext/ZipFileExt.jl`
+function unzip end # Implemented in `../../../ext/ZipArchivesExt.jl`
+function _read_zip end # Implemented in `../../../ext/ZipArchivesExt.jl`
+function _write_zip end # Implemented in `../../../ext/ZipArchivesExt.jl`
 
-function load(loader::DataLoader{:zip}, from::IO, as::Union{Type{FilePath}, Type{DirPath}})
-    @require ZipFile
+function load(loader::DataLoader{:zip}, from::Vector{UInt8}, as::Union{Type{FilePath}, Type{DirPath}})
+    @require ZipArchives
     extract = @getparam loader."extract"::Union{String, Nothing}
     path = if !isnothing(extract)
         abspath(dirof(loader.dataset.collection), extract)
@@ -31,35 +32,45 @@ function load(loader::DataLoader{:zip}, from::IO, as::Union{Type{FilePath}, Type
     end
 end
 
-function load(loader::DataLoader{:zip}, from::IO, ::Type{IO})
-    @require ZipFile
+function load(loader::DataLoader{:zip}, from::Vector{UInt8}, ::Type{Vector{UInt8}})
+    @require ZipArchives
     prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     filename = @getparam loader."file"::Union{String, Nothing}
     invokelatest(_read_zip, from, prefix, filename)
 end
 
-function load(loader::DataLoader{:zip}, from::IO, ::Type{Dict{FilePath, IO}})
-    @require ZipFile
+function load(loader::DataLoader{:zip}, from::Vector{UInt8}, ::Type{IO})
+    IOBuffer(invokepkglatest(load, loader, from, Vector{UInt8}))
+end
+
+function load(loader::DataLoader{:zip}, from::Vector{UInt8}, ::Type{Dict{FilePath, Vector{UInt8}}})
+    @require ZipArchives
     prefix = rstrip(@getparam(loader."prefix"::String, ""), '/') * '/'
     invokelatest(_read_zip, from, prefix)
 end
 
-function load(loader::DataLoader{:zip}, from::IO, ::Type{Dict{String, IO}})
+function load(loader::DataLoader{:zip}, from::Vector{UInt8}, ::Type{Dict{FilePath, IO}})
+    Dict{FilePath, IO}(file => IOBuffer(content) for (file, content) in
+                           invokepkglatest(load, loader, from, Dict{FilePath, Vector{UInt8}}))
+end
+
+function load(loader::DataLoader{:zip}, from::Vector{UInt8}, ::Type{Dict{String, IO}})
     Dict{String, IO}(
         string(fname) => io for (fname, io) in
             invokepkglatest(load, loader, from, Dict{FilePath, IO}))
 end
 
-function load(loader::DataLoader{:zip}, from::FilePath,
-              as::Type{<:Union{FilePath, IO, Dict{FilePath, IO}, Dict{String, IO}}})
-    open(string(from)) do io load(loader, io, as) end
-end
+load(loader::DataLoader{:zip}, from::IO, as::Type) =
+    load(loader, read(from), as)
+
+load(loader::DataLoader{:zip}, from::FilePath, as::Type) =
+    load(loader, read(string(from)), as)
 
 function supportedtypes(::Type{DataLoader{:zip}}, params::Dict{String, Any})
     if haskey(params, "file")
-        map(QualifiedType, [IO, FilePath])
+        map(QualifiedType, [IO, Vector{UInt8}, FilePath])
     else
-        map(QualifiedType, [DirPath, Dict{FilePath, IO}, Dict{String, IO}])
+        map(QualifiedType, [DirPath, Dict{FilePath, Vector{UInt8}}, Dict{FilePath, IO}, Dict{String, IO}])
     end
 end
 
@@ -93,7 +104,7 @@ It can load the contents to the following formats:
 
 # Required packages
 
-- `ZipFile`
+- `ZipArchives`
 
 # Parameters
 
