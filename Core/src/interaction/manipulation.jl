@@ -26,8 +26,9 @@ end
 
 function stack_index(collection::DataCollection; quiet::Bool = false)
     idx = findfirst(STACK .=== Ref(collection))
-    isnothing(idx) && return idx
-    if !quiet
+    if !isnothing(idx)
+        idx
+    elseif !quiet
         printstyled(" ! ", color=:red)
         println("Could not find '$collection' in the stack")
     end
