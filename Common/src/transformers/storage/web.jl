@@ -165,11 +165,19 @@ function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     end
 end
 
-getstorage(storage::DataStorage{:web}, ::Type{Vector{UInt8}}) =
-    read(getstorage(storage, IO))
+function getstorage(storage::DataStorage{:web}, ::Type{Vector{UInt8}})
+    io = getstorage(storage, IO)
+    if !isnothing(io)
+        read(io)
+    end
+end
 
-getstorage(storage::DataStorage{:web}, ::Type{String}) =
-    read(getstorage(storage, IO), String)
+function getstorage(storage::DataStorage{:web}, ::Type{String})
+    io = getstorage(storage, IO)
+    if !isnothing(io)
+        read(io, String)
+    end
+end
 
 supportedtypes(::Type{DataStorage{:web}}) =
     QualifiedType.([IO, Vector{UInt8}, String, FilePath])
