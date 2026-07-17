@@ -78,12 +78,15 @@ function stack_load(input::AbstractString)
     file = if !isempty(path)
         if !endswith(path, ".toml") && !isdir(path) &&
             !isnothing(findfirst(c -> c.name == path, STACK))
-            getlayer(path).source.path
+            csource = getlayer(path).source
+            isnothing(csource) && (printstyled(" ! ", color=:yellow, bold=true);
+                                   return println("Collection '$path' has no backing file"))
+            csource.path
         else
             abspath(expanduser(path))
         end
     elseif !isnothing(Base.active_project(false)) &&
-        isfile(joinpath(Base.active_project(false), "Data.toml"))
+        isfile(joinpath(dirname(Base.active_project(false)), "Data.toml"))
         dirname(Base.active_project(false))
     elseif isfile("Data.toml")
         "Data.toml"
