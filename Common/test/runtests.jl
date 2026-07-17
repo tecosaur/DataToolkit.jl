@@ -1,6 +1,7 @@
 using DataToolkitCore
 using DataToolkitCommon
 using DataFrames
+using ArchGDAL
 using Test
 using UUIDs
 
@@ -42,7 +43,7 @@ DataToolkitCore.getstorage(::DataStorage{:iobased}, ::Type{IO}) =
 end
 
 @testset "Storage" begin
-    @test "AWS S3" begin
+    @testset "AWS S3" begin
         @test open(dataset("iris-s3"), FilePath) isa FilePath
     end
 end
@@ -66,7 +67,6 @@ end
     # end
     @testset "gpkg" begin
         geo = read(dataset("eurostat-gpkg"))
-        using ArchGDAL
         @test geo isa ArchGDAL.IDataset
         @test ArchGDAL.getlayer(geo, 0) |> length == 1025
     end
