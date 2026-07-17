@@ -12,10 +12,10 @@ function save(writer::DataWriter{:tiff}, dest::IO, info::AbstractMatrix)
 end
 
 createauto(::Type{DataLoader{:tiff}}, source::String) =
-    !isnothing(match(r"\.tiff$"i, source))
+    !isnothing(match(r"\.tiff?$"i, source))
 
 createauto(::Type{DataWriter{:tiff}}, source::String) =
-    !isnothing(match(r"\.tiff$"i, source))
+    !isnothing(match(r"\.tiff?$"i, source))
 
 const TIFF_DOC = md"""
 Encode and decode Tiff files
