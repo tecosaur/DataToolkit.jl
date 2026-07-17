@@ -66,8 +66,8 @@ function plugin_edit(::AbstractString)
     let collection = first(STACK)
         snapshot = convert(Dict, collection)
         snapshot["plugins"] = sort(selected_plugins)
-        newcollection =
-            DataCollection(snapshot; path=collection.path, mod=collection.mod)
+        path = if !isnothing(collection.source) collection.source.path end
+        newcollection = DataCollection(snapshot; path, mod=collection.mod)
         STACK[begin] = newcollection
         iswritable(newcollection) && save!(newcollection)
     end
