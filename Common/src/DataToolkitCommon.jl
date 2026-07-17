@@ -158,7 +158,7 @@ function __init__()
              (:writer, :serialization) => SERIALIZATION_DOC,
              (:writer, :sqlite) => SQLITE_DOC,
              (:writer, :tiff) => TIFF_DOC,
-             (:loader, :xml) => XML_DOC,
+             (:writer, :xml) => XML_DOC,
              (:writer, :webp) => WEBP_DOC,
              ])
 end
