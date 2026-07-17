@@ -148,7 +148,7 @@ function Base.show(io::IO, report::LintReport)
                 color=:blue, bold=true)
     printstyled(io, " \e[2m", report.collection.uuid, "\e[22m", color=:light_black)
     if isempty(report.results)
-        printstyled("\n ✓ No issues found", color=:green)
+        printstyled(io, "\n ✓ No issues found", color=:green)
     end
     lastsource::Any = nothing
     objinfo(::DataCollection) = nothing
@@ -164,7 +164,7 @@ function Base.show(io::IO, report::LintReport)
         else
             false
         end || objinfo(a.dataset)
-        printstyled("\n  ‣ ", driverof(A), ' ',
+        printstyled(io, "\n  ‣ ", driverof(A), ' ',
                     join(lowercase.(split(string(nameof(A)), r"(?=[A-Z])")), ' '),
                     color=:blue, bold=true)
     end
@@ -187,16 +187,16 @@ function Base.show(io::IO, report::LintReport)
         end
     end
     if length(report.results) > 12
-        print("\n\n")
-        printstyled(length(report.results), color=:light_white),
-        print(" issues identified:")
+        print(io, "\n\n")
+        printstyled(io, length(report.results), color=:light_white),
+        print(io, " issues identified:")
         for category in (:error, :warning, :suggestion, :info, :debug)
             catcode = LINT_SEVERITY_MAPPING[category]
             ncat = sum(r -> r.severity == catcode, report.results)
             if ncat > 0
-                printstyled("\n  • ", color=:blue)
-                printstyled(ncat, ' ', color=:light_white)
-                printstyled(category, ifelse(ncat == 1, "", "s"),
+                printstyled(io, "\n  • ", color=:blue)
+                printstyled(io, ncat, ' ', color=:light_white)
+                printstyled(io, category, ifelse(ncat == 1, "", "s"),
                             color=first(LINT_SEVERITY_MESSAGES[catcode]))
             end
         end
@@ -231,10 +231,10 @@ function lintfix(report::LintReport, manualfix::Bool=false)
         end
         print(".\n")
         if !all(last, autofixed)
-            print("Failed to automatically fix ", sum(.!last.(autofixed)), " issues: ")
+            print("Failed to automatically fix ")
             printstyled(sum(.!last.(autofixed)), color=:light_white)
-            print(ifelse(sum(.!last.(autofixed)) == 1, "issue: ", " issues: "))
-            for fixresult in filter(last, autofixed)
+            print(ifelse(sum(.!last.(autofixed)) == 1, " issue: ", " issues: "))
+            for fixresult in filter(!last, autofixed)
                 i, lintitem, _ = fixresult
                 printstyled(i, color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
                 fixresult === last(autofixed) || print(", ")
