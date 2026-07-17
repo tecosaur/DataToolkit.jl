@@ -127,9 +127,5 @@ function init(input::AbstractString)
 
     create!(DataCollection, name, path; plugins)
 
-    if !isnothing(path)
-        printstyled(stderr, " ✓ Created new data collection '$name' at $path\n", color=:green)
-    else
-        printstyled(stderr, " ✓ Created new in-memory data collection '$name'\n", color=:green)
-    end
+    printstyled(stderr, " ✓ Created new data collection '$name' at $path\n", color=:green)
 end
