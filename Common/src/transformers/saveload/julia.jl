@@ -9,17 +9,34 @@
 function getactfn(transformer::DataTransformer)
     path = @getparam transformer."path"::Union{String, Nothing}
     fnstr = @getparam transformer."function"::Union{String, Nothing}
-    loadfn = if !isnothing(path)
-        Base.include(transformer.dataset.collection.mod,
-                     abspath(dirof(transformer.dataset.collection),
-                             expanduser(@getparam transformer."pathroot"::String ""),
-                             expanduser(path)))
+    fnpath = if !isnothing(path)
+        abspath(dirof(transformer.dataset.collection),
+                expanduser(@getparam transformer."pathroot"::String ""),
+                expanduser(path))
+    end
+    fntext = if !isnothing(fnpath)
+        read(fnpath, String)
     elseif !isnothing(fnstr)
-        Base.eval(transformer.dataset.collection.mod,
-                  Meta.parse(strip(fnstr)))
+        strip(fnstr)
     else
         error("Neither path nor function is provided.")
     end
+    fnexpr = Meta.parseall(fntext, filename=something(fnpath, "none"))
+    for arg in fnexpr.args
+        if Meta.isexpr(arg, :macrocall) && arg.args[1] === Symbol("@require")
+            invokepkglatest(
+                Core.eval,
+                transformer.dataset.collection.mod,
+                Expr(:let, Expr(:block), arg))
+        end
+    end
+    if !isempty(fnexpr.args) && Meta.isexpr(fnexpr.args[end], :incomplete)
+        return Core.eval(transformer.dataset.collection.mod, fnexpr.args[end])
+    end
+    invokepkglatest(
+        Core.eval,
+        transformer.dataset.collection.mod,
+        fnexpr)
 end
 
 function load(loader::DataLoader{:julia}, ::Nothing, R::Type)
@@ -51,7 +68,7 @@ end
 function save(writer::DataWriter{:julia}, dest, info)
     writefn = getactfn(writer)
     kwargs = Dict{Symbol,Any}(
-        Symbol(k) => v for (k, v) in @getparam(loader."arguments"::Dict{String, Any}))
+        Symbol(k) => v for (k, v) in @getparam(writer."arguments"::Dict{String, Any}))
     cd(dirof(writer.dataset.collection)) do
         invokepkglatest(writefn, dest, info; kwargs...)
     end
