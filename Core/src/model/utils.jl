@@ -107,7 +107,7 @@ function atomic_write(f::F, dest::AbstractString, temp::AbstractString) where {F
 end
 
 function atomic_write(f::F, dest::AbstractString) where {F <: Function}
-    miliseconds = round(Int, 1000 * time()) % 1000 * 60 * 60 * 24
+    miliseconds = round(Int, 1000 * time()) % (1000 * 60 * 60 * 24)
     suffix = string('-', string(miliseconds, base=36), ".part")
     atomic_write(f, dest, dest * suffix)
 end
@@ -129,10 +129,10 @@ collection in "natural order".
 ```jldoctest; setup = :(import DataToolkitCore.natkeygen)
 julia> natkeygen.(["A1", "A10", "A02", "A1.5"])
 4-element Vector{Vector{String}}:
- ["a", "0\\x01"]
- ["a", "0\\n"]
- ["a", "0\\x02"]
- ["a", "0\\x015"]
+ ["a", "0\\x011"]
+ ["a", "0\\x0210"]
+ ["a", "0\\x012"]
+ ["a", "0\\x0115"]
 
 julia> sort(["A1", "A10", "A02", "A1.5"], by=natkeygen)
 4-element Vector{String}:
@@ -146,11 +146,12 @@ function natkeygen(key::String)::Vector{String}
     map(eachmatch(r"(\d*\.\d+)|(\d+)|([^\d]+)", lowercase(key))) do (; captures)
         float, int, str = captures
         if !isnothing(float)
-            f = parse(Float64, float)
-            fint, dec = floor(Int, f), mod(f, 1)
-            '0' * Char(fint) * string(dec)[3:end]
+            intpart, decpart = split(float, '.')
+            digits = lstrip(intpart, '0')
+            '0' * Char(length(digits)) * digits * decpart
         elseif !isnothing(int)
-            '0' * Char(parse(Int, int))
+            digits = lstrip(int, '0')
+            '0' * Char(length(digits)) * digits
         else
             str
         end
@@ -355,6 +356,7 @@ function highlight_lcs(io::IO, a::String, b::String;
                        before::String="\e[1m", after::String="\e[22m",
                        invert::Bool=false)
     seq = longest_common_subsequence(collect(a), collect(b))
+    isempty(seq) && return print(io, a)
     seq_pos = firstindex(seq)
     in_lcs = invert
     for (i, char) in enumerate(a)

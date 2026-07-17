@@ -9,9 +9,12 @@ import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
 @testset "Utils" begin
     @testset "Doctests" begin
         @test natkeygen.(["A1", "A10", "A02", "A1.5"]) ==
-            [["a", "0\x01"], ["a", "0\n"], ["a", "0\x02"], ["a", "0\x015"]]
+            [["a", "0\x011"], ["a", "0\x0210"], ["a", "0\x012"], ["a", "0\x0115"]]
         @test sort(["A1", "A10", "A02", "A1.5"], by=natkeygen) ==
             ["A1", "A1.5", "A02", "A10"]
+        @test natkeygen("x" * "9"^30) == ["x", '0' * Char(30) * "9"^30]
+        @test sort(["a1", "a10", "a2", "run20260717120000"], by=natkeygen) ==
+            ["a1", "a2", "a10", "run20260717120000"]
         @test stringdist("The quick brown fox jumps over the lazy dog",
                         "The quack borwn fox leaps ovver the lzy dog") == 7
         @test stringdist("typo", "tpyo") == 1
@@ -40,6 +43,8 @@ import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
         @test String(take!(io.io)) == "^xx_hey^yy_"
         highlight_lcs(io, "xxheyyy", "xx___yy")
         @test String(take!(io.io)) == "\e[1mxx\e[22mhey\e[1myy\e[22m"
+        highlight_lcs(io, "abc", "xyz")
+        @test String(take!(io.io)) == "abc"
     end
 end
 
