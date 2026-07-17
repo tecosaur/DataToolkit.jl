@@ -146,10 +146,10 @@ complete_plugin_all(sofar::AbstractString) =
 const PLUGIN_SUBCOMMANDS = ReplCmd[
     ReplCmd(
         "add", "Add plugins to the first data collection",
-        plugin_add!, complete_plugin_unused),
+        plugin_add, complete_plugin_unused),
     ReplCmd(
         "remove", "Remove plugins from the first data collection",
-        plugin_remove!, complete_plugin_used),
+        plugin_remove, complete_plugin_used),
     ReplCmd(
         "edit", "Edit the plugins used by the first data collection",
         plugin_edit),
