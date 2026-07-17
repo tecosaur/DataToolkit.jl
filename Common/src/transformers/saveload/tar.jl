@@ -36,7 +36,7 @@ function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{String, String}})
 end
 
 function load(loader::DataLoader{:tar}, from::IO, ::Type{Dict{FilePath, Vector{UInt8}}})
-    Dict{String, Vector{UInt8}}(
+    Dict{FilePath, Vector{UInt8}}(
         FilePath(path) => bytes for (path, bytes) in
             invokepkglatest(load, loader, from, Dict{String, Vector{UInt8}}))
 end
