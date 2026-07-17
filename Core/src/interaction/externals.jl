@@ -91,11 +91,9 @@ function dataset(collection::DataCollection, identstr::AbstractString, parameter
 end
 
 """
-    read(filename::AbstractString, DataCollection; writer::Union{Function, Nothing})
+    read(filename::AbstractString, DataCollection; mod::Module=Base.Main)
 
 Read the entire contents of a file as a `DataCollection`.
-
-The default value of writer is `self -> write(filename, self)`.
 """
 Base.read(f::AbstractString, ::Type{DataCollection}; mod::Module=Base.Main) =
     open(f, "r") do io read(io, DataCollection; path=abspath(f), mod) end
