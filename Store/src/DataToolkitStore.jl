@@ -29,7 +29,7 @@ USER_STORE::String = ""
 USER_INVENTORY::String = ""
 
 const PROJECT_SUBPATH = # Handle as const to avoid invalidations (for /some/ reason).
-    BaseDirs.projectpath(BaseDirs.Project("DataToolkit"))
+    BaseDirs.applicationpath(BaseDirs.App("DataToolkit"))
 
 const MERKLE_FILENAME = "Merkles.txt"
 
