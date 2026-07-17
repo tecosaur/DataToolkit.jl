@@ -19,7 +19,7 @@ end
 supportedtypes(::Type{DataLoader{:jld2}}, spec::Dict{String, Any}) =
     [QualifiedType(if haskey(spec, "key") Any else Dict{String, Any} end)]
 
-function save(::DataLoader{:jld2}, info::Dict{String, Any}, dest::FilePath)
+function save(::DataWriter{:jld2}, dest::FilePath, info::Dict{String, Any})
     @require JLD2
     invokelatest(_write_jld2, dest.path, info)
 end

@@ -24,7 +24,7 @@ supportedtypes(::Type{DataLoader{:sqlite}}) =
 function save(writer::DataWriter{:sqlite}, dest::FilePath, info::Any)
     @require SQLite
     invokelatest(_write_sqlite,
-                 info, SQLite.DB(string(dest)), @getparam(writer."table"::String, "data");
+                 string(dest), info, @getparam(writer."table"::String, "data");
                  ifnotexists = @getparam(writer."ifnotexists"::Bool, false),
                  analyze = @getparam(writer."analyze"::Bool, false))
     true

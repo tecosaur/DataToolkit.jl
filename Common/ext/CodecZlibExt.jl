@@ -17,6 +17,7 @@ _read_gzip(from::IO, ::Type{Vector{UInt8}}) =
 function _write_gzip(dest::IO, info::IOStream)
     stream = CodecZlib.GzipCompressorStream(dest)
     write(stream, info)
+    write(stream, CodecZlib.TranscodingStreams.TOKEN_END); flush(stream)
     stream
 end
 
@@ -34,6 +35,7 @@ _read_zlib(from::IO, ::Type{Vector{UInt8}}) =
 function _write_zlib(dest::IO, info::IOStream)
     stream = CodecZlib.ZlibCompressorStream(dest)
     write(stream, info)
+    write(stream, CodecZlib.TranscodingStreams.TOKEN_END); flush(stream)
     stream
 end
 
@@ -51,6 +53,7 @@ _read_deflate(from::IO, ::Type{Vector{UInt8}}) =
 function _write_deflate(dest::IO, info::IOStream)
     stream = CodecZlib.DeflateCompressorStream(dest)
     write(stream, info)
+    write(stream, CodecZlib.TranscodingStreams.TOKEN_END); flush(stream)
     stream
 end
 

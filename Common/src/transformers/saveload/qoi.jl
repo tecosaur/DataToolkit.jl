@@ -10,7 +10,7 @@ end
 # <https://github.com/KristofferC/QOI.jl/issues/11>
 function save(writer::DataWriter{:qoi}, dest::FilePath, info::Matrix)
     @require QOI
-    invokelatest(_write_qoi, dest, info)
+    invokelatest(_write_qoi, string(dest), info)
 end
 
 createauto(::Type{DataLoader{:qoi}}, source::String) =

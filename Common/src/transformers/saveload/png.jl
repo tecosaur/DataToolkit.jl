@@ -22,7 +22,7 @@ function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
             3
         end
     end
-    filters = let filt = @getparam(writer."filters"::Union)
+    filters = let filt = @getparam(writer."filters"::Union{Int, String}, 4)
         if filt isa Int && 0 <= filt <= 4
             filt
         elseif filt ∈ ("none", "sub", "up", "average", "paeth")
