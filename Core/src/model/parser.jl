@@ -156,6 +156,7 @@ function fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{Stri
             [parse(QualifiedType, val)]
         else
             @warn "Invalid DT type '$val', ignoring"
+            supportedtypes(DT, parameters, dataset)
         end::Union{Vector{QualifiedType}, Nothing}
     end
     if !isnothing(ttype) && isempty(ttype)
