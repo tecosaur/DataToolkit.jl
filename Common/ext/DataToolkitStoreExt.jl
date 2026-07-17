@@ -113,7 +113,12 @@ end
 # Ensure that `passthrough` storage registers dependants in the recursive
 # hashing interface.
 function rhash(storage::DataStorage{:passthrough}, h::UInt)
-    ident = @advise storage parse(Identifier, @getparam storage."source"::String)
+    source = @getparam storage."source"::Union{String, Identifier, DataSet}
+    ident = if source isa String
+        @advise storage parse(Identifier, source)
+    elseif source isa DataSet
+        Identifier(source)
+    else source end
     sourceh = rhash(storage.dataset.collection, ident, h)
     invoke(rhash, Tuple{DataStorage, UInt}, storage, sourceh)
 end
