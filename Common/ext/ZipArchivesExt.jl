@@ -22,7 +22,8 @@ function unzip(archive::Vector{UInt8}, dir::String=pwd();
     end
     for filename in zip_names(zarchive)
         if filename == ".." || startswith(filename, "../") ||
-            endswith(filename, "/..") || occursin("/../", filename)
+            endswith(filename, "/..") || occursin("/../", filename) ||
+            isabspath(filename) || occursin(r"^[A-Za-z]:", filename)
             @warn "Skipping potentially unsafe path: $filename"
             continue
         end
@@ -39,7 +40,7 @@ function unzip(archive::Vector{UInt8}, dir::String=pwd();
                 unzip(zip_readentry(zarchive, filename),
                       joinpath(dir, first(splitext(filename)));
                       recursive, onlyfile = if !isnothing(onlyfile)
-                          replace(onlyfile, filename => "")
+                          chopprefix(onlyfile, first(splitext(filename)) * "/")
                       end)
             else
                 zip_openentry(io -> write(out_file, io), zarchive, filename)
