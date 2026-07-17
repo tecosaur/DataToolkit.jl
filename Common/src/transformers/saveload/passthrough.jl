@@ -10,16 +10,12 @@ load(::DataLoader{:passthrough}, from::Vector{UInt8}, T::Type{Vector{UInt8}}) =
 load(::DataLoader{:passthrough}, from::String, T::Type{String}) =
     Some(from)
 
-function save(::DataWriter{:passthrough}, dest, info::Any)
-    dest = info
-end
-
 function save(::DataWriter{:passthrough}, dest::IO, info::Any)
     write(dest, info)
 end
 
 supportedtypes(::Type{DataLoader{:passthrough}}, ::Dict{String, Any}, dataset::DataSet) =
-    mapreduce(s -> s.type, vcat, dataset.storage) |> unique
+    mapreduce(s -> s.type, vcat, dataset.storage, init = QualifiedType[]) |> unique
 
 createpriority(::Type{DataLoader{:passthrough}}) = 20
 
