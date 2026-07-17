@@ -1,5 +1,7 @@
 # Parsing from and serialising to an Inventory TOML file
 
+using Base.Threads
+
 function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
     getkey(key::Symbol, T::Type, noth::Bool=false) = if haskey(spec, String(key))
         if spec[String(key)] isa T; spec[String(key)]
@@ -15,16 +17,14 @@ function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
 end
 
 function Base.convert(::Type{CollectionInfo}, (uuid, spec)::Pair{String, Dict{String, Any}})
-    for (key, type) in (("path", String),
-                        ("seen", DateTime))
-        if !haskey(spec, key)
-            throw(ArgumentError("Spec dict does not contain the required key: $key"))
-        elseif !(spec[key] isa type)
-            throw(ArgumentError("Spec dict key $key is a $(typeof(spec[key])) not a $type"))
-        end
-    end
-    CollectionInfo(parse(UUID, uuid), get(spec, "path", nothing),
-                   get(spec, "name", nothing), spec["seen"])
+    haskey(spec, "seen") ||
+        throw(ArgumentError("Spec dict does not contain the required key: seen"))
+    spec["seen"] isa DateTime ||
+        throw(ArgumentError("Spec dict key seen is a $(typeof(spec["seen"])) not a DateTime"))
+    path = get(spec, "path", nothing) # optional, in-memory collections have none
+    path isa Union{String, Nothing} ||
+        throw(ArgumentError("Spec dict key path is a $(typeof(path)) not a String"))
+    CollectionInfo(parse(UUID, uuid), path, get(spec, "name", nothing), spec["seen"])
 end
 
 """
@@ -48,7 +48,7 @@ end
 function Base.tryparse(::Type{Checksum}, checksum::String)
     count(':', checksum) == 1 || return
     typestr, valstr = split(checksum, ':', limit=2)
-    all(c -> '0' <= c <= '9' || 'a' <= lowercase(c) <= 'f', valstr) || return
+    all(c -> '0' <= c <= '9' || 'a' <= c <= 'f', valstr) || return
     ncodeunits(valstr) % 2 == 0 || return
     hash = map(byteind -> parse(UInt8, view(valstr, byteind), base=16),
                Iterators.partition(1:ncodeunits(valstr), 2))
@@ -200,17 +200,168 @@ function Base.write(io::IO, inv::Inventory)
     TOML.print(io, convert(Dict, inv), sorted=true, by=keygen)
 end
 
-function Base.write(inv::Inventory)
-    if !trylock(inv.lock)
-        # This uses a (hacky) workaround for same-task reentrant lock requirements.
-        @log_do("store:inventory:waitpid",
-                "Waiting for lock on inventory file to be released",
-                begin lock(inv.lock); unlock(inv.lock.owned) end)
-        lock(inv.lock.owned)
+
+# Batched, concurrent, safe updating
+#
+# All file-lock discipline lives in this section: an open `WriteBatch` holds
+# the cross-process lock from first pending edit to flush, `write`/
+# `exclusively` join an open batch rather than competing with it, and nothing
+# else touches `batch.lock`.
+
+using DataToolkitCore: WRITE_DEBOUNCE_FACTOR, WRITE_DEFER_LIMIT
+
+"""
+    SYNCHRONISATION_FREQUENCY::Float64
+
+How often (in seconds) a debouncing batch writer checks `iscontested`, so
+that another process wanting the inventory cuts the batching short.
+"""
+const SYNCHRONISATION_FREQUENCY = 0.2 # seconds
+
+"""
+    SYNCHRONISATION_CARVEOUT::Int
+
+How many initial debounce intervals a batch writer sleeps without contention
+checks, letting bursts batch at the cost of that much waiter latency.
+"""
+const SYNCHRONISATION_CARVEOUT = 3
+
+# `filelock!`/`fileunlock!` must only be called with `batch.guard` held.
+filelock!(batch::WriteBatch) = if !batch.locked lock(batch.lock); batch.locked = true end
+fileunlock!(batch::WriteBatch) = if batch.locked unlock(batch.lock); batch.locked = false end
+
+closebatch!(batch::WriteBatch) = (fileunlock!(batch); batch.writer = nothing)
+
+# Both must only be called with `batch.guard` held.
+function flushnow!(inv::Inventory)
+    (; batch) = inv
+    start = time()
+    atomic_write(inv.file.path, inv)
+    batch.writeduration = time() - start
+    batch.written = batch.edits
+    inv.file.mtime = mtime(inv.file.path)
+end
+# The zeroed mtime forces a resync before stale memory could be flushed
+dropedits!(inv::Inventory) = (inv.batch.written = inv.batch.edits; inv.file.mtime = 0.0)
+
+"""
+    save!(inv::Inventory)
+
+Note an edit to `inv`, ensuring a batched debounced write is pending (and
+registering `inv` so it is flushed at exit).
+
+Should the deferred write fail, a warning is emitted and the pending edits
+are dropped, resynchronising from disk; use `write(inv)` when persistence
+must be verified.
+"""
+function DataToolkitCore.save!(inv::Inventory)
+    (; batch) = inv
+    @lock batch.guard begin
+        if isnothing(batch.writer)
+            filelock!(batch)
+            batch.writer = @spawn runbatch(inv)
+        end
+        batch.edits += 1
+        batch.lastedit = time()
     end
+    register_inventory!(inv)
+    nothing
+end
+
+function runbatch(inv::Inventory)
+    (; batch) = inv
     try
-        atomic_write(inv.file.path, inv)
-    finally
-        unlock(inv.lock)
+        debounce = @lock batch.guard WRITE_DEBOUNCE_FACTOR * batch.writeduration
+        for i in 1:WRITE_DEFER_LIMIT
+            if i <= SYNCHRONISATION_CARVEOUT
+                sleep(debounce)
+            elseif iscontested(batch.lock)
+                break
+            elseif debounce < SYNCHRONISATION_FREQUENCY
+                sleep(debounce)
+            else
+                netsleep = 0.0
+                while netsleep < debounce
+                    iscontested(batch.lock) && break
+                    sleep(SYNCHRONISATION_FREQUENCY)
+                    netsleep += SYNCHRONISATION_FREQUENCY
+                end
+                netsleep < debounce && break
+            end
+            (@lock batch.guard time() - batch.lastedit >= debounce) && break
+        end
+        flushbatch!(inv)
+    catch err
+        @lock batch.guard if batch.writer === current_task()
+            dropedits!(inv)
+            closebatch!(batch)
+        end
+        @warn "Failed to write the inventory at $(inv.file.path), dropping the pending edits" exception = (err, catch_backtrace())
+    end
+    nothing
+end
+
+function flushbatch!(inv::Inventory)
+    (; batch) = inv
+    @lock batch.guard begin
+        batch.edits > batch.written && flushnow!(inv)
+        closebatch!(batch)
+    end
+end
+
+function Base.write(inv::Inventory)
+    (; batch) = inv
+    @lock batch.guard begin
+        held = batch.locked
+        filelock!(batch)
+        try
+            flushnow!(inv)
+        catch
+            dropedits!(inv)
+            rethrow()
+        finally
+            held || (isnothing(batch.writer) && fileunlock!(batch))
+        end
+    end
+    nothing
+end
+
+"""
+    exclusively(f::Function, inv::Inventory)
+
+Run `f(inv)` with exclusive cross-process access to `inv`'s file, serialised
+against all in-process inventory operations, and return the result.
+
+Once the file lock is held `inv` is resynchronised from disk, so `f` sees the
+current on-disk state. Edits batched during `f` remain the batch writer's
+responsibility.
+"""
+function exclusively(f::Function, inv::Inventory)
+    (; batch) = inv
+    @lock batch.guard begin
+        held = batch.locked
+        filelock!(batch)
+        try
+            update_inventory!(inv)
+            f(inv)
+        finally
+            held || (isnothing(batch.writer) && fileunlock!(batch))
+        end
+    end
+end
+
+"""
+    flushpendingwrites()
+
+Immediately write out the batched edits of any dirty inventories.
+"""
+function flushpendingwrites()
+    for inv in INVENTORIES
+        inv.batch.edits > inv.batch.written || continue
+        try
+            write(inv)
+        catch err
+            @warn "Failed to flush pending edits to $(inv.file.path)" exception = err
+        end
     end
 end

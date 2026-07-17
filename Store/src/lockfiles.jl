@@ -19,6 +19,9 @@ A `LockFile` can be used to synchronise access to a resource across multiple
 processes. The lock is implemented by creating a file under the users runtime
 directory with a name in the form `prefix-<hash of target>.lock`.
 
+The lock is process-scoped: it is neither re-entrant nor task-aware, and
+in-process coordination is the caller's responsibility.
+
 This requires the only relevant lock contention to be between processes owned by
 the same user, and that `target` has the same `hash` across processes expected
 to compete for the lock. Special care is taken to make sure that string targets
@@ -33,10 +36,10 @@ Lock contentions are resolved in the order in which processes attempt to acquire
 the lock (FIFO).
 """
 mutable struct LockFile <: Base.AbstractLock
-    const owned::ReentrantLock
     const path::String
     file::Base.Filesystem.File
     const pid::Int32
+    held::Bool
     pidtop::Bool
     advlock::Bool
     mtime::Float64
@@ -188,8 +191,7 @@ end
 function LockFile(path::String)
     ispath(dirname(path)) || mkpath(dirname(path))
     file = Base.Filesystem.open(path, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE)
-    lf = LockFile(ReentrantLock(), path, file, getpid(),
-                  false, false, zero(Float64))
+    lf = LockFile(path, file, getpid(), false, false, false, zero(Float64))
     @lock LIVE_LOCKS.lock push!(LIVE_LOCKS.entries, WeakRef(lf))
     finalizer(cleanupfile, lf)
     lf
@@ -235,7 +237,7 @@ function simplehash(text::String)
 end
 
 function Base.islocked(lf::LockFile)
-    islocked(lf.owned) && return true
+    lf.held && return true
     lfstat = statopen!(lf)
     haslock = lf.advlock
     if mtime(lfstat) == lf.mtime && (time() - lf.mtime) < LOCKFILE_CHECK_EXPIRY
@@ -337,77 +339,45 @@ function iscontested(lf::LockFile)
     false
 end
 
-function Base.trylock(lf::LockFile)
-    islocked(lf.owned) && return trylock(lf.owned)
+Base.trylock(lf::LockFile) = claim_pidfront!(lf)
+
+function claim_pidfront!(lf::LockFile)
     statopen!(lf)
-    if filesize(lf.file) == 0
-        # Uncontested fast-path
-        flock(lf, true)
-        return if filesize(lf.file) == 0
-            overwrite(lf, [lf.pid])
-            funlock(lf)
-            lock(lf.owned)
-            true
-        else # Somebody else jumped in
-            funlock(lf)
-            false
-        end
-    end
+    flock(lf, true)
     try
-        flock(lf, true)
-        if islocked(lf)
-            funlock(lf)
-            return false
+        rawpids = pidqueue(lf)
+        livepids = filter(p -> p > 0 && pidlive(p), rawpids)
+        (isempty(livepids) || first(livepids) == lf.pid) || return (lf.held = false)
+        isempty(livepids) && push!(livepids, lf.pid)
+        # Persist unless the file already leads with our live PID; an all-dead
+        # queue must still be rewritten, else two processes prune the same corpse.
+        if livepids != rawpids
+            overwrite(lf, livepids)
+            truncate(lf.file, sizeof(Int32) * length(livepids))
         end
-        pids = pidqueue(lf)
-        initialpids = length(pids)
-        if length(pids) == 1 && first(pids) < 0
-            pids[1] = lf.pid # Replace abandoned claim
-        else
-            for (i, pid) in enumerate(pids)
-                if pid == lf.pid || pid > 0 && !pidlive(pid)
-                    pids[i] = -1 # Mark for removal
-                end
-            end
-            if isempty(pids) || first(pids) > 0
-                pushfirst!(pids, zero(Int32)) # Placeholder
-            end
-            pids[1] = lf.pid # Insert our PID at the front
-            sort!(pids, by=<=(0)) # Move dead pids to the end (relies on stable sort)
-        end
-        overwrite(lf, pids)
-        deadpid = findfirst(pids, !ispositive)
-        isnothing(deadpid) ||
-            truncate(lf.file, sizeof(Int32) * (deadpid - 1))
+        lf.held = true
+    finally
         funlock(lf)
-    catch _
-        return false
     end
-    lock(lf.owned)
-    true
 end
 
 function Base.lock(lf::LockFile)
-    trylock(lf) && return
     backoff = 0.00001 # 10μs, given that it takes 5μs lock + unlock on my machine
     try
+        claim_pidfront!(lf) && return
         expressinterest(lf)
-        while !trylock(lf)
+        while !claim_pidfront!(lf)
             GC.safepoint()
             quicksleep(backoff)
             backoff = min(LOCKFILE_MAX_CHECK_PERIOD, backoff * 2)
         end
-    catch _
+    catch
         unclaim(lf)
         rethrow()
     end
 end
 
-function Base.unlock(lf::LockFile)
-    unlock(lf.owned)
-    islocked(lf.owned) && return
-    unclaim(lf)
-end
+Base.unlock(lf::LockFile) = unclaim(lf)
 
 """
     unclaim(lf::LockFile)
@@ -419,13 +389,14 @@ hold the lock but still have a PID entry in the lock file.
 See also: `expressinterest`.
 """
 function unclaim(lf::LockFile)
+    lf.held = false
     isopen(lf.file) || return
     lfstat = stat(lf.file)
     (iszero(lfstat.nlink) || iszero(filesize(lfstat))) && return
     flock(lf, true)
     pids = pidqueue(lf)
     if length(pids) == 1 && first(pids) == lf.pid
-        truncate(lf.file, 0)
+        Base.Filesystem.truncate(lf.file, 0)
     else
         for (i, pid) in enumerate(pids)
             if pid == lf.pid
@@ -446,7 +417,10 @@ If `nums` takes up less space than the existing contents of `lf`,
 `truncate` should be called on `lf.file` (not taken care of here).
 """
 function overwrite(lf::LockFile, nums::DenseVector{<:Integer})
-    # @show nums
+    # I would have thought seeking wouldn't be needed given the provided
+    # write arg `offset=0`, however it seems that can produce appends and
+    # so break the system, so we must seek first.
+    seek(lf.file, 0)
     GC.@preserve nums unsafe_write(
         lf.file, Ptr{UInt8}(pointer(nums)), sizeof(eltype(nums)) * length(nums) % UInt, 0)
 end
