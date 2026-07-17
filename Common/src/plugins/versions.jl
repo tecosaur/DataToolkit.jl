@@ -10,7 +10,7 @@ function versions_ident_parse_a(f::typeof(parse_ident), ident::AbstractString)
         if ident.dataset isa AbstractString && count('@', ident.dataset) == 1
             name, version = split(ident.dataset, '@')
             ident.parameters["version"] = version
-            Identifier(ident.collection, name, ident.type, ident.parameters)
+            Identifier(ident.collection, String(name), ident.type, ident.parameters)
         else
             ident
         end
