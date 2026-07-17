@@ -25,7 +25,7 @@ to compete for the lock. Special care is taken to make sure that string targets
 hash to the same value across Julia versions
 
 Lock files are also scoped to a particular parent, which can be a `String` key,
-a `BaseDirs.Project`, or a `Module`. This allows for lock files to be used in a
+a `BaseDirs.App`, or a `Module`. This allows for lock files to be used in a
 project-specific manner, preventing name clashes between different projects or
 modules.
 
@@ -195,7 +195,7 @@ function LockFile(path::String)
     lf
 end
 
-function LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::AbstractString, target::UInt64)
+function LockFile(parent::Union{String, BaseDirs.App, Module}, prefix::AbstractString, target::UInt64)
     # It's well worth using the `runtime` dir for a lockfile, as beyond it being
     # appropriate on Linux it's usually a tempfs volume. This means it's an in-memory
     # filesystem, ~halving the time that `unlock(lock(::LockFile))` takes (10μs → 5μs)
@@ -204,13 +204,13 @@ function LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::Abstr
     LockFile(path)
 end
 
-LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::String, target::AbstractString) =
+LockFile(parent::Union{String, BaseDirs.App, Module}, prefix::String, target::AbstractString) =
     LockFile(parent, prefix, simplehash(target))
 
-LockFile(parent::Union{String, BaseDirs.Project, Module}, prefix::AbstractString, target) =
+LockFile(parent::Union{String, BaseDirs.App, Module}, prefix::AbstractString, target) =
     LockFile(parent, prefix, hash(target))
 
-LockFile(parent::Union{String, BaseDirs.Project, Module}, target) = LockFile(parent, "", target)
+LockFile(parent::Union{String, BaseDirs.App, Module}, target) = LockFile(parent, "", target)
 
 """
     simplehash(text::String) -> UInt64
