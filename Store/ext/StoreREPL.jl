@@ -21,8 +21,11 @@ import DataToolkitStore: should_overwrite, store_init_checksum_a,
 function should_overwrite(name::String, old::String, new::String)
     printstyled(" ! ", color=:yellow, bold=true)
     print("Checksum mismatch with $name's url storage.\n",
-          "  Expected the checksum to be $old, got $new.\n",
-          "  How would you like to proceed?\n\n")
+          "  Expected the checksum to be ")
+    printstyled(old, color=:green)
+    print(" got ")
+    printstyled(new, color=:yellow)
+    print("\n  How would you like to proceed?\n")
     options = ["(o) Overwrite checksum to $new", "(a) Abort and throw an error"]
     choice = request(RadioMenu(options, keybindings=['o', 'a']))
     print('\n')
