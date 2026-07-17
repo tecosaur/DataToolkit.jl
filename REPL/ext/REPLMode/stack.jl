@@ -78,7 +78,7 @@ function stack_load(input::AbstractString)
     file = if !isempty(path)
         if !endswith(path, ".toml") && !isdir(path) &&
             !isnothing(findfirst(c -> c.name == path, STACK))
-            getlayer(path).path
+            getlayer(path).source.path
         else
             abspath(expanduser(path))
         end
