@@ -119,4 +119,15 @@ end
     twin1, twin2 = filltree(mktempdir()), filltree(mktempdir())
     @test DataToolkitStore.merkle("", twin1, :crc32c).checksum ==
         DataToolkitStore.merkle("", twin2, :crc32c).checksum
+    # A throw from the hashing function must degrade gracefully: no exception
+    # escapes a worker, the pool counter never strands (so the build terminates
+    # rather than spinning), and failed entries fold in as a reserved
+    # inaccessible checksum rather than vanishing.
+    tree = filltree(mktempdir())
+    exploding(_io) = error("boom")
+    result = Threads.@spawn DataToolkitStore.merkle("", tree, exploding)
+    @test timedwait(() -> istaskdone(result), 20.0) === :ok
+    built = fetch(result)
+    @test built isa MerkleTree
+    @test all(c -> c.checksum == DataToolkitStore.MERKLE_INACCESSIBLE, built.children)
 end

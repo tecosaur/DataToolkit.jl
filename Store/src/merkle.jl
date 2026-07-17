@@ -121,6 +121,15 @@ using Mmap
 # Files up to this size use a reused per-worker buffer; larger files are mmap'd.
 const MERKLE_BUFFER_MAX = 64 * 1024 * 1024
 
+# A reserved checksum for entries that could not be read or hashed. Distinct from
+# any real digest (no algorithm is named `:inaccessible`) and stable across runs,
+# so an entry becoming (in)accessible folds into its parent as a detected change
+# rather than silently vanishing from the tree.
+const MERKLE_INACCESSIBLE = Checksum(:inaccessible, UInt8[])
+
+inaccessible_node(name::String, mtime::Float64 = 0.0) =
+    MerkleTree(name, mtime, MERKLE_INACCESSIBLE, nothing)
+
 # A directory awaiting its children; folded once `remaining` reaches zero.
 mutable struct DirFrame
     const name::String
@@ -187,7 +196,7 @@ end
 function fold_dir(checksum_fn::F, frame::DirFrame) where {F}
     children = MerkleTree[child for child in frame.results if !isnothing(child)]
     orig = frame.original
-    if !isnothing(orig) && !(@atomic frame.changed) &&
+    if !isnothing(orig) && orig.path == frame.name && !(@atomic frame.changed) &&
         !isnothing(orig.children) && length(orig.children) == length(children)
         return orig, false
     end
@@ -196,7 +205,8 @@ function fold_dir(checksum_fn::F, frame::DirFrame) where {F}
     for child in children
         write(digest, child.path, child.checksum.hash)
     end
-    MerkleTree(frame.name, frame.mtime, checksum_fn(seekstart(digest)), children), true
+    checksum = try checksum_fn(seekstart(digest)) catch; MERKLE_INACCESSIBLE end
+    MerkleTree(frame.name, frame.mtime, checksum, children), true
 end
 
 function hash_file(checksum_fn::F, fullpath::String, buf::Vector{UInt8}) where {F}
@@ -234,8 +244,10 @@ function process_dir!(pool::MerklePool, wid::Int, task::MerkleTask, buf::Vector{
         isnothing(ochild.children) && !islink(estat) && isfile(estat) && ochild.mtime == mtime(estat)
     checksum_fn = pool.checksum_fn
     fullpath = joinpath(task.root, task.path)
-    dstat = stat(fullpath)
-    entries = readdir(fullpath)
+    dstat, entries = try (stat(fullpath), readdir(fullpath)) catch
+        report!(pool, task.parent, task.index, inaccessible_node(task.path), true)
+        return
+    end
     orig = task.original
     if isempty(entries)
         node = MerkleTree(task.path, mtime(dstat), checksum_fn(IOBuffer(UInt8[])), MerkleTree[])
@@ -250,20 +262,22 @@ function process_dir!(pool::MerklePool, wid::Int, task::MerkleTask, buf::Vector{
                      length(entries), prechanged, orig, task.parent, task.index)
     for (i, entry) in enumerate(entries)
         childpath = joinpath(fullpath, entry)
-        estat = lstat(childpath)
-        ochild = match_original(orig, entry, estat)
-        if isdir(estat) && !islink(estat)
-            submit!(pool, wid, MerkleTask(fullpath, entry, ochild, frame, i))  # reports later
-        elseif !isnothing(ochild) && isfile_unchanged(ochild, estat)
-            report!(pool, frame, i, ochild, false)  # unchanged file — no re-hash
-        elseif islink(estat)
-            report!(pool, frame, i, seq_merkle(checksum_fn, fullpath, entry, String[]), true)
-        elseif isfile(estat) && isreadable(childpath)
-            report!(pool, frame, i,
-                    MerkleTree(entry, mtime(estat), hash_file(checksum_fn, childpath, buf), nothing), true)
-        else
-            report!(pool, frame, i, nothing, true)
-        end
+        try
+            estat = lstat(childpath)
+            ochild = match_original(orig, entry, estat)
+            if isdir(estat) && !islink(estat)
+                submit!(pool, wid, MerkleTask(fullpath, entry, ochild, frame, i))  # reports later
+            elseif !isnothing(ochild) && isfile_unchanged(ochild, estat)
+                report!(pool, frame, i, ochild, false)  # unchanged file — no re-hash
+            elseif islink(estat)
+                report!(pool, frame, i, seq_merkle(checksum_fn, fullpath, entry, String[]), true)
+            elseif isfile(estat) && isreadable(childpath)
+                report!(pool, frame, i,
+                        MerkleTree(entry, mtime(estat), hash_file(checksum_fn, childpath, buf), nothing), true)
+            else
+                report!(pool, frame, i, inaccessible_node(entry), true)
+            end
+        catch; report!(pool, frame, i, inaccessible_node(entry), true) end
     end
 end
 
@@ -310,8 +324,16 @@ function worker!(pool::MerklePool, wid::Int)
             yield()
             continue
         end
-        process_dir!(pool, wid, task, buf)
-        atomic_sub!(pool.outstanding, 1)
+        try
+            process_dir!(pool, wid, task, buf)
+        catch
+            # No worker throw may escape: a stranded task would leak its counter
+            # decrement and spin the other workers forever. Record the subtree as
+            # inaccessible and carry on.
+            report!(pool, task.parent, task.index, inaccessible_node(task.path), true)
+        finally
+            atomic_sub!(pool.outstanding, 1)
+        end
     end
 end
 
