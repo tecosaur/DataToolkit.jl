@@ -344,7 +344,7 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symb
         arg1 isa DataType && arg1 <: DataTransformer || continue
         par1 = driverof(arg1)
         par1 isa Symbol || continue
-        minpriority <= createpriority(T{arg1}) <= maxpriority || continue
+        minpriority <= createpriority(T{par1}) <= maxpriority || continue
         push!(alldrivers, par1)
     end
     sort!(alldrivers, by = drv -> createpriority(T{drv}))

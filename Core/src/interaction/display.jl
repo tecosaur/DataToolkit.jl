@@ -17,7 +17,7 @@ function Base.show(io::IO, ::MIME"text/plain", dsi::Identifier)
         namestr = @advise collection string(nameonly)
         if startswith(namestr, dname)
             print(io, dsi.dataset)
-            printstyled(io, namestr[nextind(namestr, length(dname)):end],
+            printstyled(io, chopprefix(namestr, dname),
                         color=:cyan)
         else
             print(io, namestr)

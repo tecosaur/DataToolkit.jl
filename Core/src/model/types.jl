@@ -378,7 +378,7 @@ uuid::UUID
 plugins::Vector{String}
 parameters::Dict{String, Any}
 datasets::Vector{DataSet}
-path::Union{String, Nothing}
+source::Union{@NamedTuple{path::String, mtime::Float64}, Nothing}
 advise::AdviceAmalgamation
 mod::Module
 ```

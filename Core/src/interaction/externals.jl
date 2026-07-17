@@ -91,11 +91,9 @@ function dataset(collection::DataCollection, identstr::AbstractString, parameter
 end
 
 """
-    read(filename::AbstractString, DataCollection; writer::Union{Function, Nothing})
+    read(filename::AbstractString, DataCollection; mod::Module=Base.Main)
 
 Read the entire contents of a file as a `DataCollection`.
-
-The default value of writer is `self -> write(filename, self)`.
 """
 Base.read(f::AbstractString, ::Type{DataCollection}; mod::Module=Base.Main) =
     open(f, "r") do io read(io, DataCollection; path=abspath(f), mod) end
@@ -367,7 +365,8 @@ function Base.write(dataset::DataSet, @nospecialize(info::Any))
         # and (b) available (checked via `!isnothing`).
         for storage in dataset.storage
             for write_fn_sig in write_fn_sigs
-                supported_storage_types = Vector{Type}(filter(!isnothing, map(trytypeify, storage.type)))
+                supported_storage_types = Vector{Type}(filter(!isnothing, map(
+                    qt -> trytypeify(qt, mod=dataset.collection.mod), storage.type)))
                 valid_storage_types =
                     filter(stype -> issubtype(stype, write_fn_sig.types[3]),
                            supported_storage_types)
