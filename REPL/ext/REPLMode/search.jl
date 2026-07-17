@@ -13,21 +13,26 @@ function search(input::AbstractString)
     else
         candidates = Tuple{DataSet, String, Int}[]
         searchstack = STACK
-        caseinsensitive = all(!isuppercase, input)
+        term = input
         if ':' in input
-            collection, _ = split(input, ':', limit=2)
-            searchstack = [getlayer(if !isempty(collection) collection end)]
+            cname, term = split(input, ':', limit=2)
+            searchstack = try [getlayer(if !isempty(cname) cname end)] catch err
+                err isa IdentifierException || rethrow()
+                printstyled(" ! ", color=:red, bold=true)
+                return println("Could not resolve collection '$cname'")
+            end
         end
-        for collection in STACK
+        caseinsensitive = all(!isuppercase, term)
+        for collection in searchstack
             refresh!(collection)
             for dataset in collection.datasets
                 identstr = @advise collection string(Identifier(dataset))
-                identstr = replace(identstr, collection.name * ':' => "", count=1)
+                identstr = replace(identstr, something(collection.name, "") * ':' => "", count=1)
                 if caseinsensitive
                     identstr = lowercase(identstr)
                 end
-                score = DataToolkitCore.stringdist(input, identstr) -
-                    max(0, length(identstr) - length(input))
+                score = DataToolkitCore.stringdist(term, identstr) -
+                    max(0, length(identstr) - length(term))
                 push!(candidates, (dataset, identstr, score))
             end
         end
