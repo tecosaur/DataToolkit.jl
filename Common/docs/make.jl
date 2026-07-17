@@ -18,6 +18,7 @@ const DocSaveload = [
     "Compressed",
     "CSV",
     "Delim",
+    "GeoPackage",
     "Gif",
     "IO to File" => "io->file",
     "JLD2",
@@ -32,9 +33,11 @@ const DocSaveload = [
     "Sqlite",
     "Tar",
     "Tiff",
+    "TOML",
     "Webp",
     "XLSX",
     "XML",
+    "YAML",
     "Zip",
 ]
 
