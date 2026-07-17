@@ -8,7 +8,7 @@ function _read_arrow(io::IO, sink::Type; kwargs...)
     result = Arrow.Table(io; kwargs...) |>
     if sink == Any || sink == Arrow.Table
         identity
-    elseif QualifiedType(sink) == QualifiedType(:DataFrames, :DataFrame)
+    else
         sink
     end
     result
