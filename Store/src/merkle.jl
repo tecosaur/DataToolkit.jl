@@ -84,16 +84,14 @@ function Base.get(mt::MerkleTree, path::AbstractString, default)
 end
 
 function Base.get(mt::MerkleTree, checksum::Checksum, default)
-    if mt.checksum == checksum
-        mt
-    elseif !isnothing(mt.children)
+    mt.checksum == checksum && return mt
+    if !isnothing(mt.children)
         for child in mt.children
             res = get(child, checksum, nothing)
             isnothing(res) || return res
         end
-    else
-        default
     end
+    default
 end
 
 function Base.get(cm::CachedMerkles, checksum::Checksum, default)
@@ -112,172 +110,265 @@ function Base.length(mt::MerkleTree)
     end
 end
 
-# Actually calculating Merkle trees
+# Calculating Merkle trees
+#
+# A persistent pool of `nthreads()` work-stealing workers takes one directory per
+# work item. Against a prior tree, unchanged files/subtrees are reused; a fresh
+# build is the same algorithm run against no prior tree.
 
-"""
-    merkle([cache], [root::String], path::String, algorithm::Symbol)
+using Mmap
 
-Relative to a certain `root` directory, create a `MerkleTree` of `path`.
+# Files up to this size use a reused per-worker buffer; larger files are mmap'd.
+const MERKLE_BUFFER_MAX = 64 * 1024 * 1024
 
-If the path could not be resolved, or points to a special filesystem object,
-`nothing` is returned.
-
-The constructed `MerkleTree` can use any hashing `algorithm` recognised
-by `checksum`.
-"""
-function merkle(root::String, path::String, algorithm::Symbol = CHECKSUM_DEFAULT_SCHEME)
-    _merkle(String(rstrip(root, ('/', '\\'))), String(rstrip(path, ('/', '\\'))), algorithm, checksum(algorithm),
-            (Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}(), ReentrantLock()), String[])
+# A directory awaiting its children; folded once `remaining` reaches zero.
+mutable struct DirFrame
+    const name::String
+    const mtime::Float64
+    const results::Vector{Union{Nothing, MerkleTree}}
+    @atomic remaining::Int
+    @atomic changed::Bool
+    const original::Union{Nothing, MerkleTree}
+    const parent::Union{DirFrame, Nothing}
+    const index::Int
 end
 
-merkle(path::String, algorithm::Symbol) = merkle("", path, algorithm)
+struct MerkleTask
+    root::String
+    path::String
+    original::Union{Nothing, MerkleTree}
+    parent::Union{DirFrame, Nothing}
+    index::Int
+end
 
-"""
-    _merkle(root::String, path::String, algorithm::Symbol, checksum_fn::F) where {F <: Function}
+struct MerklePool{F}
+    deques::Vector{Vector{MerkleTask}}
+    locks::Vector{SpinLock}
+    checksum_fn::F
+    outstanding::Atomic{Int}
+    root_result::Base.RefValue{Union{Nothing, MerkleTree}}
+end
 
-Internal function to create a Merkle tree for a `path` relative to a `root` directory.
+function MerklePool(n::Int, checksum_fn::F) where {F}
+    MerklePool{F}([MerkleTask[] for _ in 1:n], [SpinLock() for _ in 1:n],
+                  checksum_fn, Atomic{Int}(0), Ref{Union{Nothing, MerkleTree}}(nothing))
+end
 
-The checksum function `checksum_fn` is used to calculate the checksums of files,
-and should return `Checksum`s for the given `algorithm`.
+function submit!(pool::MerklePool, wid::Int, task::MerkleTask)
+    atomic_add!(pool.outstanding, 1)
+    @lock pool.locks[wid] push!(pool.deques[wid], task)
+end
 
-Returns the constructed `MerkleTree` or `nothing` if the path does not exist,
-or cannot be checksummed for some reason.
-"""
-function _merkle(root::String, path::String, algorithm::Symbol, checksum_fn::F,
-                 (symlinks, symlinks_lock)::Tuple{Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}, ReentrantLock},
-                 symlink_descent::Vector{String}) where {F <: Function}
+function take_or_steal!(pool::MerklePool, wid::Int)
+    own = @lock pool.locks[wid] if !isempty(pool.deques[wid]) pop!(pool.deques[wid]) end
+    isnothing(own) || return own
+    for j in eachindex(pool.deques)
+        j == wid && continue
+        stolen = @lock pool.locks[j] if !isempty(pool.deques[j]) popfirst!(pool.deques[j]) end
+        isnothing(stolen) || return stolen
+    end
+    nothing
+end
+
+function report!(pool::MerklePool, parent::Union{DirFrame, Nothing},
+                 index::Int, node::Union{Nothing, MerkleTree}, changed::Bool)
+    if isnothing(parent)
+        pool.root_result[] = node
+        return
+    end
+    parent.results[index] = node
+    changed && (@atomic parent.changed = true)
+    if (@atomic parent.remaining -= 1) == 0
+        folded, fchanged = fold_dir(pool.checksum_fn, parent)
+        report!(pool, parent.parent, parent.index, folded, fchanged)
+    end
+end
+
+function fold_dir(checksum_fn::F, frame::DirFrame) where {F}
+    children = MerkleTree[child for child in frame.results if !isnothing(child)]
+    orig = frame.original
+    if !isnothing(orig) && !(@atomic frame.changed) &&
+        !isnothing(orig.children) && length(orig.children) == length(children)
+        return orig, false
+    end
+    # The node's own name is excluded from its digest, so checksums relocate
+    digest = IOBuffer()
+    for child in children
+        write(digest, child.path, child.checksum.hash)
+    end
+    MerkleTree(frame.name, frame.mtime, checksum_fn(seekstart(digest)), children), true
+end
+
+function hash_file(checksum_fn::F, fullpath::String, buf::Vector{UInt8}) where {F}
+    sz = filesize(fullpath)
+    if sz > MERKLE_BUFFER_MAX
+        mapped = Mmap.mmap(fullpath)
+        try
+            checksum_fn(IOBuffer(mapped))
+        finally
+            finalize(mapped)
+        end
+    else
+        resize!(buf, sz)
+        read!(fullpath, buf)
+        checksum_fn(IOBuffer(buf))
+    end
+end
+
+function match_original(original::Union{Nothing, MerkleTree}, child::String, childstat)
+    isnothing(original) && return nothing
+    isnothing(original.children) && return nothing
+    for oc in original.children
+        oc.path == child && return oc
+    end
+    if isdir(childstat)
+        for oc in original.children
+            oc.mtime == mtime(childstat) && !isnothing(oc.children) && return oc
+        end
+    end
+    nothing
+end
+
+function process_dir!(pool::MerklePool, wid::Int, task::MerkleTask, buf::Vector{UInt8})
+    isfile_unchanged(ochild::MerkleTree, estat) =
+        isnothing(ochild.children) && !islink(estat) && isfile(estat) && ochild.mtime == mtime(estat)
+    checksum_fn = pool.checksum_fn
+    fullpath = joinpath(task.root, task.path)
+    dstat = stat(fullpath)
+    entries = readdir(fullpath)
+    orig = task.original
+    if isempty(entries)
+        node = MerkleTree(task.path, mtime(dstat), checksum_fn(IOBuffer(UInt8[])), MerkleTree[])
+        changed = isnothing(orig) || orig.checksum != node.checksum
+        report!(pool, task.parent, task.index, if changed node else orig end, changed)
+        return
+    end
+    # A directory whose child set shrank counts as changed even if survivors match.
+    prechanged = !isnothing(orig) && !isnothing(orig.children) && length(orig.children) != length(entries)
+    frame = DirFrame(task.path, mtime(dstat),
+                     Vector{Union{Nothing, MerkleTree}}(nothing, length(entries)),
+                     length(entries), prechanged, orig, task.parent, task.index)
+    for (i, entry) in enumerate(entries)
+        childpath = joinpath(fullpath, entry)
+        estat = lstat(childpath)
+        ochild = match_original(orig, entry, estat)
+        if isdir(estat) && !islink(estat)
+            submit!(pool, wid, MerkleTask(fullpath, entry, ochild, frame, i))  # reports later
+        elseif !isnothing(ochild) && isfile_unchanged(ochild, estat)
+            report!(pool, frame, i, ochild, false)  # unchanged file — no re-hash
+        elseif islink(estat)
+            report!(pool, frame, i, seq_merkle(checksum_fn, fullpath, entry, String[]), true)
+        elseif isfile(estat) && isreadable(childpath)
+            report!(pool, frame, i,
+                    MerkleTree(entry, mtime(estat), hash_file(checksum_fn, childpath, buf), nothing), true)
+        else
+            report!(pool, frame, i, nothing, true)
+        end
+    end
+end
+
+# Symlinked subtrees are resolved sequentially, with cycle detection via `descent`.
+function seq_merkle(checksum_fn::F, root::String, path::String, descent::Vector{String}) where {F}
     fullpath = joinpath(root, path)
     pathstat = stat(fullpath)
     if !isreadable(fullpath)
         nothing
     elseif islink(lstat(fullpath))
         target = abspath(dirname(fullpath), readlink(fullpath))
-        tindex = findfirst(==(target), symlink_descent)
+        tindex = findfirst(==(target), descent)
         if !isnothing(tindex)
-            cycle_io = IOBuffer()
-            for i in tindex:length(symlink_descent)
-                println(cycle_io, symlink_descent[i], UInt8(i - tindex))
+            cycle = IOBuffer()
+            for i in tindex:length(descent)
+                println(cycle, descent[i], UInt8(i - tindex))
             end
-            return MerkleTree(path, mtime(pathstat), checksum_fn(seekstart(cycle_io)), MerkleTree[])
+            return MerkleTree(path, mtime(pathstat), checksum_fn(seekstart(cycle)), MerkleTree[])
         end
-        lock(symlinks_lock)
-        if haskey(symlinks, target)
-            mtree = symlinks[target]
-            unlock(symlinks_lock)
-            if mtree isa ReentrantLock
-                @lock mtree symlinks[target]::MerkleTree
-            elseif mtree isa MerkleTree
-                MerkleTree(path, mtree.mtime, mtree.checksum, mtree.children)
-            end
-        else
-            mlock = ReentrantLock()
-            lock(mlock)
-            symlinks[target] = mlock
-            unlock(symlinks_lock)
-            mtree = _merkle("", target, algorithm, checksum_fn, (symlinks, symlinks_lock), vcat(symlink_descent, target))
-            symlinks[target] = mtree
-            unlock(mlock)
-            if mtree isa MerkleTree
-                MerkleTree(path, mtree.mtime, mtree.checksum, mtree.children)
-            end
-        end
+        sub = seq_merkle(checksum_fn, "", target, vcat(descent, target))
+        if !isnothing(sub) MerkleTree(path, sub.mtime, sub.checksum, sub.children) end
     elseif isfile(pathstat)
         MerkleTree(path, mtime(fullpath), open(checksum_fn, fullpath), nothing)
     elseif isdir(pathstat)
-        childnames = collect(enumerate(readdir(fullpath)))
-        childtrees = Tuple{Int, MerkleTree}[]
-        ctreelock = SpinLock()
-        @threads for (i, child) in childnames
-            ctree = _merkle(fullpath, child, algorithm, checksum_fn, (symlinks, symlinks_lock), symlink_descent)
-            isnothing(ctree) || @lock ctreelock push!(childtrees, (i, ctree))
-        end
         children = MerkleTree[]
-        dirgestive = IOBuffer()
-        write(dirgestive, path)
-        for (_, ctree) in sort(childtrees, by=first)
-            isnothing(ctree) && continue
-            push!(children, ctree)
-            write(dirgestive, ctree.path, ctree.checksum.hash)
+        digest = IOBuffer()
+        for entry in readdir(fullpath)
+            child = seq_merkle(checksum_fn, fullpath, entry, descent)
+            isnothing(child) && continue
+            push!(children, child)
+            write(digest, child.path, child.checksum.hash)
         end
-        MerkleTree(path, mtime(pathstat), checksum_fn(seekstart(dirgestive)), children)
+        MerkleTree(path, mtime(pathstat), checksum_fn(seekstart(digest)), children)
     end
 end
 
-function merkle(original::MerkleTree, root::String, path::String, algorithm::Symbol = original.checksum.alg)
-    if original.checksum.alg == algorithm
-        checksumfn = checksum(original.checksum.alg)
-        isnothing(checksumfn) && return
-        _merkle(original, String(rstrip(root, ('/', '\\'))), String(rstrip(path, ('/', '\\'))),
-                original.checksum.alg, checksumfn,
-                (Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}(), ReentrantLock()), String[])
-    else
-        merkle(root, path, original.checksum.alg)
+function worker!(pool::MerklePool, wid::Int)
+    buf = UInt8[]
+    # Children are submitted before their parent is decremented, so `outstanding`
+    # only hits zero once the whole tree is done.
+    while pool.outstanding[] > 0
+        task = take_or_steal!(pool, wid)
+        if isnothing(task)
+            yield()
+            continue
+        end
+        process_dir!(pool, wid, task, buf)
+        atomic_sub!(pool.outstanding, 1)
     end
 end
 
-merkle(original::MerkleTree, path::String, algorithm::Symbol) = merkle(original, "", path, algorithm)
+"""
+    merkle([cache::CachedMerkles], [original::MerkleTree], [root::String], path::String, algorithm::Symbol)
 
-function _merkle(original::MerkleTree, root::String, path::String, algorithm::Symbol, checksum_fn::F,
-                 (symlinks, symlinks_lock)::Tuple{Dict{String, Union{MerkleTree, Nothing, ReentrantLock}}, ReentrantLock},
-                 symlink_descent::Vector{String}) where {F <: Function}
+Create a `MerkleTree` of `path`, relative to `root`.
+
+The tree is built in parallel across `nthreads()` workers. Given an `original`
+tree (or a `cache`), unchanged files and subtrees — matched by name and mtime —
+are reused without re-hashing. Any hashing `algorithm` recognised by `checksum`
+may be used.
+
+Returns `nothing` if the path cannot be resolved or checksummed.
+"""
+merkle(root::String, path::String, checksum_fn::F) where {F <: Function} =
+    _merkle(root, path, checksum_fn, nothing)
+
+merkle(original::MerkleTree, root::String, path::String, checksum_fn::F) where {F <: Function} =
+    _merkle(root, path, checksum_fn, original)
+
+function _merkle(root::String, path::String, checksum_fn::F,
+                 original::Union{Nothing, MerkleTree}) where {F <: Function}
+    root = String(rstrip(root, ('/', '\\')))
+    path = String(rstrip(path, ('/', '\\')))
     fullpath = joinpath(root, path)
-    pathstat = stat(fullpath)
-    if !isreadable(fullpath)
-        nothing, true
-    elseif isfile(pathstat)
-        if original.path == path && original.mtime == mtime(pathstat)
-            original, false
-        else
-            csum = open(checksum_fn, fullpath)
-            # @warn "- changed: $fullpath"
-            MerkleTree(path, mtime(fullpath), csum, nothing), true
-        end
-    elseif isdir(pathstat)
-        childnames = collect(enumerate(readdir(fullpath)))
-        childtrees = Tuple{Int, MerkleTree, Bool}[]
-        ctreelock = SpinLock()
-        @threads for (i, child) in childnames
-            origchild = nothing
-            for ochild in original.children
-                if ochild.path == child
-                    origchild = ochild
-                    break
-                end
-            end
-            if isnothing(origchild)
-                for ochild in original.children
-                    childstat = stat(joinpath(fullpath, child))
-                    if ochild.mtime == mtime(childstat) && isdir(childstat)
-                        origchild = ochild
-                        break
-                    end
-                end
-            end
-            ctree, changed = if !isnothing(origchild)
-                _merkle(origchild, fullpath, child, algorithm, checksum_fn, (symlinks, symlinks_lock), symlink_descent)
-            else
-                _merkle(fullpath, child, algorithm, checksum_fn, (symlinks, symlinks_lock), symlink_descent), true
-            end
-            isnothing(ctree) || @lock ctreelock push!(childtrees, (i, ctree, changed))
-        end
-        if original.path == path && length(original.children) == length(childtrees) && all(!last, childtrees)
-            return original, false
-        end
-        children = MerkleTree[]
-        dirgestive = IOBuffer()
-        write(dirgestive, path)
-        for (_, ctree, _) in sort(childtrees, by=first)
-            isnothing(ctree) && continue
-            push!(children, ctree)
-            write(dirgestive, ctree.path, ctree.checksum.hash)
-        end
-        csum = checksum_fn(seekstart(dirgestive))
-        MerkleTree(path, mtime(fullpath), csum, children), true
+    st = stat(fullpath)
+    isreadable(fullpath) || return nothing
+    if !isdir(st) || islink(lstat(fullpath))
+        return seq_merkle(checksum_fn, root, path, String[])  # single file / symlink root
+    end
+    pool = MerklePool(nthreads(), checksum_fn)
+    submit!(pool, 1, MerkleTask(root, path, original, nothing, 0))
+    tasks = [Threads.@spawn worker!(pool, w) for w in 1:nthreads()]
+    foreach(wait, tasks)
+    pool.root_result[]
+end
+
+function merkle(root::String, path::String, algorithm::Symbol = CHECKSUM_DEFAULT_SCHEME)
+    fn = checksum(algorithm)
+    if !isnothing(fn) merkle(root, path, fn) end
+end
+
+function merkle(original::MerkleTree, root::String, path::String,
+                algorithm::Symbol = original.checksum.alg)
+    if original.checksum.alg == algorithm
+        fn = checksum(algorithm)
+        if !isnothing(fn) merkle(original, root, path, fn) end
     else
-        nothing, true
+        merkle(root, path, algorithm)
     end
 end
 
+merkle(original::MerkleTree, path::String, algorithm::Symbol) =
+    merkle(original, "", path, algorithm)
+
+# Cached layer: find the path in the cache, incrementally refresh, write back if changed.
 function merkle(cm::CachedMerkles, root::String, path::String, algorithm::Symbol;
                 last_checksum::Union{Checksum, Nothing} = nothing)
     refresh_cache!(cm)
@@ -287,19 +378,17 @@ function merkle(cm::CachedMerkles, root::String, path::String, algorithm::Symbol
             entry = get(mt, last_checksum, nothing)
         end
         isnothing(entry) && continue
-        entry, updated = @log_do(
-            "store:merkle:check",
-            "Checking MerkleTree hash of $path",
-            merkle(entry, root, path))
-        if updated
-            if isnothing(entry)
+        updated = @log_do("store:merkle:check", "Checking MerkleTree hash of $path",
+                          merkle(entry, root, path))
+        if updated !== entry
+            if isnothing(updated)
                 deleteat!(cm.merkles, i)
             else
-                cm.merkles[i] = entry
+                cm.merkles[i] = updated
             end
             write_merkle(cm)
         end
-        return entry
+        return updated
     end
     entry = @log_do "store:merkle:create" "Creating MerkleTree hash of $path" merkle(root, path, algorithm)
     isnothing(entry) && return
@@ -311,7 +400,7 @@ end
 function merkle(cm::CachedMerkles, path::String, algorithm::Symbol;
                 last_checksum::Union{Checksum, Nothing} = nothing)
     cmdir = dirname(cm.file.path)
-    if startswith(path, cmdir)
+    if path == cmdir || startswith(path, joinpath(cmdir, ""))
         merkle(cm, cmdir, relpath(path, cmdir), algorithm; last_checksum)
     else
         merkle(cm, "", abspath(path), algorithm; last_checksum)
