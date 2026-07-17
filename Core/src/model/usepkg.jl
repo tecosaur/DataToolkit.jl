@@ -54,7 +54,7 @@ loaded, nothing will be done.
 """
 function try_install_pkg end
 
-@static if VERSION > v"1.11-alpha1"
+@static if VERSION > v"1.11-"
     function try_install_pkg(pkg::Base.PkgId)
         REPL, Pkg = try
             @something(get(Base.loaded_modules, REPL_ID, nothing),

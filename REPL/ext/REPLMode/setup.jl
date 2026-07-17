@@ -136,7 +136,21 @@ A singleton to allow for for Data REPL specific completion dispatching.
 """
 struct DataCompletionProvider <: REPL.LineEdit.CompletionProvider end
 
-if VERSION >= v"1.11-alpha1"
+if VERSION >= v"1.13-"
+    function REPL.complete_line(::DataCompletionProvider, state::REPL.LineEdit.PromptState; hint::Bool = false)
+        # From 1.13, completions are `NamedCompletion`s over a byte `Region`
+        # (see `complete_line_named` in REPL/LineEdit.jl).
+        pos = position(state.input_buffer)
+        full = REPL.LineEdit.input_string(state)
+        if REPL.beforecursor(state.input_buffer) != full
+            # For now, only complete at end of line
+            return (LineEdit.NamedCompletion[], pos => pos, false)
+        end
+        completions, partial, should_complete = complete_repl_cmd(full)
+        (map(LineEdit.NamedCompletion, completions),
+         (pos - sizeof(partial)) => pos, should_complete)
+    end
+elseif VERSION >= v"1.11-"
     function REPL.complete_line(::DataCompletionProvider, state::REPL.LineEdit.PromptState; hint::Bool = false)
         # See REPL.jl complete_line(c::REPLCompletionProvider, s::PromptState)
         partial = REPL.beforecursor(state.input_buffer)
@@ -184,19 +198,22 @@ function create_data_mode(repl::REPL.AbstractREPL, base_mode::LineEdit.Prompt)
     data_mode.hist = history_provider
 
     main_keymap = REPL.mode_keymap(base_mode)
-    _, search_keymap = LineEdit.setup_search_keymap(history_provider)
     _, prefix_keymap = LineEdit.setup_prefix_keymap(history_provider, data_mode)
 
     data_mode.on_done = handle_input(toplevel_execute_repl_cmd, repl)
 
-    data_mode.keymap_dict = LineEdit.keymap(Dict{Any, Any}[
-        search_keymap,
+    keymaps = Dict{Any, Any}[
         main_keymap,
         prefix_keymap,
         LineEdit.history_keymap,
         LineEdit.default_keymap,
         LineEdit.escape_defaults
-    ])
+    ]
+    # Removed in Julia 1.13, where ^R search is part of `history_keymap`.
+    @static if VERSION < v"1.13-"
+        pushfirst!(keymaps, last(LineEdit.setup_search_keymap(history_provider)))
+    end
+    data_mode.keymap_dict = LineEdit.keymap(keymaps)
 
     data_mode
 end
@@ -249,7 +266,7 @@ function init_repl(repl::REPL.AbstractREPL)
             end
         else
             LineEdit.edit_insert(state, REPL_KEY)
-            @static if VERSION >= v"1.12-alpha1"
+            @static if VERSION >= v"1.12-"
                 LineEdit.check_show_hint(state)
             end
         end

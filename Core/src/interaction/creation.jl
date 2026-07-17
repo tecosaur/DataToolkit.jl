@@ -55,6 +55,12 @@ create(::Type{DataCollection}, dc::DataCollection) = dc
 
 # Creating safe toml values from API-passed values
 
+# `TOML.Internals.Printer.TOMLValue` up to Julia 1.12, which drops it.
+const TOMLValue = Union{Dates.Date, Dates.DateTime, Dates.Time,
+                        Base.TOML.Date, Base.TOML.DateTime, Base.TOML.Time,
+                        AbstractFloat, AbstractString, Integer,
+                        AbstractDict, AbstractVector}
+
 """
     toml_safe(value)
 
@@ -75,7 +81,7 @@ toml_safe(v::Vector) = Vector{Any}(map(toml_safe, v))
 toml_safe(d::Dict) = Dict{String, Any}(string(k) => toml_safe(v) for (k, v) in d)
 toml_safe(q::QualifiedType) = string(q)
 toml_safe(T::DataType) = toml_safe(QualifiedType(T))
-toml_safe(x::TOML.Internals.Printer.TOMLValue) = x
+toml_safe(x::TOMLValue) = x
 toml_safe(x::Any) = string(x)
 
 # DataSet creation
