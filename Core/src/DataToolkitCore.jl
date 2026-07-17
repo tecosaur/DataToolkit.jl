@@ -53,6 +53,7 @@ include("model/globals.jl")
 include("model/utils.jl")
 include("model/advice.jl")
 include("model/errors.jl")
+include("model/logging.jl")
 
 include("model/qualifiedtype.jl")
 include("model/identification.jl")
@@ -63,7 +64,6 @@ include("model/writer.jl")
 include("model/usepkg.jl")
 include("model/dataplugin.jl")
 
-include("interaction/logging.jl") # Need to be loaded early
 include("interaction/typetransforms.jl")
 include("interaction/externals.jl")
 include("interaction/creation.jl")
