@@ -103,8 +103,8 @@ function create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, 
 end
 
 """
-    create!(parent::DataSet, ::Type{DataSet}, name::AbstractString, specification::Dict{String, <:Any})
-    create!(parent::DataSet, ::Type{DataSet}, name::AbstractString, specification::Pair{String, <:Any}...)
+    create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, specification::Dict{String, <:Any})
+    create!(parent::DataCollection, ::Type{DataSet}, name::AbstractString, specification::Pair{String, <:Any}...)
 
 Create a new [`DataSet`](@ref) that is a child of `parent` with a given `name` and `specification`,
 and add it to the `parent`'s list of datasets.
@@ -195,11 +195,16 @@ end
 create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{String, <:Any} = Dict{String, Any}()) =
     create!(parent, T, merge(spec, Dict("driver" => String(driver))))
 
+create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec1::Pair{String, <:Any}, specs::Pair{String, <:Any}...) =
+    create!(parent, T, driver, Dict{String, Any}(spec1, specs...))
+
 create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, spec::Dict{String, <:Any} = Dict{String, Any}()) where {_kind, D} =
     create!(parent, T, D, spec)
 
-create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, driver::Symbol, spec1::Pair{String, <:Any}, specs::Pair{String, <:Any}...) where {_kind, D} =
-    create!(parent, T, D, driver, Dict{String, Any}(vcat(spec1, specs)))
+function create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, driver::Symbol, spec::Dict{String, <:Any}) where {_kind, D}
+    D == driver || throw(ArgumentError("Driver $driver does not match the type $T with driver $D"))
+    create!(parent, T, merge(spec, Dict("driver" => String(driver))))
+end
 
 # Dedicated storage/loader/writer creation (modifying)
 
