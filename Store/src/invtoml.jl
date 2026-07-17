@@ -1,5 +1,7 @@
 # Parsing from and serialising to an Inventory TOML file
 
+using Base.Threads
+
 function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
     getkey(key::Symbol, T::Type, noth::Bool=false) = if haskey(spec, String(key))
         if spec[String(key)] isa T; spec[String(key)]
@@ -200,14 +202,160 @@ function Base.write(io::IO, inv::Inventory)
     TOML.print(io, convert(Dict, inv), sorted=true, by=keygen)
 end
 
-function Base.write(inv::Inventory)
-    if !trylock(inv.lock)
-        # This uses a (hacky) workaround for same-task reentrant lock requirements.
-        @log_do("store:inventory:waitpid",
-                "Waiting for lock on inventory file to be released",
-                begin lock(inv.lock); unlock(inv.lock.owned) end)
-        lock(inv.lock.owned)
+
+# Batched, concurrent, safe updating
+
+using DataToolkitCore: WriteRecord, BLANK_WRITE_RECORD,
+    WRITE_DEBOUNCE_FACTOR, WRITE_DEFER_LIMIT
+
+const WRITE_RECORDS = WeakKeyDict{Inventory, WriteRecord}()
+
+"""
+    SYNCHRONISATION_FREQUENCY::Float64
+
+In preparation for a debounced write, the inventory file will be locked.
+While still collecting modifications, it is entirely possible that another
+process may wish to modify the inventory file.
+
+In this scenario, to avoid blocking the other process indefinitely we
+should flush the current writes to the inventory file and unlock it.
+
+To detect when another process is waiting for the lock, the `trylock` function
+touches the lock file when it cannot be acquired. We can check for this by
+comparing the access time of the lock file to what it was the when we initially
+acquired the lock.
+
+The *synchronisation frequency* is how often we should check the access time
+of the lock file while batching writes. This is a trade-off between maximising
+throughput and responsiveness.
+"""
+const SYNCHRONISATION_FREQUENCY = 0.2 # REVIEW: seconds, or relative unit?
+
+const SYNCHRONISATION_CARVEOUT = 3
+
+function DataToolkitCore.save!(inv::Inventory)
+    lock(inv.lock)
+    lock(WRITE_RECORDS)
+    record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+    if record.queued
+        newinvoke = (last = time(), count = record.invoke.count + 1)
+        WRITE_RECORDS[inv] = WriteRecord(newinvoke, record.write, record.queued)
+        unlock(WRITE_RECORDS)
+        unlock(inv.lock)
+    elseif time() - record.invoke.last > WRITE_DEBOUNCE_FACTOR * record.write.duration
+        start = time()
+        WRITE_RECORDS[inv] = WriteRecord((last = start, count = record.invoke.count + 1),
+                                         record.write, true)
+        unlock(WRITE_RECORDS)
+        try
+            atomic_write(inv.file.path, inv)
+            duration = time() - start
+            @lock WRITE_RECORDS let
+                record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+                newwrite = (last = start,
+                            duration = duration,
+                            count = record.write.count + 1)
+                WRITE_RECORDS[inv] = WriteRecord(record.invoke, newwrite, false)
+            end
+            unlock(inv.lock)
+        catch
+            @lock WRITE_RECORDS let
+                record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+                WRITE_RECORDS[inv] = WriteRecord(record.invoke, record.write, false)
+            end
+            unlock(inv.lock)
+            rethrow()
+        end
+    else
+        WRITE_RECORDS[inv] = WriteRecord(record.invoke, record.write, true)
+        unlock(WRITE_RECORDS)
+        @spawn writesoon_unlock(inv, current_task())
     end
+end
+
+function DataToolkitCore.save!(func::Function, inv::Inventory)
+    lock(inv.lock)
+    try
+        func(inv)
+        atomic_write(inv.file.path, inv)
+    finally
+        unlock(inv.lock)
+    end
+end
+
+function writesoon_unlock(inv::Inventory, owner::Task)
+    adopt!(inv.lock, owner)
+    debounce = let irecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+        irecord.queued || @goto cleanup
+        WRITE_DEBOUNCE_FACTOR * irecord.write.duration
+    end
+    for i in 1:WRITE_DEFER_LIMIT
+        if i <= SYNCHRONISATION_CARVEOUT
+            # If we are within the carveout, we should not synchronise.
+            # This is to allow the first few writes to be batched together
+            # without interruption.
+            sleep(debounce)
+        elseif iscontested(inv.lock)
+            break
+        elseif debounce < SYNCHRONISATION_FREQUENCY
+            sleep(debounce)
+        else
+            netsleep = 0.0
+            while netsleep < debounce
+                iscontested(inv.lock) && break
+                sleep(SYNCHRONISATION_FREQUENCY)
+                netsleep += SYNCHRONISATION_FREQUENCY
+            end
+            netsleep < debounce && break
+        end
+        crecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+        crecord.queued || @goto cleanup
+        if time() - crecord.invoke.last <= debounce
+            break
+        end
+    end
+    record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+    record.queued || @goto cleanup
+    try
+        writestart = time()
+        atomic_write(inv.file.path, inv)
+        writeduration = time() - writestart
+        @lock WRITE_RECORDS let
+            record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+            newwrite = (last = writestart,
+                        duration = writeduration,
+                        count = record.write.count + 1)
+            WRITE_RECORDS[inv] = WriteRecord(record.invoke, newwrite, false)
+        end
+    catch
+        @lock WRITE_RECORDS let
+            record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
+            WRITE_RECORDS[inv] = WriteRecord(record.invoke, record.write, false)
+        end
+        rethrow()
+    end
+    @label cleanup
+    unlock(inv.lock)
+    nothing
+end
+
+"""
+    flushpendingwrites()
+
+Perform all pending inventory writes in the `WRITE_RECORDS` dictionary.
+"""
+function flushpendingwrites()
+    lock(WRITE_RECORDS)
+    for (inv, record) in WRITE_RECORDS
+        record.queued || continue
+        atomic_write(inv.file.path, inv)
+    end
+    empty!(WRITE_RECORDS)
+    unlock(WRITE_RECORDS)
+end
+
+function Base.write(inv::Inventory)
+    lock(inv.lock)
     try
         atomic_write(inv.file.path, inv)
     finally

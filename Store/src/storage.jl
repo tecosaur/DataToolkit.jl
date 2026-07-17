@@ -284,7 +284,7 @@ function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), 
             return
         end
         storage.parameters["checksum"] = string(schecksum)
-        write(storage)
+        save!(storage)
         return schecksum
     end
     schecksum = tryparse(Checksum, csumval)
@@ -316,7 +316,7 @@ function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), 
         if hasmethod(should_overwrite, Tuple{String, String, String}) &&
             should_overwrite(storage.dataset.name, string(schecksum), string(actual_checksum))
             storage.parameters["checksum"] = string(actual_checksum)
-            write(storage)
+            save!(storage)
             actual_checksum
         else
             throw(ChecksumMismatch(storage.dataset.name, schecksum, actual_checksum))
@@ -682,5 +682,5 @@ function update_source!(inventory::Inventory,
     else
         sources[sindex] = update_atime(source)
     end
-    write(inventory)
+    save!(inventory)
 end
