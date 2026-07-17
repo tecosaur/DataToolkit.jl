@@ -91,10 +91,10 @@ function lint(obj::T, linters::Vector{Method}) where {T}
     issues = LintItem{T}[]
     for linter in linters
         func = first(linter.sig.parameters).instance::Function
-        valtype = last(linter.sig.parameters)::Val
-        valtype isa DataType || continue
+        valtype = last(linter.sig.parameters)
+        valtype <: Val || continue
         val = first(valtype.parameters)
-        append!(issues, invoke(func, Tuple{T, valtype}, obj, Val{val}) |> lintiter)
+        append!(issues, invoke(func, Tuple{T, valtype}, obj, Val{val}()) |> lintiter)
     end
     sort(issues, by=i -> i.severity)
 end
@@ -146,15 +146,15 @@ function Base.show(io::IO, report::LintReport)
     printstyled(io, ifelse(report.partial, "Partial lint results for '", "Lint results for '"),
                 report.collection.name, "' collection",
                 color=:blue, bold=true)
-    printstyled(io, " ", report.collection.uuid, color=:light_black)
+    printstyled(io, " \e[2m", report.collection.uuid, "\e[22m", color=:light_black)
     if isempty(report.results)
         printstyled("\n ✓ No issues found", color=:green)
     end
     lastsource::Any = nothing
     objinfo(::DataCollection) = nothing
     function objinfo(d::DataSet)
-        printstyled(io, "\n• ", d.name, color=:blue, bold=true)
-        printstyled(io, " ", d.uuid, color=:light_black)
+        printstyled(io, "\n• ", @advise(d, string(Identifier(d, nothing))), color=:blue, bold=true)
+        printstyled(io, " \e[2m", d.uuid, "\e[22m", color=:light_black)
     end
     function objinfo(a::A) where {A <: DataTransformer}
         if lastsource isa DataSet
@@ -195,9 +195,9 @@ function Base.show(io::IO, report::LintReport)
             ncat = sum(r -> r.severity == catcode, report.results)
             if ncat > 0
                 printstyled("\n  • ", color=:blue)
-                printstyled(ncat, color=:light_white)
+                printstyled(ncat, ' ', color=:light_white)
                 printstyled(category, ifelse(ncat == 1, "", "s"),
-                            color=LINT_SEVERITY_MESSAGES[catcode])
+                            color=first(LINT_SEVERITY_MESSAGES[catcode]))
             end
         end
     end
