@@ -320,18 +320,17 @@ end
 
 # ------------------
 
-function DataToolkitCore.interactiveparams(::REPL.REPLDisplay, spec::Vector, driver::Symbol)
+function DataToolkitCore.interactiveparams(::REPL.REPLDisplay, spec::Vector, prefix::AbstractString)
     final_spec = Dict{String, Any}()
     function expand_value(key::String, value::Any)
         if value isa Function
             value = value(final_spec)
         end
-        final_value = if value isa TOML.Internals.Printer.TOMLValue
+        final_value = if value isa DataToolkitCore.TOMLValue
             value
         elseif value isa NamedTuple
             type = get(value, :type, String)
-            vprompt = " $(string(nameof(T))[5])($driver) " *
-                get(value, :prompt, "$key: ")
+            vprompt = prefix * get(value, :prompt, "$key: ")
             result = if type == Bool
                 confirm_yn(vprompt, get(value, :default, false))
             elseif type == String
@@ -341,7 +340,7 @@ function DataToolkitCore.interactiveparams(::REPL.REPLDisplay, spec::Vector, dri
             elseif type <: Number
                 parse(type, prompt(vprompt, string(get(value, :default, zero(type)))))
             end |> get(value, :post, identity)
-            if get(value, :optional, false) && get(value, :skipvalue, nothing) === true && result
+            if get(value, :optional, false) && get(value, :skipvalue, nothing) === result
             else
                 result
             end
@@ -353,6 +352,5 @@ function DataToolkitCore.interactiveparams(::REPL.REPLDisplay, spec::Vector, dri
     for (key, value) in spec
         expand_value(key, value)
     end
-    final_spec["driver"] = string(driver)
     final_spec
 end
