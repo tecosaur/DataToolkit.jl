@@ -42,8 +42,15 @@ function lint_rename_dataset(lintitem::LintItem{DataSet})
 end
 
 function lint(ds::DataSet, ::Val{:unique_uuid})
-    matches = @. getfield(ds.collection.datasets, :uuid) == ds.uuid
-    if sum(matches) > 1
+    umatches = filter(d -> d.uuid == ds.uuid, ds.collection.datasets)
+    function sortkey(d::DataSet)
+        pdate = get(d, "date", nothing)
+        date = if pdate isa DateTime pdate else DateTime(0) end
+        pver = get(d, "version", nothing)
+        ver = if pver isa VersionNumber pver else VersionNumber(0) end
+        (date, ver, hash(d))
+    end
+    if length(umatches) > 1 && ds !== argmin(sortkey, umatches)
         LintItem(ds, :error, :unique_uuid,
                  "UUID is not unique",
                  lint_regenerate_uuid, true)
