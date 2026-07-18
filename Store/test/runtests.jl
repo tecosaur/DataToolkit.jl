@@ -210,6 +210,19 @@ DataToolkitCore.getstorage(::DataStorage{:testblob}, ::Type{IO}) =
     @test !occursin("[[store]]", read(inventory.file.path, String))
 end
 
+@testset "Lifetime interpretation" begin
+    interpret = DataToolkitStore.interpret_lifetime
+    day = 24 * 60 * 60
+    @test interpret("3 days") == 3day
+    @test interpret("  3 days") == 3day
+    @test interpret("4d12h") == 4day + 12 * 60 * 60
+    @test interpret("1 week, 2 days") == 9day
+    @test interpret("P23DT23H") == 23day + 23 * 60 * 60
+    @test interpret("PT1H30M") == 90 * 60
+    # A non-period prefix warns rather than hanging or mis-parsing
+    @test (@test_logs (:warn, r"^Unmatched content") interpret("about 3 days")) == 3day
+end
+
 @testset "Merkle trees" begin
     serialised_sample_mtree = """
     d 101t3scp5ey9w alg:1234 some/dir
