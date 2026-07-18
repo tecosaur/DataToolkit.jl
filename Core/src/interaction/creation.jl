@@ -300,19 +300,17 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer{_kind, driver}
     if interactive
         paramspec = createinteractive(parent, T, arg)
         if paramspec === true
-            spec = Dict{String, Any}()
-        end
-        if paramspec ∉ (false, nothing)
+            return create(parent, T, toml_safe(parent, Dict{String, Any}()))
+        elseif paramspec ∉ (false, nothing)
             prefix = " $(string(nameof(T))[5])($driver) "
-            spec = Dict{String, Any}(interactiveparams(paramspec, prefix))
-            return create(parent, T, toml_safe(parent, spec))
+            params = interactiveparams(paramspec, prefix)
+            isnothing(params) && return
+            return create(parent, T, toml_safe(parent, Dict{String, Any}(params)))
         end
     end
     spec = createauto(parent, T, arg)::Union{Dict{String, <:Any}, Bool, Nothing}
     spec ∈ (false, nothing) && return
-    if spec === true
-        spec = Dict{String, Any}()
-    end
+    spec === true && (spec = Dict{String, Any}())
     create(parent, T, toml_safe(parent, spec))
 end
 
@@ -333,7 +331,7 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symb
                        minpriority::Int=-100, maxpriority::Int=100, interactive::Bool=isinteractive())
     @nospecialize
     if driver !== :*
-        return trycreateauto(parent, T{driver}, source)
+        return trycreateauto(parent, T{driver}, source; interactive)
     end
     relevant_methods = if T == DataStorage
         vcat(methods(storage), methods(getstorage))
@@ -355,7 +353,7 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symb
     end
     sort!(alldrivers, by = drv -> createpriority(T{drv}))
     for drv in alldrivers
-        transformer = trycreateauto(parent, T{drv}, source)
+        transformer = trycreateauto(parent, T{drv}, source; interactive)
         !isnothing(transformer) && return transformer
     end
 end
