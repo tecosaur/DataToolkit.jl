@@ -46,11 +46,13 @@ function config_set(input::AbstractString)
         printstyled(" ! ", color=:red, bold=true)
         println("Value missing")
     else
-        if isnothing(match(r"^true|false|[.\d]+|\".*\"|\[.*\]|\{.*\}$", rest))
-            rest = string('"', rest, '"')
+        value = parse_repl_value(rest)
+        if isnothing(value)
+            printstyled(" ! ", color=:red, bold=true)
+            println("Could not parse '$rest' as a value")
+        else
+            DataToolkitCore.config_set!(segments, value)
         end
-        value = TOML.parse(string("value = ", rest))
-        DataToolkitCore.config_set!(segments, value["value"])
         nothing
     end
 end
