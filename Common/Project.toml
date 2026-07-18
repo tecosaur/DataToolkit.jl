@@ -131,6 +131,8 @@ ColorTypes = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+FilePathsBase = "48062228-2e41-5def-b9a4-89aafe57970f"
+FixedPointNumbers = "53c48c17-4a7d-5ca2-90c5-79b7896eea93"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 JpegTurbo = "b835a17e-a41a-41e7-81f0-2f016b05efe0"
@@ -150,4 +152,4 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 ZipArchives = "49080126-0e18-4c2a-b176-c102e4b3760c"
 
 [targets]
-test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DataFrames", "DelimitedFiles", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "XLSX", "YAML", "ZipArchives"]
+test = ["ArchGDAL", "Arrow", "CRC32c", "CSV", "CodecBzip2", "CodecXz", "CodecZlib", "CodecZstd", "ColorTypes", "DataFrames", "DelimitedFiles", "FilePathsBase", "FixedPointNumbers", "Downloads", "JLD2", "JSON3", "JpegTurbo", "KangarooTwelve", "MD5", "Netpbm", "PNGFiles", "Pkg", "QOI", "SHA", "SQLite", "Tar", "Test", "TiffImages", "XLSX", "YAML", "ZipArchives"]
