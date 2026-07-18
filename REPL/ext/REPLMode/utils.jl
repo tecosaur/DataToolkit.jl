@@ -299,19 +299,20 @@ julia> peelword("\"one two\" three")
 function peelword(input::AbstractString; allowdot::Bool=true)
     if isempty(input)
         ("", "")
-    elseif first(lstrip(input)) != '"' || count(==('"'), input) < 2
+    elseif !occursin(r"^\s*\"(?:[^\"\\]|\\.)*\"", input)
         Tuple(match(ifelse(allowdot,
                            r"^\s*([^\s][^\s]*)\s*(.*?|)$",
                            r"^\s*([^\s][^\s.]*)\s*(.*?|)$"),
                     input).captures .|> String)
-    else # Starts with " and at least two " in `input`.
+    else # Starts with " and has a closing (unescaped) ".
         start = findfirst(!isspace, input)::Int
         stop = nextind(input, start)
         maxstop = lastindex(input)
         word = Char[]
-        while input[stop] != '"' && stop <= maxstop
-            push!(word, input[stop + Int(input[stop] == '\\')])
-            stop = nextind(input, stop, 1 + Int(input[stop] == '\\'))
+        while stop <= maxstop && input[stop] != '"'
+            escaped = input[stop] == '\\' && stop < maxstop
+            push!(word, input[stop + Int(escaped)])
+            stop = nextind(input, stop, 1 + Int(escaped))
         end
         stop = nextind(input, stop)
         if stop <= maxstop && isspace(input[stop])

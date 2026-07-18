@@ -37,6 +37,11 @@ function remove(input::AbstractString)
             rethrow()
         end
     end
+    if !iswritable(dataset.collection)
+        printstyled(" ! ", color=:red, bold=true)
+        println("The data collection $(dataset.name) belongs to is read-only")
+        return
+    end
     confirm_yn(" Are you sure you want to remove $(dataset.name)?") || return nothing
     delete!(dataset)
     printstyled(" ✓ Done\n", color=:green)
