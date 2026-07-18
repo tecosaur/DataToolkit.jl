@@ -40,10 +40,16 @@ function loadproject!(mod::Module, projpath::String; force::Bool=false)
     end
     # Skip packages when `init(Main)` called.
     if mod === Main && isfile(joinpath(projpath, "Project.toml"))
-        data = Base.parsed_toml(joinpath(projpath, "Project.toml"))
-        ispkg = haskey(data, "name") && haskey(data, "uuid") &&
-            haskey(data, "version") && isfile(joinpath(
-                projpath, "src", data["name"]::String * ".jl"))
+        projfile = joinpath(projpath, "Project.toml")
+        data = try
+            Base.parsed_toml(projfile)
+        catch err
+            @error "Failed to parse $projfile" exception=err
+            Dict{String, Any}()
+        end
+        name = get(data, "name", nothing)
+        ispkg = name isa String && haskey(data, "uuid") &&
+            haskey(data, "version") && isfile(joinpath(projpath, "src", name * ".jl"))
         ispkg && return
     end
     # Load Data.d/*.toml

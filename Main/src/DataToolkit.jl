@@ -76,6 +76,8 @@ function init(mod::Module=Main; force::Bool=false)
 end
 
 function __init__()
+    # Precompile workers must not walk the load path running auto-init
+    ccall(:jl_generating_output, Cint, ()) == 1 && return
     if lowercase(get(ENV, "DATA_TOOLKIT_AUTO_INIT", "yes")) ∉ ("0", "false", "no")
         init()
     end
