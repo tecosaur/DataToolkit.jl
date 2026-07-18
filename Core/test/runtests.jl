@@ -5,7 +5,7 @@ import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
     stack_index, plugin_add!, plugin_list, plugin_remove!, config_get,
     config_set!, config_unset!, reinit!, DATASET_REFERENCE_WRAPPER,
-    ispreferredpath, DataLoader
+    ispreferredpath, DataLoader, DataStorage, trycreateauto, createinteractive
 
 @testset "Utils" begin
     @testset "Doctests" begin
@@ -218,6 +218,8 @@ import DataToolkitCore: get_package, addpkg
         @test addpkg(@__MODULE__, :Test, "8dfed614-e22c-5e08-85e1-65c5234f0b40") isa Any
         @test @addpkg(Test, "8dfed614-e22c-5e08-85e1-65c5234f0b40") isa Any
         @test get_package(@__MODULE__, :Test) === Test
+        absent = Base.PkgId(Base.UUID("00000000-0000-0000-0000-000000000000"), "NoSuchPkg")
+        @test_throws MissingPackage get_package(absent)
     end
     @testset "@require" begin
         nolinenum(blk) = Expr(:block, filter(e -> !(e isa LineNumberNode), blk.args)...)
@@ -479,4 +481,20 @@ end
         @test config_get(["some", "nested", "val"]) == 5
         @test get(config_unset!(collection, ["some"]), "some") === nothing
     end
+end
+
+@testset "Interactive creation" begin
+    @eval begin
+        import DataToolkitCore: createinteractive, getstorage
+        # `true` means "create an empty transformer of this driver".
+        createinteractive(::Type{DataStorage{:emptycreate}}, ::String) = true
+        # Returns a param spec, but no display backend fills it interactively.
+        createinteractive(::Type{DataStorage{:specreate}}, ::String) =
+            ["url" => (; prompt="URL: ", type=String)]
+        getstorage(::DataStorage{:emptycreate}, ::Type{String}) = "ok"
+    end
+    parent = DataToolkitCore.DataSet(DataCollection(), "ds", Dict{String, Any}("uuid" => string(Base.UUID(rand(UInt128)))))
+    s = trycreateauto(parent, DataStorage{:emptycreate}, ""; interactive=true)
+    @test s isa DataStorage{:emptycreate}
+    @test isnothing(trycreateauto(parent, DataStorage{:specreate}, ""; interactive=true))
 end
