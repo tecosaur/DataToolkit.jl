@@ -5,7 +5,9 @@ end
 
 function storage(storage::DataStorage{:filesystem}, ::Type{FilePath}; write::Bool)
     path = getpath(storage)
-    if @advise storage isfile(path)
+    # A write target need not exist yet, only its parent directory.
+    available = if write isdir(dirname(path)) else @advise storage isfile(path) end
+    if available
         FilePath(path)
     end
 end
