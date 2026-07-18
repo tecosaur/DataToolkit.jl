@@ -1,3 +1,6 @@
+# Fallback `TERM` for a headless terminal: empty on Windows, "dumb" elsewhere.
+const DEFAULT_TERM = @static if Sys.iswindows() "" else "dumb" end
+
 function complete_collection(sofar::AbstractString)
     name_matches = filter(c -> startswith(c.name, sofar), STACK)
     if !isempty(name_matches)
@@ -124,7 +127,7 @@ function prompt(question::AbstractString, default::AbstractString="";
     # terminal doesn't report color support, and the
     # prompt isn't bold.
     term = REPL.Terminals.TTYTerminal(
-        get(ENV, "TERM", Sys.iswindows() ? "" : "dumb"),
+        get(ENV, "TERM", DEFAULT_TERM),
         stdin, IOContext(stdout, :color => false), stderr)
     keymap = REPL.LineEdit.keymap([
         Dict{Any, Any}(
@@ -232,7 +235,7 @@ Should '^C' be pressed, an InterruptException will be thrown.
 function prompt_char(question::AbstractString, options::Vector{Char},
                      default::Union{Char, Nothing}=nothing)
     printstyled(question, color=REPL_QUESTION_COLOR)
-    term_env = get(ENV, "TERM", @static Sys.iswindows() ? "" : "dumb")
+    term_env = get(ENV, "TERM", DEFAULT_TERM)
     term = REPL.Terminals.TTYTerminal(term_env, stdin, stdout, stderr)
     REPL.Terminals.raw!(term, true)
     char = '\x01'
