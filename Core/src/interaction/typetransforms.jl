@@ -135,10 +135,11 @@ function ispreferredpath(((a_in, a_out), a_ind, a_ldr)::Tuple{Pair{Type, Type}, 
         end
         sum(splat(==), zip(a_parents, b_parents))
     end
-    a_ind < b_ind ||
-        Base.morespecific(a_out, b_out) ||
-        Base.morespecific(a_ldr, b_ldr) ||
-        ncommonparents(a_in, a_out) > ncommonparents(b_in, b_out)
+    cmptype(a, b) = if Base.morespecific(a, b); 1 elseif Base.morespecific(b, a); -1 else 0 end
+    a_ind != b_ind && return a_ind < b_ind
+    (outcmp = cmptype(a_out, b_out)) != 0 && return outcmp > 0
+    (ldrcmp = cmptype(a_ldr, b_ldr)) != 0 && return ldrcmp > 0
+    ncommonparents(a_in, a_out) > ncommonparents(b_in, b_out)
 end
 
 """
@@ -313,7 +314,7 @@ function typesteps(store::DataStorage, desired::Type; write::Bool)
     for (Tstor, Tout) in transformersigs(typeof(store), desired; read=!write, write)
         if Tout isa TypeVar || Tout == Any
             for ttype in target_types
-                target_ind = something(findfirst(qt -> qt <: Tout, target_types),
+                target_ind = something(findfirst(qt -> qt <: ttype, target_types),
                                        length(target_types) + 1)
                 push!(path_infos, ((Nothing => ttype), target_ind, Tstor))
             end
