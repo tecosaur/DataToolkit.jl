@@ -509,10 +509,10 @@ function interpret_lifetime(lifetime::String)
         while (m = match(humanperiod, lifetime)) |> !isnothing
             munit, mquantity = m["unit"]::SubString{String}, m["quantity"]::SubString{String}
             period[unitmap[munit]] = parse(Float64, mquantity)
-            lifetime = string(lifetime[1:m.match.offset],
-                              lifetime[m.match.ncodeunits+1:end])
+            lifetime = string(lifetime[1:prevind(lifetime, m.offset)],
+                              lifetime[m.offset+ncodeunits(m.match):end])
         end
-        if !isempty(lifetime)
+        if !all(isspace, lifetime)
             @warn "Unmatched content in period string: $(sprint(show, lifetime))"
         end
     end
