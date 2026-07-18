@@ -256,10 +256,12 @@ end
         for (istr, ident) in [("a", Identifier(nothing, "a", nothing, Dict{String, Any}())),
                               ("a:b", Identifier("a", "b", nothing, Dict{String, Any}())),
                               ("a::Main.sometype", Identifier(nothing, "a", QualifiedType(:Main, :sometype), Dict{String, Any}())),
-                              ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), Dict{String, Any}()))]
+                              ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), Dict{String, Any}())),
+                              ("café:δ", Identifier("café", "δ", nothing, Dict{String, Any}()))]
             @test parse_ident(istr) == ident
             @test istr == string(ident)
         end
+        @test parse_ident("α:") == Identifier("α", "", nothing, Dict{String, Any}())
     end
 end
 
