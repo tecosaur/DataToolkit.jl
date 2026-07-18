@@ -5,12 +5,13 @@ using DataToolkitStore: DataToolkitStore, MonitoredFile, InventoryConfig,
     CollectionInfo, SourceInfo, Checksum, StoreSource, CacheSource, Inventory,
     LockFile, iscontested, checksum, MerkleTree, read_merkles, write_merkle,
     load_inventory, update_inventory!, modify_inventory!, save!,
-    exclusively, flushpendingwrites, expunge!, update_source!
+    exclusively, flushpendingwrites, expunge!, update_source!,
+    refresh_sources!, garbage_collect!
 
 isdirty(inv::Inventory) = inv.batch.edits > inv.batch.written
 
 using DataToolkitStore.DataToolkitCore: DataToolkitCore, DataCollection,
-    DataStorage, dataset, loadcollection!
+    DataStorage, DataLoader, dataset, loadcollection!
 
 using DataToolkitStore.LockFiles: pidlive, pidqueue, overwrite
 
@@ -221,6 +222,86 @@ end
     @test interpret("PT1H30M") == 90 * 60
     # A non-period prefix warns rather than hanging or mis-parsing
     @test (@test_logs (:warn, r"^Unmatched content") interpret("about 3 days")) == 3day
+end
+
+const COUNTER_CALLS = Ref(0)
+DataToolkitCore.getstorage(::DataStorage{:nullsrc}, ::Type{IO}) = IOBuffer()
+DataToolkitCore.load(::DataLoader{:counter}, ::Any, ::Type{Vector{Int}}) =
+    (COUNTER_CALLS[] += 1; [COUNTER_CALLS[]])
+DataToolkitCore.supportedtypes(::Type{DataLoader{:counter}}) =
+    [DataToolkitCore.QualifiedType(Vector{Int})]
+
+@testset "Cache plugin tolerates an unusable cache" begin
+    storedir = mktempdir()
+    data_toml = joinpath(mktempdir(), "Data.toml")
+    write(data_toml, """
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "cachetest"
+    plugins = ["cache"]
+
+    [config.store]
+    path = "$storedir"
+
+    [[nums]]
+    uuid = "$(uuid4())"
+
+        [[nums.storage]]
+        driver = "nullsrc"
+
+        [[nums.loader]]
+        driver = "counter"
+    """)
+    loadcollection!(data_toml)
+    COUNTER_CALLS[] = 0
+    inventory = DataToolkitStore.getinventory(dataset("nums").collection)
+    # First read runs the loader and caches the result.
+    @test read(dataset("nums"), Vector{Int}) == [1]
+    cachefile = DataToolkitStore.storefile(inventory, only(dataset("nums").loaders), Vector{Int})
+    @test !isnothing(cachefile) && isfile(cachefile)
+    # A corrupt cache file must not fail the read: it is discarded and the
+    # loader re-run (COUNTER increments again) rather than deserialize throwing.
+    chmod(cachefile, 0o644)
+    write(cachefile, "not a valid serialization")
+    result = @test_logs (:warn,) match_mode=:any read(dataset("nums"), Vector{Int})
+    @test result == [2]
+end
+
+@testset "GC dry run is non-destructive" begin
+    inv = load_inventory(joinpath(mktempdir(), "Inventory.toml"))
+    refs = [uuid4(), uuid4()]
+    push!(inv.stores, StoreSource(zero(UInt64), copy(refs), now(), nothing, "txt"))
+    # No active/inactive collections, so every reference would be dropped and
+    # the source orphaned — but a dry run must leave it untouched.
+    (; orphan_sources) = refresh_sources!(inv; active_collections = Dict{UUID, Set{UInt64}}(),
+                                          inactive_collections = Set{UUID}(), dryrun = true)
+    @test length(orphan_sources) == 1
+    @test length(inv.stores) == 1
+    @test inv.stores[1].references == refs
+    # A dry-run expunge reports a source it would orphan (its sole reference)
+    # without mutating it.
+    solo = uuid4()
+    push!(inv.stores, StoreSource(one(UInt64), [solo], now(), nothing, "txt"))
+    coll = CollectionInfo(solo, nothing, "c", now())
+    removed = expunge!(inv, coll; dryrun = true)
+    @test length(removed) == 1
+    @test inv.stores[end].references == [solo]
+    # A collection sharing a source with another is not reported as orphaning it.
+    @test isempty(expunge!(inv, CollectionInfo(refs[1], nothing, "c", now()); dryrun = true))
+end
+
+@testset "GC removes orphan files and keeps the inventory" begin
+    dir = mktempdir()
+    inv = load_inventory(joinpath(dir, "Inventory.toml"))
+    storedir = joinpath(dir, inv.config.store_dir); mkpath(storedir)
+    orphan = joinpath(storedir, "unreferenced.cache")
+    write(orphan, "no source points here")
+    # A real GC (report to devnull) deletes the orphan but leaves the inventory.
+    redirect_stdout(devnull) do
+        garbage_collect!(inv)
+    end
+    @test !isfile(orphan)
+    @test isfile(inv.file.path)
 end
 
 @testset "Merkle trees" begin
