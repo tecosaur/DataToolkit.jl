@@ -111,11 +111,13 @@ function prompt_attributes()
     end
     while (attribute = prompt(" [Attribute]: ", allowempty=true)) |> !isempty
         print("\e[A\e[G\e[K")
-        value = prompt(" $attribute: ")
-        if isnothing(match(r"^true|false|[.\d]+|\".*\"|\[.*\]|\{.*\}$", value))
-            value = string('"', value, '"')
+        parsed = parse_repl_value(prompt(" $attribute: "))
+        if isnothing(parsed)
+            printstyled(" ! ", color=:red, bold=true)
+            println("Could not parse the value, skipping '$attribute'")
+        else
+            spec[attribute] = parsed
         end
-        spec[attribute] = TOML.parse(string("value = ", value))["value"]
     end
     print("\e[A\e[G\e[K")
     spec

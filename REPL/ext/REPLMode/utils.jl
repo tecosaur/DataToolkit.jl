@@ -277,6 +277,27 @@ function confirm_yn(question::AbstractString, default::Bool=false)
     char == 'y'
 end
 
+# Anchored around the whole value so a bareword merely *containing* a number or
+# `true`/`false` is treated as a string rather than left as invalid bare TOML.
+const REPL_TOML_LITERAL = r"^(true|false|[.\d]+|\".*\"|\[.*\]|\{.*\})$"
+
+"""
+    parse_repl_value(text::AbstractString) -> Union{Any, Nothing}
+
+Parse a REPL-entered attribute `text` as a TOML value, quoting it as a string
+unless it is already a TOML literal (bool, number, string, array, or table).
+Return `nothing` if `text` is not parseable even after quoting.
+"""
+function parse_repl_value(text::AbstractString)
+    literal = ifelse(isnothing(match(REPL_TOML_LITERAL, text)),
+                     string('"', text, '"'), text)
+    try
+        TOML.parse(string("value = ", literal))["value"]
+    catch
+        nothing
+    end
+end
+
 """
     peelword(input::AbstractString)
 
