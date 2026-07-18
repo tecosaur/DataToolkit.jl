@@ -67,7 +67,7 @@ end
 function Base.parse(::Type{Identifier}, spec::AbstractString)
     isempty(STACK) && return parse_ident(spec)
     mark = findfirst(':', spec)
-    collection = if !isnothing(mark) && (mark == length(spec) || spec[mark+1] != ':')
+    collection = if !isnothing(mark) && (mark == lastindex(spec) || spec[nextind(spec, mark)] != ':')
         cstring = spec[1:prevind(spec, mark)]
         something(tryparse(UUID, cstring), cstring)
     end
@@ -76,8 +76,8 @@ end
 
 function parse_ident(spec::AbstractString)
     mark = findfirst(':', spec)
-    collection = if !isnothing(mark) && (mark == length(spec) || spec[mark+1] != ':')
-        cstring, spec = spec[begin:prevind(spec, mark)], spec[mark+1:end]
+    collection = if !isnothing(mark) && (mark == lastindex(spec) || spec[nextind(spec, mark)] != ':')
+        cstring, spec = spec[begin:prevind(spec, mark)], spec[nextind(spec, mark):end]
         @something(tryparse(UUID, cstring), String(cstring))
     end
     mark = findfirst(':', spec)

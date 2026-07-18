@@ -259,10 +259,15 @@ end
         for (istr, ident) in [("a", Identifier(nothing, "a", nothing, Dict{String, Any}())),
                               ("a:b", Identifier("a", "b", nothing, Dict{String, Any}())),
                               ("a::Main.sometype", Identifier(nothing, "a", QualifiedType(:Main, :sometype), Dict{String, Any}())),
-                              ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), Dict{String, Any}()))]
+                              ("a:b::Bool", Identifier("a", "b", QualifiedType(:Core, :Bool), Dict{String, Any}())),
+                              # Non-ASCII around the colon must not BoundsError on byte indexing.
+                              ("café:δ", Identifier("café", "δ", nothing, Dict{String, Any}()))]
             @test parse_ident(istr) == ident
             @test istr == string(ident)
         end
+        # A trailing colon after non-ASCII must parse (not BoundsError) as an
+        # empty dataset in that collection.
+        @test parse_ident("α:") == Identifier("α", "", nothing, Dict{String, Any}())
     end
 end
 
