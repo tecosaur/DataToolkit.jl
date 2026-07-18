@@ -1,3 +1,16 @@
+# A third-party `Data.toml` must not smuggle options into the git command
+# lines (a `remote` of `--upload-pack=…` reaching `git clone` runs an arbitrary
+# command), so the remote is held to a scheme/scp allowlist.
+const GIT_REMOTE_SCHEME = r"^(?:https?|ftps?|git|ssh|file)://"
+const GIT_REMOTE_SCP = r"^[\w.+-]+@[\w.-]+:"
+
+function checked_git_remote(remote::String)
+    isempty(remote) && throw(ArgumentError("Git storage must specify a remote"))
+    occursin(GIT_REMOTE_SCHEME, remote) || occursin(GIT_REMOTE_SCP, remote) ||
+        throw(ArgumentError("Git remote has an unsupported form: $(sprint(show, remote))"))
+    remote
+end
+
 function getstorage(storage::DataStorage{:git}, ::Type{IO})
     # Need to use the system `git` or `Git_jll`, since `LibGit2` doesn't
     # support `git archive`.
@@ -7,14 +20,16 @@ function getstorage(storage::DataStorage{:git}, ::Type{IO})
         @require Git_jll
         Git_jll.git()::Cmd
     end
-    remote = @getparam storage."remote"::String ""
-    !isempty(remote) || throw(ArgumentError("Git storage must specify a remote"))
+    remote = checked_git_remote(@getparam storage."remote"::String "")
     tree = @getparam storage."revision"::String "HEAD"
+    # `path` sits behind `--` so cannot be read as an option; `tree` does not.
+    startswith(tree, '-') &&
+        throw(ArgumentError("Git revision may not begin with '-': $(sprint(show, tree))"))
     path = @getparam storage."path"::String "."
     clone = @getparam storage."clone"::Bool false
     if clone !== true
         # Try `git archive --remote`
-        cmd = open(`$git archive --format=tar --remote=$remote $tree $path`)
+        cmd = open(`$git archive --format=tar --remote=$remote $tree -- $path`)
         magic = zeros(UInt8, 17)
         mark(cmd.out)
         nb = readbytes!(cmd.out, magic)
@@ -27,9 +42,9 @@ function getstorage(storage::DataStorage{:git}, ::Type{IO})
         @info "Git archive --remote failed, falling back on git clone + git archive"
     end
     clonedir = mktempdir()
-    success(`$git clone $remote $clonedir`) || error("Failed to clone $remote")
+    success(`$git clone -- $remote $clonedir`) || error("Failed to clone $remote")
     # Now try a local `git archive`
-    cmd = open(Cmd(`$git archive --format=tar $tree $path`, dir=clonedir))
+    cmd = open(Cmd(`$git archive --format=tar $tree -- $path`, dir=clonedir))
     magic = zeros(UInt8, 17)
     mark(cmd.out)
     nb = readbytes!(cmd.out, magic)
