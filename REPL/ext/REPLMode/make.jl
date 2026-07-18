@@ -42,7 +42,8 @@ function repl_make(input::AbstractString)
     println("\e[2m\n", join("  " .* split(MAKE_INFO_BANNER, '\n'), '\n'), "\e[0m\n")
 
     # Drop the user into the REPL
-    previous_repl_module = REPL.active_module()
+    previous_repl_module = # `REPL.active_module` moved to `Base` in Julia 1.11
+        @static if VERSION >= v"1.11" Base.active_module() else REPL.active_module() end
     try
         REPL.activate(sandbox.mod)
         run_sandbox_repl(sandbox)
@@ -98,7 +99,7 @@ function create_sandbox()
     isdefined(Main, Symbol("@d_str")) &&
         Core.eval(mod, Expr(:toplevel, :(const var"@d_str" = $(Main.var"@d_str"))))
 
-    term_env = get(ENV, "TERM", @static Sys.iswindows() ? "" : "dumb")
+    term_env = get(ENV, "TERM", DEFAULT_TERM)
     term = REPL.Terminals.TTYTerminal(term_env, stdin, stdout, stderr)
     repl = REPL.LineEditREPL(term, get(stdout, :color, false), true)
     if repl.hascolor
@@ -106,7 +107,13 @@ function create_sandbox()
     end
 
     repl.interface = REPL.setup_interface(repl)
-    julia_mode, shell_mode, help_mode, hist_mode, _ = repl.interface.modes
+    # Modes are resolved by identity, not position — the mode list layout
+    # varies with the Julia version (1.11 inserted a Pkg mode).
+    modes = repl.interface.modes
+    julia_mode = first(modes)
+    shell_mode = julia_mode.hist.mode_mapping[:shell]
+    help_mode = julia_mode.hist.mode_mapping[:help]
+    hist_mode = modes[something(findfirst(m -> m isa LineEdit.HistoryPrompt, modes))]
 
     julia_mode.prompt = "(data) julia> "
     help_mode.prompt = "(data) help?> "
