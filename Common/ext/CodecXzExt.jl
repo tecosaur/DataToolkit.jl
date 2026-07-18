@@ -9,10 +9,10 @@ _read_xz(from::IO, ::Type{IO}) =
 _read_xz(from::IO, ::Type{Vector{UInt8}}) =
     transcode(CodecXz.XzDecompressor, read(from))
 
-function _write_xz(dest::IO, info::IOStream)
+function _write_xz(dest::IO, info::IO)
     stream = CodecXz.XzCompressorStream(dest)
-    write(stream, info)
-    write(stream, CodecXz.TranscodingStreams.TOKEN_END); flush(stream)
+    write(stream, info, CodecXz.TranscodingStreams.TOKEN_END)
+    flush(stream)
     stream
 end
 
