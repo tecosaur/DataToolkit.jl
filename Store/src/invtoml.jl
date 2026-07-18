@@ -48,7 +48,7 @@ end
 function Base.tryparse(::Type{Checksum}, checksum::String)
     count(':', checksum) == 1 || return
     typestr, valstr = split(checksum, ':', limit=2)
-    all(c -> '0' <= c <= '9' || 'a' <= c <= 'f', valstr) || return
+    all(c -> '0' <= c <= '9' || 'a' <= lowercase(c) <= 'f', valstr) || return
     ncodeunits(valstr) % 2 == 0 || return
     hash = map(byteind -> parse(UInt8, view(valstr, byteind), base=16),
                Iterators.partition(1:ncodeunits(valstr), 2))
@@ -177,23 +177,23 @@ and alternative strings they will be sorted as.
 """
 const INVENTORY_TOML_SORT_MAPPING =
     Dict(# top level
-         "inventory_version" => "\0x01",
-         "inventory_last_gc" => "\0x02",
-         "config" => "\0x03",
-         "collections" => "\0x04",
-         "store" => "\0x05",
-         "cache" => "\0x06",
+         "inventory_version" => "\x01",
+         "inventory_last_gc" => "\x02",
+         "config" => "\x03",
+         "collections" => "\x04",
+         "store" => "\x05",
+         "cache" => "\x06",
          # store/cache item
-         "recipe" => "\0x01",
-         "accessed" => "\0x02",
-         "references" => "\0x03",
-         "types" => "\0x04",
-         "typehashes" => "\0x05",
-         "checksum" => "\0x06",
-         "extension" => "\0x07",
+         "recipe" => "\x01",
+         "accessed" => "\x02",
+         "references" => "\x03",
+         "types" => "\x04",
+         "typehashes" => "\x05",
+         "checksum" => "\x06",
+         "extension" => "\x07",
          # packages
-         "name" => "\0x01",
-         "uuid" => "\0x02")
+         "name" => "\x01",
+         "uuid" => "\x02")
 
 function Base.write(io::IO, inv::Inventory)
     keygen(key) = get(INVENTORY_TOML_SORT_MAPPING, key, key)
