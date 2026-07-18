@@ -303,7 +303,7 @@ end
 function repl_expunge_complete(sofar::AbstractString)
     inventory = if isempty(STACK) getinventory()
     else getinventory(first(STACK)) end
-    [c.name for c in inventory.collection if startswith(c.name, sofar)]
+    [c.name for c in inventory.collections if startswith(c.name, sofar)]
 end
 
 function repl_fetch(input::AbstractString)

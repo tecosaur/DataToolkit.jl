@@ -32,6 +32,9 @@ using DataToolkitStore.LockFiles: pidlive, pidqueue, overwrite
         Checksum(:md5, UInt8[0x2c, 0xd6, 0x92, 0x26, 0xc8, 0xe9, 0x15, 0xe9, 0xda, 0xbb, 0x7f, 0xaa, 0xaa, 0x58, 0x7f, 0x6d])
     @test checksum(:crc32c, "DataToolkitStore") ==
         Checksum(:crc32c, UInt8[0xea, 0xbc, 0x8a, 0x08])
+    # Uppercase hex parses to the same checksum as lowercase (else a
+    # user-written "sha256:ABCD…" would silently disable verification).
+    @test tryparse(Checksum, "sha256:ABCDEF") == tryparse(Checksum, "sha256:abcdef")
 end
 
 @testset "Lockfile" begin
