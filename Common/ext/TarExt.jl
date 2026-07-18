@@ -18,7 +18,7 @@ function _read_tar(from::IO, filepath::Union{String, Nothing})
         end
     end
     found || error("Could not find the file $(sprint(show, filepath)) in the tarball")
-    io
+    seekstart(io)
 end
 
 function _read_tar(from::IO, ::Type{Dict{String, Vector{UInt8}}})
