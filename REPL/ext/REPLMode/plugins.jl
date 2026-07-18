@@ -43,17 +43,17 @@ Interactively edit the set of plugins used.
 function plugin_edit(::AbstractString)
     confirm_stack_first_writable() || return nothing
     original_plugins = copy(first(STACK).plugins)
-    availible_plugins = union(getfield.(PLUGINS, :name), first(STACK).plugins)
+    available_plugins = union(getfield.(PLUGINS, :name), first(STACK).plugins)
     menu = REPL.TerminalMenus.MultiSelectMenu(
-        availible_plugins,
-        selected=indexin(first(STACK).plugins, availible_plugins),
+        available_plugins,
+        selected=indexin(first(STACK).plugins, available_plugins),
         checked = if get(stdout, :color, false)
             string('[', Base.text_colors[REPL_USER_INPUT_COLOUR],
                     'X',
                     Base.text_colors[REPL_QUESTION_COLOR],
                     ']')
         else "X" end)
-    selected_plugins = availible_plugins[REPL.TerminalMenus.request(
+    selected_plugins = available_plugins[REPL.TerminalMenus.request(
         if get(stdout, :color, false)
             Base.text_colors[REPL_QUESTION_COLOR]
         else "" end *
@@ -91,11 +91,11 @@ end
     plugin_list(input::AbstractString)
 Parse and call the repl-format plugin list command `input`.
 
-`input` should either be empty or '-a'/'--availible'.
+`input` should either be empty or '-a'/'--available'.
 """
 function plugin_list(input::AbstractString)
     used_plugins = if isempty(STACK) String[] else first(STACK).plugins end
-    plugins = if strip(input) in ("-a", "--availible")
+    plugins = if strip(input) in ("-a", "--available")
         getfield.(PLUGINS, :name)
     else
         confirm_stack_nonempty() || return nothing
@@ -160,6 +160,6 @@ const PLUGIN_SUBCOMMANDS = ReplCmd[
     ReplCmd("list",
             """List the plugins used by the first data collection
 
-            With '-a'/'--availible' all loaded plugins are listed instead.""",
-            plugin_list, ["--availible"]),
+            With '-a'/'--available' all loaded plugins are listed instead.""",
+            plugin_list, ["--available"]),
 ]
