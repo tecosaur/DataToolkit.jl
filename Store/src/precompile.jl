@@ -30,18 +30,16 @@ using PrecompileTools
     """
     @compile_workload begin
         __init__()
-        empty!(INVENTORIES)
         tmpdir = mktempdir()
         tmpfile = joinpath(tmpdir, INVENTORY_FILENAME)
         write(tmpfile, invtoml)
         inv = BaseDirs.@promise_no_assign load_inventory(tmpfile)
-        push!(INVENTORIES, inv)
+        empty!(INVENTORIES); push!(INVENTORIES, inv)
         # merkle(inv.merkles, @__DIR__, ".", :crc32c)
         write(devnull, last(INVENTORIES))
         garbage_collect!(; log=false, trimmsg=false, dryrun=false)
         rhash(Inventory)
         rhash(first(INVENTORIES))
-        pop!(INVENTORIES)
     end
     empty!(INVENTORIES)
 end

@@ -8,16 +8,19 @@ module LockFiles
 
 using BaseDirs
 
-export LockFile, iscontested, adopt!
+export LockFile, iscontested
 
 """
     LockFile(parent, [prefix::AbstractString], target) -> LockFile
 
-A per-user re-entrant FIFO lock file for arbitrary resources.
+A per-user FIFO lock file for arbitrary resources.
 
 A `LockFile` can be used to synchronise access to a resource across multiple
 processes. The lock is implemented by creating a file under the users runtime
 directory with a name in the form `prefix-<hash of target>.lock`.
+
+The lock is process-scoped: it is neither re-entrant nor task-aware, and
+in-process coordination is the caller's responsibility.
 
 This requires the only relevant lock contention to be between processes owned by
 the same user, and that `target` has the same `hash` across processes expected
@@ -36,10 +39,7 @@ mutable struct LockFile <: Base.AbstractLock
     const path::String
     file::Base.Filesystem.File
     const pid::Int32
-    # `cond` guards `owner`/`depth`; the file protocol runs outside it.
-    const cond::Threads.Condition
-    owner::Union{Nothing, Task}
-    depth::UInt32
+    held::Bool
     pidtop::Bool
     advlock::Bool
     mtime::Float64
@@ -191,7 +191,7 @@ end
 function LockFile(path::String)
     ispath(dirname(path)) || mkpath(dirname(path))
     file = Base.Filesystem.open(path, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE)
-    lf = LockFile(path, file, getpid(), Threads.Condition(), nothing, zero(UInt32), false, false, zero(Float64))
+    lf = LockFile(path, file, getpid(), false, false, false, zero(Float64))
     @lock LIVE_LOCKS.lock push!(LIVE_LOCKS.entries, WeakRef(lf))
     finalizer(cleanupfile, lf)
     lf
@@ -237,7 +237,7 @@ function simplehash(text::String)
 end
 
 function Base.islocked(lf::LockFile)
-    !isnothing(@lock lf.cond lf.owner) && return true
+    lf.held && return true
     lfstat = statopen!(lf)
     haslock = lf.advlock
     if mtime(lfstat) == lf.mtime && (time() - lf.mtime) < LOCKFILE_CHECK_EXPIRY
@@ -339,41 +339,7 @@ function iscontested(lf::LockFile)
     false
 end
 
-function acquire_inproc!(lf::LockFile; block::Bool)
-    ct = current_task()
-    @lock lf.cond begin
-        while !(isnothing(lf.owner) || lf.owner === ct)
-            block || return false
-            wait(lf.cond)
-        end
-        lf.owner = ct
-        lf.depth += 0x1
-        true
-    end
-end
-
-function release_inproc!(lf::LockFile)
-    @lock lf.cond begin
-        lf.depth -= 0x1
-        iszero(lf.depth) || return
-        lf.owner = nothing
-        notify(lf.cond, all=false)
-    end
-    nothing
-end
-
-function Base.trylock(lf::LockFile)
-    acquire_inproc!(lf, block=false) || return false
-    lf.depth > 0x1 && return true
-    try
-        claim_pidfront!(lf) && return true
-    catch
-        release_inproc!(lf)
-        rethrow()
-    end
-    release_inproc!(lf)
-    false
-end
+Base.trylock(lf::LockFile) = claim_pidfront!(lf)
 
 function claim_pidfront!(lf::LockFile)
     statopen!(lf)
@@ -381,7 +347,7 @@ function claim_pidfront!(lf::LockFile)
     try
         rawpids = pidqueue(lf)
         livepids = filter(p -> p > 0 && pidlive(p), rawpids)
-        (isempty(livepids) || first(livepids) == lf.pid) || return false
+        (isempty(livepids) || first(livepids) == lf.pid) || return (lf.held = false)
         isempty(livepids) && push!(livepids, lf.pid)
         # Persist unless the file already leads with our live PID; an all-dead
         # queue must still be rewritten, else two processes prune the same corpse.
@@ -389,15 +355,13 @@ function claim_pidfront!(lf::LockFile)
             overwrite(lf, livepids)
             truncate(lf.file, sizeof(Int32) * length(livepids))
         end
-        true
+        lf.held = true
     finally
         funlock(lf)
     end
 end
 
 function Base.lock(lf::LockFile)
-    acquire_inproc!(lf, block=true)
-    lf.depth > 0x1 && return
     backoff = 0.00001 # 10μs, given that it takes 5μs lock + unlock on my machine
     try
         claim_pidfront!(lf) && return
@@ -409,43 +373,11 @@ function Base.lock(lf::LockFile)
         end
     catch
         unclaim(lf)
-        release_inproc!(lf)
         rethrow()
     end
 end
 
-function Base.unlock(lf::LockFile)
-    final = @lock lf.cond begin
-        isnothing(lf.owner) && throw(ConcurrencyViolationError("unlock of a LockFile that is not locked"))
-        lf.owner === current_task() ||
-            throw(ConcurrencyViolationError("unlock of a LockFile held by another task; `adopt!` it first"))
-        lf.depth == 0x1
-    end
-    try
-        final && unclaim(lf)
-    finally
-        release_inproc!(lf)
-    end
-    nothing
-end
-
-"""
-    adopt!(lf::LockFile, old::Task)
-
-Transfer ownership of `lf` from `old` to the current task.
-
-This lets a critical section span tasks: the task that acquired `lf` names
-itself as `old`, and the task that will release it adopts ownership first. Errors
-if `lf` is not currently owned by `old`.
-"""
-function adopt!(lf::LockFile, old::Task)
-    @lock lf.cond begin
-        lf.owner === old ||
-            throw(ConcurrencyViolationError("adopt! of a LockFile not owned by the given task"))
-        lf.owner = current_task()
-    end
-    nothing
-end
+Base.unlock(lf::LockFile) = unclaim(lf)
 
 """
     unclaim(lf::LockFile)
@@ -457,6 +389,7 @@ hold the lock but still have a PID entry in the lock file.
 See also: `expressinterest`.
 """
 function unclaim(lf::LockFile)
+    lf.held = false
     isopen(lf.file) || return
     lfstat = stat(lf.file)
     (iszero(lfstat.nlink) || iszero(filesize(lfstat))) && return

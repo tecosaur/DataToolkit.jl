@@ -17,16 +17,14 @@ function Base.convert(::Type{InventoryConfig}, spec::Dict{String, Any})
 end
 
 function Base.convert(::Type{CollectionInfo}, (uuid, spec)::Pair{String, Dict{String, Any}})
-    for (key, type) in (("path", String),
-                        ("seen", DateTime))
-        if !haskey(spec, key)
-            throw(ArgumentError("Spec dict does not contain the required key: $key"))
-        elseif !(spec[key] isa type)
-            throw(ArgumentError("Spec dict key $key is a $(typeof(spec[key])) not a $type"))
-        end
-    end
-    CollectionInfo(parse(UUID, uuid), get(spec, "path", nothing),
-                   get(spec, "name", nothing), spec["seen"])
+    haskey(spec, "seen") ||
+        throw(ArgumentError("Spec dict does not contain the required key: seen"))
+    spec["seen"] isa DateTime ||
+        throw(ArgumentError("Spec dict key seen is a $(typeof(spec["seen"])) not a DateTime"))
+    path = get(spec, "path", nothing) # optional, in-memory collections have none
+    path isa Union{String, Nothing} ||
+        throw(ArgumentError("Spec dict key path is a $(typeof(path)) not a String"))
+    CollectionInfo(parse(UUID, uuid), path, get(spec, "name", nothing), spec["seen"])
 end
 
 """
@@ -204,149 +202,166 @@ end
 
 
 # Batched, concurrent, safe updating
+#
+# All file-lock discipline lives in this section: an open `WriteBatch` holds
+# the cross-process lock from first pending edit to flush, `write`/
+# `exclusively` join an open batch rather than competing with it, and nothing
+# else touches `batch.lock`.
 
-using DataToolkitCore: WriteRecord, BLANK_WRITE_RECORD,
-    WRITE_DEBOUNCE_FACTOR, WRITE_DEFER_LIMIT
-
-const WRITE_RECORDS = WeakKeyDict{Inventory, WriteRecord}()
+using DataToolkitCore: WRITE_DEBOUNCE_FACTOR, WRITE_DEFER_LIMIT
 
 """
     SYNCHRONISATION_FREQUENCY::Float64
 
-How often (in seconds) a queued debounced write checks `iscontested` on the
-inventory lock while waiting out the debounce window, so that another process
-wanting the inventory cuts the batching short.
+How often (in seconds) a debouncing batch writer checks `iscontested`, so
+that another process wanting the inventory cuts the batching short.
 """
 const SYNCHRONISATION_FREQUENCY = 0.2 # seconds
 
+"""
+    SYNCHRONISATION_CARVEOUT::Int
+
+How many initial debounce intervals a batch writer sleeps without contention
+checks, letting bursts batch at the cost of that much waiter latency.
+"""
 const SYNCHRONISATION_CARVEOUT = 3
 
+# `filelock!`/`fileunlock!` must only be called with `batch.guard` held.
+filelock!(batch::WriteBatch) = if !batch.locked lock(batch.lock); batch.locked = true end
+fileunlock!(batch::WriteBatch) = if batch.locked unlock(batch.lock); batch.locked = false end
+
+closebatch!(batch::WriteBatch) = (fileunlock!(batch); batch.writer = nothing)
+
+# Both must only be called with `batch.guard` held.
+function flushnow!(inv::Inventory)
+    (; batch) = inv
+    start = time()
+    atomic_write(inv.file.path, inv)
+    batch.writeduration = time() - start
+    batch.written = batch.edits
+    inv.file.mtime = mtime(inv.file.path)
+end
+# The zeroed mtime forces a resync before stale memory could be flushed
+dropedits!(inv::Inventory) = (inv.batch.written = inv.batch.edits; inv.file.mtime = 0.0)
+
+"""
+    save!(inv::Inventory)
+
+Note an edit to `inv`, ensuring a batched debounced write is pending (and
+registering `inv` so it is flushed at exit).
+
+Should the deferred write fail, a warning is emitted and the pending edits
+are dropped, resynchronising from disk; use `write(inv)` when persistence
+must be verified.
+"""
 function DataToolkitCore.save!(inv::Inventory)
-    lock(inv.lock)
-    lock(WRITE_RECORDS)
-    record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-    if record.queued
-        newinvoke = (last = time(), count = record.invoke.count + 1)
-        WRITE_RECORDS[inv] = WriteRecord(newinvoke, record.write, record.queued)
-        unlock(WRITE_RECORDS)
-        unlock(inv.lock)
-    elseif time() - record.invoke.last > WRITE_DEBOUNCE_FACTOR * record.write.duration
-        start = time()
-        WRITE_RECORDS[inv] = WriteRecord((last = start, count = record.invoke.count + 1),
-                                         record.write, true)
-        unlock(WRITE_RECORDS)
-        try
-            atomic_write(inv.file.path, inv)
-            duration = time() - start
-            @lock WRITE_RECORDS let
-                record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-                newwrite = (last = start,
-                            duration = duration,
-                            count = record.write.count + 1)
-                WRITE_RECORDS[inv] = WriteRecord(record.invoke, newwrite, false)
-            end
-            unlock(inv.lock)
-        catch
-            @lock WRITE_RECORDS let
-                record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-                WRITE_RECORDS[inv] = WriteRecord(record.invoke, record.write, false)
-            end
-            unlock(inv.lock)
-            rethrow()
+    (; batch) = inv
+    @lock batch.guard begin
+        if isnothing(batch.writer)
+            filelock!(batch)
+            batch.writer = @spawn runbatch(inv)
         end
-    else
-        WRITE_RECORDS[inv] = WriteRecord(record.invoke, record.write, true)
-        unlock(WRITE_RECORDS)
-        @spawn writesoon_unlock(inv, current_task())
+        batch.edits += 1
+        batch.lastedit = time()
     end
+    register_inventory!(inv)
+    nothing
 end
 
-function DataToolkitCore.save!(func::Function, inv::Inventory)
-    lock(inv.lock)
+function runbatch(inv::Inventory)
+    (; batch) = inv
     try
-        func(inv)
-        atomic_write(inv.file.path, inv)
-    finally
-        unlock(inv.lock)
-    end
-end
-
-function writesoon_unlock(inv::Inventory, owner::Task)
-    adopt!(inv.lock, owner)
-    try
-        debounce = let irecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-            irecord.queued || return
-            WRITE_DEBOUNCE_FACTOR * irecord.write.duration
-        end
+        debounce = @lock batch.guard WRITE_DEBOUNCE_FACTOR * batch.writeduration
         for i in 1:WRITE_DEFER_LIMIT
             if i <= SYNCHRONISATION_CARVEOUT
-                # If we are within the carveout, we should not synchronise.
-                # This is to allow the first few writes to be batched together
-                # without interruption.
                 sleep(debounce)
-            elseif iscontested(inv.lock)
+            elseif iscontested(batch.lock)
                 break
             elseif debounce < SYNCHRONISATION_FREQUENCY
                 sleep(debounce)
             else
                 netsleep = 0.0
                 while netsleep < debounce
-                    iscontested(inv.lock) && break
+                    iscontested(batch.lock) && break
                     sleep(SYNCHRONISATION_FREQUENCY)
                     netsleep += SYNCHRONISATION_FREQUENCY
                 end
                 netsleep < debounce && break
             end
-            crecord = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-            crecord.queued || return
-            if time() - crecord.invoke.last <= debounce
-                break
-            end
+            (@lock batch.guard time() - batch.lastedit >= debounce) && break
         end
-        record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-        record.queued || return
-        writestart = time()
-        atomic_write(inv.file.path, inv)
-        writeduration = time() - writestart
-        @lock WRITE_RECORDS let
-            record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-            newwrite = (last = writestart,
-                        duration = writeduration,
-                        count = record.write.count + 1)
-            WRITE_RECORDS[inv] = WriteRecord(record.invoke, newwrite, false)
+        flushbatch!(inv)
+    catch err
+        @lock batch.guard if batch.writer === current_task()
+            dropedits!(inv)
+            closebatch!(batch)
         end
-    catch
-        @lock WRITE_RECORDS let
-            record = get(WRITE_RECORDS, inv, BLANK_WRITE_RECORD)
-            WRITE_RECORDS[inv] = WriteRecord(record.invoke, record.write, false)
+        @warn "Failed to write the inventory at $(inv.file.path), dropping the pending edits" exception = (err, catch_backtrace())
+    end
+    nothing
+end
+
+function flushbatch!(inv::Inventory)
+    (; batch) = inv
+    @lock batch.guard begin
+        batch.edits > batch.written && flushnow!(inv)
+        closebatch!(batch)
+    end
+end
+
+function Base.write(inv::Inventory)
+    (; batch) = inv
+    @lock batch.guard begin
+        held = batch.locked
+        filelock!(batch)
+        try
+            flushnow!(inv)
+        catch
+            dropedits!(inv)
+            rethrow()
+        finally
+            held || (isnothing(batch.writer) && fileunlock!(batch))
         end
-        rethrow()
-    finally
-        unlock(inv.lock)
     end
     nothing
 end
 
 """
-    flushpendingwrites()
+    exclusively(f::Function, inv::Inventory)
 
-Perform all pending inventory writes in the `WRITE_RECORDS` dictionary.
+Run `f(inv)` with exclusive cross-process access to `inv`'s file, serialised
+against all in-process inventory operations, and return the result.
+
+Once the file lock is held `inv` is resynchronised from disk, so `f` sees the
+current on-disk state. Edits batched during `f` remain the batch writer's
+responsibility.
 """
-function flushpendingwrites()
-    @lock WRITE_RECORDS begin
-        for (inv, record) in WRITE_RECORDS
-            record.queued || continue
-            atomic_write(inv.file.path, inv)
+function exclusively(f::Function, inv::Inventory)
+    (; batch) = inv
+    @lock batch.guard begin
+        held = batch.locked
+        filelock!(batch)
+        try
+            update_inventory!(inv)
+            f(inv)
+        finally
+            held || (isnothing(batch.writer) && fileunlock!(batch))
         end
-        empty!(WRITE_RECORDS)
     end
 end
 
-function Base.write(inv::Inventory)
-    lock(inv.lock)
-    try
-        atomic_write(inv.file.path, inv)
-    finally
-        unlock(inv.lock)
+"""
+    flushpendingwrites()
+
+Immediately write out the batched edits of any dirty inventories.
+"""
+function flushpendingwrites()
+    for inv in INVENTORIES
+        inv.batch.edits > inv.batch.written || continue
+        try
+            write(inv)
+        catch err
+            @warn "Failed to flush pending edits to $(inv.file.path)" exception = err
+        end
     end
 end

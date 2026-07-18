@@ -48,9 +48,11 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
         # written to), then it should be removed before proceeding as
         # normal.
         if !isnothing(source) && inventory.file.writable
-            index = findfirst(==(source), inventory.stores)
-            !isnothing(index) && deleteat!(inventory.stores, index)
-            Base.write(inventory)
+            # `≃`, not `==`: the resync may have freshly parsed `inv.stores`.
+            modify_inventory!(inventory) do inv
+                index = findfirst(Base.Fix1(≃, source), inv.stores)
+                !isnothing(index) && deleteat!(inv.stores, index)
+            end
         end
         (f, (storer, as), (; write))
     elseif !isnothing(file) && isfile(file)
@@ -260,28 +262,33 @@ function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
         inventory = getinventory(loader.dataset.collection) |> update_inventory!
         cache = getsource(inventory, loader, as)
         file = storefile(inventory, cache)
-        # Ensure all needed packages are loaded, and all relevant
-        # types have the same structure, before loading.
-        if !isnothing(file)
-            for pkg in cache.packages
-                DataToolkitCore.get_package(pkg)
-            end
-            if !all(@. rhash(trytypeify(first(cache.types))) == last(cache.types))
-                file = nothing
+        # An unusable cache (e.g. a `.jls` from another Julia version) is
+        # discarded to re-run the loader, never surfaced as a read error.
+        cached = if !isnothing(file) && isfile(file)
+            try
+                foreach(DataToolkitCore.get_package, cache.packages)
+                all(@. rhash(trytypeify(first(cache.types))) == last(cache.types)) || error("Cache recipe types have changed")
+                ds_name = sprint(io -> show(
+                    IOContext(io, :data_collection => loader.dataset.collection),
+                    MIME("text/plain"), Identifier(loader.dataset)))
+                value = @log_do("cache:load",
+                                "Loading $as form of $(ds_name) from the store",
+                                Base.invokelatest(deserialize, file))
+                value isa as || error("Cache deserialised to a $(typeof(value)), not the expected $as")
+                update_source!(inventory, cache, loader.dataset.collection)
+                Some(value)
+            catch err
+                cause = if err isa DataToolkitCore.LogTaskError
+                    first(Base.current_exceptions(err.task))[1]
+                else err end
+                @warn "Discarding unusable cache for $(sprint(show, loader.dataset.name)), re-running the loader" exception=cause
+                nothing
             end
         end
-        if !isnothing(file) && isfile(file)
-            ds_name = sprint(io -> show(
-                IOContext(io, :data_collection => loader.dataset.collection),
-                MIME("text/plain"), Identifier(loader.dataset)))
-            update_source!(inventory, cache, loader.dataset.collection)
-            info = @log_do(
-                "cache:load",
-                "Loading $as form of $(ds_name) from the store",
-                Base.invokelatest(deserialize, file))
-            (identity, (info,))
-        else
+        if isnothing(cached)
             (storesave(inventory, loader), f, (loader, source, as))
+        else
+            (identity, (something(cached),))
         end
     else
         (f, (loader, source, as))

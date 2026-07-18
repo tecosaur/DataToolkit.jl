@@ -13,28 +13,16 @@ function load_inventory(path::String, create::Bool=true)
         LockFile(path * ".lock")
     end
     if isfile(path)
-        data = open(io -> TOML.parse(io), path)
-        if !haskey(data, "inventory_version")
-            if create && all(isspace, read(path, String))
-                rm(path)
-                return load_inventory(path, create)
-            else
-                error("$path does not seem to be an inventory file")
-            end
-        elseif data["inventory_version"] != INVENTORY_VERSION
-            error("Incompatible inventory version!")
+        content = read(path, String)
+        if create && all(isspace, content)
+            rm(path)
+            return load_inventory(path, create)
         end
-        file = MonitoredFile(path)
-        last_gc = get(data, "inventory_last_gc", unix2datetime(0))
-        config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
+        (; config, collections, stores, caches, last_gc) = parseinventory(path, content)
         cmerkle = CachedMerkles(MonitoredFile(
             joinpath(dirname(path), config.store_dir, MERKLE_FILENAME)), [])
         cmerkle.file.mtime = 0.0 # To trigger refresh
-        collections = [convert(CollectionInfo, key => val)
-                       for (key, val) in get(data, "collections", Dict{String, Any}[])]
-        stores = [convert(StoreSource, s) for s in get(data, "store", Dict{String, Any}[])]
-        caches = [convert(CacheSource, c) for c in get(data, "cache", Dict{String, Any}[])]
-        Inventory(file, lockfile, cmerkle,
+        Inventory(MonitoredFile(path), lockfile, cmerkle,
                   config, collections, stores, caches, last_gc)
     elseif create
         inventory = Inventory(
@@ -54,57 +42,99 @@ function load_inventory(path::String, create::Bool=true)
 end
 
 """
+    parseinventory(path::String, [content::String])
+
+Parse the inventory file at `path` (or its already-read `content`), returning
+its contents as a named tuple `(; config, collections, stores, caches, last_gc)`.
+"""
+parseinventory(path::String) = parseinventory(path, read(path, String))
+
+function parseinventory(path::String, content::String)
+    data = TOML.parse(content)
+    if !haskey(data, "inventory_version")
+        error("$path does not seem to be an inventory file")
+    elseif data["inventory_version"] != INVENTORY_VERSION
+        error("Incompatible inventory version!")
+    end
+    config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
+    collections = [convert(CollectionInfo, key => val)
+                   for (key, val) in get(data, "collections", Dict{String, Any}[])]
+    stores = [convert(StoreSource, s) for s in get(data, "store", Dict{String, Any}[])]
+    caches = [convert(CacheSource, c) for c in get(data, "cache", Dict{String, Any}[])]
+    last_gc = get(data, "inventory_last_gc", unix2datetime(0))
+    (; config, collections, stores, caches, last_gc)
+end
+
+"""
+    register_inventory!(inventory::Inventory) -> Inventory
+
+Ensure `inventory` is registered, so its pending edits are flushed at exit.
+"""
+function register_inventory!(inventory::Inventory)
+    any(inv -> inv === inventory, INVENTORIES) || push!(INVENTORIES, inventory)
+    inventory
+end
+
+"""
     update_inventory!(path::String)
     update_inventory!(inventory::Inventory)
 
-Find the inventory specified by `path`/`inventory` in the `INVENTORIES`
-collection, and update it in-place. Should the inventory specified not be part
-of `INVENTORIES`, it is added.
+Find the registered inventory specified by `path`/`inventory`, registering it
+if necessary, and update it in-place from disk.
 
 Returns the up-to-date `Inventory`.
 """
-function update_inventory!(path::String)
-    index = findfirst(inv -> inv.file.path == path, INVENTORIES)
-    if isnothing(index)
-        push!(INVENTORIES, load_inventory(path)) |> last
-    else
-        update_inventory!(INVENTORIES[index])
-    end
-end
+update_inventory!(path::String) = update_inventory!(getinventory(path))
 
 function update_inventory!(inventory::Inventory)
-    inv_mtime = mtime(inventory.file.path)
-    if mtime(inventory.file.path) > inventory.file.mtime
-        (; config, collections, stores, caches, last_gc) =
-            load_inventory(inventory.file.path)
-        inventory.config = config
-        inventory.collections = collections
-        inventory.stores = stores
-        inventory.caches = caches
-        inventory.last_gc = last_gc
-        inventory.file.mtime = inv_mtime
+    @lock inventory.batch.guard begin
+        # Pending edits hold the file lock, so any on-disk change is our own.
+        inventory.batch.edits > inventory.batch.written && return inventory
+        inv_mtime = mtime(inventory.file.path)
+        if inv_mtime > inventory.file.mtime
+            (; config, collections, stores, caches, last_gc) =
+                parseinventory(inventory.file.path)
+            inventory.config = config
+            inventory.collections = collections
+            inventory.stores = stores
+            inventory.caches = caches
+            inventory.last_gc = last_gc
+            inventory.file.mtime = inv_mtime
+        end
+        inventory
     end
-    inventory
 end
 
 """
     modify_inventory!(modify_fn::Function (::Inventory) -> ::Any, inventory::Inventory)
 
-Update `inventory`, modify it in-place with `modify_fn`, and the save the
-modified `inventory`.
+Modify the up-to-date `inventory` in-place with `modify_fn`, and save the
+modified `inventory`, as a single exclusive transaction.
 """
-function modify_inventory!(modify_fn::Function, inventory::Inventory)
-    update_inventory!(inventory)
-    modify_fn(inventory)
-    write(inventory)
+modify_inventory!(modify_fn::Function, inventory::Inventory) =
+    exclusively(inventory) do inv
+        modify_fn(inv)
+        write(inv)
+    end
+
+"""
+    getinventory([source]) -> Inventory
+
+Find the registered `Inventory` for `source` — an inventory file path, a
+`DataCollection`, or the user store when omitted — loading and registering it
+if necessary.
+"""
+function getinventory(path::String)
+    # Normalise to match stored paths, lest a duplicate instance be loaded.
+    path = abspath(path)
+    index = findfirst(inv -> inv.file.path == path, INVENTORIES)
+    if isnothing(index)
+        push!(INVENTORIES, load_inventory(path)) |> last
+    else
+        INVENTORIES[index]
+    end
 end
 
-"""
-    getinventory(collection::DataCollection)
-
-Find the `Inventory` that is responsible for `collection`, creating it if
-necessary.
-"""
 function getinventory(collection::DataCollection)
     storepath = get(get(collection, "store", Dict{String, Any}()),
                     "path", nothing)
@@ -120,32 +150,10 @@ function getinventory(collection::DataCollection)
         end
         joinpath(cdir, storepath)
     end
-    invpath = joinpath(storepathabs, INVENTORY_FILENAME)
-    index = findfirst(inv -> inv.file.path == invpath, INVENTORIES)
-    if isnothing(index)
-        push!(INVENTORIES, load_inventory(invpath)) |> last
-    else
-        INVENTORIES[index]
-    end
+    getinventory(joinpath(storepathabs, INVENTORY_FILENAME))
 end
 
-"""
-    getinventory()
-
-Find the default user `Inventory`.
-"""
-function getinventory()
-    if !isempty(INVENTORIES) && first(INVENTORIES).file.path == USER_INVENTORY
-        first(INVENTORIES)
-    else
-        for inv in INVENTORIES
-            if inv.file.path == USER_INVENTORY
-                return inv
-            end
-        end
-        push!(INVENTORIES, load_inventory(USER_INVENTORY)) |> last
-    end
-end
+getinventory() = getinventory(USER_INVENTORY)
 
 # Garbage Collection
 
@@ -282,106 +290,113 @@ If `trimmsg` is set, a message about any sources removed by trimming is emitted.
 """
 function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, trimmsg::Bool=false)
     inv.file.writable || return
-    inv = update_inventory!(inv)
-    msgwidth = MSG_LABEL_WIDTH + 2 * dryrun
-    (; active_collections, live_collections, ghost_collections, dead_collections) =
-        scan_collections(inv; log)
-    dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
-    inactive_collections = live_collections ∪ ghost_collections
-    (; orphan_sources, num_recipe_checks) =
-        refresh_sources!(inv; active_collections, inactive_collections, dryrun)
-    if log
-        printstyled(lpad("Scanned", msgwidth), bold=true, color=:green)
-        num_scanned_collections = length(active_collections) + length(live_collections)
-        println(' ', num_scanned_collections, " collection",
-                ifelse(num_scanned_collections == 1, "", "s"))
-        if !isempty(ghost_collections) || !isempty(dead_collections)
-            printstyled(lpad("Inactive", msgwidth), bold=true, color=:green)
-            print(" collections: ",
-                  length(ghost_collections) + length(dead_collections),
-                  " found")
-            if !isempty(dead_collections)
-                print(", ", length(dead_collections), " beyond the maximum age")
-            end
-            print('\n')
+    # Scan, prune, and write the inventory under the file lock; report inline
+    # while its figures are in scope, and return only the files to delete.
+    doomed = exclusively(inv) do inv
+        (; active_collections, live_collections, ghost_collections, dead_collections) =
+            scan_collections(inv; log)
+        dryrun || deleteat!(inv.collections, Vector{Int}(indexin(dead_collections, getfield.(inv.collections, :uuid))))
+        inactive_collections = live_collections ∪ ghost_collections
+        (; orphan_sources, num_recipe_checks) =
+            refresh_sources!(inv; active_collections, inactive_collections, dryrun)
+        orphan_files = let fs = readdir(dirname(inv.file.path), join=true)
+            storedir = joinpath(dirname(inv.file.path), inv.config.store_dir)
+            isdir(storedir) && append!(fs, readdir(storedir, join=true))
+            cachedir = joinpath(dirname(inv.file.path), inv.config.cache_dir)
+            isdir(cachedir) && append!(fs, readdir(cachedir, join=true))
+            setdiff(fs, files(inv))
         end
-        nsources = length(inv.stores) + length(inv.caches) + length(orphan_sources)
-        printstyled(lpad("Checked", msgwidth), bold=true, color=:green)
-        println(' ', nsources, " cached item",
-                ifelse(nsources == 1, "", "s"),
-                " (", num_recipe_checks, " recipe check",
-                ifelse(num_recipe_checks == 1, "", "s"), ")")
-    end
-    orphan_files = let fs = readdir(dirname(inv.file.path), join=true)
-        storedir = joinpath(dirname(inv.file.path), inv.config.store_dir)
-        isdir(storedir) && append!(fs, readdir(storedir, join=true))
-        cachedir = joinpath(dirname(inv.file.path), inv.config.cache_dir)
-        isdir(cachedir) && append!(fs, readdir(cachedir, join=true))
-        setdiff(fs, files(inv))
-    end
-    deleted_bytes = 0
-    for f in orphan_files
-        if dirname(f) == dirname(inv.file.path)
-            startswith(basename(f), "Inventory.toml-") && endswith(f, ".part") && continue
+        filter!(orphan_files) do f
+            dirname(f) == dirname(inv.file.path) || return true
+            f == inv.batch.lock.path && return false
+            startswith(basename(f), "Inventory.toml-") && endswith(f, ".part") && return false
             @warn "Found an unexpected $(ifelse(isdir(f), "subfolder", "file")) in the inventory folder, \
                     this is quite irregular ($(relpath(f, inv.file.path))) \
                     — $(ifelse(dryrun, "would remove", "removing"))"
+            true
         end
-        if isdir(f)
-            dryrun || rm(f, force=true, recursive=true)
-        else
-            deleted_bytes += stat(f).size
-            dryrun || rm(f, force=true)
+        truncated_sources, truncsource_bytes = garbage_trim_size!(inv; dryrun)
+        truncated_files = filter(isfile, map(Base.Fix1(storefile, inv), truncated_sources))
+        if !dryrun
+            inv.last_gc = now()
+            write(inv)
         end
+        if log
+            deleted_bytes = truncsource_bytes +
+                sum(f -> ifelse(isdir(f), 0, Int(stat(f).size)), orphan_files, init=0)
+            gcreport(; dryrun, trimmsg,
+                     num_scanned = length(active_collections) + length(live_collections),
+                     num_sources = length(inv.stores) + length(inv.caches),
+                     ghost_collections, dead_collections, orphan_sources,
+                     num_recipe_checks, orphan_files, truncated_sources,
+                     truncsource_bytes, deleted_bytes)
+        end
+        vcat(orphan_files, truncated_files)
     end
-    truncated_sources, truncsource_bytes = garbage_trim_size!(inv; dryrun)
-    dryrun || for source in truncated_sources
-        file = storefile(inv, source)
-        isfile(file) && rm(file, force=true)
-    end
-    if log
-        if !isempty(truncated_sources) && trimmsg
-            printstyled("Data Toolkit Store", color=:magenta, bold=true)
-            println(" trimmed ", length(truncated_sources), " items (",
-                    join(humansize(truncsource_bytes)), ") to avoid going over the maximum size")
+    # Already unreferenced on disk, so bulk deletion needn't hold the lock.
+    dryrun || foreach(f -> rm(f, force=true, recursive=true), doomed)
+    nothing
+end
+
+function gcreport(; dryrun::Bool, trimmsg::Bool, num_scanned::Int, num_sources::Int,
+                  ghost_collections, dead_collections, orphan_sources,
+                  num_recipe_checks::Int, orphan_files, truncated_sources,
+                  truncsource_bytes::Int, deleted_bytes::Int)
+    msgwidth = MSG_LABEL_WIDTH + 2 * dryrun
+    printstyled(lpad("Scanned", msgwidth), bold=true, color=:green)
+    println(' ', num_scanned, " collection", ifelse(num_scanned == 1, "", "s"))
+    if !isempty(ghost_collections) || !isempty(dead_collections)
+        printstyled(lpad("Inactive", msgwidth), bold=true, color=:green)
+        print(" collections: ",
+              length(ghost_collections) + length(dead_collections),
+              " found")
+        if !isempty(dead_collections)
+            print(", ", length(dead_collections), " beyond the maximum age")
         end
-        deleted_bytes += truncsource_bytes
-        printstyled(lpad(ifelse(dryrun, "Would remove", "Removed"), msgwidth),
-                    bold=true, color=:green)
-        if isempty(dead_collections) && isempty(orphan_sources) && isempty(orphan_files) && isempty(truncated_sources)
-            println(" nothing")
-        else
-            length(dead_collections) > 0 &&
-                print(' ', length(dead_collections), " collection",
-                      ifelse(length(dead_collections) == 1, "", "s"))
-            length(orphan_sources) > 0 &&
-                print(ifelse(!isempty(dead_collections), ", ", " "),
-                      length(orphan_sources), " cached item",
-                      ifelse(length(orphan_sources) == 1, "", "s"))
-            orphan_delta = length(orphan_files) - length(orphan_sources)
-            orphan_delta > 0 &&
-                print(ifelse(!isempty(dead_collections) || !isempty(orphan_sources),
-                             ", ", " "),
-                      orphan_delta, " orphan file",
-                      ifelse(orphan_delta == 1, "", "s"))
-            !isempty(truncated_sources) &&
-                print(ifelse(!isempty(dead_collections) || !isempty(orphan_sources) || orphan_delta > 0,
-                             ", ", " "),
-                      length(truncated_sources), " large item",
-                      ifelse(length(truncated_sources) == 1, "", "s"))
-            if deleted_bytes > 0
-                print('\n')
-                removedsize, removedunits = humansize(deleted_bytes)
-                printstyled(lpad(ifelse(dryrun, "Would free", "Freed"), msgwidth),
-                            bold=true, color=:green)
-                print(" $removedsize$removedunits")
-            end
+        print('\n')
+    end
+    nsources = num_sources + length(orphan_sources)
+    printstyled(lpad("Checked", msgwidth), bold=true, color=:green)
+    println(' ', nsources, " cached item",
+            ifelse(nsources == 1, "", "s"),
+            " (", num_recipe_checks, " recipe check",
+            ifelse(num_recipe_checks == 1, "", "s"), ")")
+    if !isempty(truncated_sources) && trimmsg
+        printstyled("Data Toolkit Store", color=:magenta, bold=true)
+        println(" trimmed ", length(truncated_sources), " items (",
+                join(humansize(truncsource_bytes)), ") to avoid going over the maximum size")
+    end
+    printstyled(lpad(ifelse(dryrun, "Would remove", "Removed"), msgwidth),
+                bold=true, color=:green)
+    if isempty(dead_collections) && isempty(orphan_sources) && isempty(orphan_files) && isempty(truncated_sources)
+        println(" nothing")
+    else
+        length(dead_collections) > 0 &&
+            print(' ', length(dead_collections), " collection",
+                  ifelse(length(dead_collections) == 1, "", "s"))
+        length(orphan_sources) > 0 &&
+            print(ifelse(!isempty(dead_collections), ", ", " "),
+                  length(orphan_sources), " cached item",
+                  ifelse(length(orphan_sources) == 1, "", "s"))
+        orphan_delta = length(orphan_files) - length(orphan_sources)
+        orphan_delta > 0 &&
+            print(ifelse(!isempty(dead_collections) || !isempty(orphan_sources),
+                         ", ", " "),
+                  orphan_delta, " orphan file",
+                  ifelse(orphan_delta == 1, "", "s"))
+        !isempty(truncated_sources) &&
+            print(ifelse(!isempty(dead_collections) || !isempty(orphan_sources) || orphan_delta > 0,
+                         ", ", " "),
+                  length(truncated_sources), " large item",
+                  ifelse(length(truncated_sources) == 1, "", "s"))
+        if deleted_bytes > 0
             print('\n')
+            removedsize, removedunits = humansize(deleted_bytes)
+            printstyled(lpad(ifelse(dryrun, "Would free", "Freed"), msgwidth),
+                        bold=true, color=:green)
+            print(" $removedsize$removedunits")
         end
-    end
-    if !dryrun
-        inv.last_gc = now()
-        write(inv)
+        print('\n')
     end
 end
 
@@ -591,8 +606,7 @@ function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UIn
     for sources in (inv.stores, inv.caches)
         let i = 1; while i <= length(sources)
             source = sources[i]
-            # TODO avoid permanently modifying during dryrun
-            filter!(source.references) do r
+            keepref(r) =
                 if haskey(active_collections, r)
                     num_recipe_checks += 1
                     source.recipe ∈ active_collections[r] &&
@@ -606,14 +620,15 @@ function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UIn
                 else
                     r ∈ inactive_collections
                 end
+            # A dry run must not mutate the references it evaluates.
+            live_refs = if dryrun
+                count(keepref, source.references)
+            else
+                length(filter!(keepref, source.references))
             end
-            if isempty(source.references) || !isfile(storefile(inv, source))
+            if live_refs == 0 || !isfile(storefile(inv, source))
                 push!(orphan_sources, source)
-                if dryrun
-                    i += 1
-                else
-                    deleteat!(sources, i)
-                end
+                if dryrun i += 1 else deleteat!(sources, i) end
             else
                 i += 1
             end
@@ -629,8 +644,11 @@ Remove `collection` and all sources only used by `collection` from `inventory`.
 
 If `dryrun` is set, no action is taken.
 """
-function expunge!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool=false)
-    cindex = findfirst(==(collection), inventory.collections)
+expunge!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool=false) =
+    exclusively(inv -> expungeexclusive!(inv, collection; dryrun), inventory)
+
+function expungeexclusive!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool)
+    cindex = findfirst(Base.Fix1(≃, collection), inventory.collections)
     isnothing(cindex) || deleteat!(inventory.collections, cindex)
     removed_sources = SourceInfo[]
     inventory.file.writable || return removed_sources
@@ -639,11 +657,17 @@ function expunge!(inventory::Inventory, collection::CollectionInfo; dryrun::Bool
             source = sources[i]
             if (index = findfirst(collection.uuid .== source.references)) |> !isnothing
                 dryrun || deleteat!(source.references, index)
-                if isempty(source.references)
+                # Orphaned once `collection` is its only remaining reference.
+                orphaned = if dryrun length(source.references) == 1 else isempty(source.references) end
+                if orphaned
                     push!(removed_sources, source)
-                    dryrun || deleteat!(sources, i)
-                    file = storefile(inventory, source)
-                    dryrun || isfile(file) && rm(file, force=true)
+                    if !dryrun
+                        deleteat!(sources, i)
+                        file = storefile(inventory, source)
+                        isfile(file) && rm(file, force=true)
+                    else
+                        i += 1
+                    end
                 else
                     i += 1
                 end

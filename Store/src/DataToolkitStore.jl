@@ -18,7 +18,8 @@ include("types.jl")
 
 const INVENTORY_VERSION = 0
 
-const INVENTORIES = Vector{Inventory}()
+"All registered inventories."
+const INVENTORIES = Inventory[]
 
 const DEFAULT_INVENTORY_CONFIG =
     InventoryConfig(2, 30, 50*1024^3, 1, "store", "cache")
@@ -82,7 +83,7 @@ function __init__()
     @dataplugin CACHE_PLUGIN
     # Inventory loading
     init_user_inventory!()
-    push!(INVENTORIES, load_inventory(USER_INVENTORY))
+    getinventory()
     # Registered before the GC hook so (LIFO) it flushes any writes GC queues.
     atexit(flushpendingwrites)
     atexit() do

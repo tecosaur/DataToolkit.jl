@@ -120,8 +120,10 @@ function storefile(inventory::Inventory, @nospecialize(storage::DataStorage))
         else
             # If the cache file has been removed, remove the associated
             # source info.
-            index = findfirst(==(source), inventory.stores)
-            !isnothing(index) && deleteat!(inventory.stores, index)
+            @lock inventory.batch.guard begin
+                index = findfirst(==(source), inventory.stores)
+                !isnothing(index) && deleteat!(inventory.stores, index)
+            end
             nothing
         end
     end
@@ -136,8 +138,10 @@ function storefile(inventory::Inventory, @nospecialize(loader::DataLoader), as::
         else
             # If the cache file has been removed, remove the associated
             # source info.
-            index = findfirst(==(source), inventory.caches)
-            !isnothing(index) && deleteat!(inventory.caches, index)
+            @lock inventory.batch.guard begin
+                index = findfirst(==(source), inventory.caches)
+                !isnothing(index) && deleteat!(inventory.caches, index)
+            end
             nothing
         end
     end
@@ -211,7 +215,7 @@ function _checksum(algorithm::Symbol)
     elseif algorithm === :md5
         @require MD5
         let md5 = MD5.md5
-            data -> Checksum(algorithm, invokelatest(md5, data)::Vector{UInt8})
+            data -> Checksum(algorithm, collect(invokelatest(md5, data))::Vector{UInt8})
         end
     elseif algorithm === :crc32c
         @require CRC32c
@@ -379,6 +383,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     refdest = storefile(inventory, newsource)
     miliseconds = round(Int, 1000 * time())
     dumpfile = string(refdest, '-', miliseconds, ".dump")
+    isdir(dirname(dumpfile)) || mkpath(dirname(dumpfile))
     @log_do("store:save",
             "Writing $(sprint(show, storage.dataset.name)) to the store",
             atomic_write(dumpfile, from))
@@ -674,33 +679,36 @@ function update_source!(inventory::Inventory,
         StoreSource(s.recipe, s.references, now(), s.checksum, s.extension)
     update_atime(s::CacheSource) =
         CacheSource(s.recipe, s.references, now(), s.types, s.packages)
-    inventory = update_inventory!(inventory)
-    cpath = if !isnothing(collection.source) collection.source.path end
-    cinfo = CollectionInfo(collection.uuid, cpath, collection.name, now())
-    # While two collections are only really considered the same if the UUIDs match,
-    # if `inventory` exists at a path which a previously known collection existed at,
-    # it has doubtless been replaced, and so replacing it is appropriate.
-    samecollection(a::DataCollection, b::CollectionInfo) =
-        a.uuid == b.uuid || (!isnothing(a.source) && a.source.path == b.path)
-    cindex = findfirst(Base.Fix1(samecollection, collection), inventory.collections)
-    if isnothing(cindex)
-        push!(inventory.collections, cinfo)
-    else
-        inventory.collections[cindex] = cinfo
+    exclusively(inventory) do inventory
+        cpath = if !isnothing(collection.source) collection.source.path end
+        cinfo = CollectionInfo(collection.uuid, cpath, collection.name, now())
+        # While two collections are only really considered the same if the UUIDs match,
+        # if `inventory` exists at a path which a previously known collection existed at,
+        # it has doubtless been replaced, and so replacing it is appropriate.
+        samecollection(a::DataCollection, b::CollectionInfo) =
+            a.uuid == b.uuid || (!isnothing(a.source) && a.source.path == b.path)
+        cindex = findfirst(Base.Fix1(samecollection, collection), inventory.collections)
+        if isnothing(cindex)
+            push!(inventory.collections, cinfo)
+        else
+            inventory.collections[cindex] = cinfo
+        end
+        if collection.uuid ∉ source.references
+            push!(source.references, collection.uuid)
+        end
+        sources = if source isa StoreSource
+            inventory.stores
+        else
+            inventory.caches
+        end
+        sindex = findfirst(Base.Fix1(≃, source), sources)
+        if isnothing(sindex)
+            # Written at once — a dropped deferred write would orphan the data.
+            push!(sources, source)
+            write(inventory)
+        else
+            sources[sindex] = update_atime(source)
+            save!(inventory)
+        end
     end
-    if collection.uuid ∉ source.references
-        push!(source.references, collection.uuid)
-    end
-    sources = if source isa StoreSource
-        inventory.stores
-    else
-        inventory.caches
-    end
-    sindex = findfirst(Base.Fix1(≃, source), sources)
-    if isnothing(sindex)
-        push!(sources, source)
-    else
-        sources[sindex] = update_atime(source)
-    end
-    save!(inventory)
 end

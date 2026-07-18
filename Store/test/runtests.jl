@@ -1,10 +1,18 @@
 using Test
+using Dates, UUIDs
 
 using DataToolkitStore: DataToolkitStore, MonitoredFile, InventoryConfig,
     CollectionInfo, SourceInfo, Checksum, StoreSource, CacheSource, Inventory,
-    LockFile, iscontested, checksum
+    LockFile, iscontested, checksum, MerkleTree, read_merkles, write_merkle,
+    load_inventory, update_inventory!, modify_inventory!, save!,
+    exclusively, flushpendingwrites, expunge!, update_source!
 
-using DataToolkitStore.LockFiles: pidlive, pidqueue, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE
+isdirty(inv::Inventory) = inv.batch.edits > inv.batch.written
+
+using DataToolkitStore.DataToolkitCore: DataToolkitCore, DataCollection,
+    DataStorage, dataset, loadcollection!
+
+using DataToolkitStore.LockFiles: pidlive, pidqueue, overwrite
 
 @testset "Checksums" begin
     @test checksum(:k12, "DataToolkitStore") ==
@@ -26,60 +34,180 @@ using DataToolkitStore.LockFiles: pidlive, pidqueue, LOCKFILE_OPEN_FLAGS, LOCKFI
 end
 
 @testset "Lockfile" begin
-    # Get any two other live PIDs so we can pretend to
-    # be multiple processes trying to lock the same file.
-    # Hopefully they won't die while this test is running...
-    fauxpid1, fauxpid2 = Int32(1), Int32(0)
-    while !pidlive(fauxpid1)
-        fauxpid1 += 0x1
+    # Fabricated queue entries stand in for other processes: one PID that is
+    # live (hopefully it outlasts the test) and one that is dead.
+    livepid = Int32(1)
+    while !pidlive(livepid)
+        livepid += Int32(1)
     end
-    fauxpid2 = fauxpid1 + 0x1
-    while pidlive(fauxpid2)
-        fauxpid2 += 0x1
+    deadpid = livepid + Int32(1)
+    while pidlive(deadpid)
+        deadpid += Int32(1)
     end
-    lf1 = LockFile(DataToolkitStore.PROJECT_SUBPATH, "test", "a")
-    lf2 = LockFile(ReentrantLock(), lf1.path,
-                   Base.Filesystem.open(lf1.path, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE),
-                   fauxpid1, false, false, 0.0)
-    lf3 = LockFile(ReentrantLock(), lf1.path,
-                   Base.Filesystem.open(lf1.path, LOCKFILE_OPEN_FLAGS, LOCKFILE_OPEN_MODE),
-                   fauxpid2, false, false, 0.0)
-    @test isfile(lf1.path)
-    @test !islocked(lf1)
-    @test !islocked(lf2)
-    # Acquire the lock on lf1
-    @test trylock(lf1)
-    @test islocked(lf1)
-    @test !iscontested(lf1)
-    @test length(pidqueue(lf1)) == 1
-    @test first(pidqueue(lf1)) == lf1.pid
-    @test islocked(lf2)
-    # Check that lf1 can be re-entrantly locked
-    @test trylock(lf1)
-    @test islocked(lf1)
-    unlock(lf1)
-    @test islocked(lf1)
-    # Confirm that lf2 can't grab the lock
-    @test !trylock(lf2)
-    # Now unlock lf1 and try again with lf2
-    unlock(lf1)
-    @test length(pidqueue(lf1)) == 0
-    @test trylock(lf2)
-    # Create two tasks trying to aquire lf2
-    @test !iscontested(lf2)
-    lt1 = @async lock(lf1)
-    lt3 = @async lock(lf3)
-    sleep(0.01)
-    @test iscontested(lf2)
-    @test !istaskdone(lt1)
-    @test !istaskdone(lt3)
-    @test first(pidqueue(lf2)) == lf2.pid
-    @test length(pidqueue(lf2)) == 3
-    _, q2, q3 = pidqueue(lf2)
-    @test q2 ∈ (lf1.pid, lf3.pid)
-    @test q3 ∈ (lf1.pid, lf3.pid)
-    @test q2 != q3
-    unlock(lf2)
+    lf = LockFile(joinpath(mktempdir(), "test.lock"))
+    @test isfile(lf.path)
+    @test !islocked(lf)
+    # Claim and release
+    @test trylock(lf)
+    @test islocked(lf)
+    @test pidqueue(lf) == Int32[lf.pid]
+    @test !iscontested(lf)
+    unlock(lf)
+    @test !islocked(lf)
+    @test isempty(pidqueue(lf))
+    # A live foreign claimant blocks us, a dead one is pruned
+    overwrite(lf, Int32[livepid, lf.pid]); truncate(lf.file, 2 * sizeof(Int32))
+    @test !trylock(lf)
+    @test islocked(lf)
+    @test iscontested(lf)
+    overwrite(lf, Int32[deadpid, lf.pid]); truncate(lf.file, 2 * sizeof(Int32))
+    @test trylock(lf)
+    @test pidqueue(lf) == Int32[lf.pid]
+    @test !iscontested(lf)
+    unlock(lf)
+    # `lock` queues FIFO behind a live claimant, and wins once it revokes
+    overwrite(lf, Int32[livepid]); truncate(lf.file, sizeof(Int32))
+    locker = @async lock(lf)
+    sleep(0.2)
+    @test !istaskdone(locker)
+    @test pidqueue(lf) == Int32[livepid, lf.pid]
+    overwrite(lf, Int32[Int32(-1), lf.pid])
+    @test timedwait(() -> istaskdone(locker), 5.0) === :ok
+    @test pidqueue(lf) == Int32[lf.pid]
+    unlock(lf)
+end
+
+@testset "Inventory writer" begin
+    inv = update_inventory!(joinpath(mktempdir(), "Inventory.toml"))
+    # A deferred edit opens a batch that flushes itself clean
+    save!(inv)
+    @test timedwait(() -> !isdirty(inv), 5.0) === :ok
+    @test !inv.batch.locked && isnothing(inv.batch.writer)
+    # A burst of edits batches into a single consistent flush
+    inv.batch.writeduration = 0.3
+    mt0 = mtime(inv.file.path)
+    save!(inv); save!(inv); save!(inv)
+    @test isdirty(inv) && inv.batch.locked && !isnothing(inv.batch.writer)
+    @test timedwait(() -> !isdirty(inv), 10.0) === :ok
+    @test timedwait(() -> isnothing(inv.batch.writer), 5.0) === :ok
+    @test !inv.batch.locked && inv.batch.edits == inv.batch.written
+    @test mtime(inv.file.path) > mt0
+    # `exclusively` holds the file lock around `f` and passes the result through
+    @test exclusively(i -> i.batch.locked, inv)
+    @test !inv.batch.locked
+    # `modify_inventory!` transactions are durable
+    uuid = uuid4()
+    modify_inventory!(inv) do i
+        push!(i.collections, CollectionInfo(uuid, nothing, "test", now()))
+    end
+    @test occursin(string(uuid), read(inv.file.path, String))
+    # With the batch writer parked on a pathological debounce, a synchronous
+    # write clears dirtiness immediately, as does `flushpendingwrites`
+    parked = update_inventory!(joinpath(mktempdir(), "Inventory.toml"))
+    parked.batch.writeduration = 30.0
+    save!(parked)
+    @test isdirty(parked)
+    write(parked)
+    @test !isdirty(parked)
+    save!(parked)
+    @test isdirty(parked)
+    flushpendingwrites()
+    @test !isdirty(parked)
+    # A failed flush drops the pending edits and resynchronises from disk
+    fragiledir = mktempdir()
+    fragile = update_inventory!(joinpath(fragiledir, "Inventory.toml"))
+    kept = uuid4()
+    modify_inventory!(i -> push!(i.collections, CollectionInfo(kept, nothing, "kept", now())), fragile)
+    push!(fragile.collections, CollectionInfo(uuid4(), nothing, "dropped", now()))
+    chmod(fragiledir, 0o500)
+    @test_logs (:warn, r"^Failed to write the inventory") match_mode=:any begin
+        save!(fragile)
+        @test timedwait(() -> !isdirty(fragile), 5.0) === :ok
+    end
+    @test !fragile.batch.locked && isnothing(fragile.batch.writer)
+    chmod(fragiledir, 0o700)
+    @test getfield.(update_inventory!(fragile).collections, :uuid) == [kept]
+end
+
+@testset "Inventory transaction safety" begin
+    # A stale instance (as from another process) must not clobber other writes
+    path = joinpath(mktempdir(), "Inventory.toml")
+    fresh, stale = load_inventory(path), load_inventory(path)
+    doomed = CollectionInfo(uuid4(), nothing, "doomed", trunc(now(), Dates.Second))
+    modify_inventory!(i -> push!(i.collections, doomed), stale)
+    survivor = uuid4()
+    modify_inventory!(i -> push!(i.collections, CollectionInfo(survivor, nothing, "survivor", now())), fresh)
+    expunge!(stale, doomed)
+    @test occursin(string(survivor), read(path, String))
+    @test !occursin(string(doomed.uuid), read(path, String))
+    # A failed lock acquisition leaves the batch clean
+    fragile = load_inventory(joinpath(mktempdir(), "Inventory.toml"))
+    close(fragile.batch.lock.file)
+    rm(fragile.batch.lock.path)
+    chmod(dirname(fragile.batch.lock.path), 0o500)
+    @test_throws Exception save!(fragile)
+    @test !isdirty(fragile)
+    chmod(dirname(fragile.batch.lock.path), 0o700)
+    # `flushpendingwrites` covers inventories obtained via `load_inventory`
+    stray = load_inventory(joinpath(mktempdir(), "Inventory.toml"))
+    stray.batch.writeduration = 30.0 # park the batch writer beyond the test horizon
+    marker = uuid4()
+    push!(stray.collections, CollectionInfo(marker, nothing, "stray", now()))
+    save!(stray)
+    @test isdirty(stray)
+    flushpendingwrites()
+    @test !isdirty(stray)
+    @test occursin(string(marker), read(stray.file.path, String))
+    # Unnormalised paths resolve to the registered inventory, not a duplicate
+    dupdir = mktempdir()
+    canonical = update_inventory!(joinpath(dupdir, "Inventory.toml"))
+    zigzag = joinpath(dupdir, "..", basename(dupdir), "Inventory.toml")
+    @test DataToolkitStore.getinventory(zigzag) === canonical
+    # Recording a new store source is durable immediately, not debounced.
+    durable = load_inventory(joinpath(mktempdir(), "Inventory.toml"))
+    durable.batch.writeduration = 30.0
+    collection = DataCollection("test")
+    source = StoreSource(zero(UInt64), [collection.uuid], now(), nothing, "txt")
+    update_source!(durable, source, collection)
+    @test !isdirty(durable)
+    @test occursin(string(collection.uuid), read(durable.file.path, String))
+end
+
+DataToolkitCore.getstorage(::DataStorage{:testblob}, ::Type{IO}) =
+    IOBuffer(codeunits("hello blob"))
+
+@testset "Store plugin integration" begin
+    storedir = mktempdir()
+    data_toml = joinpath(mktempdir(), "Data.toml")
+    write(data_toml, """
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "testcollection"
+    plugins = ["store"]
+
+    [config.store]
+    path = "$storedir"
+
+    [[blob]]
+    uuid = "$(uuid4())"
+
+        [[blob.storage]]
+        driver = "testblob"
+    """)
+    loadcollection!(data_toml)
+    inventory = DataToolkitStore.getinventory(dataset("blob").collection)
+    # The first read caches the blob in the store, durably recorded
+    @test read(open(dataset("blob"), IO), String) == "hello blob"
+    @test length(inventory.stores) == 1
+    @test occursin("[[store]]", read(inventory.file.path, String))
+    # Later reads are served from the store
+    cachefile = DataToolkitStore.storefile(inventory, only(dataset("blob").storage))
+    @test !isnothing(cachefile) && isfile(cachefile)
+    @test read(open(dataset("blob"), IO), String) == "hello blob"
+    # Opening for writing removes the now-stale store entry
+    @test open(dataset("blob"), IO; write = true) isa IO
+    @test isempty(inventory.stores)
+    @test !occursin("[[store]]", read(inventory.file.path, String))
 end
 
 @testset "Merkle trees" begin

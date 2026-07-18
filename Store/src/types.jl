@@ -55,15 +55,47 @@ struct CachedMerkles
     merkles::Vector{MerkleTree}
 end
 
+"""
+    WriteBatch(lock::LockFile)
+
+Pending-edit state for a debounced file writer.
+
+While any edits are unwritten (`edits > written`) the cross-process `lock` is
+held, and `writer` is the task that will flush them and then release it.
+All mutable fields are protected by `guard`.
+"""
+mutable struct WriteBatch
+    const lock::LockFile
+    const guard::ReentrantLock
+    locked::Bool
+    writer::Union{Task, Nothing}
+    edits::UInt64
+    written::UInt64
+    lastedit::Float64
+    writeduration::Float64
+    WriteBatch(lock::LockFile) =
+        new(lock, ReentrantLock(), false, nothing, 0, 0, 0.0, 0.0)
+end
+
+"""
+    Inventory
+
+The in-memory form of an inventory TOML file. Mutating the data fields
+requires holding `batch.guard`, which the batch writer's flush serialises on.
+"""
 mutable struct Inventory
     const file::MonitoredFile
-    const lock::LockFile
+    const batch::WriteBatch
     const merkles::CachedMerkles
     config::InventoryConfig
     collections::Vector{CollectionInfo}
     stores::Vector{StoreSource}
     caches::Vector{CacheSource}
     last_gc::DateTime
+    Inventory(file::MonitoredFile, lock::LockFile, merkles::CachedMerkles,
+              config::InventoryConfig, collections::Vector{CollectionInfo},
+              stores::Vector{StoreSource}, caches::Vector{CacheSource}, last_gc::DateTime) =
+        new(file, WriteBatch(lock), merkles, config, collections, stores, caches, last_gc)
 end
 
 Base.:(==)(a::Checksum, b::Checksum) =
