@@ -53,20 +53,27 @@ end
 """
     toplevel_execute_repl_cmd(line::AbstractString)
 
-Call `execute_repl_cmd(line)`, but gracefully catch an InterruptException if
-thrown.
+Call `execute_repl_cmd(line)`, gracefully catching anything thrown.
 
-This is the main entrypoint for command execution.
+This is the main entrypoint for command execution, and nothing may escape it:
+`LineEdit` (as of Julia 1.13) runs this callback outside its own try/catch, so
+an uncaught exception kills the REPL's frontend task and with it the session.
 """
 function toplevel_execute_repl_cmd(line::AbstractString)
     try
         execute_repl_cmd(line)
-    catch e
-        if e isa InterruptException
+    catch err
+        if err isa InterruptException
             printstyled(" !", color=:red, bold=true)
             print(" Aborted\n")
+        elseif err isa DataOperationException
+            printstyled(" ! ", color=:red, bold=true)
+            showerror(stdout, err, backtrace(), backtrace = false)
+            print('\n')
         else
-            rethrow()
+            printstyled(" ! ", color=:red, bold=true)
+            showerror(stdout, err, catch_backtrace())
+            print('\n')
         end
     end
 end
