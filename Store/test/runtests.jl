@@ -34,6 +34,19 @@ using DataToolkitStore.LockFiles: pidlive, pidqueue, overwrite
         Checksum(:crc32c, UInt8[0xea, 0xbc, 0x8a, 0x08])
     # Else a user-written "sha256:ABCD…" would silently disable verification.
     @test tryparse(Checksum, "sha256:ABCDEF") == tryparse(Checksum, "sha256:abcdef")
+    # `checksum = true` names no value, so must not reach tryparse(Checksum, ::Bool).
+    truestore = only(only(loadcollection!(IOBuffer("""
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "cktrue"
+    [[d]]
+    uuid = "$(uuid4())"
+        [[d.storage]]
+        driver = "raw"
+        value = 1
+        checksum = true
+    """)).datasets).storage)
+    @test DataToolkitStore.checksumalgorithm(truestore) == DataToolkitStore.CHECKSUM_DEFAULT_SCHEME
 end
 
 @testset "Lockfile" begin

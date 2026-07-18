@@ -34,7 +34,9 @@ returning the source or `nothing` if none could be found.
 function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
     recipe = rhash(storage)
     checksum = @getparam storage."checksum"::Union{Bool, String} false
-    if checksum === false || checksum == "auto" && haskey(storage.parameters, "lifetime")
+    # `true` enables checksumming but names no value to match on, so — like
+    # `false` or `auto` with a lifetime — the record is found by recipe alone.
+    if checksum isa Bool || checksum == "auto" && haskey(storage.parameters, "lifetime")
         for record in inventory.stores
             if record.recipe == recipe
                 return record
@@ -238,10 +240,9 @@ end
 
 function checksumalgorithm(@nospecialize(storage::DataStorage))
     csumval = @getparam storage."checksum"::Union{Bool, String} false
-    csumval == false && return
-    csumval == "auto" &&
-        return if !haskey(storage.parameters, "lifetime")
-            CHECKSUM_DEFAULT_SCHEME end
+    csumval === false && return
+    (csumval === true || csumval == "auto") &&
+        return if !haskey(storage.parameters, "lifetime") CHECKSUM_DEFAULT_SCHEME end
     schecksum = tryparse(Checksum, csumval)
     if !isnothing(schecksum)
         schecksum.alg
@@ -291,6 +292,7 @@ function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), 
         save!(storage)
         return schecksum
     end
+    csumval isa Bool && return
     schecksum = tryparse(Checksum, csumval)
     if isnothing(schecksum)
         @warn "Checksum value '$csumval' is invalid, ignoring"
