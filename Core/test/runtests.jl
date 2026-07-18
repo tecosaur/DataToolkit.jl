@@ -4,7 +4,8 @@ using Test
 import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
     stack_index, plugin_add!, plugin_list, plugin_remove!, config_get,
-    config_set!, config_unset!, reinit!, DATASET_REFERENCE_WRAPPER
+    config_set!, config_unset!, reinit!, DATASET_REFERENCE_WRAPPER,
+    ispreferredpath, DataLoader
 
 @testset "Utils" begin
     @testset "Doctests" begin
@@ -151,6 +152,25 @@ end
         @test 2 == @advise AdviceAmalgamation([sump1]) sum(1)
     end
     deleteat!(PLUGINS, length(PLUGINS)) # remove `plg`
+end
+
+@testset "Type path ordering" begin
+    L = DataLoader{:l}
+    path(from::Type, to::Type, ind) = (Pair{Type, Type}(from, to), ind, L)
+    # A lower index wins even against a more specific output, and vice-versa at
+    # equal index — the mutual exclusivity the old ||-chain lost.
+    @test ispreferredpath(path(IO, Any, 1), path(IO, String, 2))
+    @test !ispreferredpath(path(IO, String, 2), path(IO, Any, 1))
+    @test ispreferredpath(path(IO, String, 1), path(IO, Any, 1))
+    @test !ispreferredpath(path(IO, Any, 1), path(IO, String, 1))
+    paths = [path(IO, Any, 2), path(IO, String, 1),
+             path(IO, Any, 1), path(IO, Integer, 1)]
+    @test !any(Iterators.product(paths, paths)) do (a, b)
+        ispreferredpath(a, b) && ispreferredpath(b, a)
+    end
+    sorted = sort(paths, lt = ispreferredpath, alg = MergeSort)
+    @test map(p -> p[2], sorted) == [1, 1, 1, 2]
+    @test last(sorted)[1] == (IO => Any)
 end
 
 @testset "QualifiedType" begin
