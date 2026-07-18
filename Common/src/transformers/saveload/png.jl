@@ -11,22 +11,24 @@ end
 
 function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
     @require PNGFiles
+    strategies = ("default", "filtered", "huffman", "rle", "fixed")
     compression_strategy = let strat =
         @getparam(writer."compression_strategy"::Union{Int, String}, 3)
         if strat isa Int && 0 <= strat <= 4
             strat
-        elseif strat ∈ ("default", "filtered", "huffmann", "rle", "fixed")
-            findfirst(strat .== ("default", "filtered", "huffmann", "rle", "fixed"))::Int
+        elseif (i = findfirst(==(strat), strategies)) |> !isnothing
+            i - 1
         else
             @warn "Unrecognised PNG `compression_strategy` $(sprint(show, strat)), defaulting to 3"
             3
         end
     end
+    filternames = ("none", "sub", "up", "average", "paeth")
     filters = let filt = @getparam(writer."filters"::Union{Int, String}, 4)
         if filt isa Int && 0 <= filt <= 4
             filt
-        elseif filt ∈ ("none", "sub", "up", "average", "paeth")
-            findfirst(filt .== ("none", "sub", "up", "average", "paeth"))::Int
+        elseif (i = findfirst(==(filt), filternames)) |> !isnothing
+            i - 1
         else
             @warn "Unrecognised PNG `filters` $(sprint(show, filt)), defaulting to 4"
             4
@@ -34,7 +36,7 @@ function save(writer::DataWriter{:png}, dest::IO, info::Matrix)
     end
     kwargs = (; compression_level = @getparam(writer."compression_level"::Int, 0),
               compression_strategy, filters,
-              gamma = @getparam(writer."gamma"::Union{Real, Nothing}))
+              file_gamma = @getparam(writer."gamma"::Union{Float64, Nothing}))
     # TODO support `background`
     invokelatest(_write_png, dest, info; kwargs...)
 end
@@ -71,8 +73,8 @@ It will parse to a `Matrix{<:Colorant}`.
 - `compression_level`: 0-9
 - `compression_strategy`: Either the number or string of: 0/"default",
   1/"filtered", 2/"huffman", 3/"rle" (default), or 4/"fixed".
-- `filters`: Either the number or string of: 0/"none", 1/"sub", 3/"average",
-  4/"paeth" (default)
+- `filters`: Either the number or string of: 0/"none", 1/"sub", 2/"up",
+  3/"average", 4/"paeth" (default)
 
 # Usage examples
 
