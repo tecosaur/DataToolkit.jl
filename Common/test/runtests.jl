@@ -3,8 +3,46 @@ using DataToolkitCommon
 using DataFrames
 using ArchGDAL
 using Test
+using UUIDs
 
 DataToolkitCore.loadcollection!("Data.toml")
+
+DataToolkitCore.getstorage(::DataStorage{:iobased}, ::Type{IO}) =
+    IOBuffer(codeunits("io content"))
+
+@testset "Generic storage fallbacks" begin
+    gdir = mktempdir()
+    write(joinpath(gdir, "content.txt"), "file content")
+    write(joinpath(gdir, "Data.toml"), """
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "genericstorage"
+
+    [[genericfile]]
+    uuid = "$(uuid4())"
+
+        [[genericfile.storage]]
+        driver = "filesystem"
+        path = "content.txt"
+
+    [[genericio]]
+    uuid = "$(uuid4())"
+
+        [[genericio.storage]]
+        driver = "iobased"
+    """)
+    loadcollection!(joinpath(gdir, "Data.toml"))
+    # Every form is derivable from a driver providing only one of them
+    @test read(open(dataset("genericio"), IO), String) == "io content"
+    @test open(dataset("genericio"), String) == "io content"
+    @test open(dataset("genericio"), Vector{UInt8}) == codeunits("io content")
+    @test open(dataset("genericfile"), String) == "file content"
+    @test open(dataset("genericfile"), Vector{UInt8}) == codeunits("file content")
+    # A missing file is absence (`nothing`), not a StackOverflowError
+    rm(joinpath(gdir, "content.txt"))
+    @test isnothing(open(dataset("genericfile"), IO))
+    @test isnothing(open(dataset("genericfile"), String))
+end
 
 @testset "Storage" begin
     @testset "AWS S3" begin

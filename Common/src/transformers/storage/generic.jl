@@ -1,14 +1,20 @@
 # A selection of fallback methods for various forms of raw file content
 # We implement `getstorage` / `putstorage` instead of `storage` to allow
 # for specialised implementations of one method but not the other.
+#
+# These fallbacks may only delegate to driver-provided methods (via
+# `providedform`), never to each other — cross-calls have no base case
+# and recurse to a StackOverflowError.
 
-function storage(store::S, ::Type{IO}; write = false) where {S <: DataStorage}
+function storage(store::S, ::Type{IO}; write::Bool = false) where {S <: DataStorage}
+    ioform = providedform(store, IO; write)
+    isnothing(ioform) || return ioform
     path = storage(store, FilePath; write)
     !isnothing(path) && isfile(string(path)) &&
         return open(string(path); write = write)
-    bytes = storage(store, Vector{UInt8}; write)
+    bytes = providedform(store, Vector{UInt8}; write)
     !isnothing(bytes) && return IOBuffer(bytes)
-    str = storage(store, String; write)
+    str = providedform(store, String; write)
     !isnothing(str) && return IOBuffer(str)
     nothing
 end
@@ -16,7 +22,7 @@ end
 function getstorage(store::S, ::Type{Vector{UInt8}}) where {S <: DataStorage}
     io = storage(store, IO; write = false)
     !isnothing(io) && return try read(io) finally close(io) end
-    str = storage(store, String; write = false)
+    str = providedform(store, String)
     !isnothing(str) && return Vector{UInt8}(str)
     nothing
 end
@@ -24,9 +30,27 @@ end
 function getstorage(store::S, ::Type{String}) where {S <: DataStorage}
     io = storage(store, IO; write = false)
     !isnothing(io) && return try read(io, String) finally close(io) end
-    bytes = storage(store, Vector{UInt8}; write = false)
+    bytes = providedform(store, Vector{UInt8})
     !isnothing(bytes) && return String(copy(bytes))
     nothing
+end
+
+# Fetch form `T` via a `get`/`putstorage` method the driver defines itself.
+# The fallbacks delegate here rather than to each other (which would recurse),
+# so a method shared with the bare `DataStorage` — i.e. a fallback — doesn't
+# count as driver-provided.
+function providedform(store::S, ::Type{T}; write::Bool = false) where {S <: DataStorage, T}
+    # A method shared with the bare `DataStorage` is a generic fallback, not
+    # driver-provided; calling it would recurse back through these fallbacks.
+    driverdefined(f) =
+        hasmethod(f, Tuple{S, Type{T}}) &&
+        (!hasmethod(f, Tuple{DataStorage, Type{T}}) ||
+         which(f, Tuple{S, Type{T}}) !== which(f, Tuple{DataStorage, Type{T}}))
+    if write && driverdefined(putstorage)
+        putstorage(store, T)
+    elseif !write && driverdefined(getstorage)
+        getstorage(store, T)
+    end
 end
 
 # For handling saving to a file robustly
