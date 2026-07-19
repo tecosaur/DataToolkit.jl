@@ -156,22 +156,24 @@ function Base.read(dataset::DataSet, as::QualifiedType)
 end
 
 function Base.read(dataset::DataSet)
-    as = nothing
     for qtype in getproperty.(dataset.loaders, :type) |> Iterators.flatten
         as = trytypeify(qtype, mod=dataset.collection.mod)
-        isnothing(as) || break
-    end
-    if isnothing(as)
-        possiblepkgs = getproperty.(getproperty.(dataset.loaders, :type) |> Iterators.flatten, :root)
-        helpfulextra = if isempty(possiblepkgs)
-            "There are no known types (from any packages) that this data set can be loaded as."
-        else
-            "You may have better luck with one of the following packages loaded: $(join(sort(unique(possiblepkgs)), ", "))"
+        isnothing(as) && continue
+        try
+            return read(dataset, as)
+        catch err
+            cause = if err isa LogTaskError first(Base.current_exceptions(err.task))[1] else err end
+            cause isa UnsatisfyableTransformer || rethrow()
         end
-        throw(TransformerError(
-            "Data set $(sprint(show, dataset.name)) could not be loaded in any form.\n $helpfulextra"))
     end
-    read(dataset, as)
+    possiblepkgs = getproperty.(getproperty.(dataset.loaders, :type) |> Iterators.flatten, :root)
+    helpfulextra = if isempty(possiblepkgs)
+        "There are no known types (from any packages) that this data set can be loaded as."
+    else
+        "You may have better luck with one of the following packages loaded: $(join(sort(unique(possiblepkgs)), ", "))"
+    end
+    throw(TransformerError(
+        "Data set $(sprint(show, dataset.name)) could not be loaded in any form.\n $helpfulextra"))
 end
 
 """
