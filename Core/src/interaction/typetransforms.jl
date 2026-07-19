@@ -228,7 +228,7 @@ function transformersigs(L::Type{<:DataLoader}, desired::Type)
         else
             for (Tout, cansubtype) in typevariants(Tout1)
                 Tout <: desired || desired <: Tout || continue
-                push!(types, (Tloader, Tin, ifelse(cansubtype, desired, Tout)))
+                push!(types, (Tloader, Tin, if cansubtype && desired <: Tout desired else Tout end))
             end
         end
     end
