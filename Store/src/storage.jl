@@ -240,10 +240,9 @@ end
 
 function checksumalgorithm(@nospecialize(storage::DataStorage))
     csumval = @getparam storage."checksum"::Union{Bool, String} false
-    csumval == false && return
-    csumval == "auto" &&
-        return if !haskey(storage.parameters, "lifetime")
-            CHECKSUM_DEFAULT_SCHEME end
+    csumval === false && return
+    (csumval === true || csumval == "auto") &&
+        return if !haskey(storage.parameters, "lifetime") CHECKSUM_DEFAULT_SCHEME end
     schecksum = tryparse(Checksum, csumval)
     if !isnothing(schecksum)
         schecksum.alg
@@ -293,6 +292,7 @@ function getchecksum(inventory::Inventory, @nospecialize(storage::DataStorage), 
         save!(storage)
         return schecksum
     end
+    csumval isa Bool && return
     schecksum = tryparse(Checksum, csumval)
     if isnothing(schecksum)
         @warn "Checksum value '$csumval' is invalid, ignoring"

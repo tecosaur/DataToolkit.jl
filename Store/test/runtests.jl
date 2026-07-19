@@ -35,6 +35,20 @@ using DataToolkitStore.LockFiles: pidlive, pidqueue, overwrite
     # Uppercase hex parses to the same checksum as lowercase (else a
     # user-written "sha256:ABCD…" would silently disable verification).
     @test tryparse(Checksum, "sha256:ABCDEF") == tryparse(Checksum, "sha256:abcdef")
+    # `checksum = true` names no value, so algorithm/value queries must not reach
+    # tryparse(Checksum, ::Bool) and MethodError.
+    truestore = only(only(loadcollection!(IOBuffer("""
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "cktrue"
+    [[d]]
+    uuid = "$(uuid4())"
+        [[d.storage]]
+        driver = "raw"
+        value = 1
+        checksum = true
+    """)).datasets).storage)
+    @test DataToolkitStore.checksumalgorithm(truestore) == DataToolkitStore.CHECKSUM_DEFAULT_SCHEME
 end
 
 @testset "Lockfile" begin
