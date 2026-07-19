@@ -58,7 +58,8 @@ function Base.showerror(io::IO, ex::LogTaskError, bt; backtrace=true)
     stack = Base.current_exceptions(ex.task)
     if length(stack) >= 1 # Should only be a depth-1 stack
         exc1, bt1 = stack[1]
-        bt_merged = vcat(stacktrace(bt1), bt)
+        btframes = if bt isa Vector{Base.StackTraces.StackFrame} bt else stacktrace(bt) end
+        bt_merged = vcat(stacktrace(bt1), btframes)
         # If a `LogTaskError` has been thrown, then there's
         # no issue with the logging itself, and so we may
         # as well remove the `@log_do` involvement from the
