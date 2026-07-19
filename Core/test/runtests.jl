@@ -5,7 +5,10 @@ import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
     longest_common_subsequence, highlight_lcs, referenced_datasets,
     stack_index, plugin_add!, plugin_list, plugin_remove!, config_get,
     config_set!, config_unset!, reinit!, DATASET_REFERENCE_WRAPPER,
-    ispreferredpath, DataLoader, DataStorage, trycreateauto, createinteractive
+    ispreferredpath, DataLoader, DataStorage, DataWriter, DataTransformer,
+    trycreateauto, createinteractive, getstorage, load, supportedtypes,
+    typesteps, toml_safe, refresh!, save!, flushpendingwrites, iswritable,
+    WRITE_RECORDS, WriteRecord
 
 @testset "Utils" begin
     @testset "Doctests" begin
@@ -293,6 +296,255 @@ end
     @test get(bdataset, "other") == [adataset]
     # Collection config cannot hold data set refs
     @test get(collection, "ref") == "$(refpre)adataset$(refpost)"
+end
+
+@testset "LogTaskError display" begin
+    # Displaying a LogTaskError must surface the inner exception, not crash in
+    # the stacktrace-simplifying filter! (which used to index `.file` on a raw
+    # backtrace pointer → FieldError, masking every @log_do failure).
+    failed = @task error("inner boom")
+    schedule(failed)
+    try wait(failed) catch end
+    lte = DataToolkitCore.LogTaskError(failed)
+    rawbt = try error("outer") catch; catch_backtrace() end
+    old = DataToolkitCore.SIMPLIFY_STACKTRACES[]
+    try
+        DataToolkitCore.SIMPLIFY_STACKTRACES[] = true
+        # `bt` arrives raw from `throw`, or already resolved from a nested
+        # `showerror`; both must render the inner error, not crash.
+        for bt in (rawbt, stacktrace(rawbt))
+            rendered = sprint((io, e) -> showerror(io, e, bt), lte)
+            @test occursin("inner boom", rendered)
+            @test !occursin("has no field", rendered)
+            @test !occursin("no method matching stacktrace", rendered)
+        end
+    finally
+        DataToolkitCore.SIMPLIFY_STACKTRACES[] = old
+    end
+end
+
+# Test-local drivers, apart from the `:raw`/`:passthrough` methods "Dry run"
+# relies on. `PROBE` records which `load` method fired.
+const PROBE = String[]
+@eval begin
+    getstorage(s::DataStorage{:mem}, ::Type{Vector{Int}}) =
+        get(s, "value", nothing)::Union{Vector{Int}, Nothing}
+    supportedtypes(::Type{DataStorage{:mem}}, ::Dict{String, Any}) =
+        [QualifiedType(Vector{Int})]
+    load(::DataLoader{:idl}, x::Vector{Int}, ::Type{T}) where {T} = x
+    supportedtypes(::Type{DataLoader{:idl}}, ::Dict{String, Any}, ds::DataSet) =
+        reduce(vcat, getproperty.(ds.storage, :type)) |> unique
+    # Two `:pick` loads differing only in output specificity; the `Vector{Int}`
+    # one tags itself "vecint" and offsets by 100.
+    function load(::DataLoader{:pick}, x::Vector{Int}, ::Type{Any})
+        push!(PROBE, "any"); x
+    end
+    function load(::DataLoader{:pick}, x::Vector{Int}, ::Type{Vector{Int}})
+        push!(PROBE, "vecint"); x .+ 100
+    end
+    supportedtypes(::Type{DataLoader{:pick}}, ::Dict{String, Any}, ds::DataSet) =
+        reduce(vcat, getproperty.(ds.storage, :type)) |> unique
+end
+
+# Build a probe DataSet off-STACK with `:mem` storage and the given loader driver.
+function probe_dataset(loaderdriver::Symbol)
+    dc = DataCollection()
+    ds = DataSet(dc, "probe", Dict{String, Any}(
+        "uuid" => string(Base.UUID(rand(UInt128)))))
+    storage!(ds, :mem, "value" => [1, 2, 3])
+    loader!(ds, loaderdriver)
+    ds
+end
+
+@testset "typesteps resolution" begin
+    ds = probe_dataset(:pick)
+    loader, storage = ds.loaders[1], ds.storage[1]
+    lsteps = typesteps(loader, Vector{Int})
+    @test lsteps isa Vector{Pair{Type, Type}}
+    @test !isempty(lsteps)
+    @test last(first(lsteps)) == Vector{Int}
+    @test !any(p -> last(p) == Any, lsteps)
+    ssteps = typesteps(storage, Vector{Int}; write = false)
+    @test (Nothing => Vector{Int}) in ssteps
+    empty!(PROBE)
+    @test read(ds, Vector{Int}) == [101, 102, 103]
+    @test PROBE == ["vecint"]
+    empty!(PROBE)
+    @test read(ds, AbstractVector) == [101, 102, 103]
+    @test PROBE == ["vecint"]
+    outs = supportedtypes(DataLoader{:pick})
+    @test QualifiedType(Vector{Int}) in outs
+    @test QualifiedType(Any) in outs
+end
+
+@testset "Programmatic collection construction" begin
+    stacklen = length(STACK)
+    try
+        dc = create!(DataCollection, "built", nothing)
+        @test first(STACK) === dc
+        @test dc.source === nothing
+        @test dc.name == "built"
+        ds = dataset!(dc, "d", Dict{String, Any}("k" => 1))
+        @test ds in dc.datasets
+        @test ds.collection === dc
+        @test get(ds, "k") == 1
+        @test ds.uuid isa Base.UUID
+        dp = dataset!(dc, "dp", "a" => 1, "b" => "two")
+        @test get(dp, "a") == 1 && get(dp, "b") == "two"
+        storage!(ds, :mem, "value" => [1, 2, 3])
+        loader!(ds, :idl)
+        writer!(ds, :idl)
+        @test length(ds.storage) == length(ds.loaders) == length(ds.writers) == 1
+        @test DataToolkitCore.driverof(typeof(ds.storage[1])) === :mem
+        @test DataToolkitCore.driverof(typeof(ds.loaders[1])) === :idl
+        @test ds.storage[1].dataset === ds
+        u = string(Base.UUID(rand(UInt128)))
+        d2 = create!(dc, DataSet, "d2", Dict{String, Any}("uuid" => u, "x" => 2))
+        @test string(d2.uuid) == u
+        @test d2 in dc.datasets
+        n = length(dc.datasets)
+        d3 = create(dc, DataSet, "d3", Dict{String, Any}("x" => 3))
+        @test length(dc.datasets) == n
+        @test d3 ∉ dc.datasets
+        @test_throws ArgumentError create(ds, DataTransformer, Dict{String, Any}())
+        @test_throws ArgumentError create!(ds, DataStorage{:mem}, :other, "k" => 1)
+        spec = convert(Dict, ds)
+        @test spec["storage"][1]["driver"] == "mem"
+        @test spec["storage"][1]["value"] == [1, 2, 3]
+    finally
+        while length(STACK) > stacklen
+            popfirst!(STACK)
+        end
+    end
+end
+
+@testset "toml_safe coercion" begin
+    dc = DataCollection()
+    ds = DataSet(dc, "d", Dict{String, Any}(
+        "uuid" => string(Base.UUID(rand(UInt128)))))
+    @test toml_safe(QualifiedType(Int)) == "Int64"
+    @test toml_safe(Int) == "Int64"
+    @test toml_safe(42) === 42
+    @test toml_safe(dc, Identifier(ds)) isa String
+    @test toml_safe(dc, ds) isa String
+    nested = toml_safe(dc, Dict(:a => [Int, QualifiedType(Bool)]))
+    @test nested["a"] == ["Int64", "Bool"]
+end
+
+@testset "Collection round-trip via disk" begin
+    mktempdir() do dir
+        path = joinpath(dir, "Data.toml")
+        stacklen = length(STACK)
+        try
+            dc = create!(DataCollection, "rt", path)
+            @test isfile(path)
+            ds = dataset!(dc, "d", Dict{String, Any}("k" => 1))
+            storage!(ds, :mem, "value" => [1, 2, 3])
+            loader!(ds, :idl)
+            save!(dc)
+            flushpendingwrites()
+            @test isfile(path)
+            reparsed = read(path, DataCollection)
+            @test reparsed.uuid == dc.uuid
+            @test reparsed.name == dc.name
+            @test length(reparsed.datasets) == 1
+            rds = reparsed.datasets[1]
+            @test rds.name == "d"
+            @test rds.parameters == Dict{String, Any}("k" => 1)
+            @test DataToolkitCore.driverof(typeof(rds.storage[1])) === :mem
+            @test rds.storage[1].parameters == Dict{String, Any}("value" => [1, 2, 3])
+            @test DataToolkitCore.driverof(typeof(rds.loaders[1])) === :idl
+        finally
+            while length(STACK) > stacklen
+                popfirst!(STACK)
+            end
+            empty!(WRITE_RECORDS)
+        end
+    end
+end
+
+@testset "save! debounce and flush" begin
+    mktempdir() do dir
+        path = joinpath(dir, "Data.toml")
+        stacklen = length(STACK)
+        try
+            dc = create!(DataCollection, "db", path)
+            # `create!` already wrote synchronously (fresh record, duration 0).
+            @test isfile(path)
+            @test WRITE_RECORDS[dc].write.count == 1
+            @test WRITE_RECORDS[dc].queued == false
+            # Inject a slow prior write with a recent invocation so the debounce
+            # window is open: further save!s must coalesce, not write.
+            prior = WRITE_RECORDS[dc]
+            WRITE_RECORDS[dc] = WriteRecord(
+                (last = time(), count = prior.invoke.count),
+                (last = time(), duration = 1e6, count = prior.write.count),
+                false)
+            writes_before = WRITE_RECORDS[dc].write.count
+            save!(dc); save!(dc); save!(dc)
+            @test WRITE_RECORDS[dc].queued == true
+            @test WRITE_RECORDS[dc].invoke.count > prior.invoke.count
+            @test WRITE_RECORDS[dc].write.count == writes_before
+            flushpendingwrites()
+            @test isempty(WRITE_RECORDS)
+            @test isfile(path)
+        finally
+            while length(STACK) > stacklen
+                popfirst!(STACK)
+            end
+            empty!(WRITE_RECORDS)
+        end
+        locked = create!(DataCollection, "lk", joinpath(dir, "Locked.toml"))
+        try
+            deleteat!(STACK, findfirst(c -> c === locked, STACK))
+            empty!(WRITE_RECORDS)
+            locked.parameters["locked"] = true
+            @test !iswritable(locked)
+            @test_throws ReadonlyCollection save!(locked)
+        finally
+            empty!(WRITE_RECORDS)
+        end
+        inmem = DataCollection("mem")
+        @test_throws ArgumentError save!(inmem)
+    end
+end
+
+@testset "refresh! on edited on-disk collection" begin
+    mktempdir() do dir
+        path = joinpath(dir, "Data.toml")
+        uuid = string(Base.UUID(rand(UInt128)))
+        writetoml(setting, extradataset) = write(path, string(
+            "data_config_version = 0\n",
+            "uuid = \"$uuid\"\n",
+            "name = \"rf\"\n",
+            "config.setting = $setting\n\n",
+            "[[d1]]\nuuid = \"$(string(Base.UUID(rand(UInt128))))\"\n",
+            if extradataset
+                "\n[[d2]]\nuuid = \"$(string(Base.UUID(rand(UInt128))))\"\n"
+            else
+                ""
+            end))
+        writetoml(1, false)
+        dc = read(path, DataCollection)
+        @test config_get(dc, ["setting"]) == 1
+        @test length(dc.datasets) == 1
+        m0 = dc.source.mtime
+        dsobj = dc.datasets[1]
+        refresh!(dc)
+        @test dc.source.mtime == m0
+        @test dc.datasets[1] === dsobj
+        sleep(0.02)
+        writetoml(99, false)
+        touch(path)
+        refresh!(dc)
+        @test config_get(dc, ["setting"]) == 99
+        @test dc.source.mtime != m0
+        sleep(0.02)
+        writetoml(99, true)
+        touch(path)
+        refresh!(dc)
+        @test length(dc.datasets) == 2
+    end
 end
 
 # Ensure this runs at the end (because it defines new methods, and may affect
