@@ -356,3 +356,133 @@ end
     @test built isa MerkleTree
     @test all(c -> c.checksum == DataToolkitStore.MERKLE_INACCESSIBLE, built.children)
 end
+
+@testset "Store round-trip reuses content-addressed files" begin
+    storedir = mktempdir()
+    collid = uuid4()
+    data_toml = joinpath(mktempdir(), "Data.toml")
+    write(data_toml, """
+    data_config_version = 0
+    uuid = "$collid"
+    name = "roundtrip"
+    plugins = ["store"]
+
+    [config.store]
+    path = "$storedir"
+
+    [[blob]]
+    uuid = "$(uuid4())"
+
+        [[blob.storage]]
+        driver = "testblob"
+    """)
+    loadcollection!(data_toml)
+    inventory = DataToolkitStore.getinventory(dataset("blob").collection)
+    s = only(dataset("blob").storage)
+    # The recipe hash is what routes both reads to the same on-disk file; if it
+    # drifted within a session the store would never hit and silently re-fetch.
+    @test DataToolkitStore.rhash(s) == DataToolkitStore.rhash(s)
+    @test read(open(dataset("blob"), IO), String) == "hello blob"
+    f1 = DataToolkitStore.storefile(inventory, s)
+    @test !isnothing(f1) && isfile(f1)
+    @test startswith(basename(f1), "R-") && endswith(basename(f1), ".cache")
+    @test length(inventory.stores) == 1
+    # A second read resolves to the SAME content-addressed file, not a re-fetch.
+    @test read(open(dataset("blob"), IO), String) == "hello blob"
+    @test DataToolkitStore.storefile(inventory, s) == f1
+    @test length(inventory.stores) == 1
+    # Deleting the on-disk file prunes the now-danging source on the next query.
+    rm(f1)
+    @test isnothing(DataToolkitStore.storefile(inventory, s))
+    @test isempty(inventory.stores)
+    # The next read re-populates the store with identical content.
+    @test read(open(dataset("blob"), IO), String) == "hello blob"
+    f2 = DataToolkitStore.storefile(inventory, s)
+    @test !isnothing(f2) && isfile(f2)
+    @test length(inventory.stores) == 1
+    # Expunging the collection drops its sole source and removes the store file.
+    cinfo = CollectionInfo(collid, nothing, "roundtrip", now())
+    removed = expunge!(inventory, cinfo)
+    @test length(removed) == 1
+    @test isempty(inventory.stores)
+    @test !isfile(f2)
+    # A read after expunge re-fetches and re-records a fresh source.
+    @test read(open(dataset("blob"), IO), String) == "hello blob"
+    @test length(inventory.stores) == 1
+end
+
+@testset "Checksum verification rejects a corrupted source" begin
+    truebytes = "hello blob"
+    truesum = checksum(:crc32c, truebytes)
+    storedir = mktempdir()
+    data_toml = joinpath(mktempdir(), "Data.toml")
+    write(data_toml, """
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "cksumverify"
+    plugins = ["store"]
+
+    [config.store]
+    path = "$storedir"
+
+    [[blob]]
+    uuid = "$(uuid4())"
+
+        [[blob.storage]]
+        driver = "testblob"
+        checksum = "$(string(truesum))"
+    """)
+    loadcollection!(data_toml)
+    inventory = DataToolkitStore.getinventory(dataset("blob").collection)
+    storage = only(dataset("blob").storage)
+    FilePath = DataToolkitCore.FilePath
+    # The throw path is only taken non-interactively (else a prompt is offered).
+    @test !isinteractive()
+    # A file whose bytes match the fixed checksum verifies and returns it.
+    goodfile = joinpath(mktempdir(), "good")
+    write(goodfile, truebytes)
+    @test DataToolkitStore.getchecksum(inventory, storage, FilePath(goodfile)) == truesum
+    # A corrupted file is rejected with a mismatch carrying the true actual sum.
+    corruptbytes = "corrupted!"
+    corruptfile = joinpath(mktempdir(), "bad")
+    write(corruptfile, corruptbytes)
+    err = try
+        DataToolkitStore.getchecksum(inventory, storage, FilePath(corruptfile))
+        nothing
+    catch e
+        e
+    end
+    @test err isa DataToolkitStore.ChecksumMismatch
+    @test err.expected == truesum
+    @test err.actual == checksum(:crc32c, corruptbytes)
+    @test err.expected != err.actual
+end
+
+@testset "update_inventory! preserves pending local edits" begin
+    invpath = joinpath(mktempdir(), "Inventory.toml")
+    inv = load_inventory(invpath)
+    inv.batch.writeduration = 30.0 # park the writer beyond the test horizon
+    marker = uuid4()
+    push!(inv.collections, CollectionInfo(marker, nothing, "pending", now()))
+    save!(inv)
+    @test isdirty(inv)
+    # A reload while an edit is pending (lock held) must not clobber it.
+    @test update_inventory!(inv) === inv
+    @test marker in getfield.(inv.collections, :uuid)
+    @test isdirty(inv)
+    # Flushing lands the pending edit on disk rather than dropping it.
+    flushpendingwrites()
+    @test !isdirty(inv)
+    @test occursin(string(marker), read(inv.file.path, String))
+    # A CLEAN instance does pick up a newer on-disk write from another writer.
+    clean = load_inventory(invpath)
+    @test !isdirty(clean)
+    other = uuid4()
+    writer = load_inventory(invpath)
+    modify_inventory!(writer) do i
+        push!(i.collections, CollectionInfo(other, nothing, "external", now()))
+    end
+    clean.file.mtime = 0.0 # force the "on-disk is newer" reload branch deterministically
+    update_inventory!(clean)
+    @test other in getfield.(clean.collections, :uuid)
+end
