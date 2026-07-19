@@ -131,7 +131,7 @@ function dataset!(collection::DataCollection, name::String, parameters::Dict{Str
 end
 
 dataset!(collection::DataCollection, name::String, parameters::Pair{String, <:Any}...) =
-    dataset!(collection, name, toml_safe(collection, collect(parameters)))
+    dataset!(collection, name, Dict{String, Any}(parameters))
 
 # Transformer creation (pure)
 
