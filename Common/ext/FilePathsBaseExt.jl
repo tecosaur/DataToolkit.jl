@@ -19,9 +19,8 @@ function putstorage(store::S, path::AbstractPath) where {S <: DataStorage}
 end
 
 function load(loader::L, from::F, ::Type{AbstractPath}) where {L <: DataLoader, F}
-    sp = @something(load(loader, from, FilePath),
-                    load(loader, from, DirPath), Some(nothing))
-    if !isnothing(sp) parse(AbstractPath, sp.path) end
+    tryload(P) = if hasmethod(load, Tuple{L, F, Type{P}}) load(loader, from, P) end
+    parse(AbstractPath, @something(tryload(FilePath), tryload(DirPath), return).path)
 end
 
 # Resolve ambiguity between the chain loader's load(::DataLoader{:chain}, ::Any, ::Type{T})
