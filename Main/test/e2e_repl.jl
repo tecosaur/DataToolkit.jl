@@ -51,4 +51,30 @@
             empty!(STACK)
         end
     end
+
+    @testset "End-to-end via the terminal: remove with confirmation" begin
+        path = tempname() * ".toml"
+        write(path, """
+        data_config_version = 0
+        uuid = "$(uuid4())"
+        name = "rmtest"
+
+            [[num]]
+            uuid = "$(uuid4())"
+
+                [[num.storage]]
+                driver = "raw"
+                value = 42
+        """)
+        chmod(path, 0o644)  # writable so `remove` can persist the deletion
+        collection = loadcollection!(path)
+        try
+            # `remove num` asks one yes/no confirmation; "y" deletes the data set.
+            trt_cmd("e2e-remove", "remove num", ["y"])
+            @test isempty(collection.datasets)
+        finally
+            filter!(!=(collection), STACK)
+            rm(path, force=true)
+        end
+    end
 end
