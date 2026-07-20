@@ -9,116 +9,116 @@ and reload the dataset from the edited contents.
     data> edit IDENTIFIER
 """
 
-function deep_diff(old::AbstractDict, new::AbstractDict, parents::Vector{String}=String[])
+function deep_diff(io::IO, old::AbstractDict, new::AbstractDict, parents::Vector{String}=String[])
     new_keys = setdiff(keys(new), keys(old))
     for key in sort(new_keys |> collect)
-        print("  "^length(parents))
-        printstyled(" + ", color=:light_green, bold=true)
-        print("Added ")
-        printstyled(key, '\n', color=:light_blue)
+        print(io, "  "^length(parents))
+        printstyled(io, " + ", color=:light_green, bold=true)
+        print(io, "Added ")
+        printstyled(io, key, '\n', color=:light_blue)
     end
     common_keys = keys(new) ∩ keys(old)
     for key in sort(common_keys |> collect)
         if new[key] != old[key]
-            print("  "^length(parents))
-            printstyled(" ~ ", color=:light_yellow, bold=true)
-            print("Modified ")
-            printstyled(key, color=:light_blue)
-            print(":\n")
-            deep_diff(old[key], new[key], vcat(parents, key))
+            print(io, "  "^length(parents))
+            printstyled(io, " ~ ", color=:light_yellow, bold=true)
+            print(io, "Modified ")
+            printstyled(io, key, color=:light_blue)
+            print(io, ":\n")
+            deep_diff(io, old[key], new[key], vcat(parents, key))
         end
     end
     removed_keys = setdiff(keys(old), keys(new))
     for key in sort(removed_keys |> collect)
-        print("  "^length(parents))
-        printstyled(" - ", color=:light_red, bold=true)
-        print("Removed ")
-        printstyled(key, '\n', color=:light_blue)
+        print(io, "  "^length(parents))
+        printstyled(io, " - ", color=:light_red, bold=true)
+        print(io, "Removed ")
+        printstyled(io, key, '\n', color=:light_blue)
     end
 end
 
-function deep_diff(old::Vector, new::Vector, parents::Vector{String}=String[])
+function deep_diff(io::IO, old::Vector, new::Vector, parents::Vector{String}=String[])
     for (i, (o, n)) in enumerate(zip(old, new))
         if o != n
-            print("  "^length(parents))
-            printstyled(" ~ ", color=:light_yellow, bold=true)
-            print("Modified ")
-            printstyled('[', i, ']', color=:light_blue)
-            print(":\n")
-            deep_diff(o, n, vcat(parents, "[$i]"))
+            print(io, "  "^length(parents))
+            printstyled(io, " ~ ", color=:light_yellow, bold=true)
+            print(io, "Modified ")
+            printstyled(io, '[', i, ']', color=:light_blue)
+            print(io, ":\n")
+            deep_diff(io, o, n, vcat(parents, "[$i]"))
         end
     end
     if length(new) > length(old)
-        print("  "^length(parents))
-        printstyled(" + ", color=:light_green, bold=true)
-        print("Added ")
+        print(io, "  "^length(parents))
+        printstyled(io, " + ", color=:light_green, bold=true)
+        print(io, "Added ")
         if length(new) - length(old) == 1
-            printstyled('[', length(new), ']', '\n', color=:light_blue)
+            printstyled(io, '[', length(new), ']', '\n', color=:light_blue)
         else
-            printstyled('[', length(old)+1, '-', length(new), ']',
+            printstyled(io, '[', length(old)+1, '-', length(new), ']',
                         '\n', color=:light_blue)
         end
     elseif length(new) < length(old)
-        print("  "^length(parents))
-        printstyled(" - ", color=:light_red, bold=true)
-        print("Removed ")
+        print(io, "  "^length(parents))
+        printstyled(io, " - ", color=:light_red, bold=true)
+        print(io, "Removed ")
         if length(old) - length(new) == 1
-            printstyled('[', length(old), ']', '\n', color=:light_blue)
+            printstyled(io, '[', length(old), ']', '\n', color=:light_blue)
         else
-            printstyled('[', length(new)+1, '-', length(old), ']',
+            printstyled(io, '[', length(new)+1, '-', length(old), ']',
                         '\n', color=:light_blue)
         end
     end
 end
 
-function deep_diff(old::Any, new::Any, parents::Vector{String}=String[])
-    print("  "^length(parents), ' ')
-    show(IOContext(stdout, :compact => true), old)
-    printstyled(" ~> ", color=:light_yellow)
-    show(IOContext(stdout, :compact => true), new)
-    print('\n')
+function deep_diff(io::IO, old::Any, new::Any, parents::Vector{String}=String[])
+    print(io, "  "^length(parents), ' ')
+    show(IOContext(io, :compact => true), old)
+    printstyled(io, " ~> ", color=:light_yellow)
+    show(IOContext(io, :compact => true), new)
+    print(io, '\n')
 end
 
-function repl_edit(input::AbstractString)
+function repl_edit(io::IO, input::AbstractString)
     if all(isspace, input)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Specify a DataSet to edit")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Specify a DataSet to edit")
         return
     end
     dataset = try resolve(input) catch err
-        printstyled(" ! ", color=:red, bold=true)
-        println("Could not resolve identifier: $input")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "Could not resolve identifier: $input")
         if err isa IdentifierException
-            print(' ')
-            showerror(stdout, err, backtrace(), backtrace = false)
-            print('\n')
+            print(io, ' ')
+            showerror(io, err, backtrace(), backtrace = false)
+            print(io, '\n')
             return
         else
             rethrow()
         end
     end
     if !iswritable(dataset.collection)
-        printstyled(" ! ", color=:red, bold=true)
-        println("The data collection $(dataset.name) belongs to is read-only")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "The data collection $(dataset.name) belongs to is read-only")
         return
     end
     refresh!(dataset.collection)
     dataspec = convert(Dict, dataset)
     tomlfile = tempname(cleanup=false) * ".toml"
-    open(tomlfile, "w") do io
+    open(tomlfile, "w") do file
         datakeygen(key) = if haskey(DataToolkitCore.DATA_CONFIG_KEY_SORT_MAPPING, key)
             [DataToolkitCore.DATA_CONFIG_KEY_SORT_MAPPING[key]]
         else natkeygen(key) end
         intermediate = IOBuffer()
         TOML.print(intermediate, Dict(dataset.name => [dataspec]),
                     sorted = true, by = datakeygen)
-        write(io, "data_config_version = ",
+        write(file, "data_config_version = ",
                 string(dataset.collection.version), '\n',
                 "#     ╭─[extracted from '$(dataset.collection.name)' for modification]\n",
                 "# ╭───┴────────────────────────$('─'^textwidth(dataset.name))──╮\n",
                 "# │ *Editing the definition of $(dataset.name)* │\n",
                 "# ╰────────────────────────────$('─'^textwidth(dataset.name))──╯\n\n")
-        write(io, take!(DataToolkitCore.tomlreformat!(intermediate)))
+        write(file, take!(DataToolkitCore.tomlreformat!(intermediate)))
     end
     edit(tomlfile, 8)
     isfile(tomlfile) || return
@@ -131,13 +131,13 @@ function repl_edit(input::AbstractString)
     rm(tomlfile)
     newspec isa Dict || return
     if newspec == dataspec
-        printstyled("  No changes made\n", color=:light_black)
+        printstyled(io, "  No changes made\n", color=:light_black)
         return
     end
-    deep_diff(dataspec, newspec)
-    if !confirm_yn(" Does this look correct?")
-        printstyled(" ! ", color=:red, bold=true)
-        println("Cancelled")
+    deep_diff(io, dataspec, newspec)
+    if !confirm_yn(io, " Does this look correct?")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "Cancelled")
         return
     end
     index = findfirst(==(dataset), dataset.collection.datasets)
@@ -145,11 +145,11 @@ function repl_edit(input::AbstractString)
     newdata.collection.datasets[index] = newdata
     lintreport = LintReport(newdata)
     if !isempty(lintreport.results)
-        show(lintreport)
-        print("\n\n")
+        show(io, MIME("text/plain"), lintreport)
+        print(io, "\n\n")
         DataToolkitCore.lintfix(lintreport)
     end
     save!(newdata.collection)
-    printstyled(" ✓ Edited '$(newdata.name)' ", color=:green)
-    printstyled('(', newdata.uuid, ')', '\n', color=:light_black)
+    printstyled(io, " ✓ Edited '$(newdata.name)' ", color=:green)
+    printstyled(io, '(', newdata.uuid, ')', '\n', color=:light_black)
 end

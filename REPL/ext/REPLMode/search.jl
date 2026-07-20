@@ -6,10 +6,10 @@ Search for a particular data collection
     data> search TEXT...
 """
 
-function search(input::AbstractString)
+function search(io::IO, input::AbstractString)
     if isempty(input)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Provide a search string")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Provide a search string")
     else
         candidates = Tuple{DataSet, String, Int}[]
         searchstack = STACK
@@ -18,8 +18,8 @@ function search(input::AbstractString)
             cname, term = split(input, ':', limit=2)
             searchstack = try [getlayer(if !isempty(cname) cname end)] catch err
                 err isa IdentifierException || rethrow()
-                printstyled(" ! ", color=:red, bold=true)
-                return println("Could not resolve collection '$cname'")
+                printstyled(io, " ! ", color=:red, bold=true)
+                return println(io, "Could not resolve collection '$cname'")
             end
         end
         caseinsensitive = all(!isuppercase, term)
@@ -37,8 +37,8 @@ function search(input::AbstractString)
             end
         end
         if isempty(candidates)
-            printstyled(" ! ", color=:yellow, bold=true)
-            println("No data sets to search")
+            printstyled(io, " ! ", color=:yellow, bold=true)
+            println(io, "No data sets to search")
         else
             sort!(candidates, by=c -> (last(c), length(c[2])))
             cutoff = if last(first(candidates)) == 0
@@ -48,14 +48,14 @@ function search(input::AbstractString)
                     last(candidates[min(10, end÷3)]))
             end
             filter!(c -> last(c) <= cutoff, candidates)
-            print(" ", length(candidates), " result",
+            print(io, " ", length(candidates), " result",
                   ifelse(length(candidates) == 1, "", "s"), ":")
             for (dataset, _, _) in candidates
-                print("\n  ")
-                show(IOContext(stdout, :data_collection => dataset.collection),
+                print(io, "\n  ")
+                show(IOContext(io, :data_collection => dataset.collection),
                      MIME("text/plain"), Identifier(dataset))
             end
-            print('\n')
+            print(io, '\n')
         end
     end
 end

@@ -52,8 +52,7 @@ description = "third"
 @testset "Command error containment" begin
     # Nothing may escape `toplevel_execute_repl_cmd`: an uncaught exception
     # kills the whole REPL session (LineEdit runs it outside any try/catch)
-    tlx(line) = redirect_stdio(() -> DataToolkitREPL.toplevel_execute_repl_cmd(line);
-                               stdout = devnull, stderr = devnull)
+    tlx(line) = DataToolkitREPL.toplevel_execute_repl_cmd(devnull, line)
     @test isnothing(tlx("list nothere"))
     @test isnothing(tlx("config get"))
     @test isnothing(tlx("config set data_config_version bad?input"))
@@ -113,9 +112,7 @@ end
     collection = loadcollection!(path)
     try
         @test !iswritable(collection)
-        redirect_stdio(stdin = devnull, stdout = devnull, stderr = devnull) do
-            DataToolkitREPL.toplevel_execute_repl_cmd("remove victim")
-        end
+        DataToolkitREPL.toplevel_execute_repl_cmd(devnull, "remove victim")
         @test any(d -> d.name == "victim", collection.datasets)
     finally
         filter!(!=(collection), STACK)
@@ -142,8 +139,7 @@ end
 end
 
 @testset "command round-trips via toplevel_execute_repl_cmd" begin
-    tlx(line) = redirect_stdio(() -> DataToolkitREPL.toplevel_execute_repl_cmd(line);
-                               stdin=devnull, stdout=devnull, stderr=devnull)
+    tlx(line) = DataToolkitREPL.toplevel_execute_repl_cmd(devnull, line)
     with_temp_collection(REPLTEST_TOML; writable=true) do collection
         @test isnothing(tlx("list"))
         @test isnothing(tlx("list repltest"))
@@ -163,6 +159,6 @@ end
     @test all(n -> n ∈ cands, ("list", "show", "config", "help"))
     config_cands, _, _ = M.complete_repl_cmd("co")
     @test "config " ∈ config_cands
-    @test M.find_repl_cmd("li").name == "list"
-    @test isnothing(M.find_repl_cmd("s"))
+    @test M.find_repl_cmd(devnull, "li").name == "list"
+    @test isnothing(M.find_repl_cmd(devnull, "s"))
 end

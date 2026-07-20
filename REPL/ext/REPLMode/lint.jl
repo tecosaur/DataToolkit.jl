@@ -11,16 +11,16 @@ also be applied to any other collection or a specific data set.
     data> check IDENTIFIER
 """
 
-function repl_lint(input::AbstractString)
+function repl_lint(io::IO, input::AbstractString)
     function dolint(thing)
         report = LintReport(thing)
-        show(report)
-        print("\n\n")
+        show(io, MIME("text/plain"), report)
+        print(io, "\n\n")
         DataToolkitCore.lintfix(report)
     end
     if isempty(STACK)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("The data collection stack is empty")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "The data collection stack is empty")
     elseif all(isspace, input)
         refresh!(first(STACK))
         dolint(first(STACK))
@@ -37,8 +37,8 @@ function repl_lint(input::AbstractString)
         else
             dset = try resolve(input) catch err
                 err isa IdentifierException || rethrow()
-                printstyled(" ! ", color=:red, bold=true)
-                return println("Could not resolve identifier: $input")
+                printstyled(io, " ! ", color=:red, bold=true)
+                return println(io, "Could not resolve identifier: $input")
             end
             mtime0 = if !isnothing(dset.collection.source) dset.collection.source.mtime end
             refresh!(dset.collection)
@@ -52,45 +52,49 @@ function repl_lint(input::AbstractString)
 end
 
 # Implements `../../../Core/src/interaction/lint.jl`.
+# The Core `lintfix`→`linttryfix`→`LintItem.fixer` chain fixes the one-argument
+# signature, so there is no threaded `io` to receive; fall back to the global
+# terminal here and in the `lint_fix_*` fixers.
 function DataToolkitCore.linttryfix(fixprompt::Vector{Tuple{Int, DataToolkitCore.LintItem}})
-    printstyled(length(fixprompt), color=:light_white)
-    print(ifelse(length(fixprompt) == 1, " issue (", " issues ("))
+    io = default_data_terminal()
+    printstyled(io, length(fixprompt), color=:light_white)
+    print(io, ifelse(length(fixprompt) == 1, " issue (", " issues ("))
     for fixitem in fixprompt
         i, lintitem = fixitem
-        printstyled(i, color=first(DataToolkitCore.LINT_SEVERITY_MESSAGES[lintitem.severity]))
-        fixitem === last(fixprompt) || print(", ")
+        printstyled(io, i, color=first(DataToolkitCore.LINT_SEVERITY_MESSAGES[lintitem.severity]))
+        fixitem === last(fixprompt) || print(io, ", ")
     end
-    print(") can be manually fixed.\n")
-    if confirm_yn("Would you like to try?", true)
+    print(io, ") can be manually fixed.\n")
+    if confirm_yn(io, "Would you like to try?", true)
         lastsource::Any = nothing
         objinfo(c::DataCollection) =
-            printstyled("• ", c.name, '\n', color=:blue, bold=true)
+            printstyled(io, "• ", c.name, '\n', color=:blue, bold=true)
         function objinfo(d::DataSet)
-            printstyled("• ", d.name, color=:blue, bold=true)
-            printstyled(" ", d.uuid, "\n", color=:light_black)
+            printstyled(io, "• ", d.name, color=:blue, bold=true)
+            printstyled(io, " ", d.uuid, "\n", color=:light_black)
         end
         objinfo(a::A) where {A <: DataTransformer} =
-            printstyled("• ", driverof(A), ' ',
+            printstyled(io, "• ", driverof(A), ' ',
                         join(lowercase.(split(string(nameof(A)), r"(?=[A-Z])")), ' '),
                         " for ", a.dataset.name, '\n', color=:blue, bold=true)
         objinfo(::DataLoader{driver}) where {driver} =
-            printstyled("• ", driver, " loader\n", color=:blue, bold=true)
+            printstyled(io, "• ", driver, " loader\n", color=:blue, bold=true)
         objinfo(::DataWriter{driver}) where {driver} =
-            printstyled("• ", driver, " writer\n", color=:blue, bold=true)
+            printstyled(io, "• ", driver, " writer\n", color=:blue, bold=true)
         for (i, lintitem) in fixprompt
             if lintitem.source !== lastsource
                 objinfo(lintitem.source)
                 lastsource = lintitem.source
             end
-            printstyled("  [", i, "]: ", bold=true,
+            printstyled(io, "  [", i, "]: ", bold=true,
                         color=first(DataToolkitCore.LINT_SEVERITY_MESSAGES[lintitem.severity]))
-            print(first(split(lintitem.message, '\n')), '\n')
+            print(io, first(split(lintitem.message, '\n')), '\n')
             try
                 lintitem.fixer(lintitem)
             catch e
                 if e isa InterruptException
-                    printstyled("!", color=:red, bold=true)
-                    print(" Aborted\n")
+                    printstyled(io, "!", color=:red, bold=true)
+                    print(io, " Aborted\n")
                 else
                     rethrow()
                 end

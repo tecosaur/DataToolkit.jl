@@ -6,42 +6,42 @@ Show the dataset refered to by an identifier
     data> show IDENTIFIER
 """
 
-function repl_show(input::AbstractString)
+function repl_show(io::IO, input::AbstractString)
     if all(isspace, input)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Specify a DataSet shown")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Specify a DataSet shown")
         return
     end
     foreach(refresh!, STACK)
     dataset = try
         resolve(input)
     catch err
-        printstyled(" ! ", color=:red, bold=true)
-        println("Could not resolve identifier: $input")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "Could not resolve identifier: $input")
         if err isa IdentifierException
-            print(' ')
-            showerror(stdout, err, backtrace(), backtrace = false)
-            print('\n')
+            print(io, ' ')
+            showerror(io, err, backtrace(), backtrace = false)
+            print(io, '\n')
             return
         else
             rethrow()
         end
     end
-    display(dataset)
+    show(io, MIME("text/plain"), dataset)
     if dataset isa DataSet
-        print("  UUID:    ")
-        printstyled(dataset.uuid, '\n', color=:light_magenta)
+        print(io, "  UUID:    ")
+        printstyled(io, dataset.uuid, '\n', color=:light_magenta)
         if !isempty(dataset.parameters) && !(length(dataset.parameters) == 1 && first(keys(dataset.parameters)) == "description")
-            println("  Parameters:")
+            println(io, "  Parameters:")
             pkeys = collect(keys(dataset.parameters))
             pkeypad = maximum(textwidth, pkeys)
             for key in sort(pkeys, by=natkeygen)
                 key == "description" && continue
-                print("    ", lpad(key, pkeypad), ' ')
-                printstyled(dataset.parameters[key], '\n', color=:light_cyan)
+                print(io, "    ", lpad(key, pkeypad), ' ')
+                printstyled(io, dataset.parameters[key], '\n', color=:light_cyan)
             end
         end
-        @advise show_extra(stdout, dataset)
+        @advise show_extra(io, dataset)
     end
     nothing
 end
@@ -57,8 +57,8 @@ Print extra information (namely this description) about `dataset` to `io`.
 function show_extra(io::IO, dataset::DataSet)
     if haskey(dataset.parameters, "description")
         desc = get(dataset, "description") |> Markdown.parse
-        print("\n\e[2;3m")
-        show(stdout, MIME("text/plain"), desc)
-        print("\e[m\n")
+        print(io, "\n\e[2;3m")
+        show(io, MIME("text/plain"), desc)
+        print(io, "\e[m\n")
     end
 end

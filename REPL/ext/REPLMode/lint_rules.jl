@@ -9,11 +9,12 @@ function lint(ds::DataSet, ::Val{:has_description})
 end
 
 function lint_fix_has_description(lintitem::LintItem{DataSet})
+    io = default_data_terminal()
     if lintitem.source in lintitem.source.collection.datasets
-        description = prompt("  Description: ", allowempty=false)
+        description = prompt(io, "  Description: ", allowempty=false)
         lintitem.source.parameters["description"] = description
     else
-        printstyled("  No longer in the data collection, skipping\n", color=:light_black)
+        printstyled(io, "  No longer in the data collection, skipping\n", color=:light_black)
     end
 end
 
@@ -28,14 +29,15 @@ function lint(ds::DataSet, ::Val{:no_colon_in_name})
 end
 
 function lint_rename_dataset(lintitem::LintItem{DataSet})
+    io = default_data_terminal()
     ds = lintitem.source
     dsindex = findfirst(==(ds), ds.collection.datasets)
     if isnothing(dsindex)
-        printstyled("  No longer in the data collection, skipping\n", color=:light_black)
+        printstyled(io, "  No longer in the data collection, skipping\n", color=:light_black)
     else
-        newname = prompt("  New name: ", allowempty=false)
+        newname = prompt(io, "  New name: ", allowempty=false)
         while ':' in newname
-            newname = prompt("  New name (without a colon!): ", allowempty=false)
+            newname = prompt(io, "  New name (without a colon!): ", allowempty=false)
         end
         replace!(ds, name=newname)
     end

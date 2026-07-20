@@ -49,7 +49,7 @@ e.g. ```data`config set demo 1` ``` is equivalent to `data> config set demo 1`.
 macro data_cmd(line::String)
     :(isempty(methods(DataToolkitREPL.toplevel_execute_repl_cmd)) &&
           error("The data`...` string macro requires the REPL to be loaded, try `using REPL` first");
-      DataToolkitREPL.toplevel_execute_repl_cmd($line))
+      DataToolkitREPL.toplevel_execute_repl_cmd(stdout, $line))
 end
 
 """

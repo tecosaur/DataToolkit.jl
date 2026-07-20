@@ -285,7 +285,7 @@ The function returns the created transformer if successful, or `nothing` if the
 creation process fails in both interactive and non-interactive modes.
 """
 function trycreateauto(parent::DataSet, T::Type{<:DataTransformer{_kind, driver}}, arg::String;
-                       interactive::Bool=isinteractive()) where {_kind, driver}
+                       interactive::Bool=isinteractive(), io::IO=stdout) where {_kind, driver}
     @nospecialize
     if interactive
         paramspec = createinteractive(parent, T, arg)
@@ -293,7 +293,7 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer{_kind, driver}
             return create(parent, T, toml_safe(parent, Dict{String, Any}()))
         elseif paramspec ∉ (false, nothing)
             prefix = " $(string(nameof(T))[5])($driver) "
-            params = interactiveparams(paramspec, prefix)
+            params = interactiveparams(io, paramspec, prefix)
             isnothing(params) && return
             return create(parent, T, toml_safe(parent, Dict{String, Any}(params)))
         end
@@ -318,10 +318,10 @@ The created data transformer is returned, unless the given `driver` is not
 valid, in which case `nothing` is returned instead.
 """
 function trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, source::String;
-                       minpriority::Int=-100, maxpriority::Int=100, interactive::Bool=isinteractive())
+                       minpriority::Int=-100, maxpriority::Int=100, interactive::Bool=isinteractive(), io::IO=stdout)
     @nospecialize
     if driver !== :*
-        return trycreateauto(parent, T{driver}, source; interactive)
+        return trycreateauto(parent, T{driver}, source; interactive, io)
     end
     relevant_methods = if T == DataStorage
         vcat(methods(storage), methods(getstorage))
@@ -343,7 +343,7 @@ function trycreateauto(parent::DataSet, T::Type{<:DataTransformer}, driver::Symb
     end
     sort!(alldrivers, by = drv -> createpriority(T{drv}))
     for drv in alldrivers
-        transformer = trycreateauto(parent, T{drv}, source; interactive)
+        transformer = trycreateauto(parent, T{drv}, source; interactive, io)
         !isnothing(transformer) && return transformer
     end
 end
@@ -388,25 +388,25 @@ createinteractive(::DataSet, T::Type{<:DataTransformer}, arg::String) =
 createinteractive(::Type{<:DataTransformer}, ::String) = nothing
 
 """
-    interactiveparams(spec::Vector, prefix::AbstractString = " ")
+    interactiveparams(io::IO, spec::Vector, prefix::AbstractString = " ")
 
-Interactively prompt the user for parameters based on the specification `spec`,
-using `prefix` as the prompt prefix. Returns a dictionary of the parameters
-entered by the user, or `nothing`.
+Interactively prompt the user on `io` for parameters based on the specification
+`spec`, using `prefix` as the prompt prefix. Returns a dictionary of the
+parameters entered by the user, or `nothing`.
 
 Display backends are searched in the order of `Base.Multimedia.displays`, and
 can declare support by implementing
 
-    interactiveparams(display, spec::Vector, prefix::AbstractString)
+    interactiveparams(io::IO, display, spec::Vector, prefix::AbstractString)
 """
-function interactiveparams(spec::Vector, prefix::AbstractString = " ")
+function interactiveparams(io::IO, spec::Vector, prefix::AbstractString = " ")
     for display in Base.Multimedia.displays
-        filled = interactiveparams(display, spec, prefix)
+        filled = interactiveparams(io, display, spec, prefix)
         !isnothing(filled) && return filled
     end
 end
 
-interactiveparams(_display::Any, _spec::Vector, _promptprefix::AbstractString) =
+interactiveparams(_io::IO, _display::Any, _spec::Vector, _promptprefix::AbstractString) =
     nothing
 
 """

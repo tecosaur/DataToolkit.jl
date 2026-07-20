@@ -19,27 +19,27 @@ registered with @addpkg(s) first.
 Press ^D to finish. You'll then have an oppotunity to edit the
 final generating function, and the expected return type."
 
-function repl_make(input::AbstractString)
-    confirm_stack_nonempty() || begin
-        printstyled(" i ", color=:cyan, bold=true)
-        println("Consider creating a data collection first with 'init'")
+function repl_make(io::IO, input::AbstractString)
+    confirm_stack_nonempty(io) || begin
+        printstyled(io, " i ", color=:cyan, bold=true)
+        println(io, "Consider creating a data collection first with 'init'")
         return nothing
     end
-    confirm_stack_first_writable() || return nothing
+    confirm_stack_first_writable(io) || return nothing
 
     name = if isempty(input)
-        prompt(" Data set name: ")
+        prompt(io, " Data set name: ")
     else input end
 
     while ':' in name
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Cannot contain ':'")
-        name = prompt(" Data set name: ")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Cannot contain ':'")
+        name = prompt(io, " Data set name: ")
     end
 
     sandbox = create_sandbox()
     delete!(sandbox.modes.julia.keymap_dict, ';') # Remove shell mode
-    println("\e[2m\n", join("  " .* split(MAKE_INFO_BANNER, '\n'), '\n'), "\e[0m\n")
+    println(io, "\e[2m\n", join("  " .* split(MAKE_INFO_BANNER, '\n'), '\n'), "\e[0m\n")
 
     # Drop the user into the REPL
     previous_repl_module = # `REPL.active_module` moved to `Base` in Julia 1.11
@@ -48,10 +48,10 @@ function repl_make(input::AbstractString)
         REPL.activate(sandbox.mod)
         run_sandbox_repl(sandbox)
 
-        print("\e[F\e[2K") # Remove the last "julia>" prompt line
+        print(io, "\e[F\e[2K") # Remove the last "julia>" prompt line
 
         if isempty(sandbox.modes.julia.hist.history)
-            printstyled("Did nothing\n", color=:light_black)
+            printstyled(io, "Did nothing\n", color=:light_black)
             return
         end
 
@@ -59,21 +59,21 @@ function repl_make(input::AbstractString)
         scriptfile = string(tempname(), ".jl")
         write(scriptfile, string(scriptfn))
 
-        if confirm_yn(" Would you like to edit the final script?", true)
+        if confirm_yn(io, " Would you like to edit the final script?", true)
             edit(scriptfile)
         end
 
-        returntype = prompt(" What is the type of the returned value? ",
+        returntype = prompt(io, " What is the type of the returned value? ",
                             string(QualifiedType(sandbox.lasttype[]))) |> String
 
         collection = first(STACK)
         refresh!(collection)
-        dataset = sandbox_dataset(; collection, name, returntype, datavars,
+        dataset = sandbox_dataset(io; collection, name, returntype, datavars,
                                 scriptfn=read(scriptfile, String))
 
         push!(collection.datasets, dataset)
         save!(collection)
-        printstyled(" ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
+        printstyled(io, " ✓ Created '$name' ($(dataset.uuid))\n ", color=:green)
     finally
         REPL.activate(previous_repl_module)
     end
@@ -242,8 +242,8 @@ function sandbox_to_function(sandbox)
     (; scriptfn, datavars)
 end
 
-function sandbox_dataset(; collection::DataCollection=first(STACK),
-                         spec = prompt_attributes(), name,
+function sandbox_dataset(io::IO; collection::DataCollection=first(STACK),
+                         spec = prompt_attributes(io), name,
                          returntype::String, scriptfn::String,
                          datavars::Vector{<:NamedTuple})
     spec["uuid"] = uuid4()
@@ -281,11 +281,11 @@ function sandbox_dataset(; collection::DataCollection=first(STACK),
     end
 
     savefile = nothing
-    if prompt_char(" Should the script be inserted inline (i), or as a file (f)? ",
+    if prompt_char(io, " Should the script be inserted inline (i), or as a file (f)? ",
                               ['i', 'f']) == 'f'
-        savefile = prompt(" Save file: ", string(name, ".jl"))
-        while isfile(savefile) && !confirm_yn(" File already exists, overwrite?", false)
-            savefile = prompt(" Save file: ", string(name, ".jl"))
+        savefile = prompt(io, " Save file: ", string(name, ".jl"))
+        while isfile(savefile) && !confirm_yn(io, " File already exists, overwrite?", false)
+            savefile = prompt(io, " Save file: ", string(name, ".jl"))
         end
     end
 
@@ -296,10 +296,10 @@ function sandbox_dataset(; collection::DataCollection=first(STACK),
         fullpath = abspath(dirname(collection.source.path),
                            expanduser(get(loader, "pathroot", "")),
                            expanduser(savefile))
-        open(fullpath, "w") do io
+        open(fullpath, "w") do file
             timestamp = Dates.format(now(), dateformat"yyyy-mm-ddTH:M:S")
-            write(io, "# Generated by $(@__MODULE__)'s \"make\" command $timestamp\n")
-            write(io, scriptfn)
+            write(file, "# Generated by $(@__MODULE__)'s \"make\" command $timestamp\n")
+            write(file, scriptfn)
         end
     end
 

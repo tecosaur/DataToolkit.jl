@@ -1,11 +1,11 @@
 # Initialisation and running of the `data>` REPL mode.
 
 """
-    execute_repl_cmd(line::AbstractString;
+    execute_repl_cmd(io::IO, line::AbstractString;
                      commands::Vector{ReplCmd}=REPL_CMDS,
                      scope::String="Data REPL")
 
-Examine `line` and identify the leading command, then:
+Examine `line` and identify the leading command, then (printing to `io`):
 - Show an error if the command is not given in `commands`
 - Show help, if help is asked for (see `help_show`)
 - Call the command's execute function, if applicable
@@ -13,7 +13,7 @@ Examine `line` and identify the leading command, then:
   set to the command's subcommands and `scope` set to the command's name,
   if applicable
 """
-function execute_repl_cmd(line::AbstractString;
+function execute_repl_cmd(io::IO, line::AbstractString;
                           commands::Vector{ReplCmd}=REPL_CMDS,
                           scope::String="Data REPL")
     cmd_parts = split(line, limit = 2)
@@ -25,55 +25,55 @@ function execute_repl_cmd(line::AbstractString;
         cmd_parts
     end
     if startswith(cmd, "?")
-        execute_repl_cmd(string("help ", line[2:end]); commands, scope)
+        execute_repl_cmd(io, string("help ", line[2:end]); commands, scope)
     elseif startswith("help", cmd) && !isempty(cmd) # help is special
         rest_parts = split(rest, limit=2)
         if length(rest_parts) == 1 && startswith(first(rest_parts), ':')
-            help_show(Symbol(first(rest_parts)[2:end]))
+            help_show(io, Symbol(first(rest_parts)[2:end]))
         elseif length(rest_parts) <= 1
-            help_show(rest; commands)
-        elseif find_repl_cmd(rest_parts[1]; commands).execute isa Vector{ReplCmd}
-            execute_repl_cmd(string(rest_parts[1], " help ", rest_parts[2]);
+            help_show(io, rest; commands)
+        elseif find_repl_cmd(io, rest_parts[1]; commands).execute isa Vector{ReplCmd}
+            execute_repl_cmd(io, string(rest_parts[1], " help ", rest_parts[2]);
                              commands, scope)
         else
-            help_show(rest_parts[1]; commands)
+            help_show(io, rest_parts[1]; commands)
         end
     else
-        repl_cmd = find_repl_cmd(cmd; warn=true, commands, scope)
+        repl_cmd = find_repl_cmd(io, cmd; warn=true, commands, scope)
         if isnothing(repl_cmd)
         elseif repl_cmd.execute isa Function
-            repl_cmd.execute(rest)
+            repl_cmd.execute(io, rest)
         elseif repl_cmd.execute isa Vector{ReplCmd}
-            execute_repl_cmd(rest, commands = repl_cmd.execute, scope = repl_cmd.name)
+            execute_repl_cmd(io, rest, commands = repl_cmd.execute, scope = repl_cmd.name)
         end
     end
     nothing
 end
 
 """
-    toplevel_execute_repl_cmd(line::AbstractString)
+    toplevel_execute_repl_cmd(io::IO, line::AbstractString)
 
-Call `execute_repl_cmd(line)`, gracefully catching anything thrown.
+Call `execute_repl_cmd(io, line)`, gracefully catching anything thrown.
 
 This is the main entrypoint for command execution, and nothing may escape it:
 `LineEdit` (as of Julia 1.13) runs this callback outside its own try/catch, so
 an uncaught exception kills the REPL's frontend task and with it the session.
 """
-function toplevel_execute_repl_cmd(line::AbstractString)
+function toplevel_execute_repl_cmd(io::IO, line::AbstractString)
     try
-        execute_repl_cmd(line)
+        execute_repl_cmd(io, line)
     catch err
         if err isa InterruptException
-            printstyled(" !", color=:red, bold=true)
-            print(" Aborted\n")
+            printstyled(io, " !", color=:red, bold=true)
+            print(io, " Aborted\n")
         elseif err isa DataOperationException
-            printstyled(" ! ", color=:red, bold=true)
-            showerror(stdout, err, backtrace(), backtrace = false)
-            print('\n')
+            printstyled(io, " ! ", color=:red, bold=true)
+            showerror(io, err, backtrace(), backtrace = false)
+            print(io, '\n')
         else
-            printstyled(" ! ", color=:red, bold=true)
-            showerror(stdout, err, catch_backtrace())
-            print('\n')
+            printstyled(io, " ! ", color=:red, bold=true)
+            showerror(io, err, catch_backtrace())
+            print(io, '\n')
         end
     end
 end
@@ -100,7 +100,7 @@ function complete_repl_cmd(line::AbstractString; commands::Vector{ReplCmd}=REPL_
         else
             cmd_parts
         end
-        repl_cmd = find_repl_cmd(cmd_name; commands)
+        repl_cmd = find_repl_cmd(stdout, cmd_name; commands)
         complete = if !isnothing(repl_cmd) && line != cmd_name
             if repl_cmd.name == "help"
                 # This can't be a `repl_cmd.completions(...)` call because we
@@ -234,7 +234,7 @@ function handle_input(f::Function, s::REPL.LineEdit.MIState, buf::REPL.LineEdit.
     ok || return REPL.transition(s, :abort)
     input = String(take!(buf))
     REPL.reset(repl)
-    all(isspace, input) || f(input)
+    all(isspace, input) || f(REPL.terminal(repl), input)
     REPL.prepare_next(repl)
     REPL.reset_state(s)
     s.current_mode.sticky || REPL.transition(s, s.interface.modes[1])
@@ -285,7 +285,7 @@ function init_repl(repl::REPL.AbstractREPL)
 end
 
 """
-    find_repl_cmd(cmd::AbstractString; warn::Bool=false,
+    find_repl_cmd(io::IO, cmd::AbstractString; warn::Bool=false,
                   commands::Vector{ReplCmd}=REPL_CMDS,
                   scope::String="Data REPL")
 
@@ -302,7 +302,7 @@ message is printed. Additionally, should the named command in `cmd` have more
 than a 3/5th longest common subsequence overlap with any of `commands`, then
 those commands are printed as suggestions.
 """
-function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
+function find_repl_cmd(io::IO, cmd::AbstractString; warn::Bool=false,
                        commands::Vector{ReplCmd}=REPL_CMDS,
                        scope::String="Data REPL")
     replcmds = let candidates = filter(c -> startswith(c.name, cmd), commands)
@@ -334,34 +334,34 @@ function find_repl_cmd(cmd::AbstractString; warn::Bool=false,
         replcmds[findfirst("" .== all_cmd_names)]
     elseif length(replcmds) == 0 && (cmd == "?" || startswith("help", cmd)) || length(cmd) == 0
         ReplCmd("help", replace(HELP_CMD_HELP, "<SCOPE>" => scope),
-                cmd -> help_show(cmd; commands))
+                (io, cmd) -> help_show(io, cmd; commands))
     elseif length(replcmds) == 1
         first(replcmds)
     elseif length(replcmds) > 1 &&
         sum(c -> cmd == c.name, replcmds) == 1 # single exact match
         replcmds[findfirst(c -> c.name == cmd, replcmds)]
     elseif warn && length(replcmds) > 1
-        printstyled(" ! ", color=:red, bold=true)
-        print("Multiple matching $scope commands: ")
+        printstyled(io, " ! ", color=:red, bold=true)
+        print(io, "Multiple matching $scope commands: ")
         candidates = [c.name for c in replcmds if c.name != ""]
         for cand in candidates
-            highlight_lcs(stdout, cand, String(cmd), before="\e[4m", after="\e[24m")
-            cand === last(candidates) || print(", ")
+            highlight_lcs(io, cand, String(cmd), before="\e[4m", after="\e[24m")
+            cand === last(candidates) || print(io, ", ")
         end
-        print('\n')
+        print(io, '\n')
     elseif warn && haskey(subcommands, cmd)
-        printstyled(" ! ", color=:red, bold=true)
-        println("The $scope command '$cmd' is not defined.")
-        printstyled(" i ", color=:cyan, bold=true)
-        println("Perhaps you want the '$(join(subcommands[cmd], '/')) $cmd' subcommand?")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "The $scope command '$cmd' is not defined.")
+        printstyled(io, " i ", color=:cyan, bold=true)
+        println(io, "Perhaps you want the '$(join(subcommands[cmd], '/')) $cmd' subcommand?")
     elseif warn # no matching commands
-        printstyled(" ! ", color=:red, bold=true)
-        println("The $scope command '$cmd' is not defined.")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "The $scope command '$cmd' is not defined.")
         push!(all_cmd_names, "help")
         cmdsims = stringsimilarity.(cmd, all_cmd_names)
         if maximum(cmdsims, init=0) >= 0.5
-            printstyled(" i ", color=:cyan, bold=true)
-            println("Perhaps you meant '$(all_cmd_names[argmax(cmdsims)])'?")
+            printstyled(io, " i ", color=:cyan, bold=true)
+            println(io, "Perhaps you meant '$(all_cmd_names[argmax(cmdsims)])'?")
         end
     end
 end

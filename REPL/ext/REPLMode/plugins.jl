@@ -2,20 +2,20 @@ const PLUGIN_DOC =
     "Inspect and modify the set of plugins used"
 
 """
-    plugin_add(input::AbstractString)
+    plugin_add(io::IO, input::AbstractString)
 Parse and call the repl-format plugin add command `input`.
 
 `input` should consist of a list of plugin names.
 """
-function plugin_add(input::AbstractString)
-    confirm_stack_first_writable() || return nothing
+function plugin_add(io::IO, input::AbstractString)
+    confirm_stack_first_writable(io) || return nothing
     plugins = split(input, r", *| +")
     nonexistant = filter(p -> p ∉ getfield.(PLUGINS, :name), plugins)
     if !isempty(nonexistant)
-        printstyled(" ! ", color=:yellow)
-        println("Warning: the plugin$(ifelse(length(nonexistant) > 1, "s", "")) $(join(nonexistant, ", ", ", and ")) \
+        printstyled(io, " ! ", color=:yellow)
+        println(io, "Warning: the plugin$(ifelse(length(nonexistant) > 1, "s", "")) $(join(nonexistant, ", ", ", and ")) \
                  are not known to exist")
-        if !confirm_yn(" Do you wish to continue anyway?")
+        if !confirm_yn(io, " Do you wish to continue anyway?")
             return nothing
         end
     end
@@ -24,37 +24,37 @@ function plugin_add(input::AbstractString)
 end
 
 """
-    plugin_remove(input::AbstractString)
+    plugin_remove(io::IO, input::AbstractString)
 Parse and call the repl-format plugin removal command `input`.
 
 `input` should consist of a list of plugin names.
 """
-function plugin_remove(input::AbstractString)
-    confirm_stack_first_writable() || return nothing
+function plugin_remove(io::IO, input::AbstractString)
+    confirm_stack_first_writable(io) || return nothing
     plugins = split(input, r", *| +")
     DataToolkitCore.plugin_remove!(plugins)
     nothing
 end
 
 """
-    plugin_edit(::AbstractString)
+    plugin_edit(io::IO, ::AbstractString)
 Interactively edit the set of plugins used.
 """
-function plugin_edit(::AbstractString)
-    confirm_stack_first_writable() || return nothing
+function plugin_edit(io::IO, ::AbstractString)
+    confirm_stack_first_writable(io) || return nothing
     original_plugins = copy(first(STACK).plugins)
     available_plugins = union(getfield.(PLUGINS, :name), first(STACK).plugins)
     menu = REPL.TerminalMenus.MultiSelectMenu(
         available_plugins,
         selected=indexin(first(STACK).plugins, available_plugins),
-        checked = if get(stdout, :color, false)
+        checked = if get(io, :color, false)
             string('[', Base.text_colors[REPL_USER_INPUT_COLOUR],
                     'X',
                     Base.text_colors[REPL_QUESTION_COLOR],
                     ']')
         else "X" end)
     selected_plugins = available_plugins[REPL.TerminalMenus.request(
-        if get(stdout, :color, false)
+        if get(io, :color, false)
             Base.text_colors[REPL_QUESTION_COLOR]
         else "" end *
             " Select plugins to use:",
@@ -72,42 +72,42 @@ function plugin_edit(::AbstractString)
         iswritable(newcollection) && save!(newcollection)
     end
     if isempty(added_plugins) && isempty(removed_plugins)
-        printstyled(" No change to plugins\n", color=:green)
+        printstyled(io, " No change to plugins\n", color=:green)
     else
         if !isempty(added_plugins)
-            printstyled(" +", color=:light_green, bold=true)
-            print(" Added plugins: ")
-            printstyled(join(added_plugins, ", "), '\n', color=:green)
+            printstyled(io, " +", color=:light_green, bold=true)
+            print(io, " Added plugins: ")
+            printstyled(io, join(added_plugins, ", "), '\n', color=:green)
         end
         if !isempty(removed_plugins)
-            printstyled(" -", color=:light_red, bold=true)
-            print(" Removed plugins: ")
-            printstyled(join(removed_plugins, ", "), '\n', color=:green)
+            printstyled(io, " -", color=:light_red, bold=true)
+            print(io, " Removed plugins: ")
+            printstyled(io, join(removed_plugins, ", "), '\n', color=:green)
         end
     end
 end
 
 """
-    plugin_list(input::AbstractString)
+    plugin_list(io::IO, input::AbstractString)
 Parse and call the repl-format plugin list command `input`.
 
 `input` should either be empty or '-a'/'--available'.
 """
-function plugin_list(input::AbstractString)
+function plugin_list(io::IO, input::AbstractString)
     used_plugins = if isempty(STACK) String[] else first(STACK).plugins end
     plugins = if strip(input) in ("-a", "--available")
         getfield.(PLUGINS, :name)
     else
-        confirm_stack_nonempty() || return nothing
+        confirm_stack_nonempty(io) || return nothing
         used_plugins
     end
     for plugin in plugins
         if plugin in used_plugins
-            printstyled(" • ", color=:blue)
+            printstyled(io, " • ", color=:blue)
         else
-            printstyled(" ∘ ", color=:light_black)
+            printstyled(io, " ∘ ", color=:light_black)
         end
-        println(plugin)
+        println(io, plugin)
     end
 end
 
@@ -155,8 +155,8 @@ const PLUGIN_SUBCOMMANDS = ReplCmd[
         plugin_edit),
     ReplCmd(
         "info", "Fetch the documentation of a plugin",
-        input -> (doc = DataToolkitCore.plugin_info(strip(input));
-                  isnothing(doc) || display(doc)), complete_plugin_all),
+        (io, input) -> (doc = DataToolkitCore.plugin_info(strip(input));
+                  isnothing(doc) || show(io, MIME("text/plain"), doc)), complete_plugin_all),
     ReplCmd("list",
             """List the plugins used by the first data collection
 

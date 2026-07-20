@@ -2,10 +2,10 @@ const STACK_DOC =
     "Operate on the data collection stack"
 
 """
-    stack_list(::AbstractString; maxwidth::Int=displaysize(stdout)[2])
+    stack_list(io::IO, ::AbstractString; maxwidth::Int=displaysize(io)[2])
 Print a table listing all of the current data collections on the stack.
 """
-function stack_list(::AbstractString; maxwidth::Int=displaysize(stdout)[2])
+function stack_list(io::IO, ::AbstractString; maxwidth::Int=displaysize(io)[2])
     table_rows = displaytable(
         ["#", "Name", "Datasets", "Writable", "Plugins"],
         map(enumerate(STACK)) do (i, collection)
@@ -16,7 +16,7 @@ function stack_list(::AbstractString; maxwidth::Int=displaysize(stdout)[2])
              join(collection.plugins, ", ")]
         end; maxwidth)
     for row in table_rows
-        print(stderr, ' ', row, '\n')
+        print(io, ' ', row, '\n')
     end
 end
 
@@ -27,7 +27,7 @@ Parse and call the repl-format stack promotion command `input`.
 `input` should consist of a data collection identifier and optionally a
 promotion amount, either an integer or the character '*'.
 """
-function stack_promote(input::AbstractString)
+function stack_promote(io::IO, input::AbstractString)
     ident, repeat = match(r"^(.*?)((?: +-?\d+| +\*)?)$", input).captures
     DataToolkitCore.stack_move(
         @something(tryparse(Int, ident),
@@ -48,7 +48,7 @@ Parse and call the repl-format stack demote command `input`.
 `input` should consist of a data collection identifier and optionally a
 promotion amount, either an integer or the character '*'.
 """
-function stack_demote(input::AbstractString)
+function stack_demote(io::IO, input::AbstractString)
     ident, repeat = match(r"^(.*?)((?: +-?\d+| +\*)?)$", input).captures
     DataToolkitCore.stack_move(
         @something(tryparse(Int, ident),
@@ -73,14 +73,14 @@ loaded to, either an integer or the character '*'.
 `input` may also be the name of an existing data collection, in which case its
 path is substituted.
 """
-function stack_load(input::AbstractString)
+function stack_load(io::IO, input::AbstractString)
     position, path = match(r"^((?:\d+ +)?)(.*)$", input).captures
     file = if !isempty(path)
         if !endswith(path, ".toml") && !isdir(path) &&
             !isnothing(findfirst(c -> c.name == path, STACK))
             csource = getlayer(path).source
-            isnothing(csource) && (printstyled(" ! ", color=:yellow, bold=true);
-                                   return println("Collection '$path' has no backing file"))
+            isnothing(csource) && (printstyled(io, " ! ", color=:yellow, bold=true);
+                                   return println(io, "Collection '$path' has no backing file"))
             csource.path
         else
             abspath(expanduser(path))
@@ -91,16 +91,16 @@ function stack_load(input::AbstractString)
     elseif isfile("Data.toml")
         "Data.toml"
     else
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Provide a path to the Data TOML file to load")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Provide a path to the Data TOML file to load")
         return nothing
     end
     if isdir(file)
         file = joinpath(file, "Data.toml")
     end
     if !isfile(file)
-        printstyled(" ! ", color=:red, bold=true)
-        println("File '$input' does not exist")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "File '$input' does not exist")
     else
         uuid = UUID(get(open(TOML.parse, file), "uuid", UUID(zero(UInt128))))
         existing = findfirst(c -> c.uuid == uuid, STACK)
@@ -115,10 +115,10 @@ Parse and call the repl-format stack removal command `input`.
 
 `input` should consist of a data collection identifier.
 """
-function stack_remove(input::AbstractString)
+function stack_remove(io::IO, input::AbstractString)
     if isempty(input)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Identify the data collection that should be removed")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Identify the data collection that should be removed")
     else
         DataToolkitCore.stack_remove!(
             @something(tryparse(Int, input),

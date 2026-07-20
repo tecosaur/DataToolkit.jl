@@ -35,7 +35,7 @@ If required information is missing, the user will be interactively questioned.
 [NAME] [[at] PATH] [with [-n] [PLUGINS...]]
 ```
 """
-function init(input::AbstractString)
+function init(io::IO, input::AbstractString)
     rest = input
 
     name = if isempty(rest)
@@ -63,10 +63,10 @@ function init(input::AbstractString)
     path = if isempty(rest) || first(peelword(rest)) == "with"
         if !isnothing(Base.active_project(false)) &&
             !isfile(joinpath(dirname(Base.active_project(false)), "Data.toml")) &&
-            confirm_yn(" Create Data.toml for current project?", true)
+            confirm_yn(io, " Create Data.toml for current project?", true)
             dirname(Base.active_project(false))
         else
-            prompt(" Path to Data TOML file: ",
+            prompt(io, " Path to Data TOML file: ",
                    joinpath(if !isnothing(Base.active_project(false))
                                 dirname(Base.active_project(false))
                             else pwd() end, "$(coalesce(name, "Data")).toml"))
@@ -94,13 +94,13 @@ function init(input::AbstractString)
     end
 
     while !isdir(dirname(path))
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Directory '$(dirname(path))' does not exist")
-        createp = confirm_yn(" Would you like to create this directory?", true)
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Directory '$(dirname(path))' does not exist")
+        createp = confirm_yn(io, " Would you like to create this directory?", true)
         if createp
             mkpath(dirname(path))
         else
-            path = prompt(" Path to Data TOML file: ") |> expanduser |> abspath
+            path = prompt(io, " Path to Data TOML file: ") |> expanduser |> abspath
             if !endswith(path, ".toml")
                 path = joinpath(path, "Data.toml")
             end
@@ -108,9 +108,9 @@ function init(input::AbstractString)
     end
 
     if isfile(path)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("File '$path' already exists")
-        overwritep = confirm_yn(" Overwrite this file?", false)
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "File '$path' already exists")
+        overwritep = confirm_yn(io, " Overwrite this file?", false)
         if !overwritep
             return nothing
         end
@@ -122,10 +122,10 @@ function init(input::AbstractString)
         else
             first(splitext(basename(path)))
         end
-        name = prompt(" Name: ", name)
+        name = prompt(io, " Name: ", name)
     end
 
     create!(DataCollection, name, path; plugins)
 
-    printstyled(stderr, " ✓ Created new data collection '$name' at $path\n", color=:green)
+    printstyled(io, " ✓ Created new data collection '$name' at $path\n", color=:green)
 end

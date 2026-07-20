@@ -1,32 +1,24 @@
 # Help command and related facilities
 
 """
-    help(r::ReplCmd)
+    help(io::IO, r::ReplCmd)
 
-Print the help string for `r`.
+Print the help string for `r` to `io`.
 
 When `r` has subcommands, the description will be followed by a table of its
 subcommands.
 """
-function help(r::ReplCmd)
-    if r.execute isa Function
-        if r.description isa AbstractString
-            for line in eachsplit(rstrip(r.description), '\n')
-                println("  ", line)
-            end
-        else
-            display(r.description)
+function help(io::IO, r::ReplCmd)
+    if r.description isa AbstractString
+        for line in eachsplit(rstrip(r.description), '\n')
+            println(io, "  ", line)
         end
-    else # r.execute isa Vector{ReplCmd}
-        if r.description isa AbstractString
-            for line in eachsplit(rstrip(r.description), '\n')
-                println("  ", line)
-            end
-        else
-            display(r.description)
-        end
-        print('\n')
-        help_cmd_table(commands = r.execute, sub=true)
+    else
+        show(io, MIME("text/plain"), r.description)
+    end
+    if r.execute isa Vector{ReplCmd}
+        print(io, '\n')
+        help_cmd_table(io; commands = r.execute, sub=true)
     end
 end
 
@@ -113,16 +105,16 @@ function displaytable(headers::Vector, rows::Vector{<:Vector};
 end
 
 """
-    help_cmd_table(; maxwidth::Int=displaysize(stdout)[2],
+    help_cmd_table(io::IO; maxwidth::Int=displaysize(io)[2],
                    commands::Vector{ReplCmd}=REPL_CMDS,
                    sub::Bool=false)
 
-Print a table showing the triggers and descriptions (limited to the first line)
-of `commands`, under the headers "Command" and "Action" (or "Subcommand" if
-`sub` is set). The table is truncated if necessary so it is no wider than
-`maxwidth`.
+Print to `io` a table showing the triggers and descriptions (limited to the
+first line) of `commands`, under the headers "Command" and "Action" (or
+"Subcommand" if `sub` is set). The table is truncated if necessary so it is no
+wider than `maxwidth`.
 """
-function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2]-2,
+function help_cmd_table(io::IO; maxwidth::Int=displaysize(io)[2]-2,
                         commands::Vector{ReplCmd}=REPL_CMDS,
                         sub::Bool=false)
     help_headings = [if sub "Subcommand" else "Command" end, "Action"]
@@ -132,24 +124,24 @@ function help_cmd_table(; maxwidth::Int=displaysize(stdout)[2]-2,
     end
     push!(help_lines, ["help", "Display help text for commands and transformers"])
     map(displaytable(help_headings, help_lines; maxwidth)) do row
-        print(stderr, "  ", row, '\n')
+        print(io, "  ", row, '\n')
     end
 end
 
 """
-    help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
+    help_show(io::IO, cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
 
-If `cmd` refers to a command in `commands`, show its help (via `help`).
+If `cmd` refers to a command in `commands`, show its help (via `help`) on `io`.
 If `cmd` is empty, list `commands` via `help_cmd_table`.
 """
-function help_show(cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
+function help_show(io::IO, cmd::AbstractString; commands::Vector{ReplCmd}=REPL_CMDS)
     if all(isspace, cmd)
-        help_cmd_table(; commands)
-        println("\n  \e[2;3mCommands can also be triggered by unique prefixes or substrings.\e[22;23m")
+        help_cmd_table(io; commands)
+        println(io, "\n  \e[2;3mCommands can also be triggered by unique prefixes or substrings.\e[22;23m")
     else
-        repl_cmd = find_repl_cmd(strip(cmd); commands, warn=true)
+        repl_cmd = find_repl_cmd(io, strip(cmd); commands, warn=true)
         if !isnothing(repl_cmd)
-            help(repl_cmd)
+            help(io, repl_cmd)
         end
     end
     nothing
@@ -171,11 +163,11 @@ function transformer_docs(name::Symbol, type::Symbol=:any)
 end
 
 """
-    transformers_printall()
+    transformers_printall(io::IO)
 
-Print a list of all documented data transformers, by category.
+Print a list of all documented data transformers, by category, to `io`.
 """
-function transformers_printall()
+function transformers_printall(io::IO)
     docs = (storage = Pair{Symbol, Any}[],
             loader = Pair{Symbol, Any}[],
             writer = Pair{Symbol, Any}[])
@@ -189,34 +181,34 @@ function transformers_printall()
     sort!.(values(docs), by = first)
     for type in (:storage, :loader, :writer)
         entries = getfield(docs, type)
-        printstyled(" $type transformers ($(length(entries)))\n",
+        printstyled(io, " $type transformers ($(length(entries)))\n",
                     color=:blue, bold=true)
         for (name, doc) in entries
-            printstyled("   • ", color=:blue)
-            println(name)
+            printstyled(io, "   • ", color=:blue)
+            println(io, name)
         end
-        type === :writer || print('\n')
+        type === :writer || print(io, '\n')
     end
 end
 
 """
-    help_show(transformer::Symbol)
+    help_show(io::IO, transformer::Symbol)
 
-Show documentation of a particular data `transformer` (should it exist).
+Show documentation of a particular data `transformer` (should it exist) on `io`.
 
 In the special case that `transformer` is `Symbol("")`, a list of all documented
 transformers is printed.
 """
-function help_show(transformer::Symbol)
+function help_show(io::IO, transformer::Symbol)
     if transformer === Symbol("") # List all documented transformers
-        transformers_printall()
+        transformers_printall(io)
     else
         tdocs = transformer_docs(transformer)
         if isnothing(tdocs)
-            printstyled(" ! ", color=:red, bold=true)
-            println("There is no documentation for the '$transformer' transformer")
+            printstyled(io, " ! ", color=:red, bold=true)
+            println(io, "There is no documentation for the '$transformer' transformer")
         else
-            display(tdocs)
+            show(io, MIME("text/plain"), tdocs)
         end
     end
 end

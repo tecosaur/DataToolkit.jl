@@ -43,26 +43,26 @@ This works well in most cases, which is why `-sl` are the default flags.
     data> add \"from\" from.txt # add a data set with the name from
 """
 
-function add(input::AbstractString)
-    confirm_stack_nonempty() || begin
-        printstyled(" i ", color=:cyan, bold=true)
-        println("Consider creating a data collection first with 'init'")
+function add(io::IO, input::AbstractString)
+    confirm_stack_nonempty(io) || begin
+        printstyled(io, " i ", color=:cyan, bold=true)
+        println(io, "Consider creating a data collection first with 'init'")
         return nothing
     end
-    confirm_stack_first_writable() || return nothing
+    confirm_stack_first_writable(io) || return nothing
     collection = first(STACK)
     refresh!(collection)
     name, rest = if isnothing(match(r"^(?:v|via|f|from)\b|^\s*$|^https?://", input)) &&
         !isfile(first(peelword(input)))
         peelword(input)
     else
-        prompt(" Name: "), String(input)
+        prompt(io, " Name: "), String(input)
     end
     if any(d -> d.name == name, collection.datasets)
-        confirm_yn(" '$name' names an existing data set, continue anyway?", false) ||
+        confirm_yn(io, " '$name' names an existing data set, continue anyway?", false) ||
             return nothing
-        printstyled(" i ", color=:cyan, bold=true)
-        println("Consider setting additional attributes to disambiguate")
+        printstyled(io, " i ", color=:cyan, bold=true)
+        println(io, "Consider setting additional attributes to disambiguate")
     end
     via = (; storage = Symbol[],
            loaders = Symbol[],
@@ -90,44 +90,44 @@ function add(input::AbstractString)
     elseif !isempty(rest)
         rest
     else
-        prompt(" From: ", allowempty=true)
+        prompt(io, " From: ", allowempty=true)
     end |> String
-    spec = prompt_attributes()
+    spec = prompt_attributes(io)
     dataset = create!(collection, DataSet, name, spec)
-    addtransformers!(dataset, from; via...)
+    addtransformers!(io, dataset, from; via...)
     iswritable(collection) && save!(collection)
 end
 
 """
-    prompt_attributes() -> Dict{String, Any}
+    prompt_attributes(io::IO) -> Dict{String, Any}
 
-Interactively prompt for a description and other arbitrary attributes, with
-values interpreted using `TOML.parse`.
+Interactively prompt on `io` for a description and other arbitrary attributes,
+with values interpreted using `TOML.parse`.
 """
-function prompt_attributes()
+function prompt_attributes(io::IO)
     spec = Dict{String, Any}()
-    description = prompt(" Description: ", allowempty=true)
+    description = prompt(io, " Description: ", allowempty=true)
     if !isempty(description)
         spec["description"] = description
     end
-    while (attribute = prompt(" [Attribute]: ", allowempty=true)) |> !isempty
-        print("\e[A\e[G\e[K")
-        parsed = parse_repl_value(prompt(" $attribute: "))
+    while (attribute = prompt(io, " [Attribute]: ", allowempty=true)) |> !isempty
+        print(io, "\e[A\e[G\e[K")
+        parsed = parse_repl_value(prompt(io, " $attribute: "))
         if isnothing(parsed)
-            printstyled(" ! ", color=:red, bold=true)
-            println("Could not parse the value, skipping '$attribute'")
+            printstyled(io, " ! ", color=:red, bold=true)
+            println(io, "Could not parse the value, skipping '$attribute'")
         else
             spec[attribute] = parsed
         end
     end
-    print("\e[A\e[G\e[K")
+    print(io, "\e[A\e[G\e[K")
     spec
 end
 
 # Transformer creation
 
 """
-    addtransformers!(dataset::DataSet;
+    addtransformers!(io::IO, dataset::DataSet, source::String;
         storage::Vector{Symbol}=Symbol[], loaders::Vector{Symbol}=Symbol[],
         writers::Vector{Symbol}=Symbol[], quiet::Bool=false)
 
@@ -138,23 +138,25 @@ Data transformers will be constructed with each of the backends listed in
 all possible drivers will be searched and the highest priority driver available
 (according to `createpriority`) used. Should no transformer of the specified
 driver and type exist, it will be skipped.
+
+Any interactive creation prompts, and progress messages, use `io`.
 """
-function addtransformers!(dataset::DataSet, source::String;
+function addtransformers!(io::IO, dataset::DataSet, source::String;
              storage::Vector{Symbol}=Symbol[], loaders::Vector{Symbol}=Symbol[],
              writers::Vector{Symbol}=Symbol[], quiet::Bool=false)
     for (transformer, slot, drivers) in ((DataStorage, :storage, storage),
                                          (DataLoader, :loaders, loaders),
                                          (DataWriter, :writers, writers))
         for driver in drivers
-            dt = trycreateauto(dataset, transformer, driver, source)
+            dt = trycreateauto(dataset, transformer, driver, source; io)
             if isnothing(dt)
-                printstyled(" ! ", color=:yellow, bold=true)
-                println("Failed to create '$driver' $(sprint(show, transformer))")
+                printstyled(io, " ! ", color=:yellow, bold=true)
+                println(io, "Failed to create '$driver' $(sprint(show, transformer))")
             else
                 push!(getproperty(dataset, slot), dt)
             end
         end
     end
-    quiet || printstyled(" ✓ Created '$(dataset.name)' ($(dataset.uuid))\n ", color=:green)
+    quiet || printstyled(io, " ✓ Created '$(dataset.name)' ($(dataset.uuid))\n ", color=:green)
     dataset
 end

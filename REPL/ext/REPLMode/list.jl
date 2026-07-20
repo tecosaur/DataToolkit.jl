@@ -9,10 +9,10 @@ By default, the datasets of the active collection are shown.
     data> list COLLECTION
 """
 
-function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(stdout)[2])
+function repl_list(io::IO, collection_str::AbstractString; maxwidth::Int=displaysize(io)[2])
     if isempty(STACK)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("The data collection stack is empty")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "The data collection stack is empty")
     else
         collection = if isempty(collection_str)
             getlayer()
@@ -32,7 +32,7 @@ function repl_list(collection_str::AbstractString; maxwidth::Int=displaysize(std
                 end
             end; maxwidth)
         for row in table_rows
-            print(stderr, ' ', row, '\n')
+            print(io, ' ', row, '\n')
         end
     end
 end

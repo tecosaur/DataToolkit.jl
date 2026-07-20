@@ -17,39 +17,39 @@ function config_segments(input::AbstractString)
 end
 
 """
-    config_get(input::AbstractString)
+    config_get(io::IO, input::AbstractString)
 Parse and call the repl-format config getter command `input`.
 """
-function config_get(input::AbstractString)
+function config_get(io::IO, input::AbstractString)
     segments, rest = config_segments(input)
     if !isempty(rest)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Trailing garbage ignored in get command: \"$rest\"")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Trailing garbage ignored in get command: \"$rest\"")
     end
     value = DataToolkitCore.config_get(segments)
     if value isa Dict && isempty(value)
-        printstyled(" empty\n", color=:light_black)
+        printstyled(io, " empty\n", color=:light_black)
     elseif value isa Dict
-        TOML.print(value)
+        TOML.print(io, value)
     else
-        println(value)
+        println(io, value)
     end
 end
 
 """
-    config_set(input::AbstractString)
+    config_set(io::IO, input::AbstractString)
 Parse and call the repl-format config setter command `input`.
 """
-function config_set(input::AbstractString)
+function config_set(io::IO, input::AbstractString)
     segments, rest = config_segments(input)
     if isempty(rest)
-        printstyled(" ! ", color=:red, bold=true)
-        println("Value missing")
+        printstyled(io, " ! ", color=:red, bold=true)
+        println(io, "Value missing")
     else
         value = parse_repl_value(rest)
         if isnothing(value)
-            printstyled(" ! ", color=:red, bold=true)
-            println("Could not parse '$rest' as a value")
+            printstyled(io, " ! ", color=:red, bold=true)
+            println(io, "Could not parse '$rest' as a value")
         else
             DataToolkitCore.config_set!(segments, value)
         end
@@ -58,14 +58,14 @@ function config_set(input::AbstractString)
 end
 
 """
-    config_unset(input::AbstractString)
+    config_unset(io::IO, input::AbstractString)
 Parse and call the repl-format config un-setter command `input`.
 """
-function config_unset(input::AbstractString)
+function config_unset(io::IO, input::AbstractString)
     segments, rest = config_segments(input)
     if !isempty(rest)
-        printstyled(" ! ", color=:yellow, bold=true)
-        println("Trailing garbage ignored in unset command: \"$rest\"")
+        printstyled(io, " ! ", color=:yellow, bold=true)
+        println(io, "Trailing garbage ignored in unset command: \"$rest\"")
     end
     DataToolkitCore.config_unset!(segments)
     nothing

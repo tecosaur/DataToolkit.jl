@@ -11,9 +11,9 @@ using Markdown
 function datarepl(cmd::String)
     pipe = Pipe()
     started = Base.Event()
-    writer = @async redirect_stdio(stdout=pipe, stderr=pipe) do
+    writer = @async begin
         notify(started)
-        DataToolkitREPL.execute_repl_cmd(cmd)
+        DataToolkitREPL.execute_repl_cmd(pipe, cmd)
         close(Base.pipe_writer(pipe))
     end
     wait(started)
@@ -24,9 +24,9 @@ function datarepl(cmd::String)
 end
 
 function datareplhelp(cmd::String; postrule::Bool=true)
-    repl_cmd = DataToolkitREPL.find_repl_cmd(first(eachsplit(cmd, ' ')))
+    repl_cmd = DataToolkitREPL.find_repl_cmd(devnull, first(eachsplit(cmd, ' ')))
     for subcmd in last(Iterators.peel(eachsplit(cmd, ' ')))
-        repl_cmd = DataToolkitREPL.find_repl_cmd(subcmd, commands = repl_cmd.execute)
+        repl_cmd = DataToolkitREPL.find_repl_cmd(devnull, subcmd, commands = repl_cmd.execute)
     end
     header = Markdown.Header{2}([Markdown.Code("?$cmd")])
     desc = if repl_cmd.description isa Markdown.MD
