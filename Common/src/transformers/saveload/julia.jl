@@ -88,7 +88,7 @@ function lint(loader::DataLoader{:julia}, ::Val{:non_list_julia_args})
     if haskey(loader.parameters, "arguments") &&
         loader.parameters["arguments"] isa Vector
         fixer = if length(loader.parameters["arguments"]) == 1
-            function (li::LintItem{DataLoader{:julia}})
+            function (::IO, li::LintItem{DataLoader{:julia}})
                 li.source.parameters["arguments"] =
                     first(li.source.parameters["arguments"])
                 true

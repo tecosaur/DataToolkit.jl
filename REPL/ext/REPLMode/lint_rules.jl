@@ -8,8 +8,7 @@ function lint(ds::DataSet, ::Val{:has_description})
     end
 end
 
-function lint_fix_has_description(lintitem::LintItem{DataSet})
-    io = default_data_terminal()
+function lint_fix_has_description(io::IO, lintitem::LintItem{DataSet})
     if lintitem.source in lintitem.source.collection.datasets
         description = prompt(io, "  Description: ", allowempty=false)
         lintitem.source.parameters["description"] = description
@@ -28,8 +27,7 @@ function lint(ds::DataSet, ::Val{:no_colon_in_name})
     end
 end
 
-function lint_rename_dataset(lintitem::LintItem{DataSet})
-    io = default_data_terminal()
+function lint_rename_dataset(io::IO, lintitem::LintItem{DataSet})
     ds = lintitem.source
     dsindex = findfirst(==(ds), ds.collection.datasets)
     if isnothing(dsindex)
@@ -59,7 +57,7 @@ function lint(ds::DataSet, ::Val{:unique_uuid})
     end
 end
 
-function lint_regenerate_uuid(lintitem::LintItem{DataSet})
+function lint_regenerate_uuid(::IO, lintitem::LintItem{DataSet})
     replace!(lintitem.source, uuid = uuid4())
     true
 end

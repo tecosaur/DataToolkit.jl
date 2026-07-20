@@ -16,7 +16,7 @@ function repl_lint(io::IO, input::AbstractString)
         report = LintReport(thing)
         show(io, MIME("text/plain"), report)
         print(io, "\n\n")
-        DataToolkitCore.lintfix(report)
+        DataToolkitCore.lintfix(io, report)
     end
     if isempty(STACK)
         printstyled(io, " ! ", color=:yellow, bold=true)
@@ -52,11 +52,7 @@ function repl_lint(io::IO, input::AbstractString)
 end
 
 # Implements `../../../Core/src/interaction/lint.jl`.
-# The Core `lintfix`→`linttryfix`→`LintItem.fixer` chain fixes the one-argument
-# signature, so there is no threaded `io` to receive; fall back to the global
-# terminal here and in the `lint_fix_*` fixers.
-function DataToolkitCore.linttryfix(fixprompt::Vector{Tuple{Int, DataToolkitCore.LintItem}})
-    io = default_data_terminal()
+function DataToolkitCore.linttryfix(io::IO, fixprompt::Vector{Tuple{Int, DataToolkitCore.LintItem}})
     printstyled(io, length(fixprompt), color=:light_white)
     print(io, ifelse(length(fixprompt) == 1, " issue (", " issues ("))
     for fixitem in fixprompt
@@ -90,7 +86,7 @@ function DataToolkitCore.linttryfix(fixprompt::Vector{Tuple{Int, DataToolkitCore
                         color=first(DataToolkitCore.LINT_SEVERITY_MESSAGES[lintitem.severity]))
             print(io, first(split(lintitem.message, '\n')), '\n')
             try
-                lintitem.fixer(lintitem)
+                lintitem.fixer(io, lintitem)
             catch e
                 if e isa InterruptException
                     printstyled(io, "!", color=:red, bold=true)

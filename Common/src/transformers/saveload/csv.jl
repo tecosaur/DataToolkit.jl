@@ -70,7 +70,7 @@ function lint(loader::DataLoader{:csv}, ::Val{:non_list_csv_args})
     if haskey(loader.parameters, "args") &&
         loader.parameters["args"] isa Vector
         fixer = if length(loader.parameters["args"]) == 1
-            function (li::LintItem{DataLoader{:csv}})
+            function (::IO, li::LintItem{DataLoader{:csv}})
                 li.source.parameters["args"] =
                     first(li.source.parameters["args"])
                 true

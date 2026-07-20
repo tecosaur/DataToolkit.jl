@@ -22,10 +22,10 @@ LintItem(source, severity::Union{Int, Symbol}, id::Symbol, message::String,
 `message` is a message, intelligible to the end-user, describing the particular
 nature of the issue with respect to `source`. It should be as specific as possible.
 
-`fixer` can be set to a function which modifies `source` to resolve the issue.
-If `autoapply` is set to `true` then `fixer` will be called spontaneously.
-The function should return `true` or `false` to indicate whether it was able
-to successfully fix the issue.
+`fixer` can be set to a function of `(io::IO, lintitem)` which modifies `source`
+to resolve the issue, using `io` for any interaction. If `autoapply` is set to
+`true` then `fixer` will be called spontaneously. The function should return
+`true` or `false` to indicate whether it was able to successfully fix the issue.
 
 As a general rule, fixers that do or might require user input should *not* be
 run automatically, and fixers that can run without any user input and
@@ -204,42 +204,42 @@ function Base.show(io::IO, report::LintReport)
 end
 
 """
-    lintfix(report::LintReport)
+    lintfix(io::IO, report::LintReport)
 
-Attempt to fix as many issues raised in `report` as possible.
+Attempt to fix as many issues raised in `report` as possible, reporting on `io`.
 """
-function lintfix(report::LintReport, manualfix::Bool=false)
+function lintfix(io::IO, report::LintReport, manualfix::Bool=false)
     autofixed = Vector{Tuple{Int, LintItem, Bool}}()
     fixprompt = Vector{Tuple{Int, LintItem}}()
     # Auto-apply fixes
     for (i, lintitem) in enumerate(report.results)
         isnothing(lintitem.fixer) && continue
         if lintitem.autoapply
-            push!(autofixed, (i, lintitem, lintitem.fixer(lintitem)))
+            push!(autofixed, (i, lintitem, lintitem.fixer(io, lintitem)))
         else
             push!(fixprompt, (i, lintitem))
         end
     end
     if !isempty(autofixed)
-        print("Automatically fixed ")
-        printstyled(sum(last.(autofixed)), color=:light_white)
-        print(ifelse(sum(last.(autofixed)) == 1, " issue: ", " issues: "))
+        print(io, "Automatically fixed ")
+        printstyled(io, sum(last.(autofixed)), color=:light_white)
+        print(io, ifelse(sum(last.(autofixed)) == 1, " issue: ", " issues: "))
         for fixresult in filter(last, autofixed)
             i, lintitem, _ = fixresult
-            printstyled(i, color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
-            fixresult === last(autofixed) || print(", ")
+            printstyled(io, i, color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
+            fixresult === last(autofixed) || print(io, ", ")
         end
-        print(".\n")
+        print(io, ".\n")
         if !all(last, autofixed)
-            print("Failed to automatically fix ")
-            printstyled(sum(.!last.(autofixed)), color=:light_white)
-            print(ifelse(sum(.!last.(autofixed)) == 1, " issue: ", " issues: "))
+            print(io, "Failed to automatically fix ")
+            printstyled(io, sum(.!last.(autofixed)), color=:light_white)
+            print(io, ifelse(sum(.!last.(autofixed)) == 1, " issue: ", " issues: "))
             for fixresult in filter(!last, autofixed)
                 i, lintitem, _ = fixresult
-                printstyled(i, color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
-                fixresult === last(autofixed) || print(", ")
+                printstyled(io, i, color=first(LINT_SEVERITY_MESSAGES[lintitem.severity]))
+                fixresult === last(autofixed) || print(io, ", ")
             end
-            print('\n')
+            print(io, '\n')
         end
     end
     if !isempty(autofixed)
@@ -248,8 +248,8 @@ function lintfix(report::LintReport, manualfix::Bool=false)
     # Manual fixes
     if !isempty(fixprompt) &&
         (isinteractive() || manualfix) &&
-        hasmethod(linttryfix, Tuple{typeof(fixprompt)})
-        linttryfix(fixprompt) && save!(report.collection)
+        hasmethod(linttryfix, Tuple{typeof(io), typeof(fixprompt)})
+        linttryfix(io, fixprompt) && save!(report.collection)
     end
     nothing
 end

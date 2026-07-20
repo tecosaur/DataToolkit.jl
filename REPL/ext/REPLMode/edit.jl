@@ -147,7 +147,7 @@ function repl_edit(io::IO, input::AbstractString)
     if !isempty(lintreport.results)
         show(io, MIME("text/plain"), lintreport)
         print(io, "\n\n")
-        DataToolkitCore.lintfix(lintreport)
+        DataToolkitCore.lintfix(io, lintreport)
     end
     save!(newdata.collection)
     printstyled(io, " ✓ Edited '$(newdata.name)' ", color=:green)

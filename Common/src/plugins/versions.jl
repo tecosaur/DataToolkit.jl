@@ -153,7 +153,7 @@ function lint_versions(obj::DataSet, ::Val{:valid_version})
         if get(obj, "version") isa Number
             LintItem(obj, :warning, :valid_version,
                      "Version number ($(get(obj, "version"))) should be provided as a string",
-                     function (li::LintItem)
+                     function (::IO, li::LintItem)
                          li.source.parameters["version"] =
                              string(li.source.parameters["version"])
                          true
@@ -166,10 +166,12 @@ function lint_versions(obj::DataSet, ::Val{:valid_version})
     end
 end
 
-function lint_fix_version(lintitem::LintItem{DataSet})
-    newversion = prompt("  Version: ")
+function lint_fix_version(io::IO, lintitem::LintItem{DataSet})
+    print(io, "  Version: ")
+    newversion = readline(io)
     while isnothing(tryparse(VersionNumber, newversion))
-        newversion = prompt("  Version (X.Y.Z): ")
+        print(io, "  Version (X.Y.Z): ")
+        newversion = readline(io)
     end
     lintitem.source.parameters["version"] = newversion
     true
