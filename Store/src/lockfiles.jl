@@ -10,6 +10,23 @@ using BaseDirs
 
 export LockFile, iscontested
 
+# `Base.truncate(::File, ::Integer)` only exists from Julia 1.12. Provide a
+# module-local `truncate` that fills the gap and forwards everything else to
+# Base, so the lock-file code below can `truncate` a `File` on any version.
+@static if VERSION < v"1.12"
+    truncate(args...) = Base.truncate(args...)
+    function truncate(f::Base.Filesystem.File, n::Integer)
+        Base.Filesystem.check_open(f)
+        req = Libc.malloc(Base.Filesystem._sizeof_uv_fs)
+        err = ccall(:uv_fs_ftruncate, Int32,
+                    (Ptr{Cvoid}, Ptr{Cvoid}, Base.OS_HANDLE, Int64, Ptr{Cvoid}),
+                    C_NULL, req, f.handle, n, C_NULL)
+        Libc.free(req)
+        Base.Filesystem.uv_error("ftruncate", err)
+        f
+    end
+end
+
 """
     LockFile(parent, [prefix::AbstractString], target) -> LockFile
 
@@ -396,7 +413,7 @@ function unclaim(lf::LockFile)
     flock(lf, true)
     pids = pidqueue(lf)
     if length(pids) == 1 && first(pids) == lf.pid
-        Base.Filesystem.truncate(lf.file, 0)
+        truncate(lf.file, 0)
     else
         for (i, pid) in enumerate(pids)
             if pid == lf.pid
