@@ -1,0 +1,9 @@
+# Julia environment resolution artifacts (per-package and version-specific),
+# generated locally and not committed.
+Manifest.toml
+Manifest-v*.toml
+
+# Generated documentation (source markdown built from docstrings, and output).
+*/docs/src/*.md
+*/docs/src/*/*.md
+*/docs/build/
