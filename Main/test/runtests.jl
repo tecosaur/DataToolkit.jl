@@ -140,6 +140,8 @@ try
             @test occursin("requires the REPL", err.msg)
         end
     end
+
+    include("e2e_repl.jl")
 finally
     empty!(STACK)
     append!(STACK, stack_backup)
