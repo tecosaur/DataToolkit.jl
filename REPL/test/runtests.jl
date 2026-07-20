@@ -162,3 +162,5 @@ end
     @test M.find_repl_cmd(devnull, "li").name == "list"
     @test isnothing(M.find_repl_cmd(devnull, "s"))
 end
+
+include("trt_tests.jl")

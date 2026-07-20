@@ -36,6 +36,7 @@ julia = "1.9"
 [extras]
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TerminalRegressionTests = "98bfdc55-cc95-5876-a49a-74609291cbe0"
 
 [targets]
-test = ["REPL", "Test"]
+test = ["REPL", "Test", "TerminalRegressionTests"]
