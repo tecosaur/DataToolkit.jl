@@ -175,6 +175,17 @@ end
     @test occursin(string(collection.uuid), read(durable.file.path, String))
 end
 
+@testset "Loading an inventory with empty sections" begin
+    # Julia <1.12 infers `Union{}` for the empty comprehensions a section-less
+    # inventory parses to, which the `Inventory` constructor rejects.
+    path = joinpath(mktempdir(), "Inventory.toml")
+    write(path, "inventory_version = 0\n")
+    inv = load_inventory(path)
+    @test inv.collections isa Vector{CollectionInfo} && isempty(inv.collections)
+    @test inv.stores isa Vector{StoreSource} && isempty(inv.stores)
+    @test inv.caches isa Vector{CacheSource} && isempty(inv.caches)
+end
+
 DataToolkitCore.getstorage(::DataStorage{:testblob}, ::Type{IO}) =
     IOBuffer(codeunits("hello blob"))
 

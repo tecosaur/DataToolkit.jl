@@ -57,10 +57,11 @@ function parseinventory(path::String, content::String)
         error("Incompatible inventory version!")
     end
     config = convert(InventoryConfig, get(data, "config", Dict{String, Any}()))
-    collections = [convert(CollectionInfo, key => val)
+    # Typed so an empty section yields the field type, not `Union{}` (Julia <1.12).
+    collections = CollectionInfo[convert(CollectionInfo, key => val)
                    for (key, val) in get(data, "collections", Dict{String, Any}[])]
-    stores = [convert(StoreSource, s) for s in get(data, "store", Dict{String, Any}[])]
-    caches = [convert(CacheSource, c) for c in get(data, "cache", Dict{String, Any}[])]
+    stores = StoreSource[convert(StoreSource, s) for s in get(data, "store", Dict{String, Any}[])]
+    caches = CacheSource[convert(CacheSource, c) for c in get(data, "cache", Dict{String, Any}[])]
     last_gc = get(data, "inventory_last_gc", unix2datetime(0))
     (; config, collections, stores, caches, last_gc)
 end
