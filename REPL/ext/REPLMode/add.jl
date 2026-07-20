@@ -68,11 +68,12 @@ function add(input::AbstractString)
            loaders = Symbol[],
            writers = Symbol[])
     if first(peelword(rest)) ∈ ("v", "via")
+        _, rest = peelword(rest) # Drop the `via` keyword itself.
         targets = [:storage, :loaders]
         while !isempty(rest) && first(peelword(rest)) ∉ ("f", "from")
             viarg, rest = peelword(rest)
             if first(viarg) == '-'
-                targets = []
+                targets = Symbol[]
                 's' in viarg && push!(targets, :storage)
                 'l' in viarg && push!(targets, :loaders)
                 'w' in viarg && push!(targets, :writers)
