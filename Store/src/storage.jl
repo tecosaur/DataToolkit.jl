@@ -449,7 +449,7 @@ function epoch(@nospecialize(storage::DataStorage), seconds::Real)
             @warn "Invalid lifetime_offset, ignoring" offset
             0
         end
-        (seconds - offset) ÷ span
+        (seconds - offset_seconds) ÷ span
     end
 end
 

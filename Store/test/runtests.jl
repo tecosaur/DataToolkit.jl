@@ -232,6 +232,26 @@ end
     @test (@test_logs (:warn, r"^Unmatched content") interpret("about 3 days")) == 3day
 end
 
+@testset "Lifetime offsets shift the epochs" begin
+    for offset in (3 * 60 * 60, "\"3h\"", "03:00:00", "1970-01-01T03:00:00")
+        storage = only(only(read(IOBuffer("""
+        data_config_version = 0
+        uuid = "$(uuid4())"
+        name = "lifetimeoffset"
+        [[d]]
+        uuid = "$(uuid4())"
+            [[d.storage]]
+            driver = "raw"
+            value = 1
+            lifetime = "1 day"
+            lifetime_offset = $offset
+        """), DataCollection).datasets).storage)
+        day = 24 * 60 * 60
+        @test DataToolkitStore.epoch(storage, day + 3 * 60 * 60 - 1) == 0
+        @test DataToolkitStore.epoch(storage, day + 3 * 60 * 60) == 1
+    end
+end
+
 const COUNTER_CALLS = Ref(0)
 DataToolkitCore.getstorage(::DataStorage{:nullsrc}, ::Type{IO}) = IOBuffer()
 DataToolkitCore.load(::DataLoader{:counter}, ::Any, ::Type{Vector{Int}}) =
