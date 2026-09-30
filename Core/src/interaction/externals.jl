@@ -184,6 +184,25 @@ The advisable implementation of `read(dataset::DataSet, as::Type)`, which see.
 This is essentially an exercise in useful indirection.
 """
 function read1(dataset::DataSet, @nospecialize(as::Type))
+    result = eachhandle(dataset, as) do loader, handle, Tloader_out
+        loaded = @advise dataset load(loader, handle, Tloader_out)::Union{Some{as}, as, Nothing}
+        isnothing(loaded) && handle isa IOStream && isopen(handle) && close(handle)
+        loaded
+    end
+    isnothing(result) && throw(guess_read_failure_cause(dataset, as))
+    something(result)
+end
+
+"""
+    eachhandle(f::Function, dataset::DataSet, as::Type)
+
+Offer `f(loader, handle, T)` each storage `handle` that reading `dataset` as
+`as` tries, in the order a read tries them: for each loader, the first form
+each storage provides that the loader takes (to load as `T`), then `nothing`
+when the loader needs no storage. Return the first result of `f` that isn't
+`nothing`, or `nothing`.
+"""
+function eachhandle(f::Function, dataset::DataSet, @nospecialize(as::Type))
     # A storage's answer for a form holds for the whole read, so a soft failure is asked once.
     unavailable = Set{Tuple{DataStorage, Type}}()
     for loader in dataset.loaders
@@ -205,12 +224,8 @@ function read1(dataset::DataSet, @nospecialize(as::Type))
                         push!(unavailable, (storer, Tstorage_out))
                         continue
                     end
-                    result = @advise dataset load(loader, datahandle, Tloader_out)::Union{Some{as}, as, Nothing}
-                    if !isnothing(result)
-                        return something(result)
-                    elseif datahandle isa IOStream && isopen(datahandle)
-                        close(datahandle)
-                    end
+                    result = f(loader, datahandle, Tloader_out)
+                    !isnothing(result) && return result
                 end
             end
         end
@@ -219,12 +234,11 @@ function read1(dataset::DataSet, @nospecialize(as::Type))
         # without an explicit storage backend.
         for (Tloader_in, Tloader_out) in l_steps
             if Tloader_in == Nothing
-                result = @advise dataset load(loader, nothing, as)::Union{Some{as}, as, Nothing}
-                !isnothing(result) && return something(result)
+                result = f(loader, nothing, as)
+                !isnothing(result) && return result
             end
         end
     end
-    throw(guess_read_failure_cause(dataset, as))
 end
 
 function guess_read_failure_cause(dataset::DataSet, @nospecialize(as::Type))
