@@ -47,30 +47,52 @@ end
 """
     LogTaskError <: Exception
 
-A thin wrapper around a `TaskFailedException` that only
-prints the stack trace of the exception within the task.
+The failure of the task [`@log_do`](@ref) ran its expression in.
+
+It displays as the expression's exceptions would have, had it run in the
+caller: the one that ended the task, then any it was raised while handling.
+Use [`unwrap_logtask`](@ref) to inspect what was thrown.
 """
 struct LogTaskError <: Exception
     task::Task
 end
 
-function Base.showerror(io::IO, ex::LogTaskError, bt; backtrace=true)
-    stack = Base.current_exceptions(ex.task)
-    if length(stack) >= 1 # Should only be a depth-1 stack
-        exc1, bt1 = stack[1]
-        btframes = if bt isa Vector{Base.StackTraces.StackFrame} bt else stacktrace(bt) end
-        bt_merged = vcat(stacktrace(bt1), btframes)
-        # If a `LogTaskError` has been thrown, then there's
-        # no issue with the logging itself, and so we may
-        # as well remove the `@log_do` involvement from the
-        # backtrace.
-        SIMPLIFY_STACKTRACES[] &&
-            filter!(sf -> sf.file != Symbol(@__FILE__), bt_merged)
-        showerror(io, exc1, bt_merged; backtrace)
-    elseif backtrace
-        Base.show_backtrace(io, bt)
+"""
+    unwrap_logtask(err) -> Any
+
+The exception `err` stands for, without [`LogTaskError`](@ref) wrapping: the
+exception that ended the task (itself unwrapped, as `@log_do`s nest), or `err`.
+
+A `catch` that tests what a data operation threw should test
+`unwrap_logtask(err)`, and `rethrow()` what it can't handle, so the task's
+backtrace is kept.
+"""
+unwrap_logtask(err) = err
+unwrap_logtask(err::LogTaskError) = unwrap_logtask(err.task.exception)
+
+function Base.showerror(io::IO, err::LogTaskError, bt; backtrace=true)
+    stack = Base.current_exceptions(err.task)
+    # A deserialised task keeps its exception, but not its exception stack.
+    isempty(stack) && return showerror(io, err.task.exception, bt; backtrace)
+    callerframes = if !backtrace
+        Base.StackTraces.StackFrame[]
+    elseif bt isa Vector{Base.StackTraces.StackFrame}
+        bt
+    else
+        stacktrace(bt)
     end
+    Base.show_exception_stack(io, map(stack) do (exception, taskbt)
+        frames = if backtrace
+            merged = vcat(stacktrace(taskbt), callerframes)
+            SIMPLIFY_STACKTRACES[] &&
+                filter!(sf -> sf.file != Symbol(@__FILE__), merged)
+            merged
+        end
+        (exception, frames)
+    end)
 end
+
+Base.showerror(io::IO, err::LogTaskError) = showerror(io, err, nothing; backtrace=false)
 
 """
     @log_do category message [expr]
@@ -86,6 +108,8 @@ macro log_do(category::String, message, expr::Union{Expr, Nothing} = nothing)
             result = try
                 fetch(@spawn $(esc(expr)))
             catch err
+                # Only the task's failure is ours to wrap; an interrupt is the caller's.
+                err isa TaskFailedException || rethrow()
                 LogTaskError(err.task)
             finally
                 isnothing(log_task) || close(log_task)

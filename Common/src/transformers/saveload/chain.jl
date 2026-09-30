@@ -80,7 +80,7 @@ function loadtypepath(subloaders::Vector{DataLoader}, fromtype::Type, targettype
                         Some(nothing)
                     end
                 catch e
-                    if e isa ArgumentError
+                    if DataToolkitCore.unwrap_logtask(e) isa ArgumentError
                         Some(nothing)
                     else
                         rethrow()

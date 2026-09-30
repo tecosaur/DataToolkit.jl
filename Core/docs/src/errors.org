@@ -40,4 +40,5 @@ ImpossibleTypeException
 
 #+begin_src @docs
 DataToolkitCore.LogTaskError
+DataToolkitCore.unwrap_logtask
 #+end_src

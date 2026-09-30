@@ -162,8 +162,8 @@ function Base.read(dataset::DataSet)
         try
             return read(dataset, as)
         catch err
-            cause = if err isa LogTaskError first(Base.current_exceptions(err.task))[1] else err end
-            cause isa UnsatisfyableTransformer || rethrow()
+            cause = unwrap_logtask(err)
+            cause isa UnsatisfyableTransformer && cause.dataset === dataset || rethrow()
         end
     end
     possiblepkgs = getproperty.(getproperty.(dataset.loaders, :type) |> Iterators.flatten, :root)

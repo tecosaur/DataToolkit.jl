@@ -309,28 +309,35 @@ end
     @test get(collection, "ref") == "$(refpre)adataset$(refpost)"
 end
 
-@testset "LogTaskError display" begin
-    # Displaying a LogTaskError must surface the inner exception, not crash in
-    # the stacktrace-simplifying filter! (which used to index `.file` on a raw
-    # backtrace pointer → FieldError, masking every @log_do failure).
-    failed = @task error("inner boom")
-    schedule(failed)
-    try wait(failed) catch end
-    lte = DataToolkitCore.LogTaskError(failed)
-    rawbt = try error("outer") catch; catch_backtrace() end
-    old = DataToolkitCore.SIMPLIFY_STACKTRACES[]
-    try
-        DataToolkitCore.SIMPLIFY_STACKTRACES[] = true
-        # `bt` arrives raw from `throw`, or already resolved from a nested
-        # `showerror`; both must render the inner error, not crash.
-        for bt in (rawbt, stacktrace(rawbt))
-            rendered = sprint((io, e) -> showerror(io, e, bt), lte)
-            @test occursin("inner boom", rendered)
-            @test !occursin("has no field", rendered)
-            @test !occursin("no method matching stacktrace", rendered)
+failwhilehandling() = @log_do "test" "Failing" try error("handled") catch; error("final") end
+
+@testset "LogTaskError" begin
+    err = try failwhilehandling() catch e; e end
+    @testset "Unwrapping" begin
+        @test DataToolkitCore.unwrap_logtask(err) == ErrorException("final")
+        nested = try @log_do "test" "Nesting" failwhilehandling() catch e; e end
+        @test DataToolkitCore.unwrap_logtask(nested) == ErrorException("final")
+    end
+    @testset "Display" begin
+        rawbt = try error("outer") catch; catch_backtrace() end
+        old = DataToolkitCore.SIMPLIFY_STACKTRACES[]
+        try
+            DataToolkitCore.SIMPLIFY_STACKTRACES[] = true
+            # `bt` arrives raw from `throw`, or already resolved from a nested `showerror`.
+            for bt in (rawbt, stacktrace(rawbt))
+                rendered = sprint((io, e) -> showerror(io, e, bt), err)
+                @test occursin(r"^final.*caused by: handled"s, rendered)
+                @test !occursin(joinpath("model", "logging.jl"), rendered)
+            end
+            @test occursin(r"^final\s+caused by: handled$", sprint(showerror, err))
+        finally
+            DataToolkitCore.SIMPLIFY_STACKTRACES[] = old
         end
-    finally
-        DataToolkitCore.SIMPLIFY_STACKTRACES[] = old
+    end
+    @testset "Interrupts pass through" begin
+        caller = current_task()
+        Timer(_ -> schedule(caller, InterruptException(); error=true), 0.1)
+        @test_throws InterruptException @log_do "test" "Sleeping" sleep(1)
     end
 end
 
@@ -355,6 +362,17 @@ const PROBE = String[]
     end
     supportedtypes(::Type{DataLoader{:pick}}, ::Dict{String, Any}, ds::DataSet) =
         reduce(vcat, getproperty.(ds.storage, :type)) |> unique
+    # Loaders failing while handling another exception, or naming another data set.
+    function load(l::DataLoader{:handled}, ::Vector{Int}, ::Type{Vector{Int}})
+        try throw(UnsatisfyableTransformer(l.dataset, DataLoader, [QualifiedType(Int)]))
+        catch; error("handled: the real failure") end
+    end
+    function load(l::DataLoader{:unsatisfied}, ::Vector{Int}, ::Type{Vector{Int}})
+        try error("unsatisfied: handled")
+        catch; throw(UnsatisfyableTransformer(l.dataset, DataLoader, [QualifiedType(Int)])) end
+    end
+    load(::DataLoader{:foreign}, ::Vector{Int}, ::Type{Vector{Int}}) =
+        throw(UnsatisfyableTransformer(probe_dataset(:idl), DataLoader, [QualifiedType(Int)]))
 end
 
 # Build a probe DataSet off-STACK with `:mem` storage and the given loader driver.
@@ -386,6 +404,15 @@ end
     outs = supportedtypes(DataLoader{:pick})
     @test QualifiedType(Vector{Int}) in outs
     @test QualifiedType(Any) in outs
+end
+
+@testset "read fallback across types" begin
+    handled = try read(probe_dataset(:handled)) catch e; e end
+    @test DataToolkitCore.unwrap_logtask(handled) == ErrorException("handled: the real failure")
+    @test_throws TransformerError read(probe_dataset(:unsatisfied))
+    # Another data set's unsatisfiability isn't this one's to fall back from.
+    foreign = DataToolkitCore.unwrap_logtask(try read(probe_dataset(:foreign)) catch e; e end)
+    @test foreign isa UnsatisfyableTransformer
 end
 
 @testset "Programmatic collection construction" begin

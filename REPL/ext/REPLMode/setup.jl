@@ -66,7 +66,7 @@ function toplevel_execute_repl_cmd(io::IO, line::AbstractString)
         if err isa InterruptException
             printstyled(io, " !", color=:red, bold=true)
             print(io, " Aborted\n")
-        elseif err isa DataOperationException
+        elseif DataToolkitCore.unwrap_logtask(err) isa DataOperationException
             printstyled(io, " ! ", color=:red, bold=true)
             showerror(io, err, backtrace(), backtrace = false)
             print(io, '\n')

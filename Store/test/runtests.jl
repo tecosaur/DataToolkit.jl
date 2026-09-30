@@ -268,7 +268,7 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:counter}}) =
     @test !isnothing(cachefile) && isfile(cachefile)
     chmod(cachefile, 0o644)
     write(cachefile, "not a valid serialization")
-    result = @test_logs (:warn,) match_mode=:any read(dataset("nums"), Vector{Int})
+    result = @test_logs (:warn, r"^Discarding unusable cache") match_mode=:any read(dataset("nums"), Vector{Int})
     @test result == [2]
 end
 

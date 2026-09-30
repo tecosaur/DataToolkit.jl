@@ -278,10 +278,8 @@ function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
                 update_source!(inventory, cache, loader.dataset.collection)
                 Some(value)
             catch err
-                cause = if err isa DataToolkitCore.LogTaskError
-                    first(Base.current_exceptions(err.task))[1]
-                else err end
-                @warn "Discarding unusable cache for $(sprint(show, loader.dataset.name)), re-running the loader" exception=cause
+                err isa InterruptException && rethrow()
+                @warn "Discarding unusable cache for $(sprint(show, loader.dataset.name)), re-running the loader" exception=DataToolkitCore.unwrap_logtask(err)
                 nothing
             end
         end

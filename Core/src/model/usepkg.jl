@@ -20,12 +20,11 @@ function get_package(pkg::Base.PkgId)
                     "Lazy-loading $(pkg.name) [$(pkg.uuid)]",
                     Base.require(pkg))
         catch err
-            # `@log_do` wraps the failure; only a "not installed" cause is a
-            # MissingPackage, anything else (a precompile/init failure) stands.
-            cause = if err isa LogTaskError first(Base.current_exceptions(err.task))[1] else err end
-            notinstalled = cause isa ArgumentError &&
-                occursin("is required but does not seem to be installed", cause.msg)
-            notinstalled || throw(cause)
+            # Only a "not installed" failure is a MissingPackage; any other stands.
+            cause = unwrap_logtask(err)
+            cause isa ArgumentError &&
+                occursin("is required but does not seem to be installed", cause.msg) ||
+                rethrow()
             (isinteractive() && try_install_pkg(pkg)) || throw(MissingPackage(pkg))
         end
         PkgRequiredRerunNeeded()
