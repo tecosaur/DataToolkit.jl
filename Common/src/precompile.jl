@@ -20,6 +20,7 @@
     @compile_workload begin
         __init__()
         loadcollection!(IOBuffer(datatoml))
+        dataset("dataset@0"), dataset("dataset@~0, >=0, 0 - 1")
     end
     # Cleanup
     empty!(STACK)

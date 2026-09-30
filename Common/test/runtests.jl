@@ -6,6 +6,7 @@ using Test
 using UUIDs
 using ColorTypes, FixedPointNumbers
 using Tar, FilePathsBase
+import Pkg
 
 DataToolkitCore.loadcollection!("Data.toml")
 
@@ -489,6 +490,85 @@ end
         @test read(dataset(coll, "iris@>=2"), String) == "2.0.0"
         @test read(dataset(coll, "iris@1"), String) == "1.2.0"
         @test read(dataset(coll, "iris@1.0"), String) == "1.0.0"
-        @test_throws Exception dataset(coll, "iris@3")
+        @test read(dataset(coll, "iris@1.0 - 1.1"), String) == "1.0.0"
+        @test read(dataset(coll, "iris@~1.0, 2"), String) == "2.0.0"
+        @test_throws UnresolveableIdentifier dataset(coll, "iris@3")
+        err = try dataset(coll, "iris@>1") catch e; e end
+        @test err isa DataToolkitCommon.InvalidVersionSelector
+        @test occursin("\">1\"", sprint(io -> showerror(io, err, []; backtrace=false)))
+        # A versioned layer without the data set is passed over, even for `latest`.
+        freshcollection("versions", "[[unrelated]]\nuuid = \"$(uuid4())\"")
+        @test read(dataset("iris@latest"), String) == "2.0.0"
+        VersionSelector = DataToolkitCommon.VersionSelector
+        @testset "Agrees with Pkg" begin
+            # Pkg's spelling of a whole selector, with the `latest` and bare-version rules applied.
+            pkgform(selector) =
+                if selector == "latest" ">=0"
+                elseif all(c -> c ∈ '0':'9' || c == '.', selector)
+                    if count('.', selector) <= 1 "~" * selector else "=" * selector end
+                else selector end
+            # Zero and nonzero components in every position, as caret and tilde treat them differently.
+            bounds = [join(c, '.') for n in 1:3 for c in Iterators.product(fill(0:1, n)...)]
+            # Pkg rejects `0.0.0` outside ranges, and `<` of zero.
+            nonzero = filter(!=("0.0.0"), bounds)
+            positive = filter(b -> any(!=('0'), filter(!=('.'), b)), bounds)
+            clauses = vcat(
+                [op * pre * b for op in ("", "^", "~", "=", ">=", "≥")
+                     for pre in ("", "v") for b in nonzero],
+                ["= " * b for b in nonzero], [">= " * b for b in nonzero],
+                ["<" * pre * b for pre in ("", " ", "v") for b in positive],
+                ["$a - $b" for a in bounds for b in bounds])
+            # Padding and unions don't depend on the clause, so a spread of clauses covers them.
+            specs = vcat("latest", nonzero, clauses, " " .* clauses[1:17:end] .* " ",
+                         [join(p, ", ") for p in zip(clauses[1:13:end], reverse(clauses)[1:13:end])],
+                         ["2026.9", "~2026.9", "<2026.10", "2026.8 - 2026.9"])
+            # Releases in 0:2³ straddle every interval end; suffixed ones sit just off a bound.
+            versions = vcat(vec([VersionNumber(a, b, c) for a in 0:2, b in 0:2, c in 0:2]),
+                            [v"1.0.0-rc1", v"1.1.0+b7", v"2.0.0-rc1", v"2026.9.1", v"2026.10"])
+            ours = map(s -> tryparse(VersionSelector, s), specs)
+            rejected = specs[isnothing.(ours)]
+            @test isempty(rejected)
+            if isempty(rejected)
+                theirs = map(s -> Pkg.Versions.semver_spec(pkgform(s)), specs)
+                disagreements = [(spec, v) for (spec, sel, pkgsel) in zip(specs, ours, theirs)
+                                 for v in versions if (v ∈ sel) != (v ∈ pkgsel)]
+                @test isempty(disagreements)
+            end
+        end
+        @testset "Zero and saturated bounds" begin
+            matches(selector, v) = v ∈ tryparse(VersionSelector, selector)
+            # Pkg rejects these, but an unversioned data set is `v"0"`.
+            @test matches("0.0.0", v"0") && !matches("0.0.0", v"0.0.1")
+            @test !matches("<0", v"0")
+            @test matches("^$(typemax(UInt32))", VersionNumber(typemax(UInt32), 7))
+        end
+        @testset "Invalid selectors" begin
+            # Pkg accepts `=vv1` by accident.
+            for selector in ["", "1.2,", "1..2", "1.2.3.4", "~ 1", "<= 1", "1.2-1.4",
+                             "4294967296", "Latest", "=vv1"]
+                @test isnothing(tryparse(VersionSelector, selector))
+            end
+        end
+        # Before 1.11, Pkg is part of the system image, so it is always loaded.
+        @static if VERSION >= v"1.11"
+            @testset "Pkg stays unloaded" begin
+                script = """
+                using DataToolkitCore, DataToolkitCommon
+                loadcollection!(IOBuffer(\"\"\"
+                data_config_version = 0
+                uuid = "$(uuid4())"
+                name = "versioned"
+                plugins = ["versions"]
+                [[thing]]
+                uuid = "$(uuid4())"
+                version = "1.2.0"
+                \"\"\"))
+                dataset("thing"), dataset("thing@1 - 2")
+                exit(Int(haskey(Base.loaded_modules, Base.PkgId(
+                    Base.UUID("44cfe95a-1eb2-52ea-b672-e2afdf69b78f"), "Pkg"))))
+                """
+                @test success(`$(Base.julia_cmd()) --startup-file=no --project=$(Base.active_project()) -e $script`)
+            end
+        end
     end
 end

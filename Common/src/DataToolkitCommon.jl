@@ -91,8 +91,6 @@ function __init__()
     @addpkg XML            "72c71f33-b9b6-44de-8c94-c961784809e2"
     @addpkg YAML           "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
     @addpkg ZipArchives    "49080126-0e18-4c2a-b176-c102e4b3760c"
-    # Plugins
-    @addpkg Pkg            "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
     @dataplugin ADDPKGS_PLUGIN
     @dataplugin DEFAULTS_PLUGIN :default
