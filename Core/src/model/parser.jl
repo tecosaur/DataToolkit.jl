@@ -135,11 +135,10 @@ Create an [`DT`](@ref DataTransformer) of `dataset` according to `spec`.
 from the `"driver"` key in `spec`.
 """
 function fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{String, Any})::DT
-    parameters = shrinkdict(spec)
     driver = if DT isa DataType
         driverof(DT)
-    elseif haskey(parameters, "driver")
-        Symbol(lowercase(parameters["driver"]))
+    elseif haskey(spec, "driver")
+        Symbol(lowercase(spec["driver"]))
     else
         @warn "$DT for $(sprint(show, dataset.name)) has no driver!"
         :MISSING
@@ -147,28 +146,26 @@ function fromspec(DT::Type{<:DataTransformer}, dataset::DataSet, spec::Dict{Stri
     if !(DT isa DataType)
         DT = DT{driver}
     end
-    ttype = let val = get(parameters, "type", nothing)
+    ttype = let val = get(spec, "type", nothing)
         if isnothing(val)
-            supportedtypes(DT, parameters, dataset)
+            supportedtypes(DT, spec, dataset)
         elseif val isa Vector
             [parse(QualifiedType, st) for st in val]
         elseif val isa String
             [parse(QualifiedType, val)]
         else
             @warn "Invalid DT type '$val', ignoring"
-            supportedtypes(DT, parameters, dataset)
+            supportedtypes(DT, spec, dataset)
         end::Union{Vector{QualifiedType}, Nothing}
     end
     if !isnothing(ttype) && isempty(ttype)
         @warn """Could not find any types that $DT of $(sprint(show, dataset.name)) supports.
                  Consider adding a 'type' parameter."""
     end
-    priority = let val = get(parameters, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
+    priority = let val = get(spec, "priority", DEFAULT_DATATRANSFORMER_PRIORITY)
         if val isa Int val else DEFAULT_DATATRANSFORMER_PRIORITY end
     end
-    delete!(parameters, "driver")
-    delete!(parameters, "type")
-    delete!(parameters, "priority")
+    parameters = filter((k, _)::Pair -> k ∉ DATA_CONFIG_RESERVED_ATTRIBUTES[:transformer], spec)
     @advise dataset identity(
         DT(dataset, ttype, priority,
            dataset_parameters(dataset, Val(:extract), parameters)))
@@ -220,7 +217,13 @@ function fromspec(::Type{DataCollection}, spec::Dict{String, Any};
     parameters = if !haskey(spec, "config")
         Dict{String, Any}()
     elseif spec["config"] isa Dict{String, Any}
-        shrinkdict(spec["config"])
+        let config = spec["config"]
+            dnew = newdict(String, Any, length(config))
+            for (key, value) in config
+                dnew[key] = value
+            end
+            dnew
+        end
     else
         @warn "Invalid config for DataCollection, ignoring"
         Dict{String, Any}()
@@ -270,10 +273,7 @@ function fromspec(::Type{DataSet}, collection::DataCollection, name::String, spe
                     @info "Data set '$name' had no UUID, one has been generated."
                     uuid4()
                 end)::UUID
-    parameters = shrinkdict(spec)
-    for reservedname in DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset]
-        delete!(parameters, reservedname)
-    end
+    parameters = filter((k, _)::Pair -> k ∉ DATA_CONFIG_RESERVED_ATTRIBUTES[:dataset], spec)
     dataset = DataSet(collection, name, uuid,
                       dataset_parameters(collection, Val(:extract), parameters),
                       DataStorage[], DataLoader[], DataWriter[])

@@ -474,6 +474,44 @@ end
     end
 end
 
+@testset "Parsing keeps the spec intact" begin
+    filler(n) = Dict{String, Any}("k$i" => i for i in 1:n)
+    @testset "$nkeys-key tables" for nkeys in (6, 7)
+        # Each table (config, data set, storage, loader) holds `nkeys` keys.
+        storage = merge(filler(nkeys - 3), Dict{String, Any}(
+            "driver" => "mem", "type" => "Int", "priority" => 2))
+        loader = merge(filler(nkeys - 2), Dict{String, Any}(
+            "driver" => "idl", "type" => "Int"))
+        writer = Dict{String, Any}("driver" => "idl", "type" => "Int")
+        spec = Dict{String, Any}(
+            "data_config_version" => 0, "name" => "rt",
+            "uuid" => string(Base.UUID(rand(UInt128))),
+            "config" => filler(nkeys),
+            "d" => [merge(filler(nkeys - 4), Dict{String, Any}(
+                "uuid" => string(Base.UUID(rand(UInt128))),
+                "storage" => [storage], "loader" => [loader], "writer" => [writer]))])
+        snapshot = deepcopy(spec)
+        dc = DataCollection(spec)
+        @test spec == snapshot
+        @test dc.parameters == spec["config"]
+        @test dc.parameters !== spec["config"]
+        ds = only(dc.datasets)
+        @test (length(ds.storage), length(ds.loaders), length(ds.writers)) == (1, 1, 1)
+        @test ds.parameters == filler(nkeys - 4)
+        @test ds.storage[1].parameters == filler(nkeys - 3)
+        @test ds.storage[1].priority == 2
+        reparsed = read(IOBuffer(sprint(write, dc)), DataCollection)
+        @test convert(Dict, reparsed) == convert(Dict, dc)
+    end
+    @testset "Compact config" begin
+        spec = Dict{String, Any}(
+            "data_config_version" => 0, "name" => "rt",
+            "uuid" => string(Base.UUID(rand(UInt128))),
+            "config" => filler(3))
+        @test length(DataCollection(spec).parameters.slots) < length(spec["config"].slots)
+    end
+end
+
 @testset "save! debounce and flush" begin
     mktempdir() do dir
         path = joinpath(dir, "Data.toml")

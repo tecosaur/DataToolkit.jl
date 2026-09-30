@@ -24,23 +24,6 @@ function newdict(K::Type, V::Type, capacity::Int)
 end
 
 """
-    shrinkdict(dict::Dict) -> Dict
-
-If `dict` looks like it may be smaller if reconstructed using `newdict`, do so.
-"""
-function shrinkdict(dict::Dict{K, V}) where {K, V}
-    if length(dict) <= 6
-        dnew = newdict(K, V, length(dict))
-        for (k, v) in dict
-            dnew[k] = v
-        end
-        dnew
-    else
-        dict
-    end
-end
-
-"""
     atomic_write(f::Function, dest::AbstractString; temp::AbstractString = dest * "_XXXX.part")
 
 Atomically write to `dest` with `f`, via `temp`.

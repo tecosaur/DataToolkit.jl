@@ -34,7 +34,6 @@ DataToolkitCore.highlight_lcs
 
 #+begin_src @docs
 DataToolkitCore.newdict
-DataToolkitCore.shrinkdict
 #+end_src
 
 * Logging
