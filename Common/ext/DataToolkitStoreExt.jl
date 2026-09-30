@@ -36,19 +36,12 @@ shouldstore(::DataLoader{:xml}, ::Type) = false
 # Filesystem storage
 # ------------------
 
-# We want to tweak the result of `rhash` to take into account the `mtime` of the
-# file if there is no checksum.
+# Without a checksum, which replaces `path` in the hash, only the mtime shows a change.
 function rhash(storage::DataStorage{:filesystem}, h::UInt)
     if @getparam(storage."checksum"::Union{Bool, String}, false) === false
         path = abspath(dirof(storage.dataset.collection),
                        @getparam storage."path"::String)
         h = hash(if isfile(path) mtime(path) else 0.0 end, h)
-    else
-        # The checksum should already be accounted for since it's a storage parameter,
-        # but that means we should omit the path.
-        storage = DataStorage{:filesystem}(
-            storage.dataset, storage.type, storage.priority,
-            delete!(copy(storage.parameters), "path"))
     end
     invoke(rhash, Tuple{DataStorage, UInt}, storage, h)
 end

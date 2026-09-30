@@ -322,6 +322,36 @@ try
             @test DataToolkitCore.unwrap_logtask(err) isa DataToolkitStore.ChecksumMismatch
             @test read(dataset(other, "local"), String) == "original\n"
         end
+        @testset "Local files without a checksum are told apart by path" begin
+            # `checksum = true` names no value, so it can't stand for the path.
+            coll = storecollection("""
+            [[one]]
+            uuid = "$(uuid4())"
+
+                [[one.storage]]
+                driver = "filesystem"
+                path = "one.txt"
+                checksum = true
+
+                [[one.loader]]
+                driver = "passthrough"
+
+            [[two]]
+            uuid = "$(uuid4())"
+
+                [[two.storage]]
+                driver = "filesystem"
+                path = "two.txt"
+                checksum = true
+
+                [[two.loader]]
+                driver = "passthrough"
+            """)
+            write(joinpath(dirname(coll.source.path), "one.txt"), "one")
+            write(joinpath(dirname(coll.source.path), "two.txt"), "two")
+            @test read(dataset(coll, "one"), String) == "one"
+            @test read(dataset(coll, "two"), String) == "two"
+        end
     end
 
     include("e2e_repl.jl")

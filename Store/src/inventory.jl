@@ -514,17 +514,17 @@ Examine each collection in `inv`, and sort them into the following categories:
 These categories are returned with a named tuple of the following form:
 
 ```julia
-(; active_collections::Dict{UUID, Set{UInt64}},
+(; active_collections::Dict{UUID, Set{Union{UInt64, Checksum}}},
    live_collections::Set{UUID},
    ghost_collections::Set{UUID},
    dead_collections::Vector{UUID})
 ```
 
 The `active_collections` value gives both the data collection UUIDs, as well
-as all known recipe hashes.
+as the `livekeys` of all their storages and loaders.
 """
 function scan_collections(inv::Inventory; log::Bool=false)
-    active_collections = Dict{UUID, Set{UInt64}}()
+    active_collections = Dict{UUID, Set{Union{UInt64, Checksum}}}()
     live_collections = Set{UUID}()
     ghost_collections = Set{UUID}()
     dead_collections = Vector{UUID}()
@@ -551,14 +551,10 @@ function scan_collections(inv::Inventory; log::Bool=false)
             end
             if haskey(cdata, "uuid") && parse(UUID, cdata["uuid"]) == collection.uuid
                 if any(c -> c.uuid == collection.uuid, STACK)
-                    ids = Set{UInt64}()
+                    ids = Set{Union{UInt64, Checksum}}()
                     for dataset in getlayer(collection.uuid).datasets
-                        for storage in dataset.storage
-                            push!(ids, rhash(storage))
-                        end
-                        for loader in dataset.loaders
-                            push!(ids, rhash(loader))
-                        end
+                        foreach(s -> union!(ids, livekeys(s)), dataset.storage)
+                        foreach(l -> union!(ids, livekeys(l)), dataset.loaders)
                         num_datasets_scanned += 1
                         if log && time() - scan_update > ifelse(did_show_progress, 0.05, 0.2)
                             did_show_progress = true
@@ -593,22 +589,38 @@ function scan_collections(inv::Inventory; log::Bool=false)
 end
 
 """
+    livekeys(storage::DataStorage)
+    livekeys(loader::DataLoader)
+    livekeys(source::SourceInfo)
+
+The keys by which a live storage or loader holds its stored sources, and by
+which a source is held. That is the recipe hash, and the storage's (or
+source's) checksum, which identifies its data whatever the recipe it was
+stored under.
+"""
+livekeys(@nospecialize(storage::DataStorage)) =
+    filter(!isnothing, (rhash(storage), checksumvalue(storage)))
+livekeys(@nospecialize(loader::DataLoader)) = (rhash(loader),)
+livekeys(source::StoreSource) = filter(!isnothing, (source.recipe, source.checksum))
+livekeys(source::CacheSource) = (source.recipe,)
+
+"""
     refresh_sources!(inv::Inventory; inactive_collections::Set{UUID},
-                     active_collections::Dict{UUID, Set{UInt64}})
+                     active_collections::Dict{UUID, <:Set})
 
 Update the listed `references` of each source in `inv`, such that
 only references that are part of either `inactive_collections` or
 `active_collections` are retained.
 
-References to `active_collections` also are checked against the given recipe
-hash and the known recipe hashes.
+References to `active_collections` also are checked against the
+`livekeys` that collection holds.
 
 Sources with no references after this update are considered orphaned and removed.
 
 The result is a named tuple giving a list of orphaned sources and the number of
 recipe checks that occurred.
 """
-function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UInt64}},
+function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, <:Set},
                           inactive_collections::Set{UUID}, dryrun::Bool=false)
     orphan_sources = SourceInfo[]
     num_recipe_checks = 0
@@ -618,7 +630,7 @@ function refresh_sources!(inv::Inventory; active_collections::Dict{UUID, Set{UIn
             keepref(r) =
                 if haskey(active_collections, r)
                     num_recipe_checks += 1
-                    source.recipe ∈ active_collections[r] &&
+                    !isdisjoint(livekeys(source), active_collections[r]) &&
                         if source isa StoreSource
                             true
                         elseif all(Base.root_module_exists, source.packages)

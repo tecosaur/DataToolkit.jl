@@ -102,6 +102,24 @@ function store_epoch_param_a(f::typeof(rhash), @nospecialize(storage::DataStorag
     (f, (storage, parameters, h))
 end
 
+"""
+    store_checksum_rhash_a( <rhash(storage::DataStorage, parameters::Dict, h::UInt)> )
+
+This ensures that a storage with a checksum is hashed by that checksum alone.
+The checksum fixes the stored bytes, so where they are fetched from (a URL,
+headers, a timeout, …) can't affect the result.
+
+Part of `STORE_PLUGIN`.
+"""
+function store_checksum_rhash_a(f::typeof(rhash), @nospecialize(storage::DataStorage), parameters::Dict{String}, h::UInt)
+    csum = checksumvalue(storage)
+    if isnothing(csum)
+        (f, (storage, parameters, h))
+    else
+        (f, (storage, Dict{String, Any}("checksum" => string(csum)), h))
+    end
+end
+
 function store_init_checksum_a end
 
 function store_extra_info_a end
@@ -153,6 +171,9 @@ it, e.g. `"sha256"`. The currently supported algorithms are: `k12` (Kangaroo
 Twelve), `sha512`, `sha384`, `sha256`, `sha224`, `sha1`, `md5`, and `crc32c`.
 
 To explicitly specify no checksum, set the parameter to `false`.
+
+A storage's checksum identifies its data, so any stored file with that checksum
+serves the storage: moving its source (a new URL, say) doesn't fetch it again.
 
 For data sets with `lifetime` set (see *Expiry/Lifecycle*), `"auto"` interpreted
 as `false`.
@@ -222,6 +243,7 @@ const STORE_PLUGIN =
     Plugin("store", [
         store_get_a,
         store_epoch_param_a,
+        store_checksum_rhash_a,
         store_init_checksum_a,
         store_extra_info_a])
 

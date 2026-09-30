@@ -28,8 +28,8 @@ end
 """
     getsource(inventory::Inventory, storage::DataStorage)
 
-Look for the source in `inventory` that backs `storage`,
-returning the source or `nothing` if none could be found.
+Look for the source in `inventory` that backs `storage`, or a stored file that
+can, returning the source or `nothing` if none could be found.
 """
 function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
     recipe = rhash(storage)
@@ -43,13 +43,17 @@ function getsource(inventory::Inventory, @nospecialize(storage::DataStorage))
             end
         end
     else
-        thechecksum = tryparse(Checksum, checksum)
-        isnothing(thechecksum) && return
+        csum = checksumvalue(storage)
+        isnothing(csum) && return
         for record in inventory.stores
-            if record.recipe === recipe && record.checksum == thechecksum
+            if record.recipe === recipe && record.checksum == csum
                 return record
             end
         end
+        # A file named by this checksum was verified when stored, unless it's a link.
+        adopted = StoreSource(recipe, UUID[], now(), csum, fileextension(storage))
+        file = storefile(inventory, adopted)
+        if isfile(file) && !islink(file) adopted end
     end
 end
 
@@ -238,12 +242,24 @@ function Base.showerror(io::IO, e::ChecksumMismatch)
     println(io, "Expected $(e.target) checksum $(string(e.expected)), got $(string(e.actual))")
 end
 
+"""
+    checksumvalue(storage::DataStorage) -> Union{Checksum, Nothing}
+
+Return the checksum of `storage`, or `nothing` when it has none: its `checksum`
+parameter is `false`, or leaves one to be computed (`true`, `"auto"`, or an
+algorithm name).
+"""
+function checksumvalue(@nospecialize(storage::DataStorage))
+    csumval = @getparam storage."checksum"::Union{Bool, String} false
+    if csumval isa String tryparse(Checksum, csumval) end
+end
+
 function checksumalgorithm(@nospecialize(storage::DataStorage))
     csumval = @getparam storage."checksum"::Union{Bool, String} false
     csumval === false && return
     (csumval === true || csumval == "auto") &&
         return if !haskey(storage.parameters, "lifetime") CHECKSUM_DEFAULT_SCHEME end
-    schecksum = tryparse(Checksum, csumval)
+    schecksum = checksumvalue(storage)
     if !isnothing(schecksum)
         schecksum.alg
     elseif csumval isa String && !occursin(':', csumval)

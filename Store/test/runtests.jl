@@ -581,6 +581,76 @@ end
     @test length(inventory.stores) == 1
 end
 
+# `:counted` ignores its `url`, counting fetches.
+const COUNTED_FETCHES = Ref(0)
+DataToolkitCore.getstorage(::DataStorage{:counted}, ::Type{IO}) =
+    (COUNTED_FETCHES[] += 1; IOBuffer("hello blob"))
+
+@testset "A checksum identifies the stored data" begin
+    function countedcollection(storage::String, storedir::String)
+        data_toml = joinpath(mktempdir(), "Data.toml")
+        write(data_toml, """
+        data_config_version = 0
+        uuid = "$(uuid4())"
+        name = "$(uuid4())"
+        plugins = ["store"]
+
+        [config.store]
+        path = "$storedir"
+
+        [[blob]]
+        uuid = "$(uuid4())"
+
+            [[blob.storage]]
+            driver = "counted"
+            $storage
+        """)
+        collection = loadcollection!(data_toml)
+        collection, dataset(collection, "blob")
+    end
+    fetchcount(blob) = (COUNTED_FETCHES[] = 0; read(open(blob, IO), String); COUNTED_FETCHES[])
+    blobsum = string(checksum(:crc32c, "hello blob"))
+    storedir = mktempdir()
+    original, originalblob = countedcollection("url = \"https://a.example/blob\"\nchecksum = \"$blobsum\"", storedir)
+    moved, movedblob = countedcollection("url = \"https://b.example/blob\"\ntimeout = 60\nchecksum = \"$blobsum\"", storedir)
+    @test fetchcount(originalblob) == 1
+    @test fetchcount(movedblob) == 0
+    inventory = DataToolkitStore.getinventory(original)
+    @test readdir(joinpath(storedir, "store")) == ["$blobsum.cache"]
+    @test issetequal(only(inventory.stores).references, [original.uuid, moved.uuid])
+    # `~recipe` stands in for a record stored under an older recipe.
+    modify_inventory!(inventory) do inv
+        record = only(inv.stores)
+        inv.stores[1] = StoreSource(~record.recipe, record.references, record.accessed,
+                                    record.checksum, record.extension)
+    end
+    garbage_collect!(inventory; log = false)
+    @test length(inventory.stores) == 1
+    @test isfile(joinpath(storedir, "store", "$blobsum.cache"))
+    _, nosumblob = countedcollection("url = \"https://a.example/blob\"", storedir)
+    _, nosummoved = countedcollection("url = \"https://b.example/blob\"", storedir)
+    @test fetchcount(nosumblob) == fetchcount(nosummoved) == 1
+    _, otherblob = countedcollection("checksum = \"$(string(checksum(:crc32c, "other")))\"", storedir)
+    @test_throws DataToolkitStore.ChecksumMismatch open(otherblob, IO)
+    adoptdir = mktempdir()
+    mkpath(joinpath(adoptdir, "store"))
+    write(joinpath(adoptdir, "store", "$blobsum.cache"), "hello blob")
+    adopter, adopterblob = countedcollection("checksum = \"$blobsum\"", adoptdir)
+    @test fetchcount(adopterblob) == 0
+    record = only(DataToolkitStore.getinventory(adopter).stores)
+    @test record.recipe == DataToolkitStore.rhash(only(adopterblob.storage))
+    @test record.references == [adopter.uuid]
+    linkdir = mktempdir()
+    mkpath(joinpath(linkdir, "store"))
+    edited = joinpath(mktempdir(), "edited.txt")
+    write(edited, "edited")
+    symlink(edited, joinpath(linkdir, "store", "$blobsum.cache"))
+    _, linkedblob = countedcollection("checksum = \"$blobsum\"", linkdir)
+    COUNTED_FETCHES[] = 0
+    @test read(open(linkedblob, IO), String) == "hello blob"
+    @test COUNTED_FETCHES[] == 1
+end
+
 # `:localfile` hands over a file that lives outside the store.
 DataToolkitCore.getstorage(storage::DataStorage{:localfile}, ::Type{DataToolkitCore.FilePath}) =
     DataToolkitCore.FilePath(get(storage, "path"))
