@@ -262,6 +262,7 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
     @test open(dataset("blob"), Vector{UInt8}) == codeunits("hello blob")
     @test length(inventory.stores) == 1
     @test length(readdir(joinpath(storedir, inventory.config.store_dir))) == 1
+    @test DataToolkitStore.fetch!(only(dataset("blob").storage))
     # Asked once per read, as a file if offered, so a failed download isn't repeated.
     empty!(GONE_CALLS)
     @test read(dataset("fallback"), String) == "hello blob"

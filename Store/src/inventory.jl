@@ -712,7 +712,7 @@ function fetch!(@nospecialize(storer::DataStorage))
         if shouldstore(storer) || @getparam(storer."save"::Bool, false) === true
             for type in (FilePath, IO, IOStream)
                 if QualifiedType(type) in storer.type
-                    handle = @advise storage(storer, type, write=false)
+                    handle = @advise storage(storer, type, write=false)::Union{Some{type}, type, Nothing}
                     if handle isa IO
                         close(handle)
                         return true
