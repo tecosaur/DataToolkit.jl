@@ -290,6 +290,37 @@ end
     @testset "AWS S3" begin
         @maybe_broken open(dataset("iris-s3"), FilePath) isa FilePath
     end
+    @testset "null" begin
+        coll = freshcollection("defaults", """
+        [[answer]]
+        uuid = "$(uuid4())"
+
+            [[answer.storage]]
+            driver = "null"
+
+            [[answer.loader]]
+            driver = "julia"
+            function = "() -> 42"
+            type = "Int"
+
+        [[greeting]]
+        uuid = "$(uuid4())"
+
+            [[greeting.storage]]
+            driver = "null"
+
+            [[greeting.storage]]
+            driver = "raw"
+            value = "hello"
+
+            [[greeting.loader]]
+            driver = "passthrough"
+            type = "String"
+        """)
+        @test read(dataset(coll, "answer"), Int) == 42
+        @test read(dataset(coll, "greeting"), String) == "hello"
+        @test isnothing(open(dataset(coll, "answer"), IO))
+    end
 end
 
 @testset "Loaders/Writers" begin

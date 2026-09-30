@@ -26,6 +26,7 @@ end
 # ------------------
 
 shouldstore(::DataLoader{:jld2}, ::Type) = false
+shouldstore(::DataStorage{:null}) = false
 shouldstore(::DataStorage{:passthrough}) = false
 shouldstore(::DataLoader{:passthrough}, ::Type) = false
 shouldstore(::DataStorage{:raw}) = false

@@ -352,6 +352,26 @@ try
             @test read(dataset(coll, "one"), String) == "one"
             @test read(dataset(coll, "two"), String) == "two"
         end
+        @testset "A null storage is read, never stored" begin
+            coll = storecollection("""
+            [config.store]
+            path = "$(mktempdir())"
+
+            [[answer]]
+            uuid = "$(uuid4())"
+
+                [[answer.storage]]
+                driver = "null"
+
+                [[answer.loader]]
+                driver = "julia"
+                function = "() -> 42"
+                type = "Int"
+            """)
+            @test read(dataset(coll, "answer"), Int) == 42
+            DataToolkitStore.fetch!(coll)
+            @test isempty(DataToolkitStore.getinventory(coll).stores)
+        end
     end
 
     include("e2e_repl.jl")

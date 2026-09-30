@@ -1,12 +1,21 @@
-# This is a special kind of store that's basically just needed for
-# the `:julia` loader.
-storage(::DataStorage{:null}, ::Any; write::Bool) = Some(nothing)
-
-# To avoid method ambiguity
-storage(::DataStorage{:null}, ::Type; write::Bool) = Some(nothing)
+storage(::DataStorage{:null}, ::Type{Nothing}; write::Bool) = Some(nothing)
 
 const NULL_S_DOC = md"""
-A special driver sometimes needed for the `julia` loader
+Provide no data, for loaders that need no input
 
-This driver always produces `Some(nothing)`.
+Some loaders construct their information without reading anything, such as a
+`julia` loader without an `input`. The `null` driver says so explicitly: it
+provides `nothing`, so only a loader that accepts no input can use it.
+
+# Usage examples
+
+```toml
+[[answer.storage]]
+driver = "null"
+
+[[answer.loader]]
+driver = "julia"
+function = "() -> 42"
+type = "Int"
+```
 """
