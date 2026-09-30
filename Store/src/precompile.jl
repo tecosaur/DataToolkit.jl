@@ -37,7 +37,7 @@ using PrecompileTools
         empty!(INVENTORIES); push!(INVENTORIES, inv)
         # merkle(inv.merkles, @__DIR__, ".", :crc32c)
         write(devnull, last(INVENTORIES))
-        garbage_collect!(; log=false, trimmsg=false, dryrun=false)
+        garbage_collect!(inv; log=false, trimmsg=false, dryrun=false)
         rhash(Inventory)
         rhash(first(INVENTORIES))
     end

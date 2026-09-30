@@ -15,6 +15,12 @@ using DataToolkitStore.DataToolkitCore: DataToolkitCore, DataCollection,
 
 using DataToolkitStore.LockFiles: pidlive, pidqueue, overwrite
 
+# Before any store use, so only inventories a session uses are collected at exit.
+@testset "Loading the store reads no inventory" begin
+    @test DataToolkitStore.USER_INVENTORY ∉
+        getfield.(getfield.(DataToolkitStore.INVENTORIES, :file), :path)
+end
+
 @testset "Checksums" begin
     @test checksum(:k12, "DataToolkitStore") ==
         Checksum(:k12, UInt8[0xec, 0xd8, 0x57, 0xba, 0x30, 0xf4, 0x70, 0x68, 0xa2, 0x45, 0x1f, 0x97, 0xa9, 0x22, 0x42, 0x01])
@@ -322,6 +328,57 @@ end
     end
     @test !isfile(orphan)
     @test isfile(inv.file.path)
+end
+
+@testset "Automatic GC collects only due, registered inventories" begin
+    function staleinventory(auto_gc::Int)
+        path = joinpath(mktempdir(), "Inventory.toml")
+        write(path, """
+        inventory_version = 0
+        inventory_last_gc = 1970-01-01T00:00:00.000Z
+
+        [config]
+        auto_gc = $auto_gc
+        """)
+        load_inventory(path)
+    end
+    due, disabled, unregistered = staleinventory(2), staleinventory(0), staleinventory(2)
+    registered = copy(DataToolkitStore.INVENTORIES)
+    try
+        empty!(DataToolkitStore.INVENTORIES)
+        push!(DataToolkitStore.INVENTORIES, due, disabled)
+        redirect_stdout(devnull) do
+            DataToolkitStore.autogc()
+        end
+    finally
+        append!(empty!(DataToolkitStore.INVENTORIES), registered)
+    end
+    @test due.last_gc > DateTime(1970)
+    @test disabled.last_gc == DateTime(1970)
+    @test unregistered.last_gc == DateTime(1970)
+end
+
+@testset "Precompiling a dependent leaves the store alone" begin
+    probedir, storedir = mktempdir(), mktempdir()
+    mkpath(joinpath(probedir, "GCProbe", "src"))
+    write(joinpath(probedir, "GCProbe", "src", "GCProbe.jl"),
+          "module GCProbe using DataToolkitStore end\n")
+    inventory = joinpath(storedir, "Inventory.toml")
+    write(inventory, """
+    inventory_version = 0
+    inventory_last_gc = 1970-01-01T00:00:00.000Z
+
+    [config]
+    """)
+    before = read(inventory)
+    # A throwaway first depot receives the probe's compiled cache.
+    probecmd = addenv(
+        `$(Base.julia_cmd()) --startup-file=no -e 'Base.compilecache(Base.identify_package("GCProbe"))'`,
+        "JULIA_LOAD_PATH" => join([probedir, Base.active_project(), "@stdlib"], ':'),
+        "JULIA_DEPOT_PATH" => join([mktempdir(); DEPOT_PATH], ':'),
+        "DATATOOLKIT_STORE" => storedir)
+    @test success(pipeline(probecmd, stdout = devnull))
+    @test read(inventory) == before
 end
 
 @testset "Merkle trees" begin

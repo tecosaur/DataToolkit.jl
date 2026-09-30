@@ -48,6 +48,15 @@ checks, as performed by `fetch!` for instance.
 """
 STORE_RECORD_ACCESS::Bool = true
 
+"""
+    isprecompiling() -> Bool
+
+Whether this process is generating output (precompiling), in which case the
+store is never garbage collected automatically.
+"""
+# TODO: Replace `jl_generating_output` with `Base.generating_output` once min Julia >= 1.11
+isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
+
 function init_user_inventory!()
     global USER_STORE = normpath(if haskey(ENV, "DATATOOLKIT_STORE")
         mkpath(ENV["DATATOOLKIT_STORE"])
@@ -69,8 +78,10 @@ include("plugins.jl")
 
 Initialise the data store by:
 - Registering the plugins `STORE_PLUGIN` and `CACHE_PLUGIN`
-- Loading the user inventory
-- Registering the GC-on-exit hook
+- Locating the user store
+- Registering the flush-on-exit and GC-on-exit hooks
+
+Inventories are loaded when first used, so only those are collected at exit.
 """
 function __init__()
     # Hashing packages
@@ -81,19 +92,25 @@ function __init__()
     # Plugins
     @dataplugin STORE_PLUGIN :default
     @dataplugin CACHE_PLUGIN
-    # Inventory loading
     init_user_inventory!()
-    getinventory()
     # Registered before the GC hook so (LIFO) it flushes any writes GC queues.
     atexit(flushpendingwrites)
-    atexit() do
-        for inv in INVENTORIES
-            hours_since = (now() - inv.last_gc).value / (1000 * 60 * 60)
-            if inv.config.auto_gc > 0 && hours_since > inv.config.auto_gc
-                @log_do("store:gc",
-                        "Garbage collecting inventory ($(dirname(inv.file.path)))",
-                        garbage_collect!(inv; log=false, trimmsg=true))
-            end
+    isprecompiling() || atexit(autogc)
+end
+
+"""
+    autogc()
+
+Garbage collect each registered inventory whose last collection is older than
+its `auto_gc` interval (in hours).
+"""
+function autogc()
+    for inv in INVENTORIES
+        hours_since = (now() - inv.last_gc).value / (1000 * 60 * 60)
+        if inv.config.auto_gc > 0 && hours_since > inv.config.auto_gc
+            @log_do("store:gc",
+                    "Garbage collecting inventory ($(dirname(inv.file.path)))",
+                    garbage_collect!(inv; log=false, trimmsg=true))
         end
     end
 end

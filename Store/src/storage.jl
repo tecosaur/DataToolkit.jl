@@ -654,6 +654,7 @@ When the maximum size of `inventory` in unbounded, nothing is done.
 """
 function stochastic_gc!(inventory::Inventory, newfile::String)
     isnothing(inventory.config.max_size) && return
+    isprecompiling() && return
     relsize = filesize(newfile) / inventory.config.max_size
     if 2 * relsize > rand()
         garbage_collect!(inventory, log=false)

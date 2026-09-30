@@ -228,7 +228,7 @@ end
 
 """
     printstats(inv::Inventory)
-    printstats() # All inventories
+    printstats() # All inventories, including the user store
 
 Print statistics about `inv`.
 
@@ -262,6 +262,7 @@ function printstats(inv::Inventory)
 end
 
 function printstats()
+    getinventory()
     if length(INVENTORIES) == 1
         printstats(first(INVENTORIES))
     else
@@ -404,9 +405,10 @@ end
 """
     garbage_collect!(; log::Bool=true, kwargs...)
 
-Garbage collect all inventories.
+Garbage collect all inventories, including the user store.
 """
 function garbage_collect!(; log::Bool=true, kwargs...)
+    getinventory()
     if length(INVENTORIES) == 1
         garbage_collect!(first(INVENTORIES); log, kwargs...)
     else
