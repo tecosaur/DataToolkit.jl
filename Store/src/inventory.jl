@@ -729,11 +729,36 @@ function fetch!(@nospecialize(storer::DataStorage))
 end
 
 """
-    fetch!(dataset::DataSet)
+    fetch!(dataset::DataSet) -> Bool
 
-Call `fetch!` on each storage backend of `dataset`.
+Fetch what a read of `dataset` would use, so the store saves it: the first
+storage handle a read tries, or, for a data set without loaders (which is only
+ever opened), the first storage that provides it as a file or IO. Return
+whether a storage provided it.
+
+The loaders are walked for any type (`Any`), which a read of one particular
+type can differ from, where its loader would take another form of storage.
 """
-fetch!(dataset::DataSet) = foreach(fetch!, dataset.storage)
+function fetch!(dataset::DataSet)
+    function provided(handle)
+        handle isa IO && close(handle)
+        true
+    end
+    global STORE_RECORD_ACCESS = false
+    try
+        # A loader's null-storage option is offered `nothing`, which fetches nothing.
+        isempty(dataset.loaders) || return !isnothing(DataToolkitCore.eachhandle(
+            (_, handle, _) -> if !isnothing(handle) provided(handle) end, dataset, Any))
+        for storer in dataset.storage, T in (FilePath, IO)
+            QualifiedType(T) in storer.type || continue
+            handle = something(@advise(storage(storer, T, write=false)::Union{Some{T}, T, Nothing}), Some(nothing))
+            isnothing(handle) || return provided(handle)
+        end
+        false
+    finally
+        STORE_RECORD_ACCESS = true
+    end
+end
 
 """
     fetch!(collection::DataCollection)

@@ -208,6 +208,8 @@ DataToolkitCore.supportedtypes(::Type{DataStorage{:gone}}, ::Dict{String, Any}) 
 DataToolkitCore.getstorage(::DataStorage{:goneio}, T::Type{IO}) =
     (push!(GONE_CALLS, (:goneio, T)); nothing)
 DataToolkitCore.load(::DataLoader{:text}, from::IO, ::Type{String}) = read(from, String)
+# Like `:julia` given an input, offered no storage it declines.
+DataToolkitCore.load(::DataLoader{:text}, ::Nothing, ::Type{String}) = nothing
 DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
     [DataToolkitCore.QualifiedType(String)]
 
@@ -246,6 +248,38 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
 
         [[fallback.loader]]
         driver = "text"
+
+    [[firstwins]]
+    uuid = "$(uuid4())"
+
+        [[firstwins.storage]]
+        driver = "testblob"
+        priority = 1
+
+        [[firstwins.storage]]
+        driver = "gone"
+        priority = 2
+
+    [[livefirst]]
+    uuid = "$(uuid4())"
+
+        [[livefirst.storage]]
+        driver = "testblob"
+        save = false
+        priority = 1
+
+        [[livefirst.storage]]
+        driver = "gone"
+        priority = 2
+
+    [[unfetchable]]
+    uuid = "$(uuid4())"
+
+        [[unfetchable.storage]]
+        driver = "gone"
+
+        [[unfetchable.loader]]
+        driver = "text"
     """)
     loadcollection!(data_toml)
     inventory = DataToolkitStore.getinventory(dataset("blob").collection)
@@ -269,6 +303,13 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
     @test GONE_CALLS == [(:gone, DataToolkitCore.FilePath), (:goneio, IO)]
     @test all(s -> isnothing(DataToolkitStore.getsource(inventory, s)),
               filter(s -> !(s isa DataStorage{:testblob}), dataset("fallback").storage))
+    empty!(GONE_CALLS)
+    @test DataToolkitStore.fetch!(dataset("fallback"))
+    @test GONE_CALLS == [(:gone, DataToolkitCore.FilePath), (:goneio, IO)]
+    empty!(GONE_CALLS)
+    @test DataToolkitStore.fetch!(dataset("firstwins")) && DataToolkitStore.fetch!(dataset("livefirst"))
+    @test isempty(GONE_CALLS)
+    @test !DataToolkitStore.fetch!(dataset("unfetchable"))
 end
 
 @testset "Lifetime interpretation" begin
