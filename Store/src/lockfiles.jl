@@ -370,7 +370,6 @@ function claim_pidfront!(lf::LockFile)
         # queue must still be rewritten, else two processes prune the same corpse.
         if livepids != rawpids
             overwrite(lf, livepids)
-            truncate(lf.file, sizeof(Int32) * length(livepids))
         end
         lf.held = true
     finally
@@ -429,17 +428,15 @@ end
     overwrite(lf::LockFile, nums::DenseVector{<:Integer})
 
 Replace the contents of `lf` with `nums`.
-
-If `nums` takes up less space than the existing contents of `lf`,
-`truncate` should be called on `lf.file` (not taken care of here).
 """
 function overwrite(lf::LockFile, nums::DenseVector{<:Integer})
     # I would have thought seeking wouldn't be needed given the provided
     # write arg `offset=0`, however it seems that can produce appends and
     # so break the system, so we must seek first.
     seek(lf.file, 0)
-    GC.@preserve nums unsafe_write(
-        lf.file, Ptr{UInt8}(pointer(nums)), sizeof(eltype(nums)) * length(nums) % UInt, 0)
+    nbytes = sizeof(eltype(nums)) * length(nums)
+    GC.@preserve nums unsafe_write(lf.file, Ptr{UInt8}(pointer(nums)), nbytes % UInt, 0)
+    truncate(lf.file, nbytes)
 end
 
 """

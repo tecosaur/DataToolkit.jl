@@ -160,49 +160,45 @@ function create_sandbox()
      modes = ( julia=julia_mode, shell=shell_mode, help=help_mode, hist=hist_mode))
 end
 
-@static if VERSION >= v"1.9" # when `MIState.active_module` was added
-    # Because `REPL.LineEdit.init_state` is hardcoded to set the module
-    # to `Main` we have to copy+tweak `run_repl`, `run_frontend`, and `init_state`.
-    # This is horibly icky and I don't like it one bit.
-    function run_sandbox_repl(sandbox)
-        function run_frontend(repl::REPL.LineEditREPL, backend::REPL.REPLBackendRef)
-            repl.frontend_task = current_task()
-            d = REPL.REPLDisplay(repl)
-            dopushdisplay = repl.specialdisplay === nothing && !in(d, Base.Multimedia.displays)
-            dopushdisplay && pushdisplay(d)
-            if !isdefined(repl, :interface)
-                interface = repl.interface = REPL.setup_interface(repl)
-            else
-                interface = repl.interface
-            end
-            repl.backendref = backend
-            repl.mistate = REPL.LineEdit.init_state(REPL.terminal(repl), interface)
-            # NOTE this is the key line that necessitates all this copypasta
-            repl.mistate.active_module = sandbox.mod
-            # ^^^ key line
-            REPL.run_interface(REPL.terminal(repl), interface, repl.mistate)
-            put!(backend.repl_channel, (nothing, -1))
-            dopushdisplay && popdisplay(d)
-            nothing
+# Because `REPL.LineEdit.init_state` is hardcoded to set the module
+# to `Main` we have to copy+tweak `run_repl`, `run_frontend`, and `init_state`.
+# This is horibly icky and I don't like it one bit.
+function run_sandbox_repl(sandbox)
+    function run_frontend(repl::REPL.LineEditREPL, backend::REPL.REPLBackendRef)
+        repl.frontend_task = current_task()
+        d = REPL.REPLDisplay(repl)
+        dopushdisplay = repl.specialdisplay === nothing && !in(d, Base.Multimedia.displays)
+        dopushdisplay && pushdisplay(d)
+        if !isdefined(repl, :interface)
+            interface = repl.interface = REPL.setup_interface(repl)
+        else
+            interface = repl.interface
         end
-        backend = REPL.REPLBackend()
-        backend_ref = REPL.REPLBackendRef(backend)
-        cleanup = @task try
-            REPL.destroy(backend_ref, t)
-        catch e
-            Core.print(Core.stderr, "\nINTERNAL ERROR: ")
-            Core.println(Core.stderr, e)
-            Core.println(Core.stderr, catch_backtrace())
-        end
-        get_module = () -> sandbox.mod
-        t = @async run_frontend(sandbox.repl, backend_ref)
-        errormonitor(t)
-        Base._wait2(t, cleanup)
-        REPL.start_repl_backend(backend, _ -> nothing; get_module)
-        return backend
+        repl.backendref = backend
+        repl.mistate = REPL.LineEdit.init_state(REPL.terminal(repl), interface)
+        # NOTE this is the key line that necessitates all this copypasta
+        repl.mistate.active_module = sandbox.mod
+        # ^^^ key line
+        REPL.run_interface(REPL.terminal(repl), interface, repl.mistate)
+        put!(backend.repl_channel, (nothing, -1))
+        dopushdisplay && popdisplay(d)
+        nothing
     end
-else
-    const run_sandbox_repl = REPL.run_repl
+    backend = REPL.REPLBackend()
+    backend_ref = REPL.REPLBackendRef(backend)
+    cleanup = @task try
+        REPL.destroy(backend_ref, t)
+    catch e
+        Core.print(Core.stderr, "\nINTERNAL ERROR: ")
+        Core.println(Core.stderr, e)
+        Core.println(Core.stderr, catch_backtrace())
+    end
+    get_module = () -> sandbox.mod
+    t = @async run_frontend(sandbox.repl, backend_ref)
+    errormonitor(t)
+    Base._wait2(t, cleanup)
+    REPL.start_repl_backend(backend, _ -> nothing; get_module)
+    return backend
 end
 
 function sandbox_to_function(sandbox)

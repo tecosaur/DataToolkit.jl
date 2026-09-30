@@ -2,6 +2,17 @@
 
 using Base.Threads # For the hashing
 
+# Base only gained `copyuntil`, and `isreadable` of a path, in Julia 1.11.
+@static if VERSION < v"1.11"
+    function copyuntil(out::IO, io::IO, delim::UInt8; keep::Bool = false)
+        write(out, readuntil(io, delim; keep))
+        out
+    end
+    isreadable(x) = Base.isreadable(x)
+    isreadable(path::AbstractString) =
+        ccall(:jl_fs_access, Cint, (Cstring, Cint), path, 0x04 #= R_OK =#) == 0
+end
+
 const MerkleNode = @NamedTuple{indent::Int64, kind::Symbol, checksum::Checksum, mtime::Float64, path::String}
 
 """

@@ -20,11 +20,11 @@ DataToolkitStore = "~0.10"
 Downloads = "1"
 Logging = "1"
 PrecompileTools = "1.2"
-REPL = "1.9"
+REPL = "1.10"
 Sockets = "1"
 Test = "1"
 TerminalRegressionTests = "0.2"
-julia = "1.9"
+julia = "1.10"
 
 [extras]
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
