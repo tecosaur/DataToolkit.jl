@@ -68,6 +68,9 @@ Special care is taken to:
 - reduce potential file copying
 - avoid returning partial files
 - cleanup temporary files at the end of the Julia session
+
+A store target is staged as a `.tmp` file beside its destination, which
+`storesave` then moves into place.
 """
 function savetofile(savefn::Function, storage::DataStorage)
     if is_store_target(storage)

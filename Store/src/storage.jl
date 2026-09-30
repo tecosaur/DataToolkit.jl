@@ -335,6 +335,11 @@ end
 
 function should_overwrite end # Implemented in `../../ext/StorageREPL.jl`
 
+# Staged in the store folder so that moving it into place is a rename, never a copy.
+isstaged(inventory::Inventory, path::String) =
+    dirname(path) == joinpath(dirname(inventory.file.path), inventory.config.store_dir) &&
+    endswith(path, ".tmp")
+
 """
     storesave(inventory::Inventory, storage::DataStorage, ::Type{typeof(path)}, path::SystemPath)
 
@@ -354,7 +359,7 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     dest = storefile(inventory, newsource)
     @log_do "store:save" "Transferring $(sprint(show, storage.dataset.name)) to storage"
     isdir(dirname(dest)) || mkpath(dirname(dest))
-    if startswith(path.path, tempdir()) || (startswith(path.path, dest) && endswith(path.path, ".tmp"))
+    if isstaged(inventory, path.path) || startswith(path.path, tempdir())
         mv(path.path, dest, force=true)
     else
         cp(path.path, dest, force=true)
@@ -385,14 +390,17 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
         now(), nothing, fileextension(storage))
     refdest = storefile(inventory, newsource)
     miliseconds = round(Int, 1000 * time())
-    dumpfile = string(refdest, '-', miliseconds, ".dump")
+    dumpfile = string(refdest, '-', miliseconds, ".tmp")
     isdir(dirname(dumpfile)) || mkpath(dirname(dumpfile))
     @log_do("store:save",
             "Writing $(sprint(show, storage.dataset.name)) to the store",
             atomic_write(dumpfile, from))
-    stored = storesave(inventory, storage, FilePath, FilePath(dumpfile))
-    isfile(dumpfile) && rm(dumpfile)
-    stored
+    try
+        storesave(inventory, storage, FilePath, FilePath(dumpfile))
+    finally
+        # Already moved into place, unless saving failed.
+        rm(dumpfile, force=true)
+    end
 end
 
 struct StoreTypeMismatch <: Exception

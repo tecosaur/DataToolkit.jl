@@ -215,6 +215,43 @@ try
             @test all(==("GET /gone.txt HTTP/1.1"), REQUESTS)
             @test 1 <= length(REQUESTS) <= 3
         end
+        @testset "A download is moved into place" begin
+            ROUTES["/staged.txt"] = "staged\n"
+            stagedsum = string(DataToolkitStore.checksum(:sha256, "staged\n"))
+            storedir = mktempdir()
+            coll = storecollection("""
+            [config.store]
+            path = "$storedir"
+
+            [[checksummed]]
+            uuid = "$(uuid4())"
+
+                [[checksummed.storage]]
+                driver = "web"
+                url = "$SERVER_URL/staged.txt"
+                checksum = "$stagedsum"
+
+                [[checksummed.loader]]
+                driver = "passthrough"
+
+            [[computed]]
+            uuid = "$(uuid4())"
+
+                [[computed.storage]]
+                driver = "web"
+                url = "$SERVER_URL/staged.txt"
+                checksum = "sha256"
+
+                [[computed.loader]]
+                driver = "passthrough"
+            """)
+            # Anything under `tempdir()`, which holds the store here, is moved.
+            withenv("TMPDIR" => mktempdir()) do
+                @test read(dataset(coll, "checksummed"), String) == "staged\n"
+                @test read(dataset(coll, "computed"), String) == "staged\n"
+            end
+            @test readdir(joinpath(storedir, "store")) == ["$stagedsum.txt"]
+        end
     end
 
     include("e2e_repl.jl")

@@ -64,7 +64,7 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
         (identity, (readstored(file, as),))
     elseif as <: SystemPath
         (storesave(inventory, storer, as), f, (storer, as), (; write))
-    elseif as ∈ (IO, IOStream, Vector{UInt8}, String)
+    elseif as ∈ (IO, IOStream, Vector{UInt8}, String) && inventory.file.writable
         # Fetch once, as a file when offered (keeping large downloads out of memory).
         fetchas = if QualifiedType(FilePath) ∈ storer.type FilePath else IO end
         fetched = invokepkglatest(storage, storer, fetchas; write)

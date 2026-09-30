@@ -541,6 +541,53 @@ end
     @test length(inventory.stores) == 1
 end
 
+# `:localfile` hands over a file that lives outside the store.
+DataToolkitCore.getstorage(storage::DataStorage{:localfile}, ::Type{DataToolkitCore.FilePath}) =
+    DataToolkitCore.FilePath(get(storage, "path"))
+
+@testset "Saving moves staged files into place" begin
+    blobsum = checksum(:crc32c, "hello blob")
+    localfile = joinpath(mktempdir(), "local.txt")
+    write(localfile, "hello blob")
+    storedir = mktempdir()
+    data_toml = joinpath(mktempdir(), "Data.toml")
+    write(data_toml, """
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "staging"
+    plugins = ["store"]
+
+    [config.store]
+    path = "$storedir"
+
+    [[stream]]
+    uuid = "$(uuid4())"
+
+        [[stream.storage]]
+        driver = "testblob"
+        checksum = "$(string(blobsum))"
+
+    [[local]]
+    uuid = "$(uuid4())"
+
+        [[local.storage]]
+        driver = "localfile"
+        path = "$localfile"
+    """)
+    loadcollection!(data_toml)
+    # Anything under `tempdir()` is moved, so point it elsewhere.
+    withenv("TMPDIR" => mktempdir()) do
+        @test read(open(dataset("stream"), IO), String) == "hello blob"
+        @test readdir(joinpath(storedir, "store")) == ["$(string(blobsum)).cache"]
+        @test read(open(dataset("local"), DataToolkitCore.FilePath).path, String) == "hello blob"
+        @test isfile(localfile)
+    end
+    rm(joinpath(storedir, "store"), recursive = true)
+    DataToolkitStore.getinventory(dataset("stream").collection).file.writable = false
+    @test read(open(dataset("stream"), IO), String) == "hello blob"
+    @test !ispath(joinpath(storedir, "store"))
+end
+
 @testset "Checksum verification rejects a corrupted source" begin
     truebytes = "hello blob"
     truesum = checksum(:crc32c, truebytes)
