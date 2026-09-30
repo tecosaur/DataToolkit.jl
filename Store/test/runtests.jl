@@ -510,6 +510,9 @@ end
     parsed = read_merkles(IOBuffer(serialised_sample_mtree))
     @test length(parsed) == 1
     @test sprint(write_merkle, only(parsed)) == serialised_sample_mtree
+    # A last line without its newline, shorter than the line before it
+    unterminated = "d 101t3scp5ey9w alg:1234 some/dir\n  f 101t3scouw0l3 alg:2345 f"
+    @test only(only(read_merkles(IOBuffer(unterminated))).children).path == "f"
     # Directory checksums are location-independent, so they hold across machines.
     function filltree(dir)
         write(joinpath(dir, "file"), "hello")

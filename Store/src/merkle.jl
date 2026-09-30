@@ -478,7 +478,6 @@ function read_tree(io::IO, buf::IO, minimum_indent::Int, node::Union{MerkleNode,
     elseif node.kind == :dir
         children = Vector{MerkleTree}()
         while true
-            seekstart(buf)
             child, next_node::Union{MerkleNode, Nothing} = read_tree(
                 io, buf, node.indent + 1, try_read_merkle_line(io, buf))
             while !isnothing(next_node)
@@ -562,7 +561,7 @@ end
 
 function try_read_merkle_line(io::IO, buf::IO)
     eof(io) && return
-    copyuntil(seekstart(buf), io, UInt8('\n'), keep=true) |>
+    copyuntil(truncate(buf, 0), io, UInt8('\n'), keep=true) |>
         seekstart |> try_read_merkle_line
 end
 
