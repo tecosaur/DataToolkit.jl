@@ -183,7 +183,7 @@ with a given specification `spec`, and add it to the appropriate list of transfo
 
 See also: [`create`](@ref), [`loader!`](@ref), [`storage!`](@ref), [`writer!`](@ref).
 """
-function create!(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any})
+function create!(parent::DataSet, T::Type{<:DataTransformer}, spec::Dict{String, <:Any} = Dict{String, Any}())
     dslist = if T <: DataStorage
         parent.storage
     elseif T <: DataLoader
@@ -203,9 +203,6 @@ create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec::Dict{
 
 create!(parent::DataSet, T::Type{<:DataTransformer}, driver::Symbol, spec1::Pair{String, <:Any}, specs::Pair{String, <:Any}...) =
     create!(parent, T, driver, Dict{String, Any}(spec1, specs...))
-
-create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, spec::Dict{String, <:Any} = Dict{String, Any}()) where {_kind, D} =
-    create!(parent, T, D, spec)
 
 function create!(parent::DataSet, T::Type{<:DataTransformer{_kind, D}}, driver::Symbol, spec::Dict{String, <:Any}) where {_kind, D}
     D == driver || throw(ArgumentError("Driver $driver does not match the type $T with driver $D"))

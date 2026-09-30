@@ -546,6 +546,8 @@ end
         spec = convert(Dict, ds)
         @test spec["storage"][1]["driver"] == "mem"
         @test spec["storage"][1]["value"] == [1, 2, 3]
+        @test create!(ds, DataStorage{:mem}, Dict{String, Any}("value" => 4)) isa DataStorage{:mem}
+        @test create!(ds, DataStorage{:mem}, :mem, "value" => 5) isa DataStorage{:mem}
     finally
         while length(STACK) > stacklen
             popfirst!(STACK)
