@@ -1,9 +1,9 @@
 function _read_tiff end # Implemented in `../../../ext/TiffImagesExt.jl`
 function _write_tiff end # Implemented in `../../../ext/TiffImagesExt.jl`
 
-function load(loader::DataLoader{:tiff}, from::IO, ::Type{AbstractMatrix})
+function load(loader::DataLoader{:tiff}, from::FilePath, ::Type{AbstractMatrix})
     @require TiffImages
-    invokelatest(_read_tiff, from)
+    invokelatest(_read_tiff, from.path)
 end
 
 function save(writer::DataWriter{:tiff}, dest::IO, info::AbstractMatrix)
@@ -22,7 +22,8 @@ Encode and decode Tiff files
 
 # Input/output
 
-The `tiff` driver expects data to be provided via `IO`.
+The `tiff` loader expects data to be provided via `FilePath`, and the writer
+via `IO`.
 
 It will parse to a `TiffImages.AbstractTIFF`.
 
