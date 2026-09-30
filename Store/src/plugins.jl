@@ -55,49 +55,40 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
             end
         end
         (f, (storer, as), (; write))
-    elseif !isnothing(file) && isfile(file)
+    elseif !isnothing(file) && isfile(file) && as ∈ STORED_FORMS
         # If using a cache file, ensure the parent collection is registered
         # as a reference.
         STORE_RECORD_ACCESS &&
             update_source!(inventory, source, storer.dataset.collection)
-        if as === IO || as === IOStream
-            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-            (identity, (open(file, "r"),))
-        elseif as === FilePath
-            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-            (identity, (FilePath(file),))
-        elseif as === Vector{UInt8}
-            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-            (identity, (read(file),))
-        elseif as === String
-            @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
-            (identity, (read(file, String),))
-        else
-            (f, (storer, as), (; write))
-        end
+        @log_do "store:open" "Opening $as for $(sprint(show, storer.dataset.name)) from the store"
+        (identity, (readstored(file, as),))
     elseif as <: SystemPath
         (storesave(inventory, storer, as), f, (storer, as), (; write))
     elseif as ∈ (IO, IOStream, Vector{UInt8}, String)
-        # Try to get it as a file, because that avoids
-        # some potential memory issues (e.g. large downloads
-        # which exceed memory limits).
-        tryfile = invokepkglatest(storage, storer, FilePath; write)
-        if !isnothing(tryfile)
-            io = open(storesave(inventory, storer, FilePath, tryfile).path, "r")
-            (identity, (if as ∈ (IO, IOStream)
-                            io
-                        elseif as == Vector{UInt8}
-                            read(io)
-                        elseif as == String
-                            read(io, String)
-                        end,))
-        else
-            (storesave(inventory, storer, as), f, (storer, as), (; write))
-        end
+        # Fetch once, as a file when offered (keeping large downloads out of memory).
+        fetchas = if QualifiedType(FilePath) ∈ storer.type FilePath else IO end
+        fetched = invokepkglatest(storage, storer, fetchas; write)
+        isnothing(fetched) && return (identity, (nothing,))
+        stored = storesave(inventory, storer, fetchas, fetched)
+        (identity, (readstored(stored.path, as),))
     else
         (f, (storer, as), (; write))
     end
 end
+
+"""
+    readstored(file::String, as::Type)
+
+Read the stored `file` in the form `as`: `IO`, `IOStream`, `FilePath`,
+`Vector{UInt8}`, or `String`.
+"""
+readstored(file::String, as::Type) =
+    if as === IO || as === IOStream open(file, "r")
+    elseif as === FilePath FilePath(file)
+    elseif as === Vector{UInt8} read(file)
+    else read(file, String) end
+
+const STORED_FORMS = (IO, IOStream, FilePath, Vector{UInt8}, String)
 
 """
     store_epoch_param_a( <rhash(storage::DataStorage, parameters::Dict, h::UInt)> )

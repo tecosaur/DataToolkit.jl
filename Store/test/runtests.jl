@@ -195,6 +195,21 @@ end
 DataToolkitCore.getstorage(::DataStorage{:testblob}, ::Type{IO}) =
     IOBuffer(codeunits("hello blob"))
 
+# Storages that fail softly, recording each form asked of them: `:gone` offers
+# a file or IO, `:goneio` only IO.
+const GONE_CALLS = Tuple{Symbol, Type}[]
+DataToolkitCore.getstorage(::DataStorage{:gone}, T::Type{DataToolkitCore.FilePath}) =
+    (push!(GONE_CALLS, (:gone, T)); nothing)
+DataToolkitCore.getstorage(::DataStorage{:gone}, T::Type{IO}) =
+    (push!(GONE_CALLS, (:gone, T)); nothing)
+DataToolkitCore.supportedtypes(::Type{DataStorage{:gone}}, ::Dict{String, Any}) =
+    DataToolkitCore.QualifiedType.([DataToolkitCore.FilePath, IO])
+DataToolkitCore.getstorage(::DataStorage{:goneio}, T::Type{IO}) =
+    (push!(GONE_CALLS, (:goneio, T)); nothing)
+DataToolkitCore.load(::DataLoader{:text}, from::IO, ::Type{String}) = read(from, String)
+DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
+    [DataToolkitCore.QualifiedType(String)]
+
 @testset "Store plugin integration" begin
     storedir = mktempdir()
     data_toml = joinpath(mktempdir(), "Data.toml")
@@ -212,6 +227,24 @@ DataToolkitCore.getstorage(::DataStorage{:testblob}, ::Type{IO}) =
 
         [[blob.storage]]
         driver = "testblob"
+
+    [[fallback]]
+    uuid = "$(uuid4())"
+
+        [[fallback.storage]]
+        driver = "gone"
+        priority = 1
+
+        [[fallback.storage]]
+        driver = "goneio"
+        priority = 2
+
+        [[fallback.storage]]
+        driver = "testblob"
+        priority = 3
+
+        [[fallback.loader]]
+        driver = "text"
     """)
     loadcollection!(data_toml)
     inventory = DataToolkitStore.getinventory(dataset("blob").collection)
@@ -224,6 +257,16 @@ DataToolkitCore.getstorage(::DataStorage{:testblob}, ::Type{IO}) =
     @test open(dataset("blob"), IO; write = true) isa IO
     @test isempty(inventory.stores)
     @test !occursin("[[store]]", read(inventory.file.path, String))
+    @test open(dataset("blob"), String) == "hello blob"
+    @test open(dataset("blob"), Vector{UInt8}) == codeunits("hello blob")
+    @test length(inventory.stores) == 1
+    @test length(readdir(joinpath(storedir, inventory.config.store_dir))) == 1
+    # Asked once per read, as a file if offered, so a failed download isn't repeated.
+    empty!(GONE_CALLS)
+    @test read(dataset("fallback"), String) == "hello blob"
+    @test GONE_CALLS == [(:gone, DataToolkitCore.FilePath), (:goneio, IO)]
+    @test all(s -> isnothing(DataToolkitStore.getsource(inventory, s)),
+              filter(s -> !(s isa DataStorage{:testblob}), dataset("fallback").storage))
 end
 
 @testset "Lifetime interpretation" begin
@@ -264,6 +307,9 @@ DataToolkitCore.load(::DataLoader{:counter}, ::Any, ::Type{Vector{Int}}) =
     (COUNTER_CALLS[] += 1; [COUNTER_CALLS[]])
 DataToolkitCore.supportedtypes(::Type{DataLoader{:counter}}) =
     [DataToolkitCore.QualifiedType(Vector{Int})]
+DataToolkitCore.load(::DataLoader{:softfail}, ::Any, ::Type{Vector{Int}}) = nothing
+DataToolkitCore.supportedtypes(::Type{DataLoader{:softfail}}) =
+    [DataToolkitCore.QualifiedType(Vector{Int})]
 
 @testset "Cache plugin tolerates an unusable cache" begin
     storedir = mktempdir()
@@ -285,6 +331,21 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:counter}}) =
 
         [[nums.loader]]
         driver = "counter"
+
+    [[softnums]]
+    uuid = "$(uuid4())"
+
+        [[softnums.storage]]
+        driver = "nullsrc"
+        variant = "soft" # a recipe distinct from `nums`
+
+        [[softnums.loader]]
+        driver = "softfail"
+        priority = 1
+
+        [[softnums.loader]]
+        driver = "counter"
+        priority = 2
     """)
     loadcollection!(data_toml)
     COUNTER_CALLS[] = 0
@@ -296,6 +357,8 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:counter}}) =
     write(cachefile, "not a valid serialization")
     result = @test_logs (:warn, r"^Discarding unusable cache") match_mode=:any read(dataset("nums"), Vector{Int})
     @test result == [2]
+    @test read(dataset("softnums"), Vector{Int}) == [3]
+    @test all(c -> first(first(c.types)) != DataToolkitCore.QualifiedType(Nothing), inventory.caches)
 end
 
 @testset "GC dry run is non-destructive" begin

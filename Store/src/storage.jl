@@ -366,9 +366,10 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
 end
 
 """
-    storesave(inventory::Inventory, storage::DataStorage, ::Union{Type{IO}, Type{IOStream}}, from::IO)
+    storesave(inventory::Inventory, storage::DataStorage, ::Union{Type{IO}, Type{IOStream}}, from::IO) -> FilePath
 
-Save the IO in `from` representing `storage` into `inventory`.
+Save the IO in `from` representing `storage` into `inventory`, returning the
+stored file.
 """
 function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::Union{Type{IO}, Type{IOStream}}, from::IO)
     # We could create a tempfile, however there it is near certain that the `storesave`
@@ -389,9 +390,9 @@ function storesave(inventory::Inventory, @nospecialize(storage::DataStorage), ::
     @log_do("store:save",
             "Writing $(sprint(show, storage.dataset.name)) to the store",
             atomic_write(dumpfile, from))
-    storedpath = storesave(inventory, storage, FilePath, FilePath(dumpfile)).path
+    stored = storesave(inventory, storage, FilePath, FilePath(dumpfile))
     isfile(dumpfile) && rm(dumpfile)
-    open(storedpath, "r")
+    stored
 end
 
 struct StoreTypeMismatch <: Exception
@@ -405,10 +406,14 @@ function storesave(inv::Inventory, storage::DataStorage, as::Type, val::T) where
     throw(StoreTypeMismatch(storage, as, T))
 end
 
+# A soft failure has nothing to store, so passes through to the next storage or loader.
+storesave(::Inventory, @nospecialize(::DataStorage), ::Type, ::Nothing) = nothing
+storesave(::Inventory, @nospecialize(::DataLoader), ::Nothing) = nothing
+
 function Base.showerror(io::IO, e::StoreTypeMismatch)
     potentalcalls = methods(storesave, Tuple{Inventory, DataStorage, Type{e.as}, Any})
     validvals = Type[Base.unwrap_unionall(m.sig).types[4] for m in potentalcalls]
-    filter!(t -> t !== Type, validvals)
+    filter!(t -> t !== Type && t !== Nothing, validvals)
     println(io, "StoreTypeMismatch: Given a $(sprint(show, e.given)) to store as $(sprint(show, e.as)) from a $(sprint(show, e.storage)).")
     if isempty(validvals)
         println(io, "No valid types for $(sprint(show, e.as)) are currently known.")

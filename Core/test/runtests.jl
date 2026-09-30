@@ -376,13 +376,16 @@ const PROBE = String[]
         throw(UnsatisfyableTransformer(probe_dataset(:idl), DataLoader, [QualifiedType(Int)]))
 end
 
-# Build a probe DataSet off-STACK with `:mem` storage and the given loader driver.
-function probe_dataset(loaderdriver::Symbol)
+# Build a probe DataSet off-STACK with the given loader drivers, and storage
+# drivers (`:mem` by default) all given the value `[1, 2, 3]`.
+function probe_dataset(loaderdrivers::Symbol...; storagedrivers = (:mem,))
     dc = DataCollection()
     ds = DataSet(dc, "probe", Dict{String, Any}(
         "uuid" => string(Base.UUID(rand(UInt128)))))
-    storage!(ds, :mem, "value" => [1, 2, 3])
-    loader!(ds, loaderdriver)
+    for driver in storagedrivers
+        storage!(ds, driver, "value" => [1, 2, 3])
+    end
+    foreach(driver -> loader!(ds, driver), loaderdrivers)
     ds
 end
 
@@ -460,6 +463,53 @@ end
     message = sprint(showerror, exc)
     @test startswith(sprint(showerror, exc, processed), message)
     @test startswith(sprint(showerror, CapturedException(exc, raw)), message)
+end
+
+# Storage fall-through fixtures: `:flaky` always fails softly (counting its
+# calls), `:reject` refuses every input, and writes land in `SINKS` under the
+# name of the storage that provided the handle.
+const FLAKY_CALLS = Ref(0)
+const SINKS = Dict{String, Vector}()
+@eval begin
+    getstorage(::DataStorage{:flaky}, ::Type{Vector{Int}}) =
+        (FLAKY_CALLS[] += 1; nothing)
+    supportedtypes(::Type{DataStorage{:flaky}}, ::Dict{String, Any}) =
+        [QualifiedType(Vector{Int})]
+    load(::DataLoader{:reject}, ::Vector{Int}, ::Type{Vector{Int}}) = nothing
+    supportedtypes(::Type{DataLoader{:reject}}, ::Dict{String, Any}, ::DataSet) =
+        [QualifiedType(Vector{Int})]
+    DataToolkitCore.putstorage(::DataStorage{:picky}, ::Type{Vector{Int}}) = nothing
+    DataToolkitCore.putstorage(::DataStorage{:picky}, ::Type{Vector{Any}}) =
+        get!(() -> Any[], SINKS, "picky")
+    supportedtypes(::Type{DataStorage{:picky}}, ::Dict{String, Any}) =
+        [QualifiedType(Vector{Int}), QualifiedType(Vector{Any})]
+    DataToolkitCore.putstorage(::DataStorage{:sink}, ::Type{Vector{Int}}) =
+        get!(() -> Int[], SINKS, "sink")
+    supportedtypes(::Type{DataStorage{:sink}}, ::Dict{String, Any}) =
+        [QualifiedType(Vector{Int})]
+    DataToolkitCore.save(::DataWriter{:append}, dest::AbstractVector, info::Vector{Int}) =
+        append!(dest, info)
+    supportedtypes(::Type{DataWriter{:append}}, ::Dict{String, Any}, ::DataSet) =
+        [QualifiedType(Vector{Int})]
+end
+
+@testset "Storage fall-through" begin
+    FLAKY_CALLS[] = 0
+    @test read(probe_dataset(:idl; storagedrivers = (:flaky, :mem)), Vector{Int}) == [1, 2, 3]
+    @test FLAKY_CALLS[] == 1
+    FLAKY_CALLS[] = 0
+    @test read(probe_dataset(:reject, :idl; storagedrivers = (:flaky, :mem)), Vector{Int}) == [1, 2, 3]
+    @test FLAKY_CALLS[] == 1
+    function written(storagedrivers...)
+        empty!(SINKS)
+        ds = probe_dataset(; storagedrivers)
+        writer!(ds, :append)
+        write(ds, [4, 5])
+        SINKS
+    end
+    # Each of a storage's forms is tried before the next storage.
+    @test written(:flaky, :sink) == Dict("sink" => [4, 5])
+    @test written(:picky, :sink) == Dict("picky" => [4, 5])
 end
 
 @testset "Programmatic collection construction" begin

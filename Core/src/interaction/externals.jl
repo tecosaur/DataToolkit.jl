@@ -184,6 +184,8 @@ The advisable implementation of `read(dataset::DataSet, as::Type)`, which see.
 This is essentially an exercise in useful indirection.
 """
 function read1(dataset::DataSet, @nospecialize(as::Type))
+    # A storage's answer for a form holds for the whole read, so a soft failure is asked once.
+    unavailable = Set{Tuple{DataStorage, Type}}()
     for loader in dataset.loaders
         l_steps = typesteps(loader, as)
         isempty(l_steps) && continue
@@ -191,18 +193,23 @@ function read1(dataset::DataSet, @nospecialize(as::Type))
         # by going through each of the storage backends one at a time:
         # looking for the first that is (a) compatible with a load function,
         # and (b) available (checked via `!isnothing`).
-        for storage in dataset.storage
+        for storer in dataset.storage
             for (Tloader_in, Tloader_out) in l_steps
-                s_steps = typesteps(storage, Tloader_in; write = false)
+                s_steps = typesteps(storer, Tloader_in; write = false)
                 for (_, Tstorage_out) in s_steps
-                    datahandle = open(dataset, Tstorage_out; write = false)
-                    if !isnothing(datahandle)
-                        result = @advise dataset load(loader, datahandle, Tloader_out)::Union{Some{as}, as, Nothing}
-                        if !isnothing(result)
-                            return something(result)
-                        elseif datahandle isa IOStream && isopen(datahandle)
-                            close(datahandle)
-                        end
+                    (storer, Tstorage_out) ∈ unavailable && continue
+                    handle = @advise dataset storage(storer, Tstorage_out; write = false)::Union{Some{Tstorage_out}, Tstorage_out, Nothing}
+                    # As in `open`, a handle of `Some(nothing)` counts as none.
+                    datahandle = something(handle, Some(nothing))
+                    if isnothing(datahandle)
+                        push!(unavailable, (storer, Tstorage_out))
+                        continue
+                    end
+                    result = @advise dataset load(loader, datahandle, Tloader_out)::Union{Some{as}, as, Nothing}
+                    if !isnothing(result)
+                        return something(result)
+                    elseif datahandle isa IOStream && isopen(datahandle)
+                        close(datahandle)
                     end
                 end
             end
@@ -365,15 +372,16 @@ function Base.write(dataset::DataSet, @nospecialize(info::Any))
         # by going through each of the storage backends one at a time:
         # looking for the first that is (a) compatible with a save function,
         # and (b) available (checked via `!isnothing`).
-        for storage in dataset.storage
+        for storer in dataset.storage
             for write_fn_sig in write_fn_sigs
                 supported_storage_types = Vector{Type}(filter(!isnothing, map(
-                    qt -> trytypeify(qt, mod=dataset.collection.mod), storage.type)))
+                    qt -> trytypeify(qt, mod=dataset.collection.mod), storer.type)))
                 valid_storage_types =
                     filter(stype -> issubtype(stype, write_fn_sig.types[3]),
                            supported_storage_types)
                 for storage_type in valid_storage_types
-                    datahandle = open(dataset, storage_type; write = true)
+                    handle = @advise dataset storage(storer, storage_type; write = true)::Union{Some{storage_type}, storage_type, Nothing}
+                    datahandle = something(handle, Some(nothing))
                     if !isnothing(datahandle)
                         res = @advise dataset save(writer, datahandle, info)
                         if res isa IO && isopen(res)

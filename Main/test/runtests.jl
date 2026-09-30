@@ -1,9 +1,13 @@
 # Keep the auto-init walk of the ambient load path from mutating the shared
 # global STACK before the suite starts. Must be set before `using DataToolkit`.
 ENV["DATA_TOOLKIT_AUTO_INIT"] = "no"
+# Likewise, so the store tests never touch the user's store.
+ENV["DATATOOLKIT_STORE"] = mktempdir()
 
 using DataToolkit
 using Test
+using Logging: NullLogger, with_logger
+using Sockets
 
 using DataToolkitCore: DataToolkitCore, STACK
 using DataToolkitBase: DataToolkitBase
@@ -32,6 +36,50 @@ uuid = "$(uuid4())"
     driver = "passthrough"
     type = ["$type"]
 """
+
+"""
+    storecollection(datasets::String) -> DataCollection
+
+Load a throwaway collection using the `store` plugin, whose TOML body (data
+sets, and any `[config.store]`) is `datasets`.
+"""
+function storecollection(datasets::String)
+    path = joinpath(mktempdir(), "Data.toml")
+    write(path, """
+    data_config_version = 0
+    uuid = "$(uuid4())"
+    name = "store$(basename(dirname(path)))"
+    plugins = ["store"]
+
+    $datasets
+    """)
+    loadcollection!(path)
+end
+
+"""
+A local HTTP server for `web` storage tests, on an ephemeral port at
+`SERVER_URL`. It serves each body in `ROUTES` at its path (any other path is
+a 404), and logs each request line to `REQUESTS`.
+"""
+const ROUTES = Dict{String, String}()
+const REQUESTS = String[]
+const SERVER_URL = let (port, server) = listenany(Sockets.localhost, 0)
+    @async while true
+        client = accept(server)
+        @async try
+            request = readline(client)
+            while !isempty(readline(client)) end # headers
+            push!(REQUESTS, request)
+            body = get(ROUTES, split(request)[2], nothing)
+            status = if isnothing(body) "404 Not Found" else "200 OK" end
+            write(client, "HTTP/1.1 $status\r\nContent-Length: $(sizeof(something(body, "")))\r\n",
+                  "Connection: close\r\n\r\n", something(body, ""))
+        finally
+            close(client)
+        end
+    end
+    "http://127.0.0.1:$port"
+end
 
 stack_backup = copy(STACK)
 try
@@ -138,6 +186,34 @@ try
             end
             @test err isa ErrorException
             @test occursin("requires the REPL", err.msg)
+        end
+    end
+
+    @testset "Store through Common's drivers" begin
+        @testset "A gone web storage falls through" begin
+            coll = storecollection("""
+            [[greeting]]
+            uuid = "$(uuid4())"
+
+                [[greeting.storage]]
+                driver = "web"
+                url = "$SERVER_URL/gone.txt"
+                priority = 1
+
+                [[greeting.storage]]
+                driver = "filesystem"
+                path = "fallback.txt"
+                priority = 2
+
+                [[greeting.loader]]
+                driver = "passthrough"
+            """)
+            write(joinpath(dirname(coll.source.path), "fallback.txt"), "fallback")
+            empty!(REQUESTS)
+            @test with_logger(() -> read(dataset(coll, "greeting"), String), NullLogger()) == "fallback"
+            # One fetch, of however many attempts.
+            @test all(==("GET /gone.txt HTTP/1.1"), REQUESTS)
+            @test 1 <= length(REQUESTS) <= 3
         end
     end
 
