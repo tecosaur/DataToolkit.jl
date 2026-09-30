@@ -6,39 +6,21 @@
 """
     newdict(K::Type, V::Type, capacity::Int) -> Dict{K, V}
 
-Create a new `Dict{K, V}` sized to hold `capacity` elements, hopefully without
-resizing. Depending on the particular value of `capacity` and the Julia version,
-this can result in substantial memory savings for small dictionaries.
+Create a new `Dict{K, V}` sized to hold `capacity` elements without resizing.
+For small values of `capacity`, this can result in substantial memory savings.
 """
-function newdict end
-
-@static if VERSION >= v"1.11"
-    function newdict(K::Type, V::Type, capacity::Int)
-        size = if capacity < 1; 0
-        elseif capacity == 1; 2
-        elseif capacity == 2; 3
-        elseif 3 <= capacity <= 5; 8
-        else cld(capacity * 3, 2) end
-        slots = Memory{UInt8}(undef, size)
-        fill!(slots, 0x00)
-        Dict{K, V}(slots,
-                   Memory{K}(undef, size),
-                   Memory{V}(undef, size),
-                   0, 0, zero(UInt), max(1, size), 0)
+function newdict(K::Type, V::Type, capacity::Int)
+    # Dict's table size must be a power of two, and it rehashes past 2/3 full.
+    size = if capacity >= 1
+        nextpow(2, cld(capacity * 3, 2))
+    else # Julia 1.10 can't insert into an empty table
+        @static if VERSION >= v"1.11" 0 else 1 end
     end
-else
-    function newdict(K::Type, V::Type, capacity::Int)
-        size = if capacity < 1; 1
-        elseif capacity == 1; 2
-        elseif 2 <= capacity <= 4; 8
-        else cld(capacity * 3, 2) end
-        slots = Vector{UInt8}(undef, size)
-        fill!(slots, 0x00)
-        Dict{K, V}(slots,
-                   Vector{K}(undef, size),
-                   Vector{V}(undef, size),
-                   0, 0, zero(UInt), size, 0)
-    end
+    Table = @static if VERSION >= v"1.11" Memory else Vector end
+    Dict{K, V}(fill!(Table{UInt8}(undef, size), 0x00),
+               Table{K}(undef, size),
+               Table{V}(undef, size),
+               0, 0, zero(UInt), max(1, size), 0)
 end
 
 """

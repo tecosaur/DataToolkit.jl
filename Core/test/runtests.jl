@@ -2,7 +2,7 @@ using DataToolkitCore
 using Test
 
 import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
-    longest_common_subsequence, highlight_lcs, referenced_datasets,
+    longest_common_subsequence, highlight_lcs, newdict, referenced_datasets,
     stack_index, plugin_add!, plugin_list, plugin_remove!, config_get,
     config_set!, config_unset!, reinit!, DATASET_REFERENCE_WRAPPER,
     ispreferredpath, DataLoader, DataStorage, DataWriter, DataTransformer,
@@ -49,6 +49,17 @@ import DataToolkitCore: natkeygen, stringdist, stringsimilarity,
         @test String(take!(io.io)) == "\e[1mxx\e[22mhey\e[1myy\e[22m"
         highlight_lcs(io, "abc", "xyz")
         @test String(take!(io.io)) == "abc"
+    end
+    @testset "newdict capacity $n" for n in (0, 1, 2, 3, 5, 6, 10, 11, 21, 22)
+        entries = ["k$i" => i for i in 1:n]
+        dict = newdict(String, Any, n)
+        nslots = length(dict.slots)
+        for (key, value) in entries
+            dict[key] = value
+        end
+        @test dict == Dict(entries)
+        @test length(dict.slots) == nslots
+        @test nslots <= length(Dict{String, Any}(entries).slots)
     end
 end
 
