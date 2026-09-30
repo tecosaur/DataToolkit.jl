@@ -393,6 +393,46 @@ end
     @test isfile(inv.file.path)
 end
 
+@testset "A stored file goes with the last record naming it" begin
+    function sharedfile(; max_size = nothing)
+        inv = load_inventory(joinpath(mktempdir(), "Inventory.toml"))
+        users = [CollectionInfo(uuid4(), nothing, name, now()) for name in ("a", "b")]
+        modify_inventory!(inv) do inv
+            inv.config.max_size = max_size
+            append!(inv.collections, users)
+            for (recipe, user) in enumerate(users)
+                push!(inv.stores, StoreSource(recipe, [user.uuid], now(), checksum(:crc32c, "shared"), "txt"))
+            end
+        end
+        file = DataToolkitStore.storefile(inv, first(inv.stores))
+        mkpath(dirname(file))
+        write(file, "shared")
+        inv, users, file
+    end
+    inv, (a, b), file = sharedfile()
+    expunge!(inv, a)
+    @test isfile(file)
+    expunge!(inv, b)
+    @test !isfile(file)
+    inv, (a, _), file = sharedfile(max_size = sizeof("shared"))
+    garbage_collect!(inv; log = false)
+    @test length(inv.stores) == 2
+    # Trimming the oldest record frees nothing while another names its file, so `own` goes too.
+    own = StoreSource(3, [a.uuid], now() - Day(1), checksum(:crc32c, "unique"), "txt")
+    ownfile = DataToolkitStore.storefile(inv, own)
+    write(ownfile, "unique")
+    modify_inventory!(inv) do inv
+        oldest = first(inv.stores)
+        inv.stores[1] = StoreSource(oldest.recipe, oldest.references, now() - Day(2),
+                                    oldest.checksum, oldest.extension)
+        push!(inv.stores, own)
+    end
+    garbage_collect!(inv; log = false)
+    @test getfield.(inv.stores, :recipe) == [2]
+    @test isfile(file)
+    @test !isfile(ownfile)
+end
+
 @testset "Automatic GC collects only due, registered inventories" begin
     function staleinventory(auto_gc::Int)
         path = joinpath(mktempdir(), "Inventory.toml")

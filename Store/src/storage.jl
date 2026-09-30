@@ -341,6 +341,23 @@ isstaged(inventory::Inventory, path::String) =
     endswith(path, ".tmp")
 
 """
+    isstalelink(path::String) -> Bool
+
+Whether `path` is a link (as the `filesystem` driver makes) whose target has
+changed since the link was made; for a directory, any file within it.
+"""
+function isstalelink(path::String)
+    islink(path) || return false
+    newest = if isdir(path)
+        maximum((mtime(joinpath(root, file)) for (root, _, files) in walkdir(path) for file in files),
+                init = 0.0)
+    else
+        mtime(path)
+    end
+    newest > lstat(path).ctime
+end
+
+"""
     storesave(inventory::Inventory, storage::DataStorage, ::Type{typeof(path)}, path::SystemPath)
 
 Save the `path` representing `storage` into `inventory`.

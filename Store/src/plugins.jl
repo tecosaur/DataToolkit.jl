@@ -38,11 +38,6 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
     # Get any applicable cache file
     source = getsource(inventory, storer)
     file = storefile(inventory, source)
-    if !isnothing(file) && isfile(file) && haskey(storer.parameters, "lifetime")
-        if epoch(storer) > epoch(storer, ctime(file))
-            rm(file, force=true)
-        end
-    end
     if !(shouldstore(storer) || @getparam(storer."save"::Bool, false)) || write
         # If the store is invalid (should not be stored, or about to be
         # written to), then it should be removed before proceeding as
@@ -55,7 +50,7 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
             end
         end
         (f, (storer, as), (; write))
-    elseif !isnothing(file) && isfile(file) && as ∈ STORED_FORMS
+    elseif !isnothing(file) && isfile(file) && !isstalelink(file) && as ∈ STORED_FORMS
         # If using a cache file, ensure the parent collection is registered
         # as a reference.
         STORE_RECORD_ACCESS &&

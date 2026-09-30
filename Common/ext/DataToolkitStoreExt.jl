@@ -4,7 +4,7 @@ using DataToolkitCore
 using Dates: now
 
 using DataToolkitStore: Inventory, StoreSource,
-    getinventory, getchecksum, getsource, update_source!
+    getinventory, getchecksum, getsource, isstalelink, update_source!
 import DataToolkitStore: rhash, shouldstore, storesave, storefile, fileextension
 
 using DataToolkitCommon: dirof, getpath
@@ -65,39 +65,25 @@ function storesave(inventory::Inventory, storage::DataStorage{:filesystem}, ::Ty
         [storage.dataset.collection.uuid],
         now(), checksum, ext)
     linkpath = storefile(inventory, newsource)
-    ispath(linkpath) && rm(linkpath, force=true, recursive=true)
-    isdir(dirname(linkpath)) || mkpath(dirname(linkpath))
-    symlink(string(path), linkpath)
+    # Only a link is ours to replace; anything else is a checked copy, which can't go stale.
+    islink(linkpath) && rm(linkpath)
+    if !ispath(linkpath)
+        isdir(dirname(linkpath)) || mkpath(dirname(linkpath))
+        symlink(string(path), linkpath)
+    end
     update_source!(inventory, newsource, storage.dataset.collection)
     T(linkpath)
 end
 
 # Similarly, we need a variant on the generic `storefile` implementation to
-# check the symlink and preemptively delete it if the actual file is newer. This
-# will now trigger `storesave` again.
+# delete the symlink preemptively if the actual file is newer. This will now
+# trigger `storesave` again.
 function storefile(inventory::Inventory, storage::DataStorage{:filesystem})
     source = getsource(inventory, storage)
     if !isnothing(source)
         linkpath = storefile(inventory, source)
-        if isfile(linkpath)
-            file = getpath(storage)
-            if isfile(file) && lstat(linkpath).ctime > mtime(file)
-                return linkpath
-            else
-                rm(linkpath)
-            end
-        elseif isdir(linkpath)
-            dir = getpath(storage)
-            maxmtime = 0.0
-            for (root, dirs, files) in walkdir(dir), file in files
-                maxmtime = max(maxmtime, mtime(joinpath(root, file)))
-            end
-            if isdir(dir) && lstat(linkpath).ctime > maxmtime
-                return linkpath
-            else
-                rm(linkpath)
-            end
-        end
+        ispath(linkpath) && !isstalelink(linkpath) && return linkpath
+        islink(linkpath) && rm(linkpath)
         # Symlink never existed, or has been removed, so ensure
         # no associated store entry exists.
         index = findfirst(==(source), inventory.stores)

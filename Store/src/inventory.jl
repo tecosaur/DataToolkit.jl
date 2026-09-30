@@ -318,7 +318,7 @@ function garbage_collect!(inv::Inventory; log::Bool=true, dryrun::Bool=false, tr
             true
         end
         truncated_sources, truncsource_bytes = garbage_trim_size!(inv; dryrun)
-        truncated_files = filter(isfile, map(Base.Fix1(storefile, inv), truncated_sources))
+        truncated_files = setdiff(filter(isfile, map(Base.Fix1(storefile, inv), truncated_sources)), files(inv))
         if !dryrun
             inv.last_gc = now()
             write(inv)
@@ -434,25 +434,31 @@ If `dryrun` is set, no action is taken.
 function garbage_trim_size!(inv::Inventory; dryrun::Bool=false)
     !isnothing(inv.config.max_size) || return (SourceInfo[], 0)
     allsources = vcat(inv.stores, inv.caches)
-    allsizes = map(f -> Int(isfile(f) && stat(f).size), storefile.(Ref(inv), allsources))
-    if sum(allsizes, init=0) > inv.config.max_size
+    allfiles = storefile.(Ref(inv), allsources)
+    # A file several records name counts once, and is freed with the last of them.
+    namers = Dict{String, Int}()
+    foreach(f -> namers[f] = get(namers, f, 0) + 1, allfiles)
+    filebytes(f) = Int(isfile(f) && stat(f).size)
+    totalsize = sum(filebytes, keys(namers), init=0)
+    if totalsize > inv.config.max_size
         allscores = size_recency_scores(inv, allsources, inv.config.recency_beta)
-        totalsize = sum(allsizes)
         removed = SourceInfo[]
-        for (source, source_size) in zip(allsources[sortperm(allscores, rev=true)],
-                                         allsizes[sortperm(allscores, rev=true)])
-            totalsize > inv.config.max_size || break
+        freed = 0
+        for index in sortperm(allscores, rev=true)
+            totalsize - freed > inv.config.max_size || break
+            source, file = allsources[index], allfiles[index]
             push!(removed, source)
-            totalsize -= source_size
+            namers[file] -= 1
+            if namers[file] == 0
+                freed += filebytes(file)
+            end
             dryrun || if source isa StoreSource
-                index = findfirst(==(source), inv.stores)
-                deleteat!(inv.stores, index)
+                deleteat!(inv.stores, findfirst(==(source), inv.stores))
             else # CacheSource
-                index = findfirst(==(source), inv.caches)
-                deleteat!(inv.caches, index)
+                deleteat!(inv.caches, findfirst(==(source), inv.caches))
             end
         end
-        removed, sum(allsizes) - totalsize
+        removed, freed
     else
         SourceInfo[], 0
     end
@@ -664,13 +670,7 @@ function expungeexclusive!(inventory::Inventory, collection::CollectionInfo; dry
                 orphaned = if dryrun length(source.references) == 1 else isempty(source.references) end
                 if orphaned
                     push!(removed_sources, source)
-                    if !dryrun
-                        deleteat!(sources, i)
-                        file = storefile(inventory, source)
-                        isfile(file) && rm(file, force=true)
-                    else
-                        i += 1
-                    end
+                    if dryrun i += 1 else deleteat!(sources, i) end
                 else
                     i += 1
                 end
@@ -679,7 +679,12 @@ function expungeexclusive!(inventory::Inventory, collection::CollectionInfo; dry
             end
         end
     end
-    dryrun || write(inventory)
+    if !dryrun
+        for file in setdiff(map(Base.Fix1(storefile, inventory), removed_sources), files(inventory))
+            isfile(file) && rm(file, force=true)
+        end
+        write(inventory)
+    end
     removed_sources
 end
 

@@ -252,6 +252,76 @@ try
             end
             @test readdir(joinpath(storedir, "store")) == ["$stagedsum.txt"]
         end
+        @testset "The filesystem driver manages only its own links" begin
+            ROUTES["/shared.txt"] = "shared\n"
+            sharedsum = string(DataToolkitStore.checksum(:sha256, "shared\n"))
+            storedir = mktempdir()
+            coll = storecollection("""
+            [config.store]
+            path = "$storedir"
+
+            [[download]]
+            uuid = "$(uuid4())"
+
+                [[download.storage]]
+                driver = "web"
+                url = "$SERVER_URL/shared.txt"
+                checksum = "$sharedsum"
+
+                [[download.loader]]
+                driver = "passthrough"
+
+            [[copy]]
+            uuid = "$(uuid4())"
+
+                [[copy.storage]]
+                driver = "filesystem"
+                path = "copy.txt"
+                checksum = "$sharedsum"
+
+                [[copy.loader]]
+                driver = "passthrough"
+            """)
+            localcopy = joinpath(dirname(coll.source.path), "copy.txt")
+            write(localcopy, "shared\n")
+            stored = joinpath(storedir, "store", "$sharedsum.txt")
+            @test read(dataset(coll, "download"), String) == "shared\n"
+            @test read(dataset(coll, "copy"), String) == "shared\n"
+            @test isfile(stored) && !islink(stored)
+            write(localcopy, "edited\n")
+            copystorage = only(dataset(coll, "copy").storage)
+            @test DataToolkitStore.storefile(DataToolkitStore.getinventory(coll), copystorage) == stored
+            @test read(dataset(coll, "download"), String) == "shared\n"
+        end
+        @testset "A link whose target changed is checked again" begin
+            # The two files share one link, to whichever was read first.
+            origsum = string(DataToolkitStore.checksum(:sha256, "original\n"))
+            storedir = mktempdir()
+            localfile(name) = storecollection("""
+            [config.store]
+            path = "$storedir"
+
+            [[local]]
+            uuid = "$(uuid4())"
+
+                [[local.storage]]
+                driver = "filesystem"
+                path = "$name.txt"
+                checksum = "$origsum"
+
+                [[local.loader]]
+                driver = "passthrough"
+            """)
+            edited, other = localfile("edited"), localfile("other")
+            write(joinpath(dirname(edited.source.path), "edited.txt"), "original\n")
+            write(joinpath(dirname(other.source.path), "other.txt"), "original\n")
+            @test read(dataset(edited, "local"), String) == "original\n"
+            @test read(dataset(other, "local"), String) == "original\n"
+            write(joinpath(dirname(edited.source.path), "edited.txt"), "EDITED\n")
+            err = try read(dataset(edited, "local"), String); nothing catch e; e end
+            @test DataToolkitCore.unwrap_logtask(err) isa DataToolkitStore.ChecksumMismatch
+            @test read(dataset(other, "local"), String) == "original\n"
+        end
     end
 
     include("e2e_repl.jl")
