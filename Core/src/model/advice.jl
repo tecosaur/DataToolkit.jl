@@ -178,22 +178,40 @@ end
 end
 
 """
+    stackframes(bt) -> Vector{StackFrame}
+
+The frames of `bt`, in any form `showerror` is handed a backtrace: raw
+(`catch_backtrace()`), resolved (the REPL's), a `CapturedException`'s
+`(frame, repeats)` pairs, or `nothing`.
+"""
+stackframes(bt::Vector{Base.StackTraces.StackFrame}) = bt
+stackframes(bt::Vector{<:Union{Ptr{Nothing}, Base.InterpreterIP}}) = stacktrace(bt)
+stackframes(bt::Vector{Any}) =
+    Base.StackTraces.StackFrame[frame for (frame, repeats) in bt for _ in 1:repeats]
+stackframes(::Nothing) = Base.StackTraces.StackFrame[]
+
+"""
     strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
+    strip_stacktrace_advice!(bt) -> Vector{Base.StackTraces.StackFrame}
 
 Remove stack frames related to [`@advise`](@ref) and [`invokepkglatest`](@ref) from `st`.
+
+Any other backtrace form `bt` is first converted with [`stackframes`](@ref).
 """
 function strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
     SIMPLIFY_STACKTRACES[] || return st
+    # A processed backtrace keeps only a keyword method's body, `#f#N`, not `f`.
+    funcname(sf) = Symbol(replace(String(sf.func), r"^#(.+)#\d+$" => s"\1"))
     i, in_advice_region = length(st), false
     while i > 0
-        if st[i].file === Symbol(@__FILE__) && st[i].func ∈ (:_dataadvise, :_dataadvisecall)
+        if st[i].file === Symbol(@__FILE__) && funcname(st[i]) ∈ (:_dataadvise, :_dataadvisecall)
             in_advice_region = true
             deleteat!(st, i)
         elseif in_advice_region && st[i].file ∈
             (Symbol(joinpath(@__DIR__, "advice.jl")),
              Symbol(joinpath(@__DIR__, "usepkg.jl")))
             deleteat!(st, i)
-        elseif in_advice_region && st[i].func == :invokelatest
+        elseif in_advice_region && funcname(st[i]) == :invokelatest
             if i > 1 && st[i-1].file == st[i].file
                 deleteat!(st, i-1:i)
                 i -= 1
@@ -208,8 +226,7 @@ function strip_stacktrace_advice!(st::Vector{Base.StackTraces.StackFrame})
     st
 end
 
-strip_stacktrace_advice!(st::Vector{Union{Ptr{Nothing}, Base.InterpreterIP}}) =
-    strip_stacktrace_advice!(stacktrace(st))
+strip_stacktrace_advice!(bt) = strip_stacktrace_advice!(stackframes(bt))
 
 """
     @advise [source] f(args...; kwargs...) [::T]

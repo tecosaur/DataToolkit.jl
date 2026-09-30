@@ -30,7 +30,7 @@ end
 UnresolveableIdentifier{T}(ident::I, collection::Union{DataCollection, Nothing}=nothing) where {T, I <: Union{String, UUID}} =
     UnresolveableIdentifier{T, I}(T, ident, collection)
 
-function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, bt; backtrace=true)
+function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String})
     print(io, "UnresolveableIdentifier: ", sprint(show, err.identifier),
           " does not match any available data sets")
     if !isnothing(err.collection)
@@ -110,11 +110,9 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataSet, String}, b
             end
         end
     end
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
-function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection}, bt; backtrace=true)
+function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection})
     print(io, "UnresolveableCollection: No collections within the stack matched the ",
           ifelse(err.identifier isa UUID, "identifier ", "name "), string(err.identifier))
     if err.identifier isa String
@@ -138,8 +136,6 @@ function Base.showerror(io::IO, err::UnresolveableIdentifier{DataCollection}, bt
             end
         end
     end
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -167,7 +163,7 @@ end
 AmbiguousIdentifier(identifier::Union{String, UUID}, matches::Vector{T}) where {T} =
     AmbiguousIdentifier{T, typeof(identifier)}(identifier, matches, nothing)
 
-function Base.showerror(io::IO, err::AmbiguousIdentifier{DataSet, I}, bt; backtrace=true) where {I}
+function Base.showerror(io::IO, err::AmbiguousIdentifier{DataSet, I}) where {I}
     print(io, "AmbiguousIdentifier: ", sprint(show, err.identifier),
           " matches multiple data sets")
     if I == String
@@ -182,11 +178,9 @@ function Base.showerror(io::IO, err::AmbiguousIdentifier{DataSet, I}, bt; backtr
     else
         print(io, ". There is likely some kind of accidental ID duplication occurring.")
     end
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
-function Base.showerror(io::IO, err::AmbiguousIdentifier{DataCollection, I}, bt; backtrace=true) where {I}
+function Base.showerror(io::IO, err::AmbiguousIdentifier{DataCollection, I}) where {I}
     print(io, "AmbiguousIdentifier: ", sprint(show, err.identifier),
           " matches multiple data collections in the stack")
     if I == String
@@ -199,8 +193,6 @@ function Base.showerror(io::IO, err::AmbiguousIdentifier{DataCollection, I}, bt;
     else
         print(io, ". Have you loaded the same data collection twice?")
     end
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 abstract type PackageException <: Exception end
@@ -224,7 +216,7 @@ struct UnregisteredPackage <: PackageException
     mod::Module
 end
 
-function Base.showerror(io::IO, err::UnregisteredPackage, bt; backtrace=true)
+function Base.showerror(io::IO, err::UnregisteredPackage)
     print(io, "UnregisteredPackage: ", err.pkg,
           " has not been registered by ", err.mod)
     mod_path = pathof(err.mod)
@@ -256,8 +248,6 @@ function Base.showerror(io::IO, err::UnregisteredPackage, bt; backtrace=true)
     else
         print(io, " (it is also worth noting that the package does not seem to be present as a dependency of $(err.mod))")
     end
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -282,10 +272,9 @@ struct MissingPackage <: PackageException
     pkg::Base.PkgId
 end
 
-function Base.showerror(io::IO, err::MissingPackage, bt; backtrace=true)
+function Base.showerror(io::IO, err::MissingPackage)
     print(io, "MissingPackage: ", err.pkg.name, " [", err.pkg.uuid,
           "] has been required, but does not seem to be installed.")
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 abstract type DataOperationException <: Exception end
@@ -312,7 +301,7 @@ struct CollectionVersionMismatch <: DataOperationException
     version::Int
 end
 
-function Base.showerror(io::IO, err::CollectionVersionMismatch, bt; backtrace=true)
+function Base.showerror(io::IO, err::CollectionVersionMismatch)
     print(io, "CollectionVersionMismatch: ", err.version, " (specified) ≠ ",
           LATEST_DATA_CONFIG_VERSION, " (current)\n")
     print(io, "  The data collection specification uses the v$(err.version) data collection format, however\n",
@@ -321,8 +310,6 @@ function Base.showerror(io::IO, err::CollectionVersionMismatch, bt; backtrace=tr
           ifelse(err.version < LATEST_DATA_CONFIG_VERSION,
                  "manually upgrade the file to the v$LATEST_DATA_CONFIG_VERSION format.",
                  "use a newer version of $(@__MODULE__)."))
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -341,9 +328,8 @@ Stacktrace: [...]
 """
 struct EmptyStackError <: DataOperationException end
 
-function Base.showerror(io::IO, err::EmptyStackError, bt; backtrace=true)
+function Base.showerror(io::IO, err::EmptyStackError)
     print(io, "EmptyStackError: The data collection stack is empty")
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -364,11 +350,10 @@ struct ReadonlyCollection <: DataOperationException
     collection::DataCollection
 end
 
-function Base.showerror(io::IO, err::ReadonlyCollection, bt; backtrace=true)
+function Base.showerror(io::IO, err::ReadonlyCollection)
     print(io, "ReadonlyCollection: The data collection ", err.collection.name,
           " is ", ifelse(get(err.collection, "locked", false) === true,
                          "locked", "backed by a read-only file"))
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -391,9 +376,8 @@ struct TransformerError <: DataOperationException
     msg::String
 end
 
-function Base.showerror(io::IO, err::TransformerError, bt; backtrace=true)
+function Base.showerror(io::IO, err::TransformerError)
     print(io, "TransformerError: ", err.msg)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -419,7 +403,7 @@ struct UnsatisfyableTransformer{T} <: DataOperationException where { T <: DataTr
     wanted::Vector{QualifiedType}
 end
 
-function Base.showerror(io::IO, err::UnsatisfyableTransformer, bt; backtrace=true)
+function Base.showerror(io::IO, err::UnsatisfyableTransformer)
     transformer_type = (((::Type{DataTransformer{T}}) where T) -> lowercase(string(T)))(err.transformer)
     print(io, "UnsatisfyableTransformer: There is no $(transformer_type) for ",
           sprint(show, err.dataset.name), " that can provide a ",
@@ -440,8 +424,6 @@ function Base.showerror(io::IO, err::UnsatisfyableTransformer, bt; backtrace=tru
         end
         print(io, " -> [", join(map(last, tsteps), ", "), ']')
     end
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -456,12 +438,10 @@ struct OrphanDataSet <: DataOperationException
     dataset::DataSet
 end
 
-function Base.showerror(io::IO, err::OrphanDataSet, bt; backtrace=true)
+function Base.showerror(io::IO, err::OrphanDataSet)
     print(io, "OrphanDataSet: The data set ", err.dataset.name,
           " [", err.dataset.uuid, "] is no longer a child of of its parent collection.\n",
           "This should not occur, and indicates that something fundamental has gone wrong.")
-    backtrace && println(io)
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -476,7 +456,7 @@ struct ImpossibleTypeException <: Exception
     mod::Union{Module, Nothing}
 end
 
-function Base.showerror(io::IO, err::ImpossibleTypeException, bt; backtrace=true)
+function Base.showerror(io::IO, err::ImpossibleTypeException)
     print(io, "ImpossibleTypeException: Could not realise the type ", string(err.qt))
     if isnothing(err.mod)
         print(io, ", as the parent module ", err.qt.root,
@@ -487,7 +467,6 @@ function Base.showerror(io::IO, err::ImpossibleTypeException, bt; backtrace=true
     else
         print(io, ", for unknown reasons, possibly an issue with the type parameters?")
     end
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
 """
@@ -501,20 +480,26 @@ struct InvalidParameterType{T <: Union{<:DataTransformer, DataSet, DataCollectio
     type::Type
 end
 
-function Base.showerror(io::IO, err::InvalidParameterType{DataTransformer{kind, driver}}, bt; backtrace=true) where {kind, driver}
+function Base.showerror(io::IO, err::InvalidParameterType{DataTransformer{kind, driver}}) where {kind, driver}
     @nospecialize err
     print(io, "InvalidParameterType: '", err.parameter, "' parameter of ",
           err.thing.dataset.name, "'s ", sprint(show, DataTransformer{kind}),
           "{:", string(driver), "} must be a ",
           string(err.type), " not a ",
           string(typeof(get(err.thing, err.parameter))), ".")
-    backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 
-function Base.showerror(io::IO, err::InvalidParameterType, bt; backtrace=true)
+function Base.showerror(io::IO, err::InvalidParameterType)
     print(io, "InvalidParameterType: '", err.parameter, "' parameter of ",
           string(err.thing), " must be a ", string(err.type), " not a ",
           string(typeof(get(err.thing, err.parameter))), ".")
+end
+
+const DataToolkitException =
+    Union{IdentifierException, PackageException, DataOperationException, ImpossibleTypeException}
+
+function Base.showerror(io::IO, err::DataToolkitException, bt; backtrace=true)
+    showerror(io, err)
     backtrace && Base.show_backtrace(io, strip_stacktrace_advice!(bt))
 end
 

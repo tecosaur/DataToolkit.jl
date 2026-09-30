@@ -323,8 +323,9 @@ failwhilehandling() = @log_do "test" "Failing" try error("handled") catch; error
         old = DataToolkitCore.SIMPLIFY_STACKTRACES[]
         try
             DataToolkitCore.SIMPLIFY_STACKTRACES[] = true
-            # `bt` arrives raw from `throw`, or already resolved from a nested `showerror`.
-            for bt in (rawbt, stacktrace(rawbt))
+            # `bt` arrives raw from `throw`, resolved from a nested `showerror`,
+            # or processed from a `CapturedException`.
+            for bt in (rawbt, stacktrace(rawbt), CapturedException(err, rawbt).processed_bt, Any[])
                 rendered = sprint((io, e) -> showerror(io, e, bt), err)
                 @test occursin(r"^final.*caused by: handled"s, rendered)
                 @test !occursin(joinpath("model", "logging.jl"), rendered)
@@ -413,6 +414,52 @@ end
     # Another data set's unsatisfiability isn't this one's to fall back from.
     foreign = DataToolkitCore.unwrap_logtask(try read(probe_dataset(:foreign)) catch e; e end)
     @test foreign isa UnsatisfyableTransformer
+end
+
+@testset "Backtrace simplification" begin
+    ds = probe_dataset(:idl)
+    exc, raw = try @advise ds DataToolkitCore.read1(ds, String) catch e; (e, catch_backtrace()) end
+    processed = CapturedException(exc, raw).processed_bt
+    isadvice(sf) = occursin("_dataadvise", String(sf.func))
+    strip! = DataToolkitCore.strip_stacktrace_advice!
+    old = DataToolkitCore.SIMPLIFY_STACKTRACES[]
+    try
+        DataToolkitCore.SIMPLIFY_STACKTRACES[] = true
+        @test any(isadvice, stacktrace(raw)) # else stripping is vacuous
+        for bt in (raw, stacktrace(raw), processed)
+            @test !any(isadvice, strip!(copy(bt)))
+        end
+        nprocessed = length(processed)
+        showerror(IOBuffer(), exc, processed)
+        @test length(processed) == nprocessed
+        failure, failurebt = try read(probe_dataset(:handled)) catch e; (e, catch_backtrace()) end
+        @test !occursin("_dataadvise", sprint(showerror, failure, failurebt))
+        DataToolkitCore.SIMPLIFY_STACKTRACES[] = false
+        @test any(isadvice, strip!(copy(processed)))
+    finally
+        DataToolkitCore.SIMPLIFY_STACKTRACES[] = old
+    end
+    @testset "Displaying $(nameof(typeof(err)))" for err in (
+        UnresolveableIdentifier{DataSet}("nosuch"),
+        UnresolveableIdentifier{DataCollection}("nosuch"),
+        AmbiguousIdentifier("probe", [ds, ds]),
+        AmbiguousIdentifier("probe", [ds.collection, ds.collection]),
+        UnregisteredPackage(:Nosuch, Main),
+        MissingPackage(Base.PkgId(Base.UUID(0), "Nosuch")),
+        CollectionVersionMismatch(-1),
+        EmptyStackError(),
+        ReadonlyCollection(ds.collection),
+        TransformerError("probe"),
+        UnsatisfyableTransformer(ds, DataLoader, [QualifiedType(String)]),
+        OrphanDataSet(ds),
+        InvalidParameterType(ds, "nosuch", Int),
+        InvalidParameterType(only(ds.loaders), "nosuch", Int),
+        ImpossibleTypeException(QualifiedType(:Nosuch, :Nosuch), nothing))
+        @test occursin(r"^\w+: ", sprint(showerror, err))
+    end
+    message = sprint(showerror, exc)
+    @test startswith(sprint(showerror, exc, processed), message)
+    @test startswith(sprint(showerror, CapturedException(exc, raw)), message)
 end
 
 @testset "Programmatic collection construction" begin

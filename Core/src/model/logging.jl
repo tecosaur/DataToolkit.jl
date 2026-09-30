@@ -74,19 +74,13 @@ function Base.showerror(io::IO, err::LogTaskError, bt; backtrace=true)
     stack = Base.current_exceptions(err.task)
     # A deserialised task keeps its exception, but not its exception stack.
     isempty(stack) && return showerror(io, err.task.exception, bt; backtrace)
-    callerframes = if !backtrace
-        Base.StackTraces.StackFrame[]
-    elseif bt isa Vector{Base.StackTraces.StackFrame}
-        bt
-    else
-        stacktrace(bt)
-    end
+    callerframes = if backtrace stackframes(bt) end
     Base.show_exception_stack(io, map(stack) do (exception, taskbt)
         frames = if backtrace
             merged = vcat(stacktrace(taskbt), callerframes)
             SIMPLIFY_STACKTRACES[] &&
                 filter!(sf -> sf.file != Symbol(@__FILE__), merged)
-            merged
+            strip_stacktrace_advice!(merged)
         end
         (exception, frames)
     end)

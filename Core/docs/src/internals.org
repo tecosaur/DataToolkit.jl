@@ -51,6 +51,7 @@ DataToolkitCore.trytypeify
 DataToolkitCore.reinit!
 DataToolkitCore._dataadvisecall
 DataToolkitCore.strip_stacktrace_advice!
+DataToolkitCore.stackframes
 DataToolkitCore.get_package
 DataToolkitCore.try_install_pkg
 DataToolkitCore.read1
