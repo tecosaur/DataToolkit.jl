@@ -356,8 +356,10 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:softfail}}) =
     @test !isnothing(cachefile) && isfile(cachefile)
     chmod(cachefile, 0o644)
     write(cachefile, "not a valid serialization")
-    result = @test_logs (:warn, r"^Discarding unusable cache") match_mode=:any read(dataset("nums"), Vector{Int})
+    result = @test_logs((:warn, r"^Discarding unusable cache"), min_level = Base.CoreLogging.Warn,
+                        read(dataset("nums"), Vector{Int}))
     @test result == [2]
+    @test read(dataset("nums"), Vector{Int}) == [2]
     @test read(dataset("softnums"), Vector{Int}) == [3]
     @test all(c -> first(first(c.types)) != DataToolkitCore.QualifiedType(Nothing), inventory.caches)
 end

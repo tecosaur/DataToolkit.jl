@@ -288,6 +288,12 @@ function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
             catch err
                 err isa InterruptException && rethrow()
                 @warn "Discarding unusable cache for $(sprint(show, loader.dataset.name)), re-running the loader" exception=DataToolkitCore.unwrap_logtask(err)
+                # Forget it, so `load` after the `read1` look-ahead sees a miss;
+                # match by `≃`, since a resync may have reparsed `inventory.caches`.
+                @lock inventory.batch.guard begin
+                    index = findfirst(Base.Fix1(≃, cache), inventory.caches)
+                    !isnothing(index) && deleteat!(inventory.caches, index)
+                end
                 nothing
             end
         end
