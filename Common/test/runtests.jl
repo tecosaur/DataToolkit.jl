@@ -6,19 +6,25 @@ using Test
 using UUIDs
 using ColorTypes, FixedPointNumbers
 using Tar, FilePathsBase
+# Loaded here rather than by their drivers, so the tests' world sees their methods.
+import Arrow, TiffImages
 import Pkg
 
 DataToolkitCore.loadcollection!("Data.toml")
 
-# Assert `expr`, but degrade to `@test_broken` if it throws — for backends whose
-# fixtures need network access or a heavy/optional codec that may be absent.
+# Assert `expr`, but mark it broken when an optional package it needs isn't installed.
 macro maybe_broken(expr)
     quote
-        ok = try $(esc(expr)) catch; false end
-        if ok
-            @test ok
+        result = try
+            Some($(esc(expr)))
+        catch err
+            DataToolkitCore.unwrap_logtask(err) isa DataToolkitCore.MissingPackage || rethrow()
+            nothing
+        end
+        if isnothing(result)
+            @test_broken false
         else
-            @test_broken ok
+            @test something(result)
         end
     end
 end
