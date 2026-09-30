@@ -56,7 +56,7 @@ is_store_target(::Any) = false
 function approximate_store_dest end
 
 """
-    savetofile(savefn::Function, storage::DataStorage) -> FilePath
+    savetofile(savefn::Function, storage::DataStorage; name::AbstractString = "") -> FilePath
 
 Save the contents of `storage` to a file using `savefn`.
 
@@ -70,9 +70,10 @@ Special care is taken to:
 - cleanup temporary files at the end of the Julia session
 
 A store target is staged as a `.tmp` file beside its destination, which
-`storesave` then moves into place.
+`storesave` then moves into place. Any other file is saved as `name` (the name
+the data comes under), since some formats are recognised by their extension.
 """
-function savetofile(savefn::Function, storage::DataStorage)
+function savetofile(savefn::Function, storage::DataStorage; name::AbstractString = "")
     if is_store_target(storage)
         refdest = invokelatest(approximate_store_dest, storage)
         miliseconds = floor(Int, 1000 * time())
@@ -82,10 +83,7 @@ function savetofile(savefn::Function, storage::DataStorage)
         atomic_write(savefn, tmpfile, partfile)
         FilePath(tmpfile)
     else
-        tmpfile = tempname()
-        @static if isdefined(Base.Filesystem, :temp_cleanup_later)
-            Base.Filesystem.temp_cleanup_later(tmpfile)
-        end
+        tmpfile = joinpath(mktempdir(), if isempty(name) "data" else name end)
         savefn(tmpfile)
         FilePath(tmpfile)
     end

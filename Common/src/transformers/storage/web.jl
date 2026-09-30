@@ -156,10 +156,11 @@ function getstorage(storage::DataStorage{:web}, ::Type{IO})
 end
 
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
+    url = @getparam(storage."url"::String)
     try
-        savetofile(io -> invokepkglatest(download_to, storage, io), storage)
+        savetofile(io -> invokepkglatest(download_to, storage, io), storage;
+                   name = basename(first(split(url, ('?', '#')))))
     catch err
-        url = @getparam(storage."url"::String)
         @error "Download failed" url exception=(err, catch_backtrace())
         nothing
     end

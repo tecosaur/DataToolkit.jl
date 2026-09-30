@@ -31,7 +31,7 @@ function getstorage(storage::DataStorage{:s3}, ::Type{FilePath})
     object = @getparam storage."object"::String
     region = @getparam storage."region"::Union{String, Nothing} nothing
     params = aws_params(storage)
-    savetofile(storage) do io
+    savetofile(storage; name = basename(object)) do io
         @log_do("load:s3",
                 "Downloading s3://$(bucket)/$(object)...",
                 invokelatest(_read_s3, bucket, object, io; region, params))
