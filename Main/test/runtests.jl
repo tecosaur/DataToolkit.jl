@@ -457,8 +457,16 @@ try
             write(joinpath(dirname(coll.source.path), "source.txt"), "built\n")
             # The two share a recipe, so the copy is there for `live` too, but isn't its to use or discard.
             foreach(name -> open(dataset(coll, name), DataToolkitCore.FilePath), ("kept", "live"))
-            @test DataToolkitStore.islocal(only(dataset(coll, "kept").storage))
-            @test !DataToolkitStore.islocal(only(dataset(coll, "live").storage))
+            kept = only(dataset(coll, "kept").storage)
+            @test DataToolkitStore.islocal(kept) && !DataToolkitStore.islocal(only(dataset(coll, "live").storage))
+            # Collected once no storage the store keeps uses it.
+            inventory = DataToolkitStore.getinventory(coll)
+            stored = DataToolkitStore.storefile(inventory, kept)
+            DataToolkitStore.garbage_collect!(inventory; log = false)
+            @test isfile(stored)
+            kept.parameters["save"] = false
+            DataToolkitStore.garbage_collect!(inventory; log = false)
+            @test !ispath(stored)
         end
     end
 

@@ -608,7 +608,7 @@ source's) checksum, which identifies its data whatever the recipe it was
 stored under.
 """
 livekeys(@nospecialize(storage::DataStorage)) =
-    filter(!isnothing, (rhash(storage), checksumvalue(storage)))
+    if shouldstore(storage) filter(!isnothing, (rhash(storage), checksumvalue(storage))) else () end
 livekeys(@nospecialize(loader::DataLoader)) = (rhash(loader),)
 livekeys(source::StoreSource) = filter(!isnothing, (source.recipe, source.checksum))
 livekeys(source::CacheSource) = (source.recipe,)
