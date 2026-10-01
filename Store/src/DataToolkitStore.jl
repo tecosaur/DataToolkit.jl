@@ -8,7 +8,7 @@ using TOML
 using UUIDs
 
 @static if VERSION >= v"1.11"
-    eval(Expr(:public, :load_inventory, :fetch!))
+    eval(Expr(:public, :load_inventory, :fetch!, :islocal))
 end
 
 include("lockfiles.jl")

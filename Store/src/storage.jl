@@ -118,45 +118,31 @@ storefile(::Inventory, ::Nothing) = nothing
     storefile(inventory::Inventory, storage::DataStorage)
     storefile(inventory, loader::DataLoader, as::Type)
 
-Returns a path for the source of `storage`/`loader`, or `nothing` if either the
-source or the path does not exist.
-
-Should a source exist, but the file not, the source is removed from `inventory`.
+The file in `inventory` holding `storage`'s data (or `loader`'s `as` form)
+for a read to use, or `nothing` when there is none.
 """
-function storefile(inventory::Inventory, @nospecialize(storage::DataStorage))
-    source = getsource(inventory, storage)
-    if !isnothing(source)
-        file = storefile(inventory, source)
-        if isfile(file)
-            file
-        else
-            # If the cache file has been removed, remove the associated
-            # source info.
-            @lock inventory.batch.guard begin
-                index = findfirst(==(source), inventory.stores)
-                !isnothing(index) && deleteat!(inventory.stores, index)
-            end
-            nothing
-        end
-    end
-end
+storefile(inventory::Inventory, @nospecialize(storage::DataStorage)) =
+    readable(storefile(inventory, getsource(inventory, storage)))
 
-function storefile(inventory::Inventory, @nospecialize(loader::DataLoader), as::Type)
-    source = getsource(inventory, loader, as)
-    if !isnothing(source)
-        file = storefile(inventory, source)
-        if isfile(file)
-            file
-        else
-            # If the cache file has been removed, remove the associated
-            # source info.
-            @lock inventory.batch.guard begin
-                index = findfirst(==(source), inventory.caches)
-                !isnothing(index) && deleteat!(inventory.caches, index)
-            end
-            nothing
-        end
-    end
+storefile(inventory::Inventory, @nospecialize(loader::DataLoader), as::Type) =
+    readable(storefile(inventory, getsource(inventory, loader, as)))
+
+# A stored file there to be read: present, and not a link its target has outdated.
+readable(file::String) = if isfile(file) && !isstalelink(file) file end
+readable(::Nothing) = nothing
+
+"""
+    islocal(storage::DataStorage) -> Bool
+
+Whether `storage`'s data is on this machine already, so that reading it
+fetches nothing: the store holds a copy of it for a read to use. A driver
+whose data is local itself, such as DataToolkitCommon's `filesystem`, adds a
+method. Finding out writes nothing.
+"""
+function islocal(@nospecialize(storage::DataStorage))
+    inventory = getinventory(storage.dataset.collection)
+    shouldstore(storage) && !isnothing(inventory) &&
+        !isnothing(storefile(update_inventory!(inventory), storage))
 end
 
 """

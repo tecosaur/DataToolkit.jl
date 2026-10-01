@@ -283,9 +283,10 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
         driver = "text"
     """)
     loadcollection!(data_toml)
+    @test !DataToolkitStore.islocal(only(dataset("blob").storage)) && isempty(readdir(storedir))
     inventory = DataToolkitStore.getinventory!(dataset("blob").collection)
     @test read(open(dataset("blob"), IO), String) == "hello blob"
-    @test length(inventory.stores) == 1
+    @test length(inventory.stores) == 1 && DataToolkitStore.islocal(only(dataset("blob").storage))
     @test occursin("[[store]]", read(inventory.file.path, String))
     cachefile = DataToolkitStore.storefile(inventory, only(dataset("blob").storage))
     @test !isnothing(cachefile) && isfile(cachefile)
@@ -302,14 +303,13 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
     empty!(GONE_CALLS)
     @test read(dataset("fallback"), String) == "hello blob"
     @test GONE_CALLS == [(:gone, DataToolkitCore.FilePath), (:goneio, IO)]
-    @test all(s -> isnothing(DataToolkitStore.getsource(inventory, s)),
-              filter(s -> !(s isa DataStorage{:testblob}), dataset("fallback").storage))
+    @test map(DataToolkitStore.islocal, dataset("fallback").storage) == [false, false, true]
     empty!(GONE_CALLS)
     @test DataToolkitStore.fetch!(dataset("fallback"))
     @test GONE_CALLS == [(:gone, DataToolkitCore.FilePath), (:goneio, IO)]
     empty!(GONE_CALLS)
     @test DataToolkitStore.fetch!(dataset("firstwins")) && DataToolkitStore.fetch!(dataset("livefirst"))
-    @test isempty(GONE_CALLS)
+    @test isempty(GONE_CALLS) && !DataToolkitStore.islocal(first(dataset("livefirst").storage))
     @test !DataToolkitStore.fetch!(dataset("unfetchable"))
 end
 
@@ -615,8 +615,7 @@ end
     @test DataToolkitStore.storefile(inventory, s) == f1
     @test length(inventory.stores) == 1
     rm(f1)
-    @test isnothing(DataToolkitStore.storefile(inventory, s))
-    @test isempty(inventory.stores)
+    @test isnothing(DataToolkitStore.storefile(inventory, s)) && !DataToolkitStore.islocal(s)
     @test read(open(dataset("blob"), IO), String) == "hello blob"
     f2 = DataToolkitStore.storefile(inventory, s)
     @test !isnothing(f2) && isfile(f2)

@@ -215,6 +215,7 @@ try
             write(joinpath(dirname(coll.source.path), "fallback.txt"), "fallback")
             empty!(REQUESTS)
             @test with_logger(() -> read(dataset(coll, "greeting"), String), NullLogger()) == "fallback"
+            @test map(DataToolkitStore.islocal, dataset(coll, "greeting").storage) == [false, true]
             # One fetch, of however many attempts.
             @test all(==("GET /gone.txt HTTP/1.1"), REQUESTS)
             @test 1 <= length(REQUESTS) <= 3

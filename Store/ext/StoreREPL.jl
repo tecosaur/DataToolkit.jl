@@ -11,7 +11,7 @@ import REPL.TerminalMenus: request, RadioMenu
 using DataToolkitStore: STORE_GC_CONFIG_INFO,
     DEFAULT_INVENTORY_CONFIG, INVENTORIES,
     getinventory, getinventory!, update_inventory!, garbage_collect!, expunge!, fetch!,
-    shouldstore, storefile, getsource, printstats, humansize
+    shouldstore, storefile, printstats, humansize
 
 import DataToolkitStore: should_overwrite, store_init_checksum_a,
     store_extra_info_a, cache_extra_info_a
@@ -66,23 +66,9 @@ in the Data REPL.
 Part of `STORE_PLUGIN`.
 """
 function store_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
-    if any(shouldstore, dataset.storage)
-        print(io, "  Stored:  ")
-        inventory = getinventory!(dataset.collection) |> update_inventory!
-        files = map(s -> if shouldstore(s) storefile(inventory, s) end,
-                    dataset.storage)
-        filter!(!isnothing, files)
-        filter!(isfile, files)
-        if isempty(files)
-            printstyled(io, "no", color=:yellow)
-        else
-            printstyled("yes", color=:green)
-            if length(files) > 1
-                printstyled('(', length(files), ')', color=:green)
-            end
-            print(' ', join(humansize(sum(filesize, files)), ' '))
-        end
-        print(io, '\n')
+    storers = filter(shouldstore, dataset.storage)
+    isempty(storers) || showstored(io, "Stored", dataset.collection) do inventory
+        map(s -> storefile(inventory, s), storers)
     end
     (f, (io, dataset))
 end
@@ -95,28 +81,32 @@ This advice adds information about cached files when showing a dataset.
 Part of `CACHE_PLUGIN`.
 """
 function cache_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
-    forms = [(l, t) for l in dataset.loaders
-                 for t in map(trytypeify, l.type) if !isnothing(t)]
-    filter!(splat(shouldstore), forms)
-    if !isempty(forms)
-        print(io, "  Cached:  ")
-        inventory = getinventory!(dataset.collection) |> update_inventory!
-        files = map(((s, t),) -> storefile(inventory, getsource(inventory, s, t)),
-                    forms)
-        filter!(!isnothing, files)
-        filter!(isfile, files)
-        if isempty(files)
-            printstyled(io, "no", color=:yellow)
-        else
-            printstyled("yes", color=:green)
-            if length(files) > 1
-                printstyled('(', length(files), ')', color=:green)
-            end
-            print(' ', join(humansize(sum(filesize, files)), ' '))
-        end
-        print(io, '\n')
+    forms = [(l, t) for l in dataset.loaders for t in map(trytypeify, l.type)
+                 if !isnothing(t) && shouldstore(l, t)]
+    isempty(forms) || showstored(io, "Cached", dataset.collection) do inventory
+        map(((l, t),) -> storefile(inventory, l, t), forms)
     end
     (f, (io, dataset))
+end
+
+# Print a `label` line saying whether `collection`'s store holds any of the
+# files `files(inventory)` gives, and their total size.
+function showstored(files::Function, io::IO, label::String, collection::DataCollection)
+    inventory = getinventory(collection)
+    found = if isnothing(inventory)
+        String[]
+    else
+        filter(!isnothing, files(update_inventory!(inventory)))
+    end
+    print(io, "  ", label, ":  ")
+    if isempty(found)
+        printstyled(io, "no", color=:yellow)
+    else
+        printstyled(io, "yes", color=:green)
+        length(found) > 1 && printstyled(io, '(', length(found), ')', color=:green)
+        print(io, ' ', join(humansize(sum(filesize, found)), ' '))
+    end
+    print(io, '\n')
 end
 
 # The `store` REPL command

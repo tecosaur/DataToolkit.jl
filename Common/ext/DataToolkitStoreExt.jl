@@ -4,8 +4,8 @@ using DataToolkitCore
 using Dates: now
 
 using DataToolkitStore: Inventory, StoreSource,
-    getinventory!, getchecksum, getsource, isstalelink, update_source!
-import DataToolkitStore: rhash, shouldstore, storesave, storefile, fileextension
+    getinventory!, getchecksum, storefile, update_source!
+import DataToolkitStore: rhash, shouldstore, storesave, fileextension, islocal
 
 using DataToolkitCommon: dirof, getpath
 import DataToolkitCommon: is_store_target, approximate_store_dest
@@ -69,22 +69,7 @@ function storesave(inventory::Inventory, storage::DataStorage{:filesystem}, ::Ty
     T(linkpath)
 end
 
-# Similarly, we need a variant on the generic `storefile` implementation to
-# delete the symlink preemptively if the actual file is newer. This will now
-# trigger `storesave` again.
-function storefile(inventory::Inventory, storage::DataStorage{:filesystem})
-    source = getsource(inventory, storage)
-    if !isnothing(source)
-        linkpath = storefile(inventory, source)
-        ispath(linkpath) && !isstalelink(linkpath) && return linkpath
-        islink(linkpath) && rm(linkpath)
-        # Symlink never existed, or has been removed, so ensure
-        # no associated store entry exists.
-        index = findfirst(==(source), inventory.stores)
-        !isnothing(index) && deleteat!(inventory.stores, index)
-        nothing
-    end
-end
+islocal(storage::DataStorage{:filesystem}) = ispath(getpath(storage))
 
 # ------------------
 # Passthrough storage

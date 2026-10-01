@@ -37,7 +37,7 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
     inventory = getinventory!(storer.dataset.collection) |> update_inventory!
     # Get any applicable cache file
     source = getsource(inventory, storer)
-    file = storefile(inventory, source)
+    file = readable(storefile(inventory, source))
     if !shouldstore(storer) || write
         # If the store is invalid (should not be stored, or about to be
         # written to), then it should be removed before proceeding as
@@ -50,7 +50,7 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
             end
         end
         (f, (storer, as), (; write))
-    elseif !isnothing(file) && isfile(file) && !isstalelink(file) && as ∈ STORED_FORMS
+    elseif !isnothing(file) && as ∈ STORED_FORMS
         # If using a cache file, ensure the parent collection is registered
         # as a reference.
         STORE_RECORD_ACCESS &&
@@ -269,10 +269,10 @@ function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
         # Get any applicable cache file
         inventory = getinventory!(loader.dataset.collection) |> update_inventory!
         cache = getsource(inventory, loader, as)
-        file = storefile(inventory, cache)
+        file = readable(storefile(inventory, cache))
         # An unusable cache (e.g. a `.jls` from another Julia version) is
         # discarded to re-run the loader, never surfaced as a read error.
-        cached = if !isnothing(file) && isfile(file)
+        cached = if !isnothing(file)
             try
                 foreach(DataToolkitCore.get_package, cache.packages)
                 all(@. rhash(trytypeify(first(cache.types))) == last(cache.types)) || error("Cache recipe types have changed")
