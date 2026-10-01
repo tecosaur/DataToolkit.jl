@@ -39,10 +39,8 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
     source = getsource(inventory, storer)
     file = readable(storefile(inventory, source))
     if !shouldstore(storer) || write
-        # If the store is invalid (should not be stored, or about to be
-        # written to), then it should be removed before proceeding as
-        # normal.
-        if !isnothing(source) && inventory.file.writable
+        # A write outdates any stored copy, whoever else shares its recipe.
+        if write && !isnothing(source) && inventory.file.writable
             # `≃`, not `==`: the resync may have freshly parsed `inv.stores`.
             modify_inventory!(inventory) do inv
                 index = findfirst(Base.Fix1(≃, source), inv.stores)

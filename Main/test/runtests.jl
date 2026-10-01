@@ -455,8 +455,8 @@ try
                 type = "FilePath"
             """)
             write(joinpath(dirname(coll.source.path), "source.txt"), "built\n")
-            open(dataset(coll, "kept"), DataToolkitCore.FilePath)
-            # The two share a recipe, so the copy is there for `live` too, but isn't its to use.
+            # The two share a recipe, so the copy is there for `live` too, but isn't its to use or discard.
+            foreach(name -> open(dataset(coll, name), DataToolkitCore.FilePath), ("kept", "live"))
             @test DataToolkitStore.islocal(only(dataset(coll, "kept").storage))
             @test !DataToolkitStore.islocal(only(dataset(coll, "live").storage))
         end
