@@ -34,7 +34,7 @@ Part of `STORE_PLUGIN`.
 """
 function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::Bool)
     @nospecialize
-    inventory = getinventory(storer.dataset.collection) |> update_inventory!
+    inventory = getinventory!(storer.dataset.collection) |> update_inventory!
     # Get any applicable cache file
     source = getsource(inventory, storer)
     file = storefile(inventory, source)
@@ -235,7 +235,7 @@ lifetime_offset = 1970-01-01T03:00:00
 #### Store management
 
 System-wide configuration can be set via the `store config set` REPL command, or
-directly modifying the `$(@__MODULE__).getinventory().config` struct.
+directly modifying the `$(@__MODULE__).getinventory!().config` struct.
 
 $STORE_GC_CONFIG_INFO
 """
@@ -267,7 +267,7 @@ function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
     @nospecialize
     if shouldstore(loader, as) || @getparam(loader."cache"::Bool, false) === true
         # Get any applicable cache file
-        inventory = getinventory(loader.dataset.collection) |> update_inventory!
+        inventory = getinventory!(loader.dataset.collection) |> update_inventory!
         cache = getsource(inventory, loader, as)
         file = storefile(inventory, cache)
         # An unusable cache (e.g. a `.jls` from another Julia version) is
@@ -414,7 +414,7 @@ cache = false
 #### Store management
 
 System-wide configuration can be set via the `store config set` REPL command, or
-directly modifying the `$(@__MODULE__).getinventory().config` struct.
+directly modifying the `$(@__MODULE__).getinventory!().config` struct.
 
 $STORE_GC_CONFIG_INFO
 """

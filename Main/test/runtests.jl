@@ -339,7 +339,7 @@ try
             @test isfile(stored) && !islink(stored)
             write(localcopy, "edited\n")
             copystorage = only(dataset(coll, "copy").storage)
-            @test DataToolkitStore.storefile(DataToolkitStore.getinventory(coll), copystorage) == stored
+            @test DataToolkitStore.storefile(DataToolkitStore.getinventory!(coll), copystorage) == stored
             @test read(dataset(coll, "download"), String) == "shared\n"
         end
         @testset "A link whose target changed is checked again" begin
@@ -419,7 +419,7 @@ try
             """)
             @test read(dataset(coll, "answer"), Int) == 42
             DataToolkitStore.fetch!(coll)
-            @test isempty(DataToolkitStore.getinventory(coll).stores)
+            @test isempty(DataToolkitStore.getinventory!(coll).stores)
         end
     end
 

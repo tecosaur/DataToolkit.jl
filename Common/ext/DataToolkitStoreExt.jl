@@ -4,7 +4,7 @@ using DataToolkitCore
 using Dates: now
 
 using DataToolkitStore: Inventory, StoreSource,
-    getinventory, getchecksum, getsource, isstalelink, update_source!
+    getinventory!, getchecksum, getsource, isstalelink, update_source!
 import DataToolkitStore: rhash, shouldstore, storesave, storefile, fileextension
 
 using DataToolkitCommon: dirof, getpath
@@ -17,7 +17,7 @@ function approximate_store_dest(storage::DataStorage)
         rhash(storage),
         [storage.dataset.collection.uuid],
         now(), nothing, fileextension(storage))
-    inventory = getinventory(storage.dataset.collection)
+    inventory = getinventory!(storage.dataset.collection)
     refdest = storefile(inventory, newsource)
 end
 

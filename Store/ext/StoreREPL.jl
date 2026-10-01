@@ -10,7 +10,7 @@ import REPL.TerminalMenus: request, RadioMenu
 
 using DataToolkitStore: STORE_GC_CONFIG_INFO,
     DEFAULT_INVENTORY_CONFIG, INVENTORIES,
-    getinventory, update_inventory!, garbage_collect!, expunge!, fetch!,
+    getinventory, getinventory!, update_inventory!, garbage_collect!, expunge!, fetch!,
     shouldstore, storefile, getsource, printstats, humansize
 
 import DataToolkitStore: should_overwrite, store_init_checksum_a,
@@ -69,7 +69,7 @@ function store_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
     storable(s) = shouldstore(s) || @getparam(s."save"::Bool, false)
     if any(storable, dataset.storage)
         print(io, "  Stored:  ")
-        inventory = getinventory(dataset.collection) |> update_inventory!
+        inventory = getinventory!(dataset.collection) |> update_inventory!
         files = map(s -> if storable(s) storefile(inventory, s) end,
                     dataset.storage)
         filter!(!isnothing, files)
@@ -102,7 +102,7 @@ function cache_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
     filter!(cacheable, forms)
     if !isempty(forms)
         print(io, "  Cached:  ")
-        inventory = getinventory(dataset.collection) |> update_inventory!
+        inventory = getinventory!(dataset.collection) |> update_inventory!
         files = map(((s, t),) -> storefile(inventory, getsource(inventory, s, t)),
                     forms)
         filter!(!isnothing, files)
@@ -133,9 +133,9 @@ const REPL_CONFIG_KEYS =
 
 function repl_config_get(input::AbstractString)
     inventory = if isempty(STACK)
-        getinventory()
+        getinventory!()
     else
-        getinventory(first(STACK))
+        getinventory!(first(STACK))
     end |> update_inventory!
     value_sets = [(:auto_gc, "hours"),
                   (:max_age, "days"),
@@ -177,9 +177,9 @@ end
 
 function repl_config_set!(input::AbstractString)
     inventory = if isempty(STACK)
-        getinventory()
+        getinventory!()
     else
-        getinventory(first(STACK))
+        getinventory!(first(STACK))
     end
     if !inventory.file.writable
         printstyled(" ! ", color=:red, bold=true)
@@ -241,9 +241,9 @@ end
 
 function repl_config_reset(input::AbstractString)
     inventory = if isempty(STACK)
-        getinventory()
+        getinventory!()
     else
-        getinventory(first(STACK))
+        getinventory!(first(STACK))
     end
     printers = Dict(
         "auto_gc" => v -> if v <= 0 "off" else string(v, " hours") end,
@@ -268,19 +268,19 @@ function repl_gc(input::AbstractString)
     flags = split(input)
     dryrun = "-d" in flags || "--dryrun" in flags
     if "-a" in flags || "--all" in flags
-        foreach(getinventory, STACK)
+        foreach(getinventory!, STACK)
         garbage_collect!(; dryrun)
     else
-        inventory = if isempty(STACK) getinventory()
-        else getinventory(first(STACK)) end |> update_inventory!
+        inventory = if isempty(STACK) getinventory!()
+        else getinventory!(first(STACK)) end |> update_inventory!
         garbage_collect!(inventory; dryrun)
     end
     nothing
 end
 
 function repl_expunge(input::AbstractString)
-    inventory = if isempty(STACK) getinventory()
-    else getinventory(first(STACK)) end |> update_inventory!
+    inventory = if isempty(STACK) getinventory!()
+    else getinventory!(first(STACK)) end |> update_inventory!
     collection = nothing
     for cltn in inventory.collections
         if cltn.name == input
@@ -303,7 +303,8 @@ end
 function repl_expunge_complete(sofar::AbstractString)
     inventory = if isempty(STACK) getinventory()
     else getinventory(first(STACK)) end
-    [c.name for c in inventory.collections if startswith(c.name, sofar)]
+    if isnothing(inventory) String[]
+    else [c.name for c in inventory.collections if startswith(c.name, sofar)] end
 end
 
 function repl_fetch(input::AbstractString)

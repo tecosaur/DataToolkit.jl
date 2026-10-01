@@ -85,7 +85,7 @@ if necessary, and update it in-place from disk.
 
 Returns the up-to-date `Inventory`.
 """
-update_inventory!(path::String) = update_inventory!(getinventory(path))
+update_inventory!(path::String) = update_inventory!(getinventory!(path))
 
 function update_inventory!(inventory::Inventory)
     @lock inventory.batch.guard begin
@@ -119,13 +119,17 @@ modify_inventory!(modify_fn::Function, inventory::Inventory) =
     end
 
 """
-    getinventory([source]) -> Inventory
+    getinventory([source]) -> Union{Inventory, Nothing}
+    getinventory!([source]) -> Inventory
 
 Find the registered `Inventory` for `source` — an inventory file path, a
 `DataCollection`, or the user store when omitted — loading and registering it
-if necessary.
+if necessary. Where `source` has no inventory yet, `getinventory` returns
+`nothing`, and `getinventory!` creates one.
 """
-function getinventory(path::String)
+getinventory(path::String) = if isfile(path) getinventory!(path) end
+
+function getinventory!(path::String)
     # Normalise to match stored paths, lest a duplicate instance be loaded.
     path = abspath(path)
     index = findfirst(inv -> inv.file.path == path, INVENTORIES)
@@ -136,7 +140,14 @@ function getinventory(path::String)
     end
 end
 
-function getinventory(collection::DataCollection)
+getinventory(collection::DataCollection) = getinventory(inventorypath(collection))
+getinventory!(collection::DataCollection) = getinventory!(inventorypath(collection))
+
+getinventory() = getinventory(USER_INVENTORY)
+getinventory!() = getinventory!(USER_INVENTORY)
+
+"The inventory file of the store `collection` uses."
+function inventorypath(collection::DataCollection)
     storepath = get(get(collection, "store", Dict{String, Any}()),
                     "path", nothing)
     storepathabs = if isnothing(storepath)
@@ -151,10 +162,8 @@ function getinventory(collection::DataCollection)
         end
         joinpath(cdir, storepath)
     end
-    getinventory(joinpath(storepathabs, INVENTORY_FILENAME))
+    joinpath(storepathabs, INVENTORY_FILENAME)
 end
-
-getinventory() = getinventory(USER_INVENTORY)
 
 # Garbage Collection
 
@@ -262,7 +271,7 @@ function printstats(inv::Inventory)
 end
 
 function printstats()
-    getinventory()
+    getinventory!()
     if length(INVENTORIES) == 1
         printstats(first(INVENTORIES))
     else
@@ -408,7 +417,7 @@ end
 Garbage collect all inventories, including the user store.
 """
 function garbage_collect!(; log::Bool=true, kwargs...)
-    getinventory()
+    getinventory!()
     if length(INVENTORIES) == 1
         garbage_collect!(first(INVENTORIES); log, kwargs...)
     else

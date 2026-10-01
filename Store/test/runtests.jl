@@ -170,6 +170,7 @@ end
     @test !isdirty(stray)
     @test occursin(string(marker), read(stray.file.path, String))
     dupdir = mktempdir()
+    @test isnothing(DataToolkitStore.getinventory(joinpath(dupdir, "Inventory.toml"))) && isempty(readdir(dupdir))
     canonical = update_inventory!(joinpath(dupdir, "Inventory.toml"))
     zigzag = joinpath(dupdir, "..", basename(dupdir), "Inventory.toml")
     @test DataToolkitStore.getinventory(zigzag) === canonical
@@ -282,7 +283,7 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:text}}) =
         driver = "text"
     """)
     loadcollection!(data_toml)
-    inventory = DataToolkitStore.getinventory(dataset("blob").collection)
+    inventory = DataToolkitStore.getinventory!(dataset("blob").collection)
     @test read(open(dataset("blob"), IO), String) == "hello blob"
     @test length(inventory.stores) == 1
     @test occursin("[[store]]", read(inventory.file.path, String))
@@ -392,7 +393,7 @@ DataToolkitCore.supportedtypes(::Type{DataLoader{:softfail}}) =
     """)
     loadcollection!(data_toml)
     COUNTER_CALLS[] = 0
-    inventory = DataToolkitStore.getinventory(dataset("nums").collection)
+    inventory = DataToolkitStore.getinventory!(dataset("nums").collection)
     @test read(dataset("nums"), Vector{Int}) == [1]
     cachefile = DataToolkitStore.storefile(inventory, only(dataset("nums").loaders), Vector{Int})
     @test !isnothing(cachefile) && isfile(cachefile)
@@ -600,7 +601,7 @@ end
         driver = "testblob"
     """)
     loadcollection!(data_toml)
-    inventory = DataToolkitStore.getinventory(dataset("blob").collection)
+    inventory = DataToolkitStore.getinventory!(dataset("blob").collection)
     s = only(dataset("blob").storage)
     # The recipe hash is what routes both reads to the same on-disk file; if it
     # drifted within a session the store would never hit and silently re-fetch.
@@ -663,7 +664,7 @@ DataToolkitCore.getstorage(::DataStorage{:counted}, ::Type{IO}) =
     moved, movedblob = countedcollection("url = \"https://b.example/blob\"\ntimeout = 60\nchecksum = \"$blobsum\"", storedir)
     @test fetchcount(originalblob) == 1
     @test fetchcount(movedblob) == 0
-    inventory = DataToolkitStore.getinventory(original)
+    inventory = DataToolkitStore.getinventory!(original)
     @test readdir(joinpath(storedir, "store")) == ["$blobsum.cache"]
     @test issetequal(only(inventory.stores).references, [original.uuid, moved.uuid])
     # `~recipe` stands in for a record stored under an older recipe.
@@ -685,7 +686,7 @@ DataToolkitCore.getstorage(::DataStorage{:counted}, ::Type{IO}) =
     write(joinpath(adoptdir, "store", "$blobsum.cache"), "hello blob")
     adopter, adopterblob = countedcollection("checksum = \"$blobsum\"", adoptdir)
     @test fetchcount(adopterblob) == 0
-    record = only(DataToolkitStore.getinventory(adopter).stores)
+    record = only(DataToolkitStore.getinventory!(adopter).stores)
     @test record.recipe == DataToolkitStore.rhash(only(adopterblob.storage))
     @test record.references == [adopter.uuid]
     linkdir = mktempdir()
@@ -741,7 +742,7 @@ DataToolkitCore.getstorage(storage::DataStorage{:localfile}, ::Type{DataToolkitC
         @test isfile(localfile)
     end
     rm(joinpath(storedir, "store"), recursive = true)
-    DataToolkitStore.getinventory(dataset("stream").collection).file.writable = false
+    DataToolkitStore.getinventory!(dataset("stream").collection).file.writable = false
     @test read(open(dataset("stream"), IO), String) == "hello blob"
     @test !ispath(joinpath(storedir, "store"))
 end
@@ -768,7 +769,7 @@ end
         checksum = "$(string(truesum))"
     """)
     loadcollection!(data_toml)
-    inventory = DataToolkitStore.getinventory(dataset("blob").collection)
+    inventory = DataToolkitStore.getinventory!(dataset("blob").collection)
     storage = only(dataset("blob").storage)
     FilePath = DataToolkitCore.FilePath
     # The throw path is only taken non-interactively (else a prompt is offered).
