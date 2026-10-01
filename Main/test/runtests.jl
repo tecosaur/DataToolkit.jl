@@ -59,9 +59,11 @@ end
 """
 A local HTTP server for `web` storage tests, on an ephemeral port at
 `SERVER_URL`. It serves each body in `ROUTES` at its path (any other path is
-a 404), and logs each request line to `REQUESTS`.
+a 404), declaring the length `DECLARED_LENGTHS` gives a path in place of the
+body's own, and logs each request line to `REQUESTS`.
 """
 const ROUTES = Dict{String, String}()
+const DECLARED_LENGTHS = Dict{String, Int}()
 const REQUESTS = String[]
 const SERVER_URL = let (port, server) = listenany(Sockets.localhost, 0)
     @async while true
@@ -70,9 +72,11 @@ const SERVER_URL = let (port, server) = listenany(Sockets.localhost, 0)
             request = readline(client)
             while !isempty(readline(client)) end # headers
             push!(REQUESTS, request)
-            body = get(ROUTES, split(request)[2], nothing)
+            path = split(request)[2]
+            body = get(ROUTES, path, nothing)
             status = if isnothing(body) "404 Not Found" else "200 OK" end
-            write(client, "HTTP/1.1 $status\r\nContent-Length: $(sizeof(something(body, "")))\r\n",
+            declared = get(DECLARED_LENGTHS, path, sizeof(something(body, "")))
+            write(client, "HTTP/1.1 $status\r\nContent-Length: $declared\r\n",
                   "Connection: close\r\n\r\n", something(body, ""))
         finally
             close(client)
@@ -214,6 +218,51 @@ try
             # One fetch, of however many attempts.
             @test all(==("GET /gone.txt HTTP/1.1"), REQUESTS)
             @test 1 <= length(REQUESTS) <= 3
+        end
+        @testset "A download too big for its directory is refused" begin
+            ROUTES["/huge.bin"], DECLARED_LENGTHS["/huge.bin"] = "x", 2^62
+            storedir = mktempdir()
+            coll = storecollection("""
+            [config.store]
+            path = "$storedir"
+
+            [[huge]]
+            uuid = "$(uuid4())"
+
+                [[huge.storage]]
+                driver = "web"
+                url = "$SERVER_URL/huge.bin"
+                priority = 1
+
+                [[huge.storage]]
+                driver = "filesystem"
+                path = "fallback.txt"
+                priority = 2
+
+                [[huge.loader]]
+                driver = "passthrough"
+
+            [[unstored]]
+            uuid = "$(uuid4())"
+
+                [[unstored.storage]]
+                driver = "web"
+                url = "$SERVER_URL/huge.bin"
+                save = false
+
+                [[unstored.loader]]
+                driver = "passthrough"
+            """)
+            write(joinpath(dirname(coll.source.path), "fallback.txt"), "fallback")
+            refusal(name) = DataToolkitCore.unwrap_logtask(
+                try with_logger(() -> open(dataset(coll, name), DataToolkitCore.FilePath), NullLogger()); nothing catch e; e end)
+            empty!(REQUESTS)
+            stored = refusal("huge")
+            @test stored isa DataToolkitCommon.InsufficientSpace && stored.needed == 2^62
+            @test stored.directory == joinpath(storedir, "store") && REQUESTS == ["GET /huge.bin HTTP/1.1"]
+            @test isempty(readdir(stored.directory))
+            unstored = refusal("unstored")
+            @test unstored isa DataToolkitCommon.InsufficientSpace && dirname(unstored.directory) == tempdir()
         end
         @testset "A download is moved into place" begin
             ROUTES["/staged.txt"] = "staged\n"

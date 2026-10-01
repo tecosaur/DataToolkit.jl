@@ -7,6 +7,24 @@ const DOWNLOAD_STYLE = (
            warmup_seconds = 3, # Seconds before showing ETA
            samples = 300)) # Number of `update_frequency` sized samples to use
 
+"""
+    InsufficientSpace(url::String, directory::String, needed::Int, available::Int) <: DataOperationException
+
+Downloading `url` into `directory` needs `needed` bytes, more than the
+`available` there.
+"""
+struct InsufficientSpace <: DataToolkitCore.DataOperationException
+    url::String
+    directory::String
+    needed::Int
+    available::Int
+end
+
+Base.showerror(io::IO, err::InsufficientSpace) =
+    print(io, "InsufficientSpace: Downloading ", err.url, " needs ", Base.format_bytes(err.needed), " in ",
+          err.directory, ", which has ", Base.format_bytes(err.available), " free.\n",
+          "  Free some space there, or set TMPDIR (or the store's path) to a larger directory.")
+
 struct DownloadProgress <: Function
     io::IO
     filename::String
@@ -118,7 +136,22 @@ function download_eta(io::IO, remaining::Integer, bps::Number)
           end)
 end
 
-function download_to(storage::DataStorage{:web}, target::IO, retries::Int=3)
+# `progress`, refusing a download larger than the space free in `directory` once its size is known.
+function spacechecked(progress, url::String, directory::String)
+    checked = Ref(false)
+    function (total::Integer, received::Integer)
+        if !checked[] && total > 0
+            checked[] = true
+            available = Int(diskstat(directory).available)
+            total > available && throw(InsufficientSpace(url, directory, total, available))
+        end
+        progress(total, received)
+    end
+end
+spacechecked(progress, ::String, ::Nothing) = progress
+
+function download_to(storage::DataStorage{:web}, target::IO, retries::Int=3;
+                     directory::Union{String, Nothing} = nothing)
     @require Downloads
     url = @getparam storage."url"::String
     headers = @getparam storage."headers"::Dict{String, Any}
@@ -129,7 +162,7 @@ function download_to(storage::DataStorage{:web}, target::IO, retries::Int=3)
             download_to, url, target;
             softreqerr = attempt < retries,
             headers, timeout,
-            progress = DownloadProgress(storage.dataset.name))
+            progress = spacechecked(DownloadProgress(storage.dataset.name), url, directory))
         success && break
         attempt < retries &&
             @warn "Download failed, retrying ($(retries - attempt) retries remaining)" url
@@ -159,9 +192,10 @@ end
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     url = @getparam(storage."url"::String)
     try
-        savetofile((io, _) -> invokepkglatest(download_to, storage, io), storage;
+        savetofile((io, directory) -> invokepkglatest(download_to, storage, io; directory), storage;
                    name = basename(first(split(url, ('?', '#')))))
     catch err
+        err isa InsufficientSpace && rethrow()
         @error "Download failed" url exception=(err, catch_backtrace())
         nothing
     end
