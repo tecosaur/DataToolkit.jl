@@ -58,11 +58,10 @@ function approximate_store_dest end
 """
     savetofile(savefn::Function, storage::DataStorage; name::AbstractString = "") -> FilePath
 
-Save the contents of `storage` to a file using `savefn`.
+Save the contents of `storage` to a file using `savefn`, and return its path.
 
-Given a function that will save `storage` to a file, taking the target path as
-the single argument, this function will save the contents of `storage` to a file,
-and return the path to the file.
+`savefn(io, directory)` writes the contents to `io`, which is open on a file
+in `directory`.
 
 Special care is taken to:
 - reduce potential file copying
@@ -80,11 +79,12 @@ function savetofile(savefn::Function, storage::DataStorage; name::AbstractString
         partfile = string(refdest, '-', miliseconds, ".part")
         tmpfile = string(refdest, '-', miliseconds, ".tmp")
         isdir(dirname(tmpfile)) || mkpath(dirname(tmpfile))
-        atomic_write(savefn, tmpfile, partfile)
+        atomic_write(io -> savefn(io, dirname(tmpfile)), tmpfile, partfile)
         FilePath(tmpfile)
     else
-        tmpfile = joinpath(mktempdir(), if isempty(name) "data" else name end)
-        savefn(tmpfile)
+        tmpdir = mktempdir()
+        tmpfile = joinpath(tmpdir, if isempty(name) "data" else name end)
+        atomic_write(io -> savefn(io, tmpdir), tmpfile)
         FilePath(tmpfile)
     end
 end

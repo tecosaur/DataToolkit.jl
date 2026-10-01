@@ -118,7 +118,7 @@ function download_eta(io::IO, remaining::Integer, bps::Number)
           end)
 end
 
-function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retries::Int=3)
+function download_to(storage::DataStorage{:web}, target::IO, retries::Int=3)
     @require Downloads
     url = @getparam storage."url"::String
     headers = @getparam storage."headers"::Dict{String, Any}
@@ -133,7 +133,8 @@ function download_to(storage::DataStorage{:web}, target::Union{IO, String}, retr
         success && break
         attempt < retries &&
             @warn "Download failed, retrying ($(retries - attempt) retries remaining)" url
-        target isa IO && (truncate(target, 0); seekstart(target))
+        truncate(target, 0)
+        seekstart(target)
     end
     if !success
         @error "Download failed after $retries attempts"
@@ -158,7 +159,7 @@ end
 function getstorage(storage::DataStorage{:web}, ::Type{FilePath})
     url = @getparam(storage."url"::String)
     try
-        savetofile(io -> invokepkglatest(download_to, storage, io), storage;
+        savetofile((io, _) -> invokepkglatest(download_to, storage, io), storage;
                    name = basename(first(split(url, ('?', '#')))))
     catch err
         @error "Download failed" url exception=(err, catch_backtrace())

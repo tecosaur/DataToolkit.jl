@@ -3,7 +3,7 @@ module DownloadsExt
 using Downloads
 import DataToolkitCommon: download_to
 
-function download_to(url::String, target::Union{String, IO};
+function download_to(url::String, target::IO;
                      softreqerr::Bool, kwargs...)
     try
         Downloads.download(url, target; kwargs...)
