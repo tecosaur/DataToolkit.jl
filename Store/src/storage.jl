@@ -13,17 +13,23 @@ fileextension(s::CacheSource) = "jls"
     shouldstore(storage::DataStorage)
     shouldstore(loader::DataLoader, T::Type)
 
-Returns `true` if `storage`/`loader` should be stored/cached, `false` otherwise.
+Whether the store keeps `storage`'s data (or `loader`'s `T` form): as its
+`save` (`cache`) parameter says, or else as its driver does by default.
+
+A driver sets its default with a method on its type, such as
+`shouldstore(::Type{DataStorage{:raw}}) = false`.
 """
 shouldstore(@nospecialize(storage::DataStorage)) =
-    @getparam(storage."save"::Bool, true) === true
+    @getparam(storage."save"::Bool, shouldstore(typeof(storage)))
 
-function shouldstore(@nospecialize(loader::DataLoader), T::Type)
-    unstorable = T <: IO || T <: Function ||
-        QualifiedType(Base.typename(T).wrapper) ==
-        QualifiedType(:TranscodingStreams, :TranscodingStream)
-    @getparam(loader."cache"::Bool, true) === true && !unstorable
-end
+shouldstore(@nospecialize(loader::DataLoader), T::Type) =
+    @getparam(loader."cache"::Bool, shouldstore(typeof(loader), T))
+
+shouldstore(::Type{<:DataStorage}) = true
+
+shouldstore(::Type{<:DataLoader}, T::Type) =
+    !(T <: IO || T <: Function ||
+      QualifiedType(Base.typename(T).wrapper) == QualifiedType(:TranscodingStreams, :TranscodingStream))
 
 """
     getsource(inventory::Inventory, storage::DataStorage)

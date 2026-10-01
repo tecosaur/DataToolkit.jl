@@ -25,13 +25,13 @@ end
 # Non-storable transformers
 # ------------------
 
-shouldstore(::DataLoader{:jld2}, ::Type) = false
-shouldstore(::DataStorage{:null}) = false
-shouldstore(::DataStorage{:passthrough}) = false
-shouldstore(::DataLoader{:passthrough}, ::Type) = false
-shouldstore(::DataStorage{:raw}) = false
-shouldstore(::DataLoader{:serialization}, ::Type) = false
-shouldstore(::DataLoader{:xml}, ::Type) = false
+shouldstore(::Type{DataLoader{:jld2}}, ::Type) = false
+shouldstore(::Type{DataStorage{:null}}) = false
+shouldstore(::Type{DataStorage{:passthrough}}) = false
+shouldstore(::Type{DataLoader{:passthrough}}, ::Type) = false
+shouldstore(::Type{DataStorage{:raw}}) = false
+shouldstore(::Type{DataLoader{:serialization}}, ::Type) = false
+shouldstore(::Type{DataLoader{:xml}}, ::Type) = false
 
 # ------------------
 # Filesystem storage

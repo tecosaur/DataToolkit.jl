@@ -718,7 +718,7 @@ presumably save it in the Store along the way.
 function fetch!(@nospecialize(storer::DataStorage))
     global STORE_RECORD_ACCESS = false
     try
-        if shouldstore(storer) || @getparam(storer."save"::Bool, false) === true
+        if shouldstore(storer)
             for type in (FilePath, IO, IOStream)
                 if QualifiedType(type) in storer.type
                     handle = @advise storage(storer, type, write=false)::Union{Some{type}, type, Nothing}

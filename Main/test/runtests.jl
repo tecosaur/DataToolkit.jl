@@ -421,6 +421,44 @@ try
             DataToolkitStore.fetch!(coll)
             @test isempty(DataToolkitStore.getinventory!(coll).stores)
         end
+        @testset "A passthrough storage is stored only when asked" begin
+            coll = storecollection("""
+            [config.store]
+            path = "$(mktempdir())"
+
+            [[source]]
+            uuid = "$(uuid4())"
+
+                [[source.storage]]
+                driver = "filesystem"
+                path = "source.txt"
+
+                [[source.loader]]
+                driver = "passthrough"
+
+            [[kept]]
+            uuid = "$(uuid4())"
+
+                [[kept.storage]]
+                driver = "passthrough"
+                source = "source::FilePath"
+                type = "FilePath"
+                save = true
+
+            [[live]]
+            uuid = "$(uuid4())"
+
+                [[live.storage]]
+                driver = "passthrough"
+                source = "source::FilePath"
+                type = "FilePath"
+            """)
+            write(joinpath(dirname(coll.source.path), "source.txt"), "built\n")
+            open(dataset(coll, "kept"), DataToolkitCore.FilePath)
+            # The two share a recipe, so the copy is there for `live` too, but isn't its to use.
+            @test DataToolkitStore.islocal(only(dataset(coll, "kept").storage))
+            @test !DataToolkitStore.islocal(only(dataset(coll, "live").storage))
+        end
     end
 
     include("e2e_repl.jl")

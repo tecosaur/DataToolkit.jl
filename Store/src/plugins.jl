@@ -38,7 +38,7 @@ function store_get_a(f::typeof(storage), storer::DataStorage, as::Type; write::B
     # Get any applicable cache file
     source = getsource(inventory, storer)
     file = storefile(inventory, source)
-    if !(shouldstore(storer) || @getparam(storer."save"::Bool, false)) || write
+    if !shouldstore(storer) || write
         # If the store is invalid (should not be stored, or about to be
         # written to), then it should be removed before proceeding as
         # normal.
@@ -265,7 +265,7 @@ Part of `CACHE_PLUGIN`.
 """
 function cache_get_a(f::typeof(load), loader::DataLoader, source, as::Type)
     @nospecialize
-    if shouldstore(loader, as) || @getparam(loader."cache"::Bool, false) === true
+    if shouldstore(loader, as)
         # Get any applicable cache file
         inventory = getinventory!(loader.dataset.collection) |> update_inventory!
         cache = getsource(inventory, loader, as)
@@ -318,9 +318,7 @@ Part of `CACHE_PLUGIN`.
 function cache_get_a(f::typeof(DataToolkitCore.read1), dataset::DataSet, as::Type)
     @nospecialize
     for loader in dataset.loaders
-        shouldstore(loader, as) ||
-            @getparam(loader."cache"::Bool, false) === true ||
-            continue
+        shouldstore(loader, as) || continue
         l_steps = DataToolkitCore.typesteps(loader, as)
         isempty(l_steps) && continue
         for (_, Tloader_out) in l_steps

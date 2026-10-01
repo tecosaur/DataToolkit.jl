@@ -66,11 +66,10 @@ in the Data REPL.
 Part of `STORE_PLUGIN`.
 """
 function store_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
-    storable(s) = shouldstore(s) || @getparam(s."save"::Bool, false)
-    if any(storable, dataset.storage)
+    if any(shouldstore, dataset.storage)
         print(io, "  Stored:  ")
         inventory = getinventory!(dataset.collection) |> update_inventory!
-        files = map(s -> if storable(s) storefile(inventory, s) end,
+        files = map(s -> if shouldstore(s) storefile(inventory, s) end,
                     dataset.storage)
         filter!(!isnothing, files)
         filter!(isfile, files)
@@ -98,8 +97,7 @@ Part of `CACHE_PLUGIN`.
 function cache_extra_info_a(f::typeof(show_extra), io::IO, dataset::DataSet)
     forms = [(l, t) for l in dataset.loaders
                  for t in map(trytypeify, l.type) if !isnothing(t)]
-    cacheable((loader, T),) = shouldstore(loader, T) || @getparam(loader."cache"::Bool, false)
-    filter!(cacheable, forms)
+    filter!(splat(shouldstore), forms)
     if !isempty(forms)
         print(io, "  Cached:  ")
         inventory = getinventory!(dataset.collection) |> update_inventory!
